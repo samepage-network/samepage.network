@@ -3,7 +3,7 @@ import getMeta from "@dvargas92495/app/utils/getMeta";
 import PrivacyPolicy from "@dvargas92495/app/components/PrivacyPolicy";
 
 const PrivacyPolicyPage: React.FunctionComponent = () => (
-  <PrivacyPolicy name={"Samepage"} domain={"samepage.network"} />
+  <PrivacyPolicy name={"SamePage"} domain={"samepage.network"} />
 );
 
 export const Head = getMeta({ title: "Privacy Policy" });
