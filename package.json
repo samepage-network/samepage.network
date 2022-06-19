@@ -1,0 +1,26 @@
+{
+  "name": "samepage.network",
+  "version": "0.0.0",
+  "description": "Description for samepage.network",
+  "repository": "dvargas92495/samepage.network",
+  "license": "MIT",
+  "sideEffects": false,
+  "scripts": {
+    "api": "fuego api",
+    "prebuild": "npm run generate:css -- --minify",
+    "build": "fuego build",
+    "dev": "fuego dev",
+    "format": "prettier --write \"**/*.tsx\"",
+    "generate:css": "tailwindcss -o ./app/tailwind.css",
+    "postinstall": "fuego postinstall",
+    "lint": "eslint . --ext .ts,.tsx",
+    "start": "concurrently \"npm:api\" \"npm:dev\" \"npm:tailwind\"",
+    "tailwind": "npm run generate:css -- --watch"
+  },
+  "dependencies": {
+    "@dvargas92495/app": "^0.7.4"
+  },
+  "devDependencies": {
+    "fuegojs": "^0.30.0"
+  }
+}
