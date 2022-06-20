@@ -15,6 +15,8 @@ env:
   CLERK_API_KEY: ${{ secrets.CLERK_API_KEY }} 
   CLERK_FRONTEND_API: clerk.samepage.network
   CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+  CONVERTKIT_API_KEY: ${{ secrets.CONVERTKIT_API_KEY }}
+  CONVERTKIT_FORM_ID: 3367475
   DATABASE_URL: mysql://samepage_network:${{ secrets.MYSQL_PASSWORD }}@vargas-arts.c2sjnb5f4d57.us-east-1.rds.amazonaws.com:5432/samepage_network
   IS_PRODUCTION: 1
   ORIGIN: https://samepage.network
