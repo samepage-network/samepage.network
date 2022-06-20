@@ -6,11 +6,9 @@ import Landing, {
 import subscribeToConvertkitAction from "@dvargas92495/app/backend/subscribeToConvertkitAction.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
+import ExternalLink from "@dvargas92495/app/components/ExternalLink";
 
 const Home: React.FC = () => (
-  <>
-  {/**TODO - REPLACE WITH WAITLIST PROP FOR HEADER */}
-  <style>{`header > div > div > a {display:none;}`}</style>
   <Landing>
     <Splash
       title={"SamePage"}
@@ -22,23 +20,43 @@ const Home: React.FC = () => (
       showCards={[
         {
           title: "Roam",
-          description: "Description for Roam",
-          image: "/images/logo.png",
+          description: (
+            <>
+              A note-taking tool for networked thought.{" "}
+              <ExternalLink href={"https://roamresearch.com/"}>
+                Visit here.
+              </ExternalLink>
+            </>
+          ),
+          image: "/images/roam.png",
         },
         {
           title: "Obsidian",
-          description: "Description for Obsidian",
-          image: "/images/logo.png",
+          description: (
+            <>
+              A second brain, for you, forever.{" "}
+              <ExternalLink href={"https://obsidian.md/"}>
+                Visit here.
+              </ExternalLink>
+            </>
+          ),
+          image: "/images/obsidian.jfif",
         },
         {
           title: "LogSeq",
-          description: "Description for Roam",
-          image: "/images/logo.png",
+          description: (
+            <>
+              A privacy-first, open-source knowledge base.{" "}
+              <ExternalLink href={"https://logseq.com/"}>
+                Visit here.
+              </ExternalLink>
+            </>
+          ),
+          image: "/images/logseq.png",
         },
       ]}
     />
   </Landing>
-  </>
 );
 
 export const action = subscribeToConvertkitAction;

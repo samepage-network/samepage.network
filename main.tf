@@ -50,6 +50,10 @@ variable "stripe_webhook_secret" {
   type = string
 }
 
+variable "convertkit_api_key" {
+  type = string
+}
+
 provider "aws" {
   region = "us-east-1"
   access_key = var.aws_access_token
@@ -148,4 +152,10 @@ resource "github_actions_secret" "stripe_webhook_secret" {
   repository       = "samepage.network"
   secret_name      = "STRIPE_WEBHOOK_SECRET"
   plaintext_value  = var.stripe_webhook_secret
+}
+
+resource "github_actions_secret" "convertkit_api_key" {
+  repository      = "app"
+  secret_name     = "CONVERTKIT_API_KEY"
+  plaintext_value = var.convertkit_api_key
 }
