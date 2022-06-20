@@ -94,6 +94,14 @@ module "aws_clerk" {
   clerk_id = "l7zkq208u6ys"
 }
 
+module "aws_email" {
+  source  = "dvargas92495/email/aws"
+  version = "2.0.12"
+
+  domain = "samepage.network"
+  zone_id = module.aws_static_site.route53_zone_id
+}
+
 resource "github_actions_secret" "deploy_aws_access_key" {
   repository       = "samepage.network"
   secret_name      = "DEPLOY_AWS_ACCESS_KEY"
