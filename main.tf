@@ -155,7 +155,7 @@ resource "github_actions_secret" "stripe_webhook_secret" {
 }
 
 resource "github_actions_secret" "convertkit_api_key" {
-  repository      = "app"
+  repository      = "samepage.network"
   secret_name     = "CONVERTKIT_API_KEY"
   plaintext_value = var.convertkit_api_key
 }
