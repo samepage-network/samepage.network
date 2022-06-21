@@ -280,7 +280,9 @@ const Home: React.FC = () => {
             <span className="text-sky-700">SamePage</span>
           </span>
         }
-        subtitle={"The protocol to connect every notebook."}
+        subtitle={
+          "Everyone has their own tool. SamePage brings them together. You use Roam while they use Obsidian, and SamePage syncs your changes without needing to leave your custom setup."
+        }
         isWaitlist
         Logo={SplashLogo}
       />
