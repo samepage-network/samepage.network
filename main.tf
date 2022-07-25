@@ -54,6 +54,10 @@ variable "convertkit_api_key" {
   type = string
 }
 
+variable "password_secret_key" {
+  type = string
+}
+
 provider "aws" {
   region = "us-east-1"
   access_key = var.aws_access_token
@@ -82,8 +86,13 @@ module "aws-serverless-backend" {
     source  = "dvargas92495/serverless-backend/aws"
 
     api_name  = "samepage-network"
-    domain    = "samepage.network"
     directory = "api"
+}
+
+module "aws-websocket" {
+  source = "dvargas92495/websocket/aws"
+
+  name   = "samepage-network"
 }
 
 module "aws_clerk" {
@@ -166,4 +175,10 @@ resource "github_actions_secret" "convertkit_api_key" {
   repository      = "samepage.network"
   secret_name     = "CONVERTKIT_API_KEY"
   plaintext_value = var.convertkit_api_key
+}
+
+resource "github_actions_secret" "password_secret_key" {
+  repository      = "samepage.network"
+  secret_name     = "PASSWORD_SECREY_KEY"
+  plaintext_value = var.password_secret_key
 }

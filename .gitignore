@@ -5,3 +5,4 @@ out
 .env
 .cache
 /app/tailwind.css
+SamePage.pem
