@@ -19,9 +19,6 @@
     "tailwind": "npm run generate:css -- --watch"
   },
   "dependencies": {
-    "@dvargas92495/app": "^0.8.10"
-  },
-  "devDependencies": {
-    "fuegojs": "^0.30.0"
+    "@dvargas92495/app": "^0.9.14"
   }
 }
