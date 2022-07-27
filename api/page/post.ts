@@ -19,35 +19,9 @@ import endClient from "~/data/endClient.server";
 import { HmacSHA512, enc } from "crypto-js";
 import differenceInMinutes from "date-fns/differenceInMinutes";
 import format from "date-fns/format";
+import { Action } from "~/types";
 
 const s3 = new S3({ region: "us-east-1" });
-
-// @todo - replace with @json
-type ViewType = "document" | "bullet" | "numbered";
-type TextAlignment = "left" | "center" | "right";
-type ActionParams = {
-  location?: {
-    "parent-uid": string;
-    order: number;
-  };
-  block?: {
-    string?: string;
-    uid?: string;
-    open?: boolean;
-    heading?: number;
-    "text-align"?: TextAlignment;
-    "children-view-type"?: ViewType;
-  };
-  page?: {
-    title?: string;
-    uid?: string;
-  };
-};
-
-type Action = {
-  action: "createBlock" | "updateBlock" | "deleteBlock";
-  params: ActionParams;
-};
 
 const getSharedPage = ({
   instance,
