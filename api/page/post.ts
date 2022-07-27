@@ -1,12 +1,22 @@
 import createAPIGatewayProxyHandler from "aws-sdk-plus/dist/createAPIGatewayProxyHandler";
 import { ClientId } from "~/enums/clients";
-import { ConflictError, NotFoundError } from "aws-sdk-plus/dist/errors";
+import {
+  BadRequestError,
+  MethodNotAllowedError,
+  ConflictError,
+  NotFoundError,
+} from "aws-sdk-plus/dist/errors";
 import catchError from "~/data/catchError.server";
 import getMysql from "@dvargas92495/app/backend/mysql.server";
 import { downloadFileContent } from "@dvargas92495/app/backend/downloadFile.server";
 import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
 import { S3 } from "@aws-sdk/client-s3";
 import { v4 } from "uuid";
+import postToConnection, {
+  removeLocalSocket,
+} from "~/data/postToConnection.server";
+import endClient from "~/data/endClient.server";
+import { HmacSHA512, enc } from "crypto-js";
 
 const s3 = new S3({ region: "us-east-1" });
 
@@ -74,7 +84,55 @@ const messageInstance = ({
   messageUuid?: string;
   data: Record<string, unknown>;
 }) => {
-  console.log("TODO:", source, target, data, messageUuid);
+  return getMysql().then(async (cxn) => {
+    const ids = await cxn
+      .execute(
+        `SELECT id FROM online_clients WHERE instance = ? AND client = ?`,
+        [target.instance, target.client]
+      )
+      .then((res) => (res as { id: string }[]).map(({ id }) => id));
+    const Data = {
+      ...data,
+      source,
+    };
+    const online = await Promise.all(
+      ids.map((ConnectionId) =>
+        postToConnection({
+          ConnectionId,
+          Data,
+        })
+          .then(() => true)
+          .catch((e) => {
+            if (process.env.NODE_ENV === "production") {
+              return endClient(ConnectionId, `Missed Message (${e.message})`)
+                .then(() => false)
+                .catch(() => false);
+            } else {
+              removeLocalSocket(ConnectionId);
+              return false;
+            }
+          })
+      )
+    ).then((all) => !!all.length && all.every((i) => i));
+    if (!online) {
+      await cxn.execute(
+        `INSERT INTO messages (uuid, source_instance, source_client, target_instance, target_client, created_date)
+        VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          messageUuid,
+          source.instance,
+          source.client,
+          target.instance,
+          target.client,
+          new Date(),
+        ]
+      );
+      await uploadFile({
+        Key: `data/messages/${messageUuid}.json`,
+        Body: JSON.stringify(Data),
+      });
+    }
+  });
 };
 
 const logic = ({
@@ -84,6 +142,8 @@ const logic = ({
   pageUuid,
   clientPageId,
   log,
+  networkName,
+  password,
 }: {
   method: string;
   client: ClientId;
@@ -91,7 +151,9 @@ const logic = ({
   pageUuid: string;
   clientPageId: string;
   log: Action[];
-}) => {
+  networkName: string;
+  password: string;
+}): Promise<string | Record<string, unknown>> => {
   switch (method) {
     case "join-shared-page": {
       return downloadFileContent({
@@ -198,7 +260,6 @@ const logic = ({
                       [id]
                     )
                     .then((r) => {
-                      cxn.destroy();
                       return Promise.all(
                         (r as { client: ClientId; instance: string }[])
                           .filter((item) => {
@@ -221,6 +282,7 @@ const logic = ({
                           )
                       );
                     })
+                    .then(() => cxn.destroy())
                 )
                 .then(() => ({
                   newIndex,
@@ -229,6 +291,179 @@ const logic = ({
         })
         .catch(catchError("Failed to update a shared page"));
     }
+    // TODO: WE MIGHT DELETE METHODS BELOW HERE
+    case "create-network": {
+      if (!password) {
+        throw new BadRequestError(
+          `Must include a password of length greater than zero`
+        );
+      }
+      return getMysql()
+        .then(async (cxn) => {
+          const existingRooms = await cxn
+            .execute(`SELECT n.uuid FROM networks n WHERE n.name = ?`, [
+              networkName,
+            ])
+            .then((res) => res as { uuid: string }[]);
+          if (existingRooms.length) {
+            throw new BadRequestError(
+              `A network already exists by the name of ${name}`
+            );
+          }
+          const salt = v4();
+          const now = new Date();
+          const uuid = v4();
+          await cxn.execute(
+            `INSERT INTO networks (id, name, password, created_date, salt)
+          VALUES (?,?,?,?,?)`,
+            [
+              uuid,
+              networkName,
+              enc.Base64.stringify(
+                HmacSHA512(
+                  password + salt,
+                  process.env.PASSWORD_SECRET_KEY || ""
+                )
+              ),
+              now,
+              salt,
+            ]
+          );
+          await cxn.execute(
+            `INSERT INTO network_memberships (uuid, network_uuid, instance, client)
+          VALUES (?,?,?,?)`,
+            [v4(), uuid, instance, client]
+          );
+          return {
+            success: true,
+          };
+        })
+        .catch(catchError("Failed to create network"));
+    }
+    case "join-network": {
+      if (!password) {
+        throw new BadRequestError(
+          `Must include a password of length greater than zero`
+        );
+      }
+      return getMysql().then(async (cxn) => {
+        const [network] = await cxn
+          .execute(
+            `SELECT n.uuid, n.password, n.salt FROM networks n WHERE n.name = ?`,
+            [networkName]
+          )
+          .then(
+            (res) => res as { uuid: string; password: string; salt: string }[]
+          );
+        if (!network) {
+          throw new BadRequestError(
+            `There does not exist a network called ${networkName}`
+          );
+        }
+        const [existingMembership] = await cxn
+          .execute(
+            `SELECT n.uuid FROM network_memberships n 
+        WHERE n.networkUuid = ? AND n.instance = ? AND n.client = ?`,
+            [network.uuid, instance, client]
+          )
+          .then((res) => res as { uuid: string }[]);
+        if (existingMembership)
+          throw new BadRequestError(
+            `This graph is already a part of the network ${networkName}`
+          );
+        const passwordHash = network.password;
+        const inputPasswordHash = enc.Base64.stringify(
+          HmacSHA512(
+            password + (network.salt || ""),
+            process.env.PASSWORD_SECRET_KEY || ""
+          )
+        );
+        if (!passwordHash || inputPasswordHash !== passwordHash)
+          throw new MethodNotAllowedError(
+            `Incorrect password for network ${networkName}`
+          );
+        const existingMemberships = await cxn
+          .execute(
+            `SELECT o.id, n.instance, n.client FROM network_memberships n
+            INNER JOIN online_clients o ON o.instance = n.instance AND o.client = n.client
+        WHERE n.networkUuid = ?`,
+            [network.uuid]
+          )
+          .then(
+            (res) => res as { id: string; instance: string; client: ClientId }[]
+          );
+        await cxn.execute(
+          `INSERT INTO network_memberships (uuid, network_uuid, instance, client)
+          VALUES (?,?,?,?)`,
+          [v4(), network.uuid, instance, client]
+        );
+        return Promise.all(
+          existingMemberships.map(({ id: ConnectionId, ...source }) =>
+            postToConnection({
+              ConnectionId,
+              Data: {
+                operation: `INITIALIZE_P2P`,
+                to: ConnectionId,
+                source,
+              },
+            })
+          )
+        )
+          .then(() => ({ success: true }))
+          .catch(catchError("Failed to join network"));
+      });
+    }
+    case "list-networks": {
+      return getMysql().then(async (cxn) => {
+        const networks = await cxn
+          .execute(
+            `SELECT n.name FROM networks n
+          INNER JOIN network_memberships nm ON n.uuid = nm.network_uuid 
+          WHERE nm.instance = ? AND nm.client = ?`,
+            [instance, client]
+          )
+          .then((res) => (res as { name: string }[]).map((r) => r.name));
+        return { networks };
+      });
+    }
+    case "leave-network": {
+      return getMysql()
+        .then(async (cxn) => {
+          await cxn.execute(
+            `DELETE nm FROM network_memberships nm 
+           INNER JOIN networks n ON n.uuid = nm.network_uuid 
+           WHERE n.name = ? AND nm.instance = ? AND nm.client = ?`,
+            [networkName, instance, client]
+          );
+          const others = await cxn
+            .execute(
+              `SELECT nm.instance, nm.client FROM network_memberships nm
+          INNER JOIN networks n ON n.uuid = nm.network_uuid 
+          WHERE n.name = ?`,
+              [networkName]
+            )
+            .then((res) => res as { instance: string; client: ClientId }[]);
+          if (others.length) {
+            await Promise.all([
+              others.map((target) =>
+                messageInstance({
+                  source: { instance, client },
+                  target,
+                  data: { operation: "LEAVE_NETWORK" },
+                })
+              ),
+            ]);
+          } else {
+            await cxn.execute(`DELETE FROM networks WHERE name = ?`, [
+              networkName,
+            ]);
+          }
+          cxn.destroy();
+          return { success: true };
+        })
+        .catch(catchError("Failed to leave network"));
+    }
+    // END-TODO
     default:
       throw new NotFoundError(`Unknown method: ${method}`);
   }
