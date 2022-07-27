@@ -53,10 +53,12 @@ const getSharedPage = ({
   instance,
   clientPageId,
   client,
+  safe,
 }: {
   instance: string;
   clientPageId: string;
   client: ClientId;
+  safe?: boolean;
 }) =>
   getMysql().then((cxn) =>
     cxn
@@ -67,13 +69,22 @@ const getSharedPage = ({
       .then((results) => {
         cxn.destroy();
         const [link] = results as { page_uuid: string }[];
-        if (!link)
+        if (!link && !safe)
           throw new NotFoundError(
             `Could not find page from client ${client}, instance ${instance}, and clientPageId ${clientPageId}`
           );
+        else if (safe) return "";
         return link.page_uuid;
       })
   );
+
+const getPageVersion = (pageUuid: string) =>
+  s3
+    .headObject({
+      Bucket: "samepage.network",
+      Key: `data/page/${pageUuid}.json`,
+    })
+    .then((r) => Number(r.Metadata?.index) || 0);
 
 const messageInstance = ({
   source,
@@ -146,6 +157,7 @@ const logic = ({
   log,
   networkName,
   password,
+  localIndex,
 }: {
   method: string;
   client: ClientId;
@@ -155,6 +167,7 @@ const logic = ({
   log: Action[];
   networkName: string;
   password: string;
+  localIndex: number;
 }): Promise<string | Record<string, unknown>> => {
   switch (method) {
     case "usage": {
@@ -275,14 +288,9 @@ const logic = ({
       if (!log.length) {
         return getSharedPage({ instance, clientPageId, client })
           .then((id) =>
-            s3
-              .headObject({
-                Bucket: "roamjs-data",
-                Key: `data/page/${id}.json`,
-              })
-              .then((r) => ({
-                newIndex: Number(r.Metadata?.index) || 0,
-              }))
+            getPageVersion(id).then((newIndex) => ({
+              newIndex,
+            }))
           )
           .catch(catchError("Failed to update a shared page with empty log"));
       }
@@ -364,6 +372,53 @@ const logic = ({
             });
         })
         .catch(catchError("Failed to update a shared page"));
+    }
+    case "get-shared-page": {
+      return getSharedPage({ instance, clientPageId, client, safe: true })
+        .then((pageUuid) => {
+          if (!pageUuid) {
+            return { exists: false, log: [] };
+          }
+          if (typeof localIndex === "undefined") {
+            return { exists: true, log: [] };
+          }
+          return getPageVersion(pageUuid)
+            .then((remoteIndex) => {
+              if (remoteIndex <= localIndex) {
+                return { log: [], exists: true };
+              }
+              return downloadFileContent({
+                Key: `data/page/${pageUuid}.json`,
+              }).then((r) => JSON.parse(r));
+            })
+            .then((r) => ({
+              log: (r.log || []).slice(localIndex),
+              exists: true,
+            }));
+        })
+        .catch(catchError("Failed to get a shared page"));
+    }
+    case "list-shared-pages": {
+      return getMysql()
+        .then(async (cxn) => {
+          const pages = await cxn
+            .execute(
+              `SELECT page_uuid, client_page_id FROM page_instance_links
+          WHERE instance = ? AND client = ?`,
+              [instance, client]
+            )
+            .then((r) => r as { page_uuid: string; client_page_id: string }[]);
+          return Promise.all(
+            pages.map((p) =>
+              getPageVersion(p.page_uuid).then((index) => [
+                p.client_page_id,
+                index,
+              ])
+            )
+          );
+        })
+        .then((entries) => ({ indices: Object.fromEntries(entries) }))
+        .catch(catchError("Failed to retrieve shared pages"));
     }
     case "disconnect-shared-page": {
       return (
