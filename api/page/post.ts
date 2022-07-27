@@ -129,8 +129,8 @@ const messageInstance = ({
     ).then((all) => !!all.length && all.every((i) => i));
     if (!online) {
       await cxn.execute(
-        `INSERT INTO messages (uuid, source_instance, source_app, target_instance, target_app, created_date)
-        VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO messages (uuid, source_instance, source_app, target_instance, target_app, created_date, read)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           messageUuid,
           source.instance,
@@ -138,6 +138,7 @@ const messageInstance = ({
           target.instance,
           target.app,
           new Date(),
+          0,
         ]
       );
       await uploadFile({
@@ -158,6 +159,7 @@ const logic = ({
   networkName,
   password,
   localIndex,
+  messageUuid,
 }: {
   method: string;
   app: AppId;
@@ -168,6 +170,7 @@ const logic = ({
   networkName: string;
   password: string;
   localIndex: number;
+  messageUuid: string;
 }): Promise<string | Record<string, unknown>> => {
   switch (method) {
     case "usage": {
@@ -217,6 +220,41 @@ const logic = ({
           date: format(endDate, "MMMM do, yyyy"),
         }))
         .catch(catchError("Failed to retrieve usage"));
+    }
+    case "load-message": {
+      return Promise.all([
+        downloadFileContent({
+          Key: `data/messages/${messageUuid}.json`,
+        }).catch(() => {
+          console.error(`Could not load message ${messageUuid}`);
+          return JSON.stringify("{}");
+        }),
+        getMysql().then((cxn) => {
+          return cxn
+            .execute(`UPDATE messages SET read = ? WHERE uuid = ?`, [
+              1,
+              messageUuid,
+            ])
+            .then(() =>
+              cxn.execute(
+                `SELECT source_instance, source_app FROM messages WHERE uuid = ?`,
+                [messageUuid]
+              )
+            )
+            .then((args) => {
+              cxn.destroy();
+              return args as { source_instance: string; source_app: AppId }[];
+            });
+        }),
+      ])
+        .then(([Data, [source]]) => ({
+          data: Data,
+          source: {
+            instance: source.source_instance,
+            app: source.source_app,
+          },
+        }))
+        .catch(catchError("Failed to load a message"));
     }
     case "init-shared-page": {
       return getMysql()
