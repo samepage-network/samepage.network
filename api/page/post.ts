@@ -17,6 +17,8 @@ import postToConnection, {
 } from "~/data/postToConnection.server";
 import endClient from "~/data/endClient.server";
 import { HmacSHA512, enc } from "crypto-js";
+import differenceInMinutes from "date-fns/differenceInMinutes";
+import format from "date-fns/format";
 
 const s3 = new S3({ region: "us-east-1" });
 
@@ -155,6 +157,81 @@ const logic = ({
   password: string;
 }): Promise<string | Record<string, unknown>> => {
   switch (method) {
+    case "usage": {
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth();
+      const currentYear = currentDate.getFullYear();
+      const endDate = new Date(
+        currentMonth === 11 ? currentYear + 1 : currentYear,
+        currentMonth === 11 ? 0 : currentMonth + 1,
+        1
+      );
+      const startDate = new Date(currentYear, currentMonth, 1).toJSON();
+
+      return getMysql()
+        .then((cxn) =>
+          Promise.all([
+            cxn
+              .execute(
+                `SELECT id, created_date, end_date FROM client_sessions WHERE instance = ? AND client = ? AND created_date > ?`,
+                [instance, client, startDate]
+              )
+              .then(
+                (items) =>
+                  items as { id: string; created_date: Date; end_date: Date }[]
+              ),
+            cxn
+              .execute(
+                `SELECT uuid FROM messages WHERE source_instance = ? AND source_client = ? AND date > ?`,
+                [instance, client, startDate]
+              )
+              .then((items) => items as { uuid: string }[]),
+            cxn
+              .execute(
+                `SELECT uuid FROM network_memberships WHERE instance = ? AND client = ?`,
+                [instance, client]
+              )
+              .then((items) => items as { uuid: string }[]),
+          ])
+        )
+        .then(([sessions, messages, networks]) => ({
+          minutes: sessions.reduce(
+            (p, c) => differenceInMinutes(c.created_date, c.end_date) / 5 + p,
+            0
+          ),
+          messages: messages.length,
+          networks: networks.length,
+          date: format(endDate, "MMMM do, yyyy"),
+        }))
+        .catch(catchError("Failed to retrieve usage"));
+    }
+    case "init-shared-page": {
+      return getMysql()
+        .then(async (cxn) => {
+          const results = await cxn.execute(
+            `SELECT page_uuid FROM page_instance_links WHERE instance = ? AND client = ? AND client_page_id = ?`,
+            [instance, client, clientPageId]
+          );
+          cxn.destroy();
+          const [link] = results as { page_uuid: string }[];
+          if (link) return { id: link.page_uuid, created: false };
+          const pageUuid = v4();
+          const args = [pageUuid, clientPageId, instance, client];
+          await cxn.execute(
+            `INSERT INTO page_instance_links (uuid, page_uuid, client_page_id, instance, client)
+            VALUES (UUID(), ?, ?, ?, ?)`,
+            args
+          );
+          await uploadFile({
+            Key: `data/page/${pageUuid}.json`,
+            Body: JSON.stringify({ log: [], state: {} }),
+            // TODO
+            // Metadata: { index: "0" },
+          });
+          return { created: true, id: pageUuid };
+        })
+        .catch(catchError("Failed to init a shared page"));
+    }
     case "join-shared-page": {
       return downloadFileContent({
         Key: `data/page/${pageUuid}.json`,
@@ -171,28 +248,25 @@ const logic = ({
         .then((r) => {
           return getMysql().then((cxn) => {
             const args = [pageUuid, clientPageId, instance, client];
-            return (
-              cxn
-                .execute(
-                  `INSERT INTO page_instance_links (uuid, page_uuid, client_page_id, instance, client)
+            return cxn
+              .execute(
+                `INSERT INTO page_instance_links (uuid, page_uuid, client_page_id, instance, client)
             VALUES (UUID(), ?, ?, ?, ?)`,
-                  args
-                )
-                // TODO: return body string directly, it's already stringified JSON
-                .then(() => r)
-                .catch((e) =>
-                  Promise.reject(
-                    new Error(
-                      `Failed to insert link: ${JSON.stringify(
-                        args,
-                        null,
-                        4
-                      )}\nReason: ${e.message}`
-                    )
+                args
+              )
+              .then(() => r)
+              .catch((e) =>
+                Promise.reject(
+                  new Error(
+                    `Failed to insert link: ${JSON.stringify(
+                      args,
+                      null,
+                      4
+                    )}\nReason: ${e.message}`
                   )
                 )
-                .finally(() => cxn.destroy())
-            );
+              )
+              .finally(() => cxn.destroy());
           });
         })
         .catch(catchError("Failed to join a shared page"));
@@ -290,6 +364,24 @@ const logic = ({
             });
         })
         .catch(catchError("Failed to update a shared page"));
+    }
+    case "disconnect-shared-page": {
+      return (
+        getSharedPage({ instance, clientPageId, client })
+          .then(() =>
+            getMysql().then((cxn) =>
+              cxn
+                .execute(
+                  `DELETE FROM page_instance_links WHERE instance = ? AND client = ? AND client_page_id = ?`,
+                  [instance, client, clientPageId]
+                )
+                .then(() => cxn.destroy())
+            )
+          )
+          // TODO: Let errbody know
+          .then(() => ({ success: true }))
+          .catch(catchError("Failed to disconnect a shared page"))
+      );
     }
     // TODO: WE MIGHT DELETE METHODS BELOW HERE
     case "create-network": {
