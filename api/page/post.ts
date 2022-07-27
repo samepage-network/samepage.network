@@ -1,5 +1,5 @@
 import createAPIGatewayProxyHandler from "aws-sdk-plus/dist/createAPIGatewayProxyHandler";
-import { ClientId } from "~/enums/clients";
+import { AppId } from "~/enums/apps";
 import {
   BadRequestError,
   MethodNotAllowedError,
@@ -51,27 +51,27 @@ type Action = {
 
 const getSharedPage = ({
   instance,
-  clientPageId,
-  client,
+  notebookPageId,
+  app,
   safe,
 }: {
   instance: string;
-  clientPageId: string;
-  client: ClientId;
+  notebookPageId: string;
+  app: AppId;
   safe?: boolean;
 }) =>
   getMysql().then((cxn) =>
     cxn
       .execute(
-        `SELECT page_uuid FROM page_instance_links WHERE instance = ? AND client = ? AND client_page_id = ?`,
-        [instance, client, clientPageId]
+        `SELECT page_uuid FROM page_instance_links WHERE instance = ? AND app = ? AND notebook_page_id = ?`,
+        [instance, app, notebookPageId]
       )
       .then((results) => {
         cxn.destroy();
         const [link] = results as { page_uuid: string }[];
         if (!link && !safe)
           throw new NotFoundError(
-            `Could not find page from client ${client}, instance ${instance}, and clientPageId ${clientPageId}`
+            `Could not find page from app ${app}, instance ${instance}, and notebookPageId ${notebookPageId}`
           );
         else if (safe) return "";
         return link.page_uuid;
@@ -92,17 +92,17 @@ const messageInstance = ({
   data,
   messageUuid = v4(),
 }: {
-  source: { instance: string; client: ClientId };
-  target: { instance: string; client: ClientId };
+  source: { instance: string; app: AppId };
+  target: { instance: string; app: AppId };
   messageUuid?: string;
   data: Record<string, unknown>;
 }) => {
   return getMysql().then(async (cxn) => {
     const ids = await cxn
-      .execute(
-        `SELECT id FROM online_clients WHERE instance = ? AND client = ?`,
-        [target.instance, target.client]
-      )
+      .execute(`SELECT id FROM online_clients WHERE instance = ? AND app = ?`, [
+        target.instance,
+        target.app,
+      ])
       .then((res) => (res as { id: string }[]).map(({ id }) => id));
     const Data = {
       ...data,
@@ -129,14 +129,14 @@ const messageInstance = ({
     ).then((all) => !!all.length && all.every((i) => i));
     if (!online) {
       await cxn.execute(
-        `INSERT INTO messages (uuid, source_instance, source_client, target_instance, target_client, created_date)
+        `INSERT INTO messages (uuid, source_instance, source_app, target_instance, target_app, created_date)
         VALUES (?, ?, ?, ?, ?, ?)`,
         [
           messageUuid,
           source.instance,
-          source.client,
+          source.app,
           target.instance,
-          target.client,
+          target.app,
           new Date(),
         ]
       );
@@ -150,20 +150,20 @@ const messageInstance = ({
 
 const logic = ({
   method,
-  client,
+  app,
   instance,
   pageUuid,
-  clientPageId,
+  notebookPageId,
   log,
   networkName,
   password,
   localIndex,
 }: {
   method: string;
-  client: ClientId;
+  app: AppId;
   instance: string;
   pageUuid: string;
-  clientPageId: string;
+  notebookPageId: string;
   log: Action[];
   networkName: string;
   password: string;
@@ -186,8 +186,8 @@ const logic = ({
           Promise.all([
             cxn
               .execute(
-                `SELECT id, created_date, end_date FROM client_sessions WHERE instance = ? AND client = ? AND created_date > ?`,
-                [instance, client, startDate]
+                `SELECT id, created_date, end_date FROM client_sessions WHERE instance = ? AND app = ? AND created_date > ?`,
+                [instance, app, startDate]
               )
               .then(
                 (items) =>
@@ -195,14 +195,14 @@ const logic = ({
               ),
             cxn
               .execute(
-                `SELECT uuid FROM messages WHERE source_instance = ? AND source_client = ? AND date > ?`,
-                [instance, client, startDate]
+                `SELECT uuid FROM messages WHERE source_instance = ? AND source_app = ? AND date > ?`,
+                [instance, app, startDate]
               )
               .then((items) => items as { uuid: string }[]),
             cxn
               .execute(
-                `SELECT uuid FROM network_memberships WHERE instance = ? AND client = ?`,
-                [instance, client]
+                `SELECT uuid FROM network_memberships WHERE instance = ? AND app = ?`,
+                [instance, app]
               )
               .then((items) => items as { uuid: string }[]),
           ])
@@ -222,16 +222,16 @@ const logic = ({
       return getMysql()
         .then(async (cxn) => {
           const results = await cxn.execute(
-            `SELECT page_uuid FROM page_instance_links WHERE instance = ? AND client = ? AND client_page_id = ?`,
-            [instance, client, clientPageId]
+            `SELECT page_uuid FROM page_instance_links WHERE instance = ? AND app = ? AND notebook_page_id = ?`,
+            [instance, app, notebookPageId]
           );
           cxn.destroy();
           const [link] = results as { page_uuid: string }[];
           if (link) return { id: link.page_uuid, created: false };
           const pageUuid = v4();
-          const args = [pageUuid, clientPageId, instance, client];
+          const args = [pageUuid, notebookPageId, instance, app];
           await cxn.execute(
-            `INSERT INTO page_instance_links (uuid, page_uuid, client_page_id, instance, client)
+            `INSERT INTO page_instance_links (uuid, page_uuid, notebook_page_id, instance, app)
             VALUES (UUID(), ?, ?, ?, ?)`,
             args
           );
@@ -260,10 +260,10 @@ const logic = ({
         )
         .then((r) => {
           return getMysql().then((cxn) => {
-            const args = [pageUuid, clientPageId, instance, client];
+            const args = [pageUuid, notebookPageId, instance, app];
             return cxn
               .execute(
-                `INSERT INTO page_instance_links (uuid, page_uuid, client_page_id, instance, client)
+                `INSERT INTO page_instance_links (uuid, page_uuid, notebook_page_id, instance, app)
             VALUES (UUID(), ?, ?, ?, ?)`,
                 args
               )
@@ -286,7 +286,7 @@ const logic = ({
     }
     case "update-shared-page": {
       if (!log.length) {
-        return getSharedPage({ instance, clientPageId, client })
+        return getSharedPage({ instance, notebookPageId, app })
           .then((id) =>
             getPageVersion(id).then((newIndex) => ({
               newIndex,
@@ -294,7 +294,7 @@ const logic = ({
           )
           .catch(catchError("Failed to update a shared page with empty log"));
       }
-      return getSharedPage({ instance, clientPageId, client })
+      return getSharedPage({ instance, notebookPageId, app })
         .then((id) => {
           return downloadFileContent({
             Key: `data/page/${id}.json`,
@@ -338,25 +338,24 @@ const logic = ({
                 .then((cxn) =>
                   cxn
                     .execute(
-                      `SELECT instance, client FROM page_instance_links WHERE page_uuid = ?`,
+                      `SELECT instance, app FROM page_instance_links WHERE page_uuid = ?`,
                       [id]
                     )
                     .then((r) => {
                       return Promise.all(
-                        (r as { client: ClientId; instance: string }[])
+                        (r as { app: AppId; instance: string }[])
                           .filter((item) => {
                             return (
-                              item.instance !== instance ||
-                              item.client !== client
+                              item.instance !== instance || item.app !== app
                             );
                           })
                           .map((target) =>
                             messageInstance({
-                              source: { client, instance },
+                              source: { app, instance },
                               target,
                               data: {
                                 log,
-                                clientPageId,
+                                notebookPageId,
                                 index: newIndex,
                                 operation: "SHARE_PAGE_UPDATE",
                               },
@@ -374,7 +373,7 @@ const logic = ({
         .catch(catchError("Failed to update a shared page"));
     }
     case "get-shared-page": {
-      return getSharedPage({ instance, clientPageId, client, safe: true })
+      return getSharedPage({ instance, notebookPageId, app, safe: true })
         .then((pageUuid) => {
           if (!pageUuid) {
             return { exists: false, log: [] };
@@ -398,20 +397,41 @@ const logic = ({
         })
         .catch(catchError("Failed to get a shared page"));
     }
+    case "list-page-instances": {
+      return getMysql()
+        .then(async (cxn) => {
+          const pageUuid = await getSharedPage({
+            instance,
+            notebookPageId,
+            app,
+          });
+          const notebooks = await cxn
+            .execute(
+              `SELECT app, instance FROM page_instance_links WHERE page_uuid = ?`,
+              [pageUuid]
+            )
+            .then((res) => res as { app: string; instance: string }[]);
+          cxn.destroy();
+          return { notebooks };
+        })
+        .catch(catchError("Failed to retrieve page instances"));
+    }
     case "list-shared-pages": {
       return getMysql()
         .then(async (cxn) => {
           const pages = await cxn
             .execute(
-              `SELECT page_uuid, client_page_id FROM page_instance_links
-          WHERE instance = ? AND client = ?`,
-              [instance, client]
+              `SELECT page_uuid, notebook_page_id FROM page_instance_links
+          WHERE instance = ? AND app = ?`,
+              [instance, app]
             )
-            .then((r) => r as { page_uuid: string; client_page_id: string }[]);
+            .then(
+              (r) => r as { page_uuid: string; notebook_page_id: string }[]
+            );
           return Promise.all(
             pages.map((p) =>
               getPageVersion(p.page_uuid).then((index) => [
-                p.client_page_id,
+                p.notebook_page_id,
                 index,
               ])
             )
@@ -422,13 +442,13 @@ const logic = ({
     }
     case "disconnect-shared-page": {
       return (
-        getSharedPage({ instance, clientPageId, client })
+        getSharedPage({ instance, notebookPageId, app })
           .then(() =>
             getMysql().then((cxn) =>
               cxn
                 .execute(
-                  `DELETE FROM page_instance_links WHERE instance = ? AND client = ? AND client_page_id = ?`,
-                  [instance, client, clientPageId]
+                  `DELETE FROM page_instance_links WHERE instance = ? AND app = ? AND notebook_page_id = ?`,
+                  [instance, app, notebookPageId]
                 )
                 .then(() => cxn.destroy())
             )
@@ -477,9 +497,9 @@ const logic = ({
             ]
           );
           await cxn.execute(
-            `INSERT INTO network_memberships (uuid, network_uuid, instance, client)
+            `INSERT INTO network_memberships (uuid, network_uuid, instance, app)
           VALUES (?,?,?,?)`,
-            [v4(), uuid, instance, client]
+            [v4(), uuid, instance, app]
           );
           return {
             success: true,
@@ -510,8 +530,8 @@ const logic = ({
         const [existingMembership] = await cxn
           .execute(
             `SELECT n.uuid FROM network_memberships n 
-        WHERE n.networkUuid = ? AND n.instance = ? AND n.client = ?`,
-            [network.uuid, instance, client]
+        WHERE n.networkUuid = ? AND n.instance = ? AND n.app = ?`,
+            [network.uuid, instance, app]
           )
           .then((res) => res as { uuid: string }[]);
         if (existingMembership)
@@ -531,18 +551,16 @@ const logic = ({
           );
         const existingMemberships = await cxn
           .execute(
-            `SELECT o.id, n.instance, n.client FROM network_memberships n
-            INNER JOIN online_clients o ON o.instance = n.instance AND o.client = n.client
+            `SELECT o.id, n.instance, n.app FROM network_memberships n
+            INNER JOIN online_clients o ON o.instance = n.instance AND o.app = n.app
         WHERE n.networkUuid = ?`,
             [network.uuid]
           )
-          .then(
-            (res) => res as { id: string; instance: string; client: ClientId }[]
-          );
+          .then((res) => res as { id: string; instance: string; app: AppId }[]);
         await cxn.execute(
-          `INSERT INTO network_memberships (uuid, network_uuid, instance, client)
+          `INSERT INTO network_memberships (uuid, network_uuid, instance, app)
           VALUES (?,?,?,?)`,
-          [v4(), network.uuid, instance, client]
+          [v4(), network.uuid, instance, app]
         );
         return Promise.all(
           existingMemberships.map(({ id: ConnectionId, ...source }) =>
@@ -566,8 +584,8 @@ const logic = ({
           .execute(
             `SELECT n.name FROM networks n
           INNER JOIN network_memberships nm ON n.uuid = nm.network_uuid 
-          WHERE nm.instance = ? AND nm.client = ?`,
-            [instance, client]
+          WHERE nm.instance = ? AND nm.app = ?`,
+            [instance, app]
           )
           .then((res) => (res as { name: string }[]).map((r) => r.name));
         return { networks };
@@ -579,22 +597,22 @@ const logic = ({
           await cxn.execute(
             `DELETE nm FROM network_memberships nm 
            INNER JOIN networks n ON n.uuid = nm.network_uuid 
-           WHERE n.name = ? AND nm.instance = ? AND nm.client = ?`,
-            [networkName, instance, client]
+           WHERE n.name = ? AND nm.instance = ? AND nm.app = ?`,
+            [networkName, instance, app]
           );
           const others = await cxn
             .execute(
-              `SELECT nm.instance, nm.client FROM network_memberships nm
+              `SELECT nm.instance, nm.app FROM network_memberships nm
           INNER JOIN networks n ON n.uuid = nm.network_uuid 
           WHERE n.name = ?`,
               [networkName]
             )
-            .then((res) => res as { instance: string; client: ClientId }[]);
+            .then((res) => res as { instance: string; app: AppId }[]);
           if (others.length) {
             await Promise.all([
               others.map((target) =>
                 messageInstance({
-                  source: { instance, client },
+                  source: { instance, app },
                   target,
                   data: { operation: "LEAVE_NETWORK" },
                 })

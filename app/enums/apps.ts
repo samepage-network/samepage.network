@@ -1,9 +1,9 @@
-const CLIENTS = [
+const APPS = [
   { id: 1, name: "Roam" },
   { id: 2, name: "LogSeq" },
   { id: 3, name: "Obsidian" },
 ] as const;
 
-export type ClientId = typeof CLIENTS[number]["id"];
+export type AppId = typeof APPS[number]["id"];
 
-export default CLIENTS;
+export default APPS;
