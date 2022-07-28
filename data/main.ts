@@ -1,3 +1,4 @@
+import base from "fuegojs/dist/base";
 import { z } from "zod";
 
 const pageInstanceLink = z.object({
@@ -58,4 +59,13 @@ const schema = {
   message,
 };
 
-console.log(schema);
+base({
+  projectName: "samepage.network",
+  safeProjectName: "samepage-network",
+  emailDomain: "samepage.network",
+  schema,
+  variables: [
+    "convertkit_api_key",
+    "password_secret_key"
+  ]
+});

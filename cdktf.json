@@ -1,0 +1,35 @@
+{
+  "language": "typescript",
+  "app": "npx esbuild ./node_modules/.gen/modules/aws-serverless-backend.ts ./node_modules/.gen/modules/aws-email.ts ./node_modules/.gen/modules/aws-clerk.ts ./node_modules/.gen/modules/aws-websocket.ts --platform=node --format=cjs --outdir=./node_modules/.gen/modules && npx ts-node-esm data/main.ts",
+  "projectId": "app",
+  "sendCrashReports": "false",
+  "terraformProviders": ["aws", "github"],
+  "terraformModules": [
+    {
+      "name": "aws-serverless-backend",
+      "source": "dvargas92495/serverless-backend/aws",
+      "version": "2.5.4"
+    },
+    {
+      "name": "aws-clerk",
+      "source": "dvargas92495/clerk/aws",
+      "version": "1.0.4"
+    },
+    {
+      "name": "aws-email",
+      "source": "dvargas92495/email/aws",
+      "version": "2.0.12"
+    },
+    {
+      "name": "aws-websocket",
+      "source": "dvargas92495/email/aws",
+      "version": "1.1.1"
+    }
+  ],
+  "context": {
+    "excludeStackIdFromLogicalIds": "true",
+    "allowSepCharsInLogicalIds": "true"
+  },
+  "codeMakerOutput": "node_modules/.gen",
+  "output": "node_modules/cdktf.out"
+}

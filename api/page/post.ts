@@ -41,7 +41,6 @@ const getSharedPage = ({
         [instance, app, notebookPageId]
       )
       .then((results) => {
-        cxn.destroy();
         const [link] = results as { page_uuid: string }[];
         if (!link && !safe)
           throw new NotFoundError(
@@ -123,7 +122,7 @@ const messageInstance = ({
   });
 };
 
-const logic = ({
+const logic = async ({
   method,
   app,
   instance,
@@ -159,8 +158,8 @@ const logic = ({
       const startDate = new Date(currentYear, currentMonth, 1).toJSON();
 
       return getMysql()
-        .then((cxn) =>
-          Promise.all([
+        .then(async (cxn) => {
+          const [sessions, messages, networks] = await Promise.all([
             cxn
               .execute(
                 `SELECT id, created_date, end_date FROM client_sessions WHERE instance = ? AND app = ? AND created_date > ?`,
@@ -182,17 +181,18 @@ const logic = ({
                 [instance, app]
               )
               .then((items) => items as { uuid: string }[]),
-          ])
-        )
-        .then(([sessions, messages, networks]) => ({
-          minutes: sessions.reduce(
-            (p, c) => differenceInMinutes(c.created_date, c.end_date) / 5 + p,
-            0
-          ),
-          messages: messages.length,
-          networks: networks.length,
-          date: format(endDate, "MMMM do, yyyy"),
-        }))
+          ]);
+          cxn.destroy();
+          return {
+            minutes: sessions.reduce(
+              (p, c) => differenceInMinutes(c.created_date, c.end_date) / 5 + p,
+              0
+            ),
+            messages: messages.length,
+            networks: networks.length,
+            date: format(endDate, "MMMM do, yyyy"),
+          };
+        })
         .catch(catchError("Failed to retrieve usage"));
     }
     case "load-message": {
@@ -237,7 +237,6 @@ const logic = ({
             `SELECT page_uuid FROM page_instance_links WHERE instance = ? AND app = ? AND notebook_page_id = ?`,
             [instance, app, notebookPageId]
           );
-          cxn.destroy();
           const [link] = results as { page_uuid: string }[];
           if (link) return { id: link.page_uuid, created: false };
           const pageUuid = v4();
@@ -247,6 +246,7 @@ const logic = ({
             VALUES (UUID(), ?, ?, ?, ?)`,
             args
           );
+          cxn.destroy();
           await uploadFile({
             Key: `data/page/${pageUuid}.json`,
             Body: JSON.stringify({ log: [], state: {} }),
@@ -297,94 +297,89 @@ const logic = ({
         .catch(catchError("Failed to join a shared page"));
     }
     case "update-shared-page": {
-      if (!log.length) {
-        return getSharedPage({ instance, notebookPageId, app })
-          .then((id) =>
-            getPageVersion(id).then((newIndex) => ({
-              newIndex,
-            }))
-          )
-          .catch(catchError("Failed to update a shared page with empty log"));
-      }
-      return getSharedPage({ instance, notebookPageId, app })
-        .then((id) => {
-          return downloadFileContent({
-            Key: `data/page/${id}.json`,
-          })
-            .then((r) => JSON.parse(r))
-            .then((data) => {
-              const updatedLog = data.log.concat(log) as Action[];
-              const state = data.state;
-              log.forEach(({ action, params }) => {
-                if (
-                  action === "createBlock" &&
-                  params.block &&
-                  params.location
-                ) {
-                  const { uid = "", ...block } = params.block;
-                  state[params.location["parent-uid"]] = {
-                    ...state[params.location["parent-uid"]],
-                    children: (
-                      state[params.location["parent-uid"]]?.children || []
-                    )?.splice(params.location.order, 0, uid),
-                  };
-                  state[uid] = block;
-                } else if (action === "updateBlock" && params.block) {
-                  const { uid = "", ...block } = params.block;
-                  state[uid] = {
-                    ...block,
-                    children: state[uid]?.children || [],
-                  };
-                } else if (action === "deleteBlock" && params.block) {
-                  delete state[params.block.uid || ""];
-                }
-              });
-              return uploadFile({
-                Key: `data/page/${id}.json`,
-                Body: JSON.stringify({ log: updatedLog, state }),
-                // Metadata: { index: updatedLog.length.toString() }, TODO
-              }).then(() => updatedLog.length);
+      const cxn = await getMysql();
+      const pageUuid = await getSharedPage({ instance, notebookPageId, app });
+      return (
+        !log.length
+          ? getPageVersion(pageUuid)
+              .then((newIndex) => ({
+                newIndex,
+              }))
+              .catch(
+                catchError("Failed to update a shared page with empty log")
+              )
+          : downloadFileContent({
+              Key: `data/page/${pageUuid}.json`,
             })
-            .then((newIndex) => {
-              return getMysql()
-                .then((cxn) =>
-                  cxn
-                    .execute(
-                      `SELECT instance, app FROM page_instance_links WHERE page_uuid = ?`,
-                      [id]
-                    )
-                    .then((r) => {
-                      return Promise.all(
-                        (r as { app: AppId; instance: string }[])
-                          .filter((item) => {
-                            return (
-                              item.instance !== instance || item.app !== app
-                            );
+              .then((r) => JSON.parse(r))
+              .then((data) => {
+                const updatedLog = data.log.concat(log) as Action[];
+                const state = data.state;
+                log.forEach(({ action, params }) => {
+                  if (
+                    action === "createBlock" &&
+                    params.block &&
+                    params.location
+                  ) {
+                    const { uid = "", ...block } = params.block;
+                    state[params.location["parent-uid"]] = {
+                      ...state[params.location["parent-uid"]],
+                      children: (
+                        state[params.location["parent-uid"]]?.children || []
+                      )?.splice(params.location.order, 0, uid),
+                    };
+                    state[uid] = block;
+                  } else if (action === "updateBlock" && params.block) {
+                    const { uid = "", ...block } = params.block;
+                    state[uid] = {
+                      ...block,
+                      children: state[uid]?.children || [],
+                    };
+                  } else if (action === "deleteBlock" && params.block) {
+                    delete state[params.block.uid || ""];
+                  }
+                });
+                return uploadFile({
+                  Key: `data/page/${pageUuid}.json`,
+                  Body: JSON.stringify({ log: updatedLog, state }),
+                  // Metadata: { index: updatedLog.length.toString() }, TODO
+                }).then(() => updatedLog.length);
+              })
+              .then((newIndex) => {
+                return cxn
+                  .execute(
+                    `SELECT instance, app FROM page_instance_links WHERE page_uuid = ?`,
+                    [pageUuid]
+                  )
+                  .then((r) => {
+                    return Promise.all(
+                      (r as { app: AppId; instance: string }[])
+                        .filter((item) => {
+                          return item.instance !== instance || item.app !== app;
+                        })
+                        .map((target) =>
+                          messageInstance({
+                            source: { app, instance },
+                            target,
+                            data: {
+                              log,
+                              notebookPageId,
+                              index: newIndex,
+                              operation: "SHARE_PAGE_UPDATE",
+                            },
                           })
-                          .map((target) =>
-                            messageInstance({
-                              source: { app, instance },
-                              target,
-                              data: {
-                                log,
-                                notebookPageId,
-                                index: newIndex,
-                                operation: "SHARE_PAGE_UPDATE",
-                              },
-                            })
-                          )
-                      );
-                    })
-                    .then(() => cxn.destroy())
-                )
-                .then(() => ({
-                  newIndex,
-                }));
-            });
-        })
-        .catch(catchError("Failed to update a shared page"));
+                        )
+                    );
+                  })
+                  .then(() => ({
+                    newIndex,
+                  }));
+              })
+              .catch(catchError("Failed to update a shared page"))
+      ).finally(() => cxn.destroy());
     }
     case "get-shared-page": {
+      const cxn = await getMysql();
       return getSharedPage({ instance, notebookPageId, app, safe: true })
         .then((pageUuid) => {
           if (!pageUuid) {
@@ -407,7 +402,8 @@ const logic = ({
               exists: true,
             }));
         })
-        .catch(catchError("Failed to get a shared page"));
+        .catch(catchError("Failed to get a shared page"))
+        .finally(() => cxn.destroy());
     }
     case "list-page-instances": {
       return getMysql()
@@ -440,7 +436,7 @@ const logic = ({
             .then(
               (r) => r as { page_uuid: string; notebook_page_id: string }[]
             );
-          return Promise.all(
+          const entries = await Promise.all(
             pages.map((p) =>
               getPageVersion(p.page_uuid).then((index) => [
                 p.notebook_page_id,
@@ -448,26 +444,26 @@ const logic = ({
               ])
             )
           );
+          cxn.destroy();
+          return entries;
         })
         .then((entries) => ({ indices: Object.fromEntries(entries) }))
         .catch(catchError("Failed to retrieve shared pages"));
     }
     case "disconnect-shared-page": {
+      const cxn = await getMysql();
       return (
         getSharedPage({ instance, notebookPageId, app })
           .then(() =>
-            getMysql().then((cxn) =>
-              cxn
-                .execute(
-                  `DELETE FROM page_instance_links WHERE instance = ? AND app = ? AND notebook_page_id = ?`,
-                  [instance, app, notebookPageId]
-                )
-                .then(() => cxn.destroy())
+            cxn.execute(
+              `DELETE FROM page_instance_links WHERE instance = ? AND app = ? AND notebook_page_id = ?`,
+              [instance, app, notebookPageId]
             )
           )
           // TODO: Let errbody know
           .then(() => ({ success: true }))
           .catch(catchError("Failed to disconnect a shared page"))
+          .finally(() => cxn.destroy())
       );
     }
     // TODO: WE MIGHT DELETE METHODS BELOW HERE
@@ -513,6 +509,7 @@ const logic = ({
           VALUES (?,?,?,?)`,
             [v4(), uuid, instance, app]
           );
+          cxn.destroy();
           return {
             success: true,
           };
@@ -525,70 +522,74 @@ const logic = ({
           `Must include a password of length greater than zero`
         );
       }
-      return getMysql().then(async (cxn) => {
-        const [network] = await cxn
-          .execute(
-            `SELECT n.uuid, n.password, n.salt FROM networks n WHERE n.name = ?`,
-            [networkName]
-          )
-          .then(
-            (res) => res as { uuid: string; password: string; salt: string }[]
-          );
-        if (!network) {
-          throw new BadRequestError(
-            `There does not exist a network called ${networkName}`
-          );
-        }
-        const [existingMembership] = await cxn
-          .execute(
-            `SELECT n.uuid FROM network_memberships n 
+      return getMysql()
+        .then(async (cxn) => {
+          const [network] = await cxn
+            .execute(
+              `SELECT n.uuid, n.password, n.salt FROM networks n WHERE n.name = ?`,
+              [networkName]
+            )
+            .then(
+              (res) => res as { uuid: string; password: string; salt: string }[]
+            );
+          if (!network) {
+            throw new BadRequestError(
+              `There does not exist a network called ${networkName}`
+            );
+          }
+          const [existingMembership] = await cxn
+            .execute(
+              `SELECT n.uuid FROM network_memberships n 
         WHERE n.networkUuid = ? AND n.instance = ? AND n.app = ?`,
-            [network.uuid, instance, app]
-          )
-          .then((res) => res as { uuid: string }[]);
-        if (existingMembership)
-          throw new BadRequestError(
-            `This graph is already a part of the network ${networkName}`
+              [network.uuid, instance, app]
+            )
+            .then((res) => res as { uuid: string }[]);
+          if (existingMembership)
+            throw new BadRequestError(
+              `This graph is already a part of the network ${networkName}`
+            );
+          const passwordHash = network.password;
+          const inputPasswordHash = enc.Base64.stringify(
+            HmacSHA512(
+              password + (network.salt || ""),
+              process.env.PASSWORD_SECRET_KEY || ""
+            )
           );
-        const passwordHash = network.password;
-        const inputPasswordHash = enc.Base64.stringify(
-          HmacSHA512(
-            password + (network.salt || ""),
-            process.env.PASSWORD_SECRET_KEY || ""
-          )
-        );
-        if (!passwordHash || inputPasswordHash !== passwordHash)
-          throw new MethodNotAllowedError(
-            `Incorrect password for network ${networkName}`
-          );
-        const existingMemberships = await cxn
-          .execute(
-            `SELECT o.id, n.instance, n.app FROM network_memberships n
+          if (!passwordHash || inputPasswordHash !== passwordHash)
+            throw new MethodNotAllowedError(
+              `Incorrect password for network ${networkName}`
+            );
+          const existingMemberships = await cxn
+            .execute(
+              `SELECT o.id, n.instance, n.app FROM network_memberships n
             INNER JOIN online_clients o ON o.instance = n.instance AND o.app = n.app
         WHERE n.networkUuid = ?`,
-            [network.uuid]
-          )
-          .then((res) => res as { id: string; instance: string; app: AppId }[]);
-        await cxn.execute(
-          `INSERT INTO network_memberships (uuid, network_uuid, instance, app)
+              [network.uuid]
+            )
+            .then(
+              (res) => res as { id: string; instance: string; app: AppId }[]
+            );
+          await cxn.execute(
+            `INSERT INTO network_memberships (uuid, network_uuid, instance, app)
           VALUES (?,?,?,?)`,
-          [v4(), network.uuid, instance, app]
-        );
-        return Promise.all(
-          existingMemberships.map(({ id: ConnectionId, ...source }) =>
-            postToConnection({
-              ConnectionId,
-              Data: {
-                operation: `INITIALIZE_P2P`,
-                to: ConnectionId,
-                source,
-              },
-            })
-          )
-        )
-          .then(() => ({ success: true }))
-          .catch(catchError("Failed to join network"));
-      });
+            [v4(), network.uuid, instance, app]
+          );
+          await Promise.all(
+            existingMemberships.map(({ id: ConnectionId, ...source }) =>
+              postToConnection({
+                ConnectionId,
+                Data: {
+                  operation: `INITIALIZE_P2P`,
+                  to: ConnectionId,
+                  source,
+                },
+              })
+            )
+          );
+          cxn.destroy();
+          return { success: true };
+        })
+        .catch(catchError("Failed to join network"));
     }
     case "list-networks": {
       return getMysql().then(async (cxn) => {
@@ -600,6 +601,7 @@ const logic = ({
             [instance, app]
           )
           .then((res) => (res as { name: string }[]).map((r) => r.name));
+        cxn.destroy();
         return { networks };
       });
     }
