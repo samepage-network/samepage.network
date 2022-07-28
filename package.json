@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@types/crypto-js": "^4.1.1",
-    "@types/ws": "^8.5.3"
+    "@types/ws": "^8.5.3",
+    "fuegojs": "^0.33.4"
   }
 }
