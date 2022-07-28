@@ -19,13 +19,12 @@
     "tailwind": "npm run generate:css -- --watch"
   },
   "dependencies": {
-    "@dvargas92495/app": "^0.9.16",
+    "@dvargas92495/app": "^0.9.17",
     "crypto-js": "^4.1.1",
     "ws": "^8.8.1"
   },
   "devDependencies": {
     "@types/crypto-js": "^4.1.1",
-    "@types/ws": "^8.5.3",
-    "fuegojs": "^0.33.4"
+    "@types/ws": "^8.5.3"
   }
 }

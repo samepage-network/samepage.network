@@ -20,6 +20,7 @@ import { HmacSHA512, enc } from "crypto-js";
 import differenceInMinutes from "date-fns/differenceInMinutes";
 import format from "date-fns/format";
 import { Action } from "~/types";
+import crypto from "crypto";
 
 const s3 = new S3({ region: "us-east-1" });
 
@@ -133,6 +134,9 @@ const logic = async ({
   password,
   localIndex,
   messageUuid,
+  request,
+  response,
+  target,
 }: {
   method: string;
   app: AppId;
@@ -144,6 +148,9 @@ const logic = async ({
   password: string;
   localIndex: number;
   messageUuid: string;
+  request: string;
+  response: Record<string, unknown>;
+  target: { instance: string; app: AppId };
 }): Promise<string | Record<string, unknown>> => {
   switch (method) {
     case "usage": {
@@ -465,6 +472,52 @@ const logic = async ({
           .catch(catchError("Failed to disconnect a shared page"))
           .finally(() => cxn.destroy())
       );
+    }
+    case "query": {
+      const [targetInstance] = request.split(":");
+      const hash = crypto.createHash("md5").update(request).digest("hex");
+      return downloadFileContent({ Key: `data/queries/${hash}.json` })
+        .then((r) => {
+          if (r)
+            return {
+              node: JSON.parse(r),
+              found: true,
+              fromCache: true,
+              ephemeral: true,
+            };
+          else return { found: false };
+        })
+        .then((body) =>
+          messageInstance({
+            source: { instance, app },
+            target: { instance: targetInstance, app: 1 },
+            data: {
+              request,
+              operation: "QUERY",
+            },
+            messageUuid: v4(),
+          }).then(() => body)
+        )
+        .catch(catchError("Failed to query across notebooks"));
+    }
+    case "query-response": {
+      const hash = crypto.createHash("md5").update(request).digest("hex");
+      await uploadFile({
+        Body: JSON.stringify(response),
+        Key: `data/queries/${hash}.json`,
+      });
+      return messageInstance({
+        target,
+        source: { instance, app },
+        data: {
+          method: `QUERY_RESPONSE`,
+          ephemeral: true,
+          ...response,
+        },
+        messageUuid: v4(),
+      })
+        .then(() => ({}))
+        .catch(catchError("Failed to respond to query"));
     }
     // TODO: WE MIGHT DELETE METHODS BELOW HERE
     case "create-network": {
