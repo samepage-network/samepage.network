@@ -15,6 +15,7 @@ env:
   DATABASE_URL: mysql://samepage_network:${{ secrets.MYSQL_PASSWORD }}@vargas-arts.c2sjnb5f4d57.us-east-1.rds.amazonaws.com:5432/samepage_network
   IS_PRODUCTION: 1
   STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+  TERRAFORM_CLOUD_TOKEN: ${{ secrets.TERRAFORM_CLOUD_TOKEN }}
 
 jobs:
   deploy:
