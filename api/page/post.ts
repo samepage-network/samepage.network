@@ -1,8 +1,6 @@
 import createAPIGatewayProxyHandler from "aws-sdk-plus/dist/createAPIGatewayProxyHandler";
 import { AppId } from "~/enums/apps";
 import {
-  BadRequestError,
-  MethodNotAllowedError,
   ConflictError,
   NotFoundError,
 } from "aws-sdk-plus/dist/errors";
@@ -16,7 +14,6 @@ import postToConnection, {
   removeLocalSocket,
 } from "~/data/postToConnection.server";
 import endClient from "~/data/endClient.server";
-import { HmacSHA512, enc } from "crypto-js";
 import differenceInMinutes from "date-fns/differenceInMinutes";
 import format from "date-fns/format";
 import { Action } from "~/types";
@@ -130,8 +127,6 @@ const logic = async ({
   pageUuid,
   notebookPageId,
   log,
-  networkName,
-  password,
   localIndex,
   messageUuid,
   request,
@@ -144,8 +139,6 @@ const logic = async ({
   pageUuid: string;
   notebookPageId: string;
   log: Action[];
-  networkName: string;
-  password: string;
   localIndex: number;
   messageUuid: string;
   request: string;
@@ -166,7 +159,7 @@ const logic = async ({
 
       return getMysql()
         .then(async (cxn) => {
-          const [sessions, messages, networks] = await Promise.all([
+          const [sessions, messages] = await Promise.all([
             cxn
               .execute(
                 `SELECT id, created_date, end_date FROM client_sessions WHERE instance = ? AND app = ? AND created_date > ?`,
@@ -182,12 +175,6 @@ const logic = async ({
                 [instance, app, startDate]
               )
               .then((items) => items as { uuid: string }[]),
-            cxn
-              .execute(
-                `SELECT uuid FROM network_memberships WHERE instance = ? AND app = ?`,
-                [instance, app]
-              )
-              .then((items) => items as { uuid: string }[]),
           ]);
           cxn.destroy();
           return {
@@ -196,7 +183,6 @@ const logic = async ({
               0
             ),
             messages: messages.length,
-            networks: networks.length,
             date: format(endDate, "MMMM do, yyyy"),
           };
         })
@@ -519,183 +505,6 @@ const logic = async ({
         .then(() => ({}))
         .catch(catchError("Failed to respond to query"));
     }
-    // TODO: WE MIGHT DELETE METHODS BELOW HERE
-    case "create-network": {
-      if (!password) {
-        throw new BadRequestError(
-          `Must include a password of length greater than zero`
-        );
-      }
-      return getMysql()
-        .then(async (cxn) => {
-          const existingRooms = await cxn
-            .execute(`SELECT n.uuid FROM networks n WHERE n.name = ?`, [
-              networkName,
-            ])
-            .then((res) => res as { uuid: string }[]);
-          if (existingRooms.length) {
-            throw new BadRequestError(
-              `A network already exists by the name of ${name}`
-            );
-          }
-          const salt = v4();
-          const now = new Date();
-          const uuid = v4();
-          await cxn.execute(
-            `INSERT INTO networks (id, name, password, created_date, salt)
-          VALUES (?,?,?,?,?)`,
-            [
-              uuid,
-              networkName,
-              enc.Base64.stringify(
-                HmacSHA512(
-                  password + salt,
-                  process.env.PASSWORD_SECRET_KEY || ""
-                )
-              ),
-              now,
-              salt,
-            ]
-          );
-          await cxn.execute(
-            `INSERT INTO network_memberships (uuid, network_uuid, instance, app)
-          VALUES (?,?,?,?)`,
-            [v4(), uuid, instance, app]
-          );
-          cxn.destroy();
-          return {
-            success: true,
-          };
-        })
-        .catch(catchError("Failed to create network"));
-    }
-    case "join-network": {
-      if (!password) {
-        throw new BadRequestError(
-          `Must include a password of length greater than zero`
-        );
-      }
-      return getMysql()
-        .then(async (cxn) => {
-          const [network] = await cxn
-            .execute(
-              `SELECT n.uuid, n.password, n.salt FROM networks n WHERE n.name = ?`,
-              [networkName]
-            )
-            .then(
-              (res) => res as { uuid: string; password: string; salt: string }[]
-            );
-          if (!network) {
-            throw new BadRequestError(
-              `There does not exist a network called ${networkName}`
-            );
-          }
-          const [existingMembership] = await cxn
-            .execute(
-              `SELECT n.uuid FROM network_memberships n 
-        WHERE n.networkUuid = ? AND n.instance = ? AND n.app = ?`,
-              [network.uuid, instance, app]
-            )
-            .then((res) => res as { uuid: string }[]);
-          if (existingMembership)
-            throw new BadRequestError(
-              `This graph is already a part of the network ${networkName}`
-            );
-          const passwordHash = network.password;
-          const inputPasswordHash = enc.Base64.stringify(
-            HmacSHA512(
-              password + (network.salt || ""),
-              process.env.PASSWORD_SECRET_KEY || ""
-            )
-          );
-          if (!passwordHash || inputPasswordHash !== passwordHash)
-            throw new MethodNotAllowedError(
-              `Incorrect password for network ${networkName}`
-            );
-          const existingMemberships = await cxn
-            .execute(
-              `SELECT o.id, n.instance, n.app FROM network_memberships n
-            INNER JOIN online_clients o ON o.instance = n.instance AND o.app = n.app
-        WHERE n.networkUuid = ?`,
-              [network.uuid]
-            )
-            .then(
-              (res) => res as { id: string; instance: string; app: AppId }[]
-            );
-          await cxn.execute(
-            `INSERT INTO network_memberships (uuid, network_uuid, instance, app)
-          VALUES (?,?,?,?)`,
-            [v4(), network.uuid, instance, app]
-          );
-          await Promise.all(
-            existingMemberships.map(({ id: ConnectionId, ...source }) =>
-              postToConnection({
-                ConnectionId,
-                Data: {
-                  operation: `INITIALIZE_P2P`,
-                  to: ConnectionId,
-                  source,
-                },
-              })
-            )
-          );
-          cxn.destroy();
-          return { success: true };
-        })
-        .catch(catchError("Failed to join network"));
-    }
-    case "list-networks": {
-      return getMysql().then(async (cxn) => {
-        const networks = await cxn
-          .execute(
-            `SELECT n.name FROM networks n
-          INNER JOIN network_memberships nm ON n.uuid = nm.network_uuid 
-          WHERE nm.instance = ? AND nm.app = ?`,
-            [instance, app]
-          )
-          .then((res) => (res as { name: string }[]).map((r) => r.name));
-        cxn.destroy();
-        return { networks };
-      });
-    }
-    case "leave-network": {
-      return getMysql()
-        .then(async (cxn) => {
-          await cxn.execute(
-            `DELETE nm FROM network_memberships nm 
-           INNER JOIN networks n ON n.uuid = nm.network_uuid 
-           WHERE n.name = ? AND nm.instance = ? AND nm.app = ?`,
-            [networkName, instance, app]
-          );
-          const others = await cxn
-            .execute(
-              `SELECT nm.instance, nm.app FROM network_memberships nm
-          INNER JOIN networks n ON n.uuid = nm.network_uuid 
-          WHERE n.name = ?`,
-              [networkName]
-            )
-            .then((res) => res as { instance: string; app: AppId }[]);
-          if (others.length) {
-            await Promise.all([
-              others.map((target) =>
-                messageInstance({
-                  source: { instance, app },
-                  target,
-                  data: { operation: "LEAVE_NETWORK" },
-                })
-              ),
-            ]);
-          } else {
-            await cxn.execute(`DELETE FROM networks WHERE name = ?`, [
-              networkName,
-            ]);
-          }
-          cxn.destroy();
-          return { success: true };
-        })
-        .catch(catchError("Failed to leave network"));
-    }
-    // END-TODO
     default:
       throw new NotFoundError(`Unknown method: ${method}`);
   }
