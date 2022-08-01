@@ -25,7 +25,7 @@
     },
     {
       "name": "aws-websocket",
-      "source": "dvargas92495/email/aws",
+      "source": "dvargas92495/websocket/aws",
       "version": "1.1.2"
     }
   ],
