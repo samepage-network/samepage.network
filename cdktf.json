@@ -3,7 +3,10 @@
   "app": "npx esbuild ./node_modules/.gen/modules/aws-serverless-backend.ts ./node_modules/.gen/modules/aws-email.ts ./node_modules/.gen/modules/aws-clerk.ts ./node_modules/.gen/modules/aws-websocket.ts --platform=node --format=cjs --outdir=./node_modules/.gen/modules && npx ts-node-esm data/main.ts",
   "projectId": "app",
   "sendCrashReports": "false",
-  "terraformProviders": ["aws", "github"],
+  "terraformProviders": [
+    "aws@= 4.23.0",
+    "github@= 4.26.0"
+  ],
   "terraformModules": [
     {
       "name": "aws-serverless-backend",
