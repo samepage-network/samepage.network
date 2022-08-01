@@ -9,21 +9,6 @@ const pageInstanceLink = z.object({
   app: z.number().max(Math.pow(2, 8)).describe("unique"),
 });
 
-const network = z.object({
-  uuid: z.string().uuid().describe("primary"),
-  name: z.string().describe("unique"),
-  password: z.string(),
-  salt: z.string(),
-  created_date: z.date(),
-});
-
-const networkMembership = z.object({
-  uuid: z.string().uuid().describe("primary"),
-  networkUuid: z.string().uuid().describe("unique"),
-  instance: z.string().describe("unique"),
-  app: z.number().max(Math.pow(2, 8)).describe("unique"),
-});
-
 export const onlineClient = z.object({
   id: z.string().describe("primary"),
   instance: z.string().describe("unique"),
@@ -52,8 +37,6 @@ const message = z.object({
 
 const schema = {
   pageInstanceLink,
-  network,
-  networkMembership,
   onlineClient,
   clientSession,
   message,
