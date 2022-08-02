@@ -35,11 +35,18 @@ const message = z.object({
   marked: z.boolean(),
 });
 
+const ongoingMessage = z.object({
+  uuid: z.string().uuid().describe("primary"),
+  chunk: z.number().describe("unique"),
+  messageUuid: z.string().uuid().describe("unique"),
+});
+
 const schema = {
   pageInstanceLink,
   onlineClient,
   clientSession,
   message,
+  ongoingMessage,
 };
 
 base({
@@ -47,8 +54,5 @@ base({
   safeProjectName: "samepage-network",
   emailDomain: "samepage.network",
   schema,
-  variables: [
-    "convertkit_api_key",
-    "password_secret_key"
-  ]
+  variables: ["convertkit_api_key", "password_secret_key"],
 });
