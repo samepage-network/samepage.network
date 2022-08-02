@@ -3,14 +3,15 @@ import axios from "axios";
 import { bundleMDX } from "mdx-bundler";
 
 const loadMarkdownFile = async ({ path }: { path: string }) => {
+  const fileName = path || "index";
   const source =
     process.env.NODE_ENV === "development"
-      ? fs.existsSync(`./docs/${path || "index"}.md`)
-        ? fs.readFileSync(`./docs/${path || "index"}.md`).toString()
+      ? fs.existsSync(`./docs/${fileName}.md`)
+        ? fs.readFileSync(`./docs/${fileName}.md`).toString()
         : undefined
       : await axios
           .get(
-            `https://raw.githubusercontent.com/dvargas92495/samepage.network/main/docs/${path}.md`,
+            `https://raw.githubusercontent.com/dvargas92495/samepage.network/main/docs/${fileName}.md`,
             { responseType: "document" }
           )
           .then((r) => r.data as string)
