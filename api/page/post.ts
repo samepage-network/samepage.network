@@ -100,7 +100,7 @@ const messageInstance = ({
     ).then((all) => !!all.length && all.every((i) => i));
     if (!online) {
       await cxn.execute(
-        `INSERT INTO messages (uuid, source_instance, source_app, target_instance, target_app, created_date, read)
+        `INSERT INTO messages (uuid, source_instance, source_app, target_instance, target_app, created_date, marked)
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           messageUuid,
@@ -198,7 +198,7 @@ const logic = async ({
         }),
         getMysql().then((cxn) => {
           return cxn
-            .execute(`UPDATE messages SET read = ? WHERE uuid = ?`, [
+            .execute(`UPDATE messages SET marked = ? WHERE uuid = ?`, [
               1,
               messageUuid,
             ])

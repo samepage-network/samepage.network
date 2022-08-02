@@ -32,7 +32,7 @@ const message = z.object({
   targetInstance: z.string(),
   targetApp: z.number().max(Math.pow(2, 8)),
   createdDate: z.date(),
-  read: z.boolean(),
+  marked: z.boolean(),
 });
 
 const schema = {
