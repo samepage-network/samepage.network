@@ -53,6 +53,7 @@ base({
   projectName: "samepage.network",
   safeProjectName: "samepage-network",
   emailDomain: "samepage.network",
+  clerkDnsId: "l7zkq208u6ys",
   schema,
   variables: ["convertkit_api_key", "password_secret_key"],
 });

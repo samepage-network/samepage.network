@@ -105,7 +105,7 @@ const logic = async ({
               ),
             cxn
               .execute(
-                `SELECT uuid FROM messages WHERE source_instance = ? AND source_app = ? AND date > ?`,
+                `SELECT uuid FROM messages WHERE source_instance = ? AND source_app = ? AND created_date > ?`,
                 [instance, app, startDate]
               )
               .then((items) => items as { uuid: string }[]),

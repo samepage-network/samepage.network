@@ -12,12 +12,12 @@ const endClient = (id: string, reason: string): Promise<void> => {
       await Promise.all([
         cxn.execute(`DELETE FROM online_clients WHERE id = ?`, [source.id]),
         cxn.execute(
-          `INSERT INTO client_sessions (id, instance, client, created_date, end_date, disconnected_by)
+          `INSERT INTO client_sessions (id, instance, app, created_date, end_date, disconnected_by)
             VALUES (?,?,?,?,?,?)`,
           [
             source.id,
             source.instance,
-            source.client,
+            source.app,
             source.created_date,
             now,
             reason,

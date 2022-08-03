@@ -17,10 +17,10 @@
     "start": "concurrently \"npm:api\" \"npm:dev\" \"npm:tailwind\" \"npm:ws\"",
     "ssh": "ssh -i SamePage.pem ubuntu@35.173.242.123",
     "tailwind": "npm run generate:css -- --watch",
-    "ws": "ts-node --project tsconfig.json scripts/ws.ts"
+    "ws": "ts-node --project tsconfig.json -r tsconfig-paths/register scripts/ws.ts"
   },
   "dependencies": {
-    "@dvargas92495/app": "^0.9.29",
+    "@dvargas92495/app": "^0.9.30",
     "mdx-bundler": "^9.0.1",
     "ws": "^8.8.1"
   },
