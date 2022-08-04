@@ -77,8 +77,8 @@ const dataHandler = async (
       ])
       .then((a) => a as { app: AppId; instance: string }[]);
     return messageNotebook({
-      source,
-      target: { app, instance },
+      source: { app, workspace: source.instance },
+      target: { app, workspace: instance },
       data: {
         operation: proxyOperation,
         ...proxyData,

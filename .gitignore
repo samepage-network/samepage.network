@@ -6,3 +6,4 @@ out
 .cache
 /app/tailwind.css
 SamePage.pem
+/public/data

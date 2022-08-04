@@ -1,15 +1,15 @@
 import base from "fuegojs/dist/base";
 import { z } from "zod";
 
-const pageInstanceLink = z.object({
+const pageNotebookLink = z.object({
   uuid: z.string().uuid().describe("primary"),
   pageUuid: z.string().uuid(),
   notebookPageId: z.string().describe("unique"),
-  instance: z.string().describe("unique"),
+  workspace: z.string().describe("unique"),
   app: z.number().max(Math.pow(2, 8)).describe("unique"),
 });
 
-export const onlineClient = z.object({
+const onlineClient = z.object({
   id: z.string().describe("primary"),
   instance: z.string().describe("unique"),
   app: z.number().max(Math.pow(2, 8)).describe("unique"),
@@ -41,8 +41,8 @@ const ongoingMessage = z.object({
   messageUuid: z.string().uuid().describe("unique"),
 });
 
-const schema = {
-  pageInstanceLink,
+export const schema = {
+  pageNotebookLink,
   onlineClient,
   clientSession,
   message,

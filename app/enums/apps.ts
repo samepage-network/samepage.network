@@ -6,4 +6,6 @@ const APPS = [
 
 export type AppId = typeof APPS[number]["id"];
 
+export const appNameById = Object.fromEntries(APPS.map(a => [a.id, a.name]));
+
 export default APPS;

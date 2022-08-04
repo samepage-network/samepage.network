@@ -1,9 +1,6 @@
 import createAPIGatewayProxyHandler from "aws-sdk-plus/dist/createAPIGatewayProxyHandler";
 import { AppId } from "~/enums/apps";
-import {
-  ConflictError,
-  NotFoundError,
-} from "aws-sdk-plus/dist/errors";
+import { ConflictError, NotFoundError } from "aws-sdk-plus/dist/errors";
 import catchError from "~/data/catchError.server";
 import getMysql from "@dvargas92495/app/backend/mysql.server";
 import { downloadFileContent } from "@dvargas92495/app/backend/downloadFile.server";
@@ -13,33 +10,31 @@ import { v4 } from "uuid";
 import messageNotebook from "~/data/messageNotebook.server";
 import differenceInMinutes from "date-fns/differenceInMinutes";
 import format from "date-fns/format";
-import { Action } from "~/types";
+import { Action, Notebook } from "~/types";
 import crypto from "crypto";
 
 const s3 = new S3({ region: "us-east-1" });
 
 const getSharedPage = ({
-  instance,
+  workspace,
   notebookPageId,
   app,
   safe,
 }: {
-  instance: string;
   notebookPageId: string;
-  app: AppId;
   safe?: boolean;
-}) =>
+} & Notebook) =>
   getMysql().then((cxn) =>
     cxn
       .execute(
-        `SELECT page_uuid FROM page_instance_links WHERE instance = ? AND app = ? AND notebook_page_id = ?`,
-        [instance, app, notebookPageId]
+        `SELECT page_uuid FROM page_notebook_links WHERE workspace = ? AND app = ? AND notebook_page_id = ?`,
+        [workspace, app, notebookPageId]
       )
       .then((results) => {
         const [link] = results as { page_uuid: string }[];
         if (!link && !safe)
           throw new NotFoundError(
-            `Could not find page from app ${app}, instance ${instance}, and notebookPageId ${notebookPageId}`
+            `Could not find page from app ${app}, workspace ${workspace}, and notebookPageId ${notebookPageId}`
           );
         else if (safe) return "";
         return link.page_uuid;
@@ -54,32 +49,57 @@ const getPageVersion = (pageUuid: string) =>
     })
     .then((r) => Number(r.Metadata?.index) || 0);
 
-const logic = async ({
-  method,
-  app,
-  instance,
-  pageUuid,
-  notebookPageId,
-  log,
-  localIndex,
-  messageUuid,
-  request,
-  response,
-  target,
-}: {
-  method: string;
-  app: AppId;
-  instance: string;
-  pageUuid: string;
-  notebookPageId: string;
-  log: Action[];
-  localIndex: number;
-  messageUuid: string;
-  request: string;
-  response: Record<string, unknown>;
-  target: { instance: string; app: AppId };
-}): Promise<string | Record<string, unknown>> => {
-  switch (method) {
+type Method = Notebook &
+  (
+    | { method: "usage" }
+    | {
+        method: "load-message";
+        messageUuid: string;
+      }
+    | {
+        method: "init-shared-page";
+        notebookPageId: string;
+      }
+    | {
+        method: "join-shared-page";
+        pageUuid: string;
+        notebookPageId: string;
+      }
+    | {
+        method: "update-shared-page";
+        notebookPageId: string;
+        log: Action[];
+      }
+    | {
+        method: "get-shared-page";
+        notebookPageId: string;
+        localIndex?: number;
+      }
+    | {
+        method: "list-page-notebooks";
+        notebookPageId: string;
+      }
+    | {
+        method: "list-shared-pages";
+      }
+    | {
+        method: "disconnect-shared-page";
+        notebookPageId: string;
+      }
+    | { method: "query"; request: string }
+    | {
+        method: "query-response";
+        response: string;
+        request: string;
+        target: Notebook;
+      }
+  );
+
+const logic = async (
+  req: Method
+): Promise<string | Record<string, unknown>> => {
+  const { app, workspace, ...args } = req;
+  switch (args.method) {
     case "usage": {
       const currentDate = new Date();
       const currentMonth = currentDate.getMonth();
@@ -97,7 +117,7 @@ const logic = async ({
             cxn
               .execute(
                 `SELECT id, created_date, end_date FROM client_sessions WHERE instance = ? AND app = ? AND created_date > ?`,
-                [instance, app, startDate]
+                [workspace, app, startDate]
               )
               .then(
                 (items) =>
@@ -106,7 +126,7 @@ const logic = async ({
             cxn
               .execute(
                 `SELECT uuid FROM messages WHERE source_instance = ? AND source_app = ? AND created_date > ?`,
-                [instance, app, startDate]
+                [workspace, app, startDate]
               )
               .then((items) => items as { uuid: string }[]),
           ]);
@@ -123,6 +143,7 @@ const logic = async ({
         .catch(catchError("Failed to retrieve usage"));
     }
     case "load-message": {
+      const { messageUuid } = args;
       return Promise.all([
         downloadFileContent({
           Key: `data/messages/${messageUuid}.json`,
@@ -158,18 +179,19 @@ const logic = async ({
         .catch(catchError("Failed to load a message"));
     }
     case "init-shared-page": {
+      const { notebookPageId } = args;
       return getMysql()
         .then(async (cxn) => {
           const results = await cxn.execute(
-            `SELECT page_uuid FROM page_instance_links WHERE instance = ? AND app = ? AND notebook_page_id = ?`,
-            [instance, app, notebookPageId]
+            `SELECT page_uuid FROM page_notebook_links WHERE workspace = ? AND app = ? AND notebook_page_id = ?`,
+            [workspace, app, notebookPageId]
           );
           const [link] = results as { page_uuid: string }[];
           if (link) return { id: link.page_uuid, created: false };
           const pageUuid = v4();
-          const args = [pageUuid, notebookPageId, instance, app];
+          const args = [pageUuid, notebookPageId, workspace, app];
           await cxn.execute(
-            `INSERT INTO page_instance_links (uuid, page_uuid, notebook_page_id, instance, app)
+            `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, workspace, app)
             VALUES (UUID(), ?, ?, ?, ?)`,
             args
           );
@@ -185,6 +207,7 @@ const logic = async ({
         .catch(catchError("Failed to init a shared page"));
     }
     case "join-shared-page": {
+      const { pageUuid, notebookPageId } = args;
       return downloadFileContent({
         Key: `data/page/${pageUuid}.json`,
       })
@@ -199,10 +222,10 @@ const logic = async ({
         )
         .then((r) => {
           return getMysql().then((cxn) => {
-            const args = [pageUuid, notebookPageId, instance, app];
+            const args = [pageUuid, notebookPageId, workspace, app];
             return cxn
               .execute(
-                `INSERT INTO page_instance_links (uuid, page_uuid, notebook_page_id, instance, app)
+                `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, workspace, app)
             VALUES (UUID(), ?, ?, ?, ?)`,
                 args
               )
@@ -224,8 +247,9 @@ const logic = async ({
         .catch(catchError("Failed to join a shared page"));
     }
     case "update-shared-page": {
+      const { notebookPageId, log } = args;
       const cxn = await getMysql();
-      const pageUuid = await getSharedPage({ instance, notebookPageId, app });
+      const pageUuid = await getSharedPage({ workspace, notebookPageId, app });
       return (
         !log.length
           ? getPageVersion(pageUuid)
@@ -275,18 +299,20 @@ const logic = async ({
               .then((newIndex) => {
                 return cxn
                   .execute(
-                    `SELECT instance, app FROM page_instance_links WHERE page_uuid = ?`,
+                    `SELECT workspace, app FROM page_notebook_links WHERE page_uuid = ?`,
                     [pageUuid]
                   )
                   .then((r) => {
                     return Promise.all(
-                      (r as { app: AppId; instance: string }[])
+                      (r as { app: AppId; workspace: string }[])
                         .filter((item) => {
-                          return item.instance !== instance || item.app !== app;
+                          return (
+                            item.workspace !== workspace || item.app !== app
+                          );
                         })
                         .map((target) =>
                           messageNotebook({
-                            source: { app, instance },
+                            source: { app, workspace },
                             target,
                             data: {
                               log,
@@ -306,8 +332,9 @@ const logic = async ({
       ).finally(() => cxn.destroy());
     }
     case "get-shared-page": {
+      const { notebookPageId, localIndex } = args;
       const cxn = await getMysql();
-      return getSharedPage({ instance, notebookPageId, app, safe: true })
+      return getSharedPage({ workspace, notebookPageId, app, safe: true })
         .then((pageUuid) => {
           if (!pageUuid) {
             return { exists: false, log: [] };
@@ -332,33 +359,34 @@ const logic = async ({
         .catch(catchError("Failed to get a shared page"))
         .finally(() => cxn.destroy());
     }
-    case "list-page-instances": {
+    case "list-page-notebooks": {
+      const { notebookPageId } = args;
       return getMysql()
         .then(async (cxn) => {
           const pageUuid = await getSharedPage({
-            instance,
+            workspace,
             notebookPageId,
             app,
           });
           const notebooks = await cxn
             .execute(
-              `SELECT app, instance FROM page_instance_links WHERE page_uuid = ?`,
+              `SELECT app, workspace FROM page_notebook_links WHERE page_uuid = ?`,
               [pageUuid]
             )
-            .then((res) => res as { app: string; instance: string }[]);
+            .then((res) => res as Notebook[]);
           cxn.destroy();
           return { notebooks };
         })
-        .catch(catchError("Failed to retrieve page instances"));
+        .catch(catchError("Failed to retrieve page notebooks"));
     }
     case "list-shared-pages": {
       return getMysql()
         .then(async (cxn) => {
           const pages = await cxn
             .execute(
-              `SELECT page_uuid, notebook_page_id FROM page_instance_links
-          WHERE instance = ? AND app = ?`,
-              [instance, app]
+              `SELECT page_uuid, notebook_page_id FROM page_notebook_links
+          WHERE workspace = ? AND app = ?`,
+              [workspace, app]
             )
             .then(
               (r) => r as { page_uuid: string; notebook_page_id: string }[]
@@ -378,13 +406,14 @@ const logic = async ({
         .catch(catchError("Failed to retrieve shared pages"));
     }
     case "disconnect-shared-page": {
+      const { notebookPageId } = args;
       const cxn = await getMysql();
       return (
-        getSharedPage({ instance, notebookPageId, app })
+        getSharedPage({ workspace, notebookPageId, app })
           .then(() =>
             cxn.execute(
-              `DELETE FROM page_instance_links WHERE instance = ? AND app = ? AND notebook_page_id = ?`,
-              [instance, app, notebookPageId]
+              `DELETE FROM page_notebook_links WHERE workspace = ? AND app = ? AND notebook_page_id = ?`,
+              [workspace, app, notebookPageId]
             )
           )
           // TODO: Let errbody know
@@ -394,6 +423,7 @@ const logic = async ({
       );
     }
     case "query": {
+      const { request } = args;
       const [targetInstance] = request.split(":");
       const hash = crypto.createHash("md5").update(request).digest("hex");
       return downloadFileContent({ Key: `data/queries/${hash}.json` })
@@ -409,8 +439,8 @@ const logic = async ({
         })
         .then((body) =>
           messageNotebook({
-            source: { instance, app },
-            target: { instance: targetInstance, app: 1 },
+            source: { workspace, app },
+            target: { workspace: targetInstance, app: 1 },
             data: {
               request,
               operation: "QUERY",
@@ -421,6 +451,7 @@ const logic = async ({
         .catch(catchError("Failed to query across notebooks"));
     }
     case "query-response": {
+      const { request, response, target } = args;
       const hash = crypto.createHash("md5").update(request).digest("hex");
       await uploadFile({
         Body: JSON.stringify(response),
@@ -428,20 +459,23 @@ const logic = async ({
       });
       return messageNotebook({
         target,
-        source: { instance, app },
+        source: { workspace, app },
         data: {
-          method: `QUERY_RESPONSE`,
+          operation: `QUERY_RESPONSE`,
           ephemeral: true,
-          ...response,
+          ...JSON.parse(response),
         },
         messageUuid: v4(),
       })
-        .then(() => ({}))
+        .then(() => ({ success: true }))
         .catch(catchError("Failed to respond to query"));
     }
     default:
-      throw new NotFoundError(`Unknown method: ${method}`);
+      throw new NotFoundError(`Unknown method: ${JSON.stringify(args)}`);
   }
 };
 
-export const handler = createAPIGatewayProxyHandler(logic);
+export const handler = createAPIGatewayProxyHandler({
+  logic,
+  allowedOrigins: ["https://roamresearch.com"],
+});

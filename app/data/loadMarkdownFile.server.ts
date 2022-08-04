@@ -15,15 +15,27 @@ const loadMarkdownFile = async ({ path }: { path: string }) => {
             { responseType: "document" }
           )
           .then((r) => r.data as string)
-          .catch(undefined);
+          .catch(() => "");
   return source
-    ? bundleMDX({ source })
+    ? {
+        ...(await bundleMDX({ source }).catch((e) => ({
+          code: "",
+          frontmatter: {
+            title: "Failed to compile Markdown file",
+            description: `Error: ${e.messafe}`,
+          },
+        }))),
+        fileName,
+        success: true,
+      }
     : {
         code: "",
         frontmatter: {
           title: "Page Not Found!",
           description: "Return to home",
         },
+        fileName,
+        success: false,
       };
 };
 

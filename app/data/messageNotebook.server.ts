@@ -1,9 +1,9 @@
 import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
-import { AppId } from "~/enums/apps";
 import endClient from "./endClient.server";
 import postToConnection, { removeLocalSocket } from "./postToConnection.server";
 import { v4 } from "uuid";
 import getMysql from "@dvargas92495/app/backend/mysql.server";
+import { Notebook } from "~/types";
 
 const messageNotebook = ({
   source,
@@ -11,15 +11,15 @@ const messageNotebook = ({
   data,
   messageUuid = v4(),
 }: {
-  source: { instance: string; app: AppId };
-  target: { instance: string; app: AppId };
+  source: Notebook;
+  target: Notebook;
   messageUuid?: string;
   data: Record<string, unknown>;
 }) => {
   return getMysql().then(async (cxn) => {
     const ids = await cxn
       .execute(`SELECT id FROM online_clients WHERE instance = ? AND app = ?`, [
-        target.instance,
+        target.workspace,
         target.app,
       ])
       .then((res) => (res as { id: string }[]).map(({ id }) => id));
@@ -52,9 +52,9 @@ const messageNotebook = ({
           VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           messageUuid,
-          source.instance,
+          source.workspace,
           source.app,
-          target.instance,
+          target.workspace,
           target.app,
           new Date(),
           0,

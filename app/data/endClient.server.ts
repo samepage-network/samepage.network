@@ -1,12 +1,12 @@
 import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
 import { z } from "zod";
-import { onlineClient } from "../../data/main";
+import { schema } from "../../data/main";
 
 const endClient = (id: string, reason: string): Promise<void> => {
   return getMysqlConnection().then(async (cxn) => {
     const [source] = await cxn
       .execute(`SELECT * FROM online_clients WHERE id = ?`, [id])
-      .then((res) => res as z.infer<typeof onlineClient>[]);
+      .then((res) => res as z.infer<typeof schema.onlineClient>[]);
     if (source) {
       const now = new Date();
       await Promise.all([

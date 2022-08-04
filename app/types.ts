@@ -1,4 +1,5 @@
 import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import type { AppId } from "./enums/apps";
 
 export type WSEvent = Pick<APIGatewayProxyEvent, "body"> & {
   requestContext: Pick<APIGatewayProxyEvent["requestContext"], "connectionId">;
@@ -32,3 +33,5 @@ export type Action = {
   action: "createBlock" | "updateBlock" | "deleteBlock";
   params: ActionParams;
 };
+
+export type Notebook = { workspace: string; app: AppId };
