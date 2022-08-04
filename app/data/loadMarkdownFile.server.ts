@@ -22,7 +22,7 @@ const loadMarkdownFile = async ({ path }: { path: string }) => {
           code: "",
           frontmatter: {
             title: "Failed to compile Markdown file",
-            description: `Error: ${e.messafe}`,
+            description: `Error: ${e.message}`,
           },
         }))),
         fileName,
