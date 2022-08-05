@@ -26,12 +26,12 @@ const dataHandler = async (
   const clientId = event.requestContext?.connectionId || "";
   console.log("received operation", operation, "from client", clientId);
   if (operation === "AUTHENTICATION") {
-    const { app, instance } = props as { app: AppId; instance: string };
+    const { app, workspace } = props as { app: AppId; workspace: string };
     const cxn = await getMysqlConnection();
     const [_, messages] = await Promise.all([
       cxn.execute(
         `UPDATE online_clients SET app = ?, instance = ? WHERE id = ?`,
-        [app, instance, clientId]
+        [app, workspace, clientId]
       ),
       cxn
         .execute(`SELECT uuid FROM messages WHERE marked = 0`, [])

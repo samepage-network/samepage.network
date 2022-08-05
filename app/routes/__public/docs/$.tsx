@@ -4,14 +4,16 @@ import type { LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import loadMarkdownFile from "~/data/loadMarkdownFile.server";
 import { useMemo } from "react";
-import { getMDXComponent } from "mdx-bundler/client";
+// import { getMDXComponent } from "mdx-bundler/client";
+import Markdown from "markdown-to-jsx";
 import React from "react";
 
 const DocsPage = (): React.ReactElement => {
   const { code, frontmatter, fileName, success } =
     useLoaderData<Awaited<ReturnType<typeof loadMarkdownFile>>>();
   const Component = useMemo(
-    () => (code ? getMDXComponent(code) : React.Fragment),
+    // () => (code ? getMDXComponent(code) : React.Fragment),
+    () => () => <Markdown>{code}</Markdown>,
     [code]
   );
   return (
