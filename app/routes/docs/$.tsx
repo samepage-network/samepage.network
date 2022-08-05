@@ -29,13 +29,20 @@ const DocsPage = (): React.ReactElement => {
     [code]
   );
   return (
-    <div>
+    <div className="flex h-full">
       <div>
-        <h1 className="font-bold text-5xl mb-8">{frontmatter.title}</h1>
-        <p className="font-semibold text-lg mb-4">{frontmatter.description}</p>
+        <div>
+          <h1 className="font-bold text-5xl mb-8">{frontmatter.title}</h1>
+          <p className="font-semibold text-lg mb-4">
+            {frontmatter.description}
+          </p>
+        </div>
+        <div>
+          <Component />
+        </div>
       </div>
-      <div>
-        <Component />
+      <div className="pl-6 pr-8 max-w-xs h-full w-full">
+
       </div>
     </div>
   );

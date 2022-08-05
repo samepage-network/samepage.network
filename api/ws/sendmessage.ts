@@ -37,7 +37,7 @@ const dataHandler = async (
         .execute(`SELECT uuid FROM messages WHERE marked = 0`, [])
         .then((r) => (r as { uuid: string }[]).map((s) => s.uuid)),
     ]);
-    return postToConnection({
+    await postToConnection({
       ConnectionId: clientId,
       Data: {
         operation: "AUTHENTICATION",
@@ -45,6 +45,7 @@ const dataHandler = async (
         messages,
       },
     });
+    cxn.destroy();
   } else if (operation === "OFFER") {
     const { to, offer } = props as { to: string; offer: string };
     return postToConnection({

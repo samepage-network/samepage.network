@@ -10,7 +10,7 @@ const DocsPage = () => {
   return (
     <div className="flex h-full">
       <div className="w-full max-w-xs border-r border-r-gray-200 flex flex-col h-full overflow-auto">
-        <Link to={"/"} className={"w-full p-4 cursor-pointer"}>
+        <Link to={"/"} className={"w-full p-4 pr-24 cursor-pointer"}>
           <img className={"w-full"} src={"/images/full_logo.png"} />
         </Link>
         {directory.map((d) => (

@@ -1,28 +1,32 @@
 import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
-import { schema } from "data/main";
-import { z } from "zod";
-import { appNameById } from "~/enums/apps";
+import { AppId, appNameById } from "~/enums/apps";
 
 const listPageNotebookLinks = async () => {
   const cxn = await getMysqlConnection();
   const results = await cxn
-    .execute("SELECT * FROM online_clients")
-    .then((r) => r as z.infer<typeof schema.pageNotebookLink>[]);
+    .execute("SELECT * FROM page_notebook_links")
+    .then((r) => r as {
+      page_uuid: string;
+      app: AppId;
+      workspace: string;
+      notebook_page_id: string;
+      uuid: string;
+    }[]);
   cxn.destroy();
   const pages = results.reduce((p, c) => {
-    if (p[c.pageUuid]) {
-      p[c.pageUuid].push({
+    if (p[c.page_uuid]) {
+      p[c.page_uuid].push({
         app: appNameById[c.app],
         workspace: c.workspace,
-        id: c.notebookPageId,
+        id: c.notebook_page_id,
         uuid: c.uuid,
       });
     } else {
-      p[c.pageUuid] = [
+      p[c.page_uuid] = [
         {
           app: appNameById[c.app],
           workspace: c.workspace,
-          id: c.notebookPageId,
+          id: c.notebook_page_id,
           uuid: c.uuid,
         },
       ];

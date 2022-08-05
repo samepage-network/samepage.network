@@ -199,8 +199,7 @@ const logic = async (
           await uploadFile({
             Key: `data/page/${pageUuid}.json`,
             Body: JSON.stringify({ log: [], state: {} }),
-            // TODO
-            // Metadata: { index: "0" },
+            Metadata: { index: "0" },
           });
           return { created: true, id: pageUuid };
         })
@@ -293,7 +292,7 @@ const logic = async (
                 return uploadFile({
                   Key: `data/page/${pageUuid}.json`,
                   Body: JSON.stringify({ log: updatedLog, state }),
-                  // Metadata: { index: updatedLog.length.toString() }, TODO
+                   Metadata: { index: updatedLog.length.toString() },
                 }).then(() => updatedLog.length);
               })
               .then((newIndex) => {

@@ -1,5 +1,5 @@
 import { LoaderFunction } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
 import remixAppLoader from "@dvargas92495/app/backend/remixAppLoader.server";
 import listPageNotebookLinks from "~/data/listPageNotebookLinks.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
@@ -11,9 +11,11 @@ const AdminPagesPage = () => {
   return (
     <div className="grid grid-cols-4 gap-4">
       {Object.entries(pages).map(([uuid, links]) => (
-        <div className="rounded-lg shadow-lg bg-slate-300">
-          <h1 className="font-bold text-lg">{uuid}</h1>
-          <ul className="pt-4 list-disc">
+        <div className="rounded-lg shadow-lg bg-slate-300 p-4" key={uuid}>
+          <Link to={uuid}>
+            <h1 className="font-bold text-lg">{uuid}</h1>
+          </Link>
+          <ul className="pt-4 ml-4 list-disc">
             {links.map((l) => (
               <li key={l.uuid}>
                 {l.app}/{l.workspace}/{l.id}
