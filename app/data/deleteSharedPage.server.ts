@@ -12,6 +12,7 @@ const deleteSharedPage = async (uuid: string) => {
       Key: `data/page/${uuid}.json`,
     }),
   ]);
+  await cxn.execute(`DELETE FROM pages WHERE uuid = ?`, [uuid]),
   cxn.destroy();
   return { success: true };
 };

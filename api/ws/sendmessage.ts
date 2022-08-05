@@ -77,15 +77,22 @@ const dataHandler = async (
         clientId,
       ])
       .then((a) => a as { app: AppId; instance: string }[]);
-    return messageNotebook({
-      source: { app, workspace: source.instance },
-      target: { app, workspace: instance },
-      data: {
-        operation: proxyOperation,
-        ...proxyData,
-      },
-      messageUuid,
-    }).then(() => cxn.destroy());
+    return (
+      source
+        ? messageNotebook({
+            source: { app: source.app, workspace: source.instance },
+            target: { app, workspace: instance },
+            data: {
+              operation: proxyOperation,
+              ...proxyData,
+            },
+            messageUuid,
+          })
+        : postError({
+            event,
+            Message: `Could not find online client with id: ${clientId}`,
+          })
+    ).finally(() => cxn.destroy());
   } else {
     return postError({
       event,

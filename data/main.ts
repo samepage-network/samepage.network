@@ -1,19 +1,25 @@
 import base from "fuegojs/dist/base";
 import { z } from "zod";
 
+// TODO FOR FUEGO: ADD FOREIGN KEY
 const pageNotebookLink = z.object({
   uuid: z.string().uuid().describe("primary"),
-  pageUuid: z.string().uuid(),
+  pageUuid: z.string().uuid().describe("foreign"),
   notebookPageId: z.string().describe("unique"),
   workspace: z.string().describe("unique"),
   app: z.number().max(Math.pow(2, 8)).describe("unique"),
+});
+
+const page = z.object({
+  uuid: z.string().uuid().describe("primary"),
+  version: z.number(),
 });
 
 const onlineClient = z.object({
   id: z.string().describe("primary"),
   instance: z.string().describe("unique"),
   app: z.number().max(Math.pow(2, 8)).describe("unique"),
-  created_date: z.date(),
+  createdDate: z.date(),
 });
 
 const clientSession = z.object({
@@ -47,6 +53,7 @@ export const schema = {
   clientSession,
   message,
   ongoingMessage,
+  page,
 };
 
 base({

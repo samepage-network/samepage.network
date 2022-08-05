@@ -6,7 +6,12 @@ const endClient = (id: string, reason: string): Promise<void> => {
   return getMysqlConnection().then(async (cxn) => {
     const [source] = await cxn
       .execute(`SELECT * FROM online_clients WHERE id = ?`, [id])
-      .then((res) => res as z.infer<typeof schema.onlineClient>[]);
+      .then(
+        (res) =>
+          res as (Omit<z.infer<typeof schema.onlineClient>, "createdDate"> & {
+            created_date: Date;
+          })[]
+      );
     if (source) {
       const now = new Date();
       await Promise.all([
