@@ -32,7 +32,6 @@ const loadMarkdownFile = async ({ path }: { path: string }) => {
             description: `Error: ${e.message}`,
           },
         }))),
-        fileName,
         success: true,
       }
     : {
@@ -41,7 +40,6 @@ const loadMarkdownFile = async ({ path }: { path: string }) => {
           title: "Page Not Found!",
           description: "Return to home",
         },
-        fileName,
         success: false,
       };
 };

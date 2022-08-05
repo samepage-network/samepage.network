@@ -9,21 +9,30 @@ import Markdown from "markdown-to-jsx";
 import React from "react";
 
 const DocsPage = (): React.ReactElement => {
-  const { code, frontmatter, fileName, success } =
+  const { code, frontmatter } =
     useLoaderData<Awaited<ReturnType<typeof loadMarkdownFile>>>();
   const Component = useMemo(
     // () => (code ? getMDXComponent(code) : React.Fragment),
-    () => () => <Markdown>{code}</Markdown>,
+    () => () =>
+      (
+        <Markdown
+          options={{
+            overrides: {
+              h2: { props: { className: "text-3xl my-6 font-semibold" } },
+              p: { props: { className: "mb-2" } },
+            },
+          }}
+        >
+          {code}
+        </Markdown>
+      ),
     [code]
   );
   return (
     <div>
       <div>
-        <h1 className="font-bold text-3xl mb-8">{frontmatter.title}</h1>
+        <h1 className="font-bold text-5xl mb-8">{frontmatter.title}</h1>
         <p className="font-semibold text-lg mb-4">{frontmatter.description}</p>
-        <p>
-          Loaded from {fileName} {success ? "" : "un"}successfully.
-        </p>
       </div>
       <div>
         <Component />
