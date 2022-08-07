@@ -11,7 +11,7 @@ Description for samepage.network.
 1. Install dependencies with `npm install`.
 1. Copy the `.env.default` file to `.env`, and replace the values that are marked `TODO`
     1. `CLERK_API_KEY` - Get from `@dvargas92495`
-    1. `DATABASE_URL` - Be sure to have a local instance of mysql running and fill in the URL to access it here
+    1. `DATABASE_URL` - Be sure to have a local mysql db running and fill in the URL to access it here
     1. (SKIP FOR NOW) - `STRIPE_SECRET` - Get from `@dvargas92495`
     1. (SKIP FOR NOW) - `STRIPE_WEBHOOK_SECRET` - Get from `@dvargas92495`
 1. `npm start` to run the app

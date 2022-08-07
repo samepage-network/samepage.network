@@ -5,7 +5,6 @@ import {
 } from "../app/data/postToConnection.server";
 import { handler as onconnect } from "../api/ws/onconnect";
 import { handler as ondisconnect } from "../api/ws/ondisconnect";
-import { handler as sendmessage } from "../api/ws/sendmessage";
 import { v4 } from "uuid";
 import dotenv from "dotenv";
 
@@ -17,17 +16,23 @@ const wss = new WebSocketServer({ port }, () => {
   console.log("server started on port:", port);
   wss.on("connection", (ws) => {
     const connectionId = v4();
-    console.log("connected new client", connectionId);
+    console.log("new ws connection", connectionId);
     ws.on("message", (data) => {
-      sendmessage({
-        body: data.toString(),
-        requestContext: { connectionId },
-      });
+      console.log("new message from", connectionId);
+      import("../api/ws/sendmessage").then(({ handler }) =>
+        handler({
+          body: data.toString(),
+          requestContext: { connectionId },
+        })
+      );
     });
-    ws.on("close", (s) => {
-      console.log("client closing...", s);
+    ws.on("close", (a: number, b: Buffer) => {
+      console.log("client closing...", a, b.toString());
       removeLocalSocket(connectionId);
-      ondisconnect({ requestContext: { connectionId }, body: "" });
+      ondisconnect({
+        requestContext: { connectionId },
+        body: JSON.stringify([a, b]),
+      });
     });
     addLocalSocket(connectionId, ws);
     onconnect({ requestContext: { connectionId }, body: "" });

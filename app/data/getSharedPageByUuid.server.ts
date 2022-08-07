@@ -1,6 +1,7 @@
 import { downloadFileContent } from "@dvargas92495/app/backend/downloadFile.server";
 import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
 import { AppId } from "~/enums/apps";
+import { Action } from "~/types";
 
 const getSharedPageByUuid = async (uuid: string) => {
   const cxn = await getMysqlConnection();
@@ -22,7 +23,10 @@ const getSharedPageByUuid = async (uuid: string) => {
     downloadFileContent({ Key: `data/page/${uuid}.json` }),
   ]);
   cxn.destroy();
-  return { notebooks, data };
+  return {
+    notebooks,
+    data: JSON.parse(data) as { log: Action[]; state: Record<string, {}> },
+  };
 };
 
 export default getSharedPageByUuid;

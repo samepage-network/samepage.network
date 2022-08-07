@@ -66,6 +66,7 @@ const logic = async (
   req: Method
 ): Promise<string | Record<string, unknown>> => {
   const { app, workspace, ...args } = req;
+  console.log("Received method:", args.method);
   switch (args.method) {
     case "usage": {
       const currentDate = new Date();
@@ -139,7 +140,7 @@ const logic = async (
         .then(([Data, [source]]) => ({
           data: Data,
           source: {
-            instance: source.source_instance,
+            workspace: source.source_instance,
             app: source.source_app,
           },
         }))
@@ -178,6 +179,7 @@ const logic = async (
     }
     case "join-shared-page": {
       const { pageUuid, notebookPageId } = args;
+      // could replace with sql check
       return downloadFileContent({
         Key: `data/page/${pageUuid}.json`,
       })
@@ -342,7 +344,6 @@ const logic = async (
             notebookPageId,
             app,
           });
-          console.log(pageUuid);
           const notebooks = await cxn
             .execute(
               `SELECT app, workspace FROM page_notebook_links WHERE page_uuid = ?`,
@@ -397,7 +398,7 @@ const logic = async (
     }
     case "query": {
       const { request } = args;
-      const [targetInstance] = request.split(":");
+      const [targetWorkspace] = request.split(":");
       const hash = crypto.createHash("md5").update(request).digest("hex");
       return downloadFileContent({ Key: `data/queries/${hash}.json` })
         .then((r) => {
@@ -413,7 +414,7 @@ const logic = async (
         .then((body) =>
           messageNotebook({
             source: { workspace, app },
-            target: { workspace: targetInstance, app: 1 },
+            target: { workspace: targetWorkspace, app: 1 },
             data: {
               request,
               operation: "QUERY",

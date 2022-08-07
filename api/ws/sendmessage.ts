@@ -28,13 +28,33 @@ const dataHandler = async (
   if (operation === "AUTHENTICATION") {
     const { app, workspace } = props as { app: AppId; workspace: string };
     const cxn = await getMysqlConnection();
+    const existing = await cxn
+      .execute(
+        `SELECT id, created_date 
+      FROM online_clients 
+      WHERE app = ? AND instance = ?`,
+        [app, workspace]
+      )
+      .then((r) => r as { created_date: Date }[]);
+    if (existing.length)
+      return Promise.reject(
+        new Error(
+          `Already connected to SamePage on another device, at ${existing[0].created_date.toLocaleString()}`
+        )
+      );
     const [_, messages] = await Promise.all([
+      // one downside of inserting here instead of onconnect is the clock drift on created date
+      // a client could theoretically connect without authenticate and would get free usage
       cxn.execute(
-        `UPDATE online_clients SET app = ?, instance = ? WHERE id = ?`,
-        [app, workspace, clientId]
+        `INSERT INTO online_clients (app, instance, id, created_date) 
+        VALUES (?,?,?,?)`,
+        [app, workspace, clientId, new Date()]
       ),
       cxn
-        .execute(`SELECT uuid FROM messages WHERE marked = 0`, [])
+        .execute(
+          `SELECT uuid FROM messages WHERE marked = 0 AND target_app = ? AND target_instance = ?`,
+          [app, workspace]
+        )
         .then((r) => (r as { uuid: string }[]).map((s) => s.uuid)),
     ]);
     await postToConnection({
@@ -66,9 +86,9 @@ const dataHandler = async (
       },
     });
   } else if (operation === "PROXY") {
-    const { proxyOperation, app, instance, ...proxyData } = props as {
+    const { proxyOperation, app, workspace, ...proxyData } = props as {
       proxyOperation: string;
-      instance: string;
+      workspace: string;
       app: AppId;
     };
     const cxn = await getMysqlConnection();
@@ -81,7 +101,7 @@ const dataHandler = async (
       source
         ? messageNotebook({
             source: { app: source.app, workspace: source.instance },
-            target: { app, workspace: instance },
+            target: { app, workspace },
             data: {
               operation: proxyOperation,
               ...proxyData,
