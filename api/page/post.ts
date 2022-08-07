@@ -1,6 +1,9 @@
-import createAPIGatewayProxyHandler from "aws-sdk-plus/dist/createAPIGatewayProxyHandler";
+import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
 import { AppId } from "~/enums/apps";
-import { ConflictError, NotFoundError } from "aws-sdk-plus/dist/errors";
+import {
+  ConflictError,
+  NotFoundError,
+} from "@dvargas92495/app/backend/errors.server";
 import catchError from "~/data/catchError.server";
 import getMysql from "@dvargas92495/app/backend/mysql.server";
 import { downloadFileContent } from "@dvargas92495/app/backend/downloadFile.server";
@@ -216,7 +219,7 @@ const logic = async (
     case "update-shared-page": {
       const { notebookPageId, log } = args;
       const cxn = await getMysql();
-      const { page_uuid: pageUuid, version } = await getSharedPage({
+      const { uuid: pageUuid, version } = await getSharedPage({
         workspace,
         notebookPageId,
         app,
@@ -309,7 +312,7 @@ const logic = async (
           if (typeof localIndex === "undefined") {
             return { exists: true, log: [] };
           }
-          const { page_uuid: pageUuid, version: remoteIndex } = page;
+          const { uuid: pageUuid, version: remoteIndex } = page;
           if (remoteIndex <= localIndex) {
             return { log: [], exists: true };
           }
@@ -329,11 +332,17 @@ const logic = async (
       const { notebookPageId } = args;
       return getMysql()
         .then(async (cxn) => {
-          const { page_uuid: pageUuid } = await getSharedPage({
+          console.log({
             workspace,
             notebookPageId,
             app,
           });
+          const { uuid: pageUuid } = await getSharedPage({
+            workspace,
+            notebookPageId,
+            app,
+          });
+          console.log(pageUuid);
           const notebooks = await cxn
             .execute(
               `SELECT app, workspace FROM page_notebook_links WHERE page_uuid = ?`,

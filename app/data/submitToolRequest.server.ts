@@ -1,4 +1,4 @@
-import sendEmail from "aws-sdk-plus/dist/sendEmail";
+import sendEmail from "@dvargas92495/app/backend/sendEmail.server";
 
 const submitToolRequest = ({
   email,

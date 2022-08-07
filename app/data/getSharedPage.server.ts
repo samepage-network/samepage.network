@@ -1,8 +1,8 @@
-import { NotFoundError } from "aws-sdk-plus/dist/errors";
+import { NotFoundError } from "@dvargas92495/app/backend/errors.server";
 import { Notebook } from "~/types";
 import getMysql from "@dvargas92495/app/backend/mysql.server";
 
-type SharedPage = { page_uuid: string; version: number };
+type SharedPage = { uuid: string; version: number };
 type SharedPageInput = {
   notebookPageId: string;
 } & Notebook;
@@ -26,11 +26,13 @@ const getSharedPage = <T extends SharedPageInput & { safe?: true }>({
       )
       .then((results) => {
         const [link] = results as SharedPage[];
-        if (!link && !safe)
-          throw new NotFoundError(
-            `Could not find page from app ${app}, workspace ${workspace}, and notebookPageId ${notebookPageId}`
-          );
-        else if (safe) return undefined;
+        if (!link) {
+          if (safe) return undefined;
+          else
+            throw new NotFoundError(
+              `Could not find page from app ${app}, workspace ${workspace}, and notebookPageId ${notebookPageId}`
+            );
+        }
         return link;
       })
   ) as GetSharedPage<T>;

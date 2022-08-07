@@ -1,6 +1,6 @@
 import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
 import { z } from "zod";
-import { schema } from "../../data/main";
+import schema from "../../data/schema";
 
 const endClient = (id: string, reason: string): Promise<void> => {
   return getMysqlConnection().then(async (cxn) => {
