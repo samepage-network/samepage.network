@@ -7,6 +7,7 @@ import deleteSharedPage from "~/data/deleteSharedPage.server";
 import getSharedPageByUuid from "~/data/getSharedPageByUuid.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
+import { v4 } from "uuid";
 
 const SinglePagePage = () => {
   const { data, notebooks } =
@@ -81,7 +82,7 @@ export const loader: LoaderFunction = (args) => {
   return remixAppLoader(args, ({ params }) =>
     getSharedPageByUuid(
       params["uuid"] || "",
-      args.context.lambdaContext.awsRequestId
+      args.context?.lambdaContext?.requestId || v4()
     )
   );
 };
@@ -92,7 +93,7 @@ export const action: ActionFunction = (args) => {
     DELETE: ({ params }) =>
       deleteSharedPage(
         params["uuid"] || "",
-        args.context.lambdaContext.awsRequestId
+        args.context?.lambdaContext?.requestId || v4()
       ).then(() => redirect("/admin/pages")),
   });
 };
