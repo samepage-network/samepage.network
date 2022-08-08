@@ -3,16 +3,14 @@ import schema from "data/schema";
 import { z } from "zod";
 import { appNameById } from "~/enums/apps";
 
-const listOnlineClients = async () => {
-  const cxn = await getMysqlConnection();
-  const data = await cxn
-    .execute("SELECT * FROM online_clients")
-    .then(
-      (r) =>
-        r as (Omit<z.infer<typeof schema.onlineClient>, "createdDate"> & {
-          created_date: Date;
-        })[]
-    );
+const listOnlineClients = async (requestId: string) => {
+  const cxn = await getMysqlConnection(requestId);
+  const data = await cxn.execute("SELECT * FROM online_clients").then(
+    ([r]) =>
+      r as (Omit<z.infer<typeof schema.onlineClient>, "createdDate"> & {
+        created_date: Date;
+      })[]
+  );
   cxn.destroy();
   return {
     columns: [

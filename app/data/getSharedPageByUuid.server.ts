@@ -3,8 +3,8 @@ import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
 import { AppId } from "~/enums/apps";
 import { Action } from "~/types";
 
-const getSharedPageByUuid = async (uuid: string) => {
-  const cxn = await getMysqlConnection();
+const getSharedPageByUuid = async (uuid: string, requestId: string) => {
+  const cxn = await getMysqlConnection(requestId);
   const [notebooks, data] = await Promise.all([
     cxn
       .execute(
@@ -12,7 +12,7 @@ const getSharedPageByUuid = async (uuid: string) => {
         [uuid]
       )
       .then(
-        (r) =>
+        ([r]) =>
           r as {
             app: AppId;
             workspace: string;

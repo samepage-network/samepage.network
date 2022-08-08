@@ -53,7 +53,9 @@ const SinglePagePage = () => {
         <div className="flex-grow border-gray-800 flex flex-col">
           <h1 className={"text-3xl py-4"}>State</h1>
           <pre
-            className={"max-h-48 overflow-auto whitespace-pre-wrap flex-grow h-full"}
+            className={
+              "max-h-48 overflow-auto whitespace-pre-wrap flex-grow h-full"
+            }
           >
             {JSON.stringify(data.state, null, 4)}
           </pre>
@@ -77,7 +79,10 @@ const SinglePagePage = () => {
 export const loader: LoaderFunction = (args) => {
   // TODO: replace with remixAdminLoader
   return remixAppLoader(args, ({ params }) =>
-    getSharedPageByUuid(params["uuid"] || "")
+    getSharedPageByUuid(
+      params["uuid"] || "",
+      args.context.lambdaContext.awsRequestId
+    )
   );
 };
 
@@ -85,9 +90,10 @@ export const action: ActionFunction = (args) => {
   // TODO replace with remixAdminAction
   return remixAppAction(args, {
     DELETE: ({ params }) =>
-      deleteSharedPage(params["uuid"] || "").then(() =>
-        redirect("/admin/pages")
-      ),
+      deleteSharedPage(
+        params["uuid"] || "",
+        args.context.lambdaContext.awsRequestId
+      ).then(() => redirect("/admin/pages")),
   });
 };
 

@@ -2,12 +2,12 @@ import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
 import { z } from "zod";
 import schema from "../../data/schema";
 
-const endClient = (id: string, reason: string): Promise<void> => {
-  return getMysqlConnection().then(async (cxn) => {
+const endClient = (id: string, reason: string, requestId: string): Promise<void> => {
+  return getMysqlConnection(requestId).then(async (cxn) => {
     const [source] = await cxn
       .execute(`SELECT * FROM online_clients WHERE id = ?`, [id])
       .then(
-        (res) =>
+        ([res]) =>
           res as (Omit<z.infer<typeof schema.onlineClient>, "createdDate"> & {
             created_date: Date;
           })[]

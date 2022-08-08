@@ -16,8 +16,7 @@ import { Action, Notebook } from "~/types";
 import crypto from "crypto";
 import getSharedPage from "~/data/getSharedPage.server";
 
-type Method = Notebook &
-  (
+type Method = Notebook & { requestId: string } & (
     | { method: "usage" }
     | {
         method: "load-message";
@@ -79,7 +78,7 @@ const logic = async (
       );
       const startDate = new Date(currentYear, currentMonth, 1).toJSON();
 
-      return getMysql()
+      return getMysql(req.requestId)
         .then(async (cxn) => {
           const [sessions, messages] = await Promise.all([
             cxn
@@ -88,7 +87,7 @@ const logic = async (
                 [workspace, app, startDate]
               )
               .then(
-                (items) =>
+                ([items]) =>
                   items as { id: string; created_date: Date; end_date: Date }[]
               ),
             cxn
@@ -96,7 +95,7 @@ const logic = async (
                 `SELECT uuid FROM messages WHERE source_instance = ? AND source_app = ? AND created_date > ?`,
                 [workspace, app, startDate]
               )
-              .then((items) => items as { uuid: string }[]),
+              .then(([items]) => items as { uuid: string }[]),
           ]);
           cxn.destroy();
           return {
@@ -119,7 +118,7 @@ const logic = async (
           console.error(`Could not load message ${messageUuid}`);
           return JSON.stringify("{}");
         }),
-        getMysql().then((cxn) => {
+        getMysql(req.requestId).then((cxn) => {
           return cxn
             .execute(`UPDATE messages SET marked = ? WHERE uuid = ?`, [
               1,
@@ -131,7 +130,7 @@ const logic = async (
                 [messageUuid]
               )
             )
-            .then((args) => {
+            .then(([args]) => {
               cxn.destroy();
               return args as { source_instance: string; source_app: AppId }[];
             });
@@ -148,9 +147,9 @@ const logic = async (
     }
     case "init-shared-page": {
       const { notebookPageId } = args;
-      return getMysql()
+      return getMysql(req.requestId)
         .then(async (cxn) => {
-          const results = await cxn.execute(
+          const [results] = await cxn.execute(
             `SELECT page_uuid FROM page_notebook_links WHERE workspace = ? AND app = ? AND notebook_page_id = ?`,
             [workspace, app, notebookPageId]
           );
@@ -193,7 +192,7 @@ const logic = async (
             : Promise.reject(e)
         )
         .then((r) => {
-          return getMysql().then((cxn) => {
+          return getMysql(req.requestId).then((cxn) => {
             const args = [pageUuid, notebookPageId, workspace, app];
             return cxn
               .execute(
@@ -220,11 +219,12 @@ const logic = async (
     }
     case "update-shared-page": {
       const { notebookPageId, log } = args;
-      const cxn = await getMysql();
+      const cxn = await getMysql(req.requestId);
       const { uuid: pageUuid, version } = await getSharedPage({
         workspace,
         notebookPageId,
         app,
+        requestId: req.requestId,
       });
       if (!log.length) {
         cxn.destroy();
@@ -276,7 +276,7 @@ const logic = async (
               `SELECT workspace, app FROM page_notebook_links WHERE page_uuid = ?`,
               [pageUuid]
             )
-            .then((r) => {
+            .then(([r]) => {
               return Promise.all(
                 (r as { app: AppId; workspace: string }[])
                   .filter((item) => {
@@ -292,6 +292,7 @@ const logic = async (
                         index: newIndex,
                         operation: "SHARE_PAGE_UPDATE",
                       },
+                      requestId: req.requestId,
                     })
                   )
               );
@@ -305,8 +306,14 @@ const logic = async (
     }
     case "get-shared-page": {
       const { notebookPageId, localIndex } = args;
-      const cxn = await getMysql();
-      return getSharedPage({ workspace, notebookPageId, app, safe: true })
+      const cxn = await getMysql(req.requestId);
+      return getSharedPage({
+        workspace,
+        notebookPageId,
+        app,
+        safe: true,
+        requestId: req.requestId,
+      })
         .then((page) => {
           if (!page) {
             return { exists: false, log: [] };
@@ -332,7 +339,7 @@ const logic = async (
     }
     case "list-page-notebooks": {
       const { notebookPageId } = args;
-      return getMysql()
+      return getMysql(req.requestId)
         .then(async (cxn) => {
           console.log({
             workspace,
@@ -343,20 +350,21 @@ const logic = async (
             workspace,
             notebookPageId,
             app,
+            requestId: req.requestId,
           });
           const notebooks = await cxn
             .execute(
               `SELECT app, workspace FROM page_notebook_links WHERE page_uuid = ?`,
               [pageUuid]
             )
-            .then((res) => res as Notebook[]);
+            .then(([res]) => res as Notebook[]);
           cxn.destroy();
           return { notebooks };
         })
         .catch(catchError("Failed to retrieve page notebooks"));
     }
     case "list-shared-pages": {
-      return getMysql()
+      return getMysql(req.requestId)
         .then(async (cxn) => {
           const entries = await cxn
             .execute(
@@ -366,7 +374,7 @@ const logic = async (
           WHERE l.workspace = ? AND l.app = ?`,
               [workspace, app]
             )
-            .then((r) => r as { notebook_page_id: string; version: number }[])
+            .then(([r]) => r as { notebook_page_id: string; version: number }[])
             .then((r) =>
               r.map(({ notebook_page_id, version }) => [
                 notebook_page_id,
@@ -381,9 +389,14 @@ const logic = async (
     }
     case "disconnect-shared-page": {
       const { notebookPageId } = args;
-      const cxn = await getMysql();
+      const cxn = await getMysql(req.requestId);
       return (
-        getSharedPage({ workspace, notebookPageId, app })
+        getSharedPage({
+          workspace,
+          notebookPageId,
+          app,
+          requestId: req.requestId,
+        })
           .then(() =>
             cxn.execute(
               `DELETE FROM page_notebook_links WHERE workspace = ? AND app = ? AND notebook_page_id = ?`,
@@ -420,6 +433,7 @@ const logic = async (
               operation: "QUERY",
             },
             messageUuid: v4(),
+            requestId: req.requestId,
           }).then(() => body)
         )
         .catch(catchError("Failed to query across notebooks"));
@@ -440,6 +454,7 @@ const logic = async (
           ...JSON.parse(response),
         },
         messageUuid: v4(),
+        requestId: req.requestId,
       })
         .then(() => ({ success: true }))
         .catch(catchError("Failed to respond to query"));

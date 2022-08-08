@@ -5,6 +5,7 @@ import getMysql from "@dvargas92495/app/backend/mysql.server";
 type SharedPage = { uuid: string; version: number };
 type SharedPageInput = {
   notebookPageId: string;
+  requestId: string;
 } & Notebook;
 type GetSharedPage<T> = T extends SharedPageInput & { safe: true }
   ? Promise<SharedPage | undefined>
@@ -14,8 +15,9 @@ const getSharedPage = <T extends SharedPageInput & { safe?: true }>({
   notebookPageId,
   app,
   safe,
+  requestId,
 }: T): GetSharedPage<T> =>
-  getMysql().then((cxn) =>
+  getMysql(requestId).then((cxn) =>
     cxn
       .execute(
         `SELECT p.* 
@@ -24,7 +26,7 @@ const getSharedPage = <T extends SharedPageInput & { safe?: true }>({
         WHERE workspace = ? AND app = ? AND notebook_page_id = ?`,
         [workspace, app, notebookPageId]
       )
-      .then((results) => {
+      .then(([results]) => {
         const [link] = results as SharedPage[];
         if (!link) {
           if (safe) return undefined;

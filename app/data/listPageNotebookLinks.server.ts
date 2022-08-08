@@ -1,11 +1,11 @@
 import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
 import { AppId, appNameById } from "~/enums/apps";
 
-const listPageNotebookLinks = async () => {
-  const cxn = await getMysqlConnection();
+const listPageNotebookLinks = async (requestId: string) => {
+  const cxn = await getMysqlConnection(requestId);
   const results = await cxn
     .execute("SELECT * FROM page_notebook_links")
-    .then((r) => r as {
+    .then(([r]) => r as {
       page_uuid: string;
       app: AppId;
       workspace: string;

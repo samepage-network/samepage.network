@@ -20,22 +20,31 @@ const wss = new WebSocketServer({ port }, () => {
     ws.on("message", (data) => {
       console.log("new message from", connectionId);
       import("../api/ws/sendmessage").then(({ handler }) =>
-        handler({
-          body: data.toString(),
-          requestContext: { connectionId },
-        })
+        handler(
+          {
+            body: data.toString(),
+            requestContext: { connectionId },
+          },
+          { awsRequestId: v4() }
+        )
       );
     });
     ws.on("close", (a: number, b: Buffer) => {
       console.log("client closing...", a, b.toString());
       removeLocalSocket(connectionId);
-      ondisconnect({
-        requestContext: { connectionId },
-        body: JSON.stringify([a, b]),
-      });
+      ondisconnect(
+        {
+          requestContext: { connectionId },
+          body: JSON.stringify([a, b]),
+        },
+        { awsRequestId: v4() }
+      );
     });
     addLocalSocket(connectionId, ws);
-    onconnect({ requestContext: { connectionId }, body: "" });
+    onconnect(
+      { requestContext: { connectionId }, body: "" },
+      { awsRequestId: v4() }
+    );
   });
   wss.on("close", (s: unknown) => {
     console.log("server closing...", s);

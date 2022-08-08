@@ -23,7 +23,9 @@ const ConnectionsPage = () => {
 
 export const loader: LoaderFunction = (args) => {
   // TODO: replace with remixAdminLoader
-  return remixAppLoader(args, listOnlineClients);
+  return remixAppLoader(args, () =>
+    listOnlineClients(args.context.lambdaContext.requestId)
+  );
 };
 
 export default ConnectionsPage;

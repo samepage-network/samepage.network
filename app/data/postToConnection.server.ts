@@ -22,11 +22,12 @@ export const removeLocalSocket = (id: string): void => {
 type SendData = {
   ConnectionId: string;
   Data: Record<string, unknown>;
+  requestId: string;
 };
 
 const MESSAGE_LIMIT = 15750; // 16KB minus 250b buffer for metadata
 
-const getSender = (ConnectionId: string) => {
+const getSender = (ConnectionId: string, requestId: string) => {
   if (process.env.NODE_ENV === "production") {
     const api = getApi();
     return (params: string) =>
@@ -38,7 +39,7 @@ const getSender = (ConnectionId: string) => {
     const connection = localSockets[ConnectionId];
     return (params: string): Promise<void> => {
       if (connection) return Promise.resolve(connection.send(params));
-      else return endClient(ConnectionId, "Missed Message");
+      else return endClient(ConnectionId, "Missed Message", requestId);
     };
   }
 };
@@ -49,7 +50,7 @@ const postToConnection: (params: SendData) => Promise<void> = (params) => {
   const size = Buffer.from(fullMessage).length;
   const total = Math.ceil(size / MESSAGE_LIMIT);
   const chunkSize = Math.ceil(fullMessage.length / total);
-  const sender = getSender(params.ConnectionId);
+  const sender = getSender(params.ConnectionId, params.requestId);
   return Array(total)
     .fill(null)
     .map((_, chunk) => {

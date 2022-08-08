@@ -20,14 +20,15 @@ import messageNotebook from "~/data/messageNotebook.server";
 const dataHandler = async (
   event: WSEvent,
   data: string,
-  messageUuid: string
+  messageUuid: string,
+  requestId: string
 ): Promise<void> => {
   const { operation, ...props } = JSON.parse(data);
   const clientId = event.requestContext?.connectionId || "";
   console.log("received operation", operation, "from client", clientId);
   if (operation === "AUTHENTICATION") {
     const { app, workspace } = props as { app: AppId; workspace: string };
-    const cxn = await getMysqlConnection();
+    const cxn = await getMysqlConnection(requestId);
     const existing = await cxn
       .execute(
         `SELECT id, created_date 
@@ -35,7 +36,7 @@ const dataHandler = async (
       WHERE app = ? AND instance = ?`,
         [app, workspace]
       )
-      .then((r) => r as { created_date: Date }[]);
+      .then(([r]) => r as { created_date: Date }[]);
     if (existing.length)
       return Promise.reject(
         new Error(
@@ -55,7 +56,7 @@ const dataHandler = async (
           `SELECT uuid FROM messages WHERE marked = 0 AND target_app = ? AND target_instance = ?`,
           [app, workspace]
         )
-        .then((r) => (r as { uuid: string }[]).map((s) => s.uuid)),
+        .then(([r]) => (r as { uuid: string }[]).map((s) => s.uuid)),
     ]);
     await postToConnection({
       ConnectionId: clientId,
@@ -64,6 +65,7 @@ const dataHandler = async (
         success: true,
         messages,
       },
+      requestId,
     });
     cxn.destroy();
   } else if (operation === "OFFER") {
@@ -75,6 +77,7 @@ const dataHandler = async (
         to: clientId,
         offer,
       },
+      requestId,
     });
   } else if (operation === "ANSWER") {
     const { to, answer } = props as { to: string; answer: string };
@@ -84,6 +87,7 @@ const dataHandler = async (
         operation: `ANSWER`,
         answer,
       },
+      requestId,
     });
   } else if (operation === "PROXY") {
     const { proxyOperation, app, workspace, ...proxyData } = props as {
@@ -91,12 +95,12 @@ const dataHandler = async (
       workspace: string;
       app: AppId;
     };
-    const cxn = await getMysqlConnection();
+    const cxn = await getMysqlConnection(requestId);
     const [source] = await cxn
       .execute(`SELECT app, instance FROM online_clients WHERE id = ?`, [
         clientId,
       ])
-      .then((a) => a as { app: AppId; instance: string }[]);
+      .then(([a]) => a as { app: AppId; instance: string }[]);
     return (
       source
         ? messageNotebook({
@@ -107,27 +111,33 @@ const dataHandler = async (
               ...proxyData,
             },
             messageUuid,
+            requestId,
           })
         : postError({
             event,
             Message: `Could not find online client with id: ${clientId}`,
+            requestId,
           })
     ).finally(() => cxn.destroy());
   } else {
     return postError({
       event,
       Message: `Invalid server operation: ${operation}`,
+      requestId,
     });
   }
 };
 
-export const wsHandler = async (event: WSEvent): Promise<void> => {
+export const wsHandler = async (
+  event: WSEvent,
+  requestId: string
+): Promise<void> => {
   const chunkData = event.body ? JSON.parse(event.body).data : {};
   const { message, uuid: messageUuid, chunk, total } = chunkData;
-  if (total === 1) return dataHandler(event, message, messageUuid);
+  if (total === 1) return dataHandler(event, message, messageUuid, requestId);
   else {
     const uuid = v4();
-    const cxn = await getMysqlConnection();
+    const cxn = await getMysqlConnection(requestId);
     await Promise.all([
       uploadFile({
         Body: message,
@@ -144,7 +154,7 @@ export const wsHandler = async (event: WSEvent): Promise<void> => {
         `SELECT uuid, chunk FROM ongoing_messages WHERE message_uuid = ?`,
         [messageUuid]
       )
-      .then((c) => c as { uuid: string; chunk: number }[]);
+      .then(([c]) => c as { uuid: string; chunk: number }[]);
     if (chunks.length === total) {
       return Promise.all(
         chunks.map((c) =>
@@ -169,20 +179,22 @@ export const wsHandler = async (event: WSEvent): Promise<void> => {
             .sort((a, b) => a.chunk - b.chunk)
             .map((a) => a.message)
             .join(""),
-          uuid
+          uuid,
+          requestId
         )
       );
     }
   }
 };
 
-export const handler: WSHandler = (event) =>
-  wsHandler(event)
+export const handler: WSHandler = (event, context) =>
+  wsHandler(event, context.awsRequestId)
     .then(() => ({ statusCode: 200, body: "Success" }))
     .catch((e) =>
       postError({
         event,
         Message: `Uncaught Server Error: ${e.message}`,
+        requestId: context.awsRequestId,
       }).then(() => {
         console.log("Uncaught WebSocket error: ", e);
         return {

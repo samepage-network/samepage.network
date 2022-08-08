@@ -30,7 +30,9 @@ const AdminPagesPage = () => {
 
 export const loader: LoaderFunction = (args) => {
   // TODO: replace with remixAdminLoader
-  return remixAppLoader(args, listPageNotebookLinks);
+  return remixAppLoader(args, () =>
+    listPageNotebookLinks(args.context.lambdaContext.requestId)
+  );
 };
 
 export default AdminPagesPage;

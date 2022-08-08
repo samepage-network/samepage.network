@@ -20,9 +20,10 @@ export const action: ActionFunction = (args) => {
   // TODO replace with remixAdminAction
   return remixAppAction(args, {
     DELETE: ({ params }) =>
-      deleteOnlineClient(params["id"] || "").then(() =>
-        redirect("/admin/connections")
-      ),
+      deleteOnlineClient({
+        id: params["id"] || "",
+        requestId: args.context.lambdaContext.awsRequestId,
+      }).then(() => redirect("/admin/connections")),
   });
 };
 

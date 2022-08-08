@@ -1,11 +1,18 @@
-import type { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
+import type {
+  APIGatewayProxyEvent,
+  APIGatewayProxyResult,
+  Context,
+} from "aws-lambda";
 import type { AppId } from "./enums/apps";
 
 export type WSEvent = Pick<APIGatewayProxyEvent, "body"> & {
   requestContext: Pick<APIGatewayProxyEvent["requestContext"], "connectionId">;
 };
 
-export type WSHandler = (event: WSEvent) => Promise<APIGatewayProxyResult>;
+export type WSHandler = (
+  event: WSEvent,
+  context: Pick<Context, "awsRequestId">
+) => Promise<APIGatewayProxyResult>;
 
 // @todo - replace with atjson
 type ViewType = "document" | "bullet" | "numbered";

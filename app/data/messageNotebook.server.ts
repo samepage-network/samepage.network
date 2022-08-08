@@ -10,19 +10,21 @@ const messageNotebook = ({
   target,
   data,
   messageUuid = v4(),
+  requestId,
 }: {
   source: Notebook;
   target: Notebook;
   messageUuid?: string;
   data: Record<string, unknown>;
+  requestId: string;
 }) => {
-  return getMysql().then(async (cxn) => {
+  return getMysql(requestId).then(async (cxn) => {
     const ids = await cxn
       .execute(`SELECT id FROM online_clients WHERE instance = ? AND app = ?`, [
         target.workspace,
         target.app,
       ])
-      .then((res) => (res as { id: string }[]).map(({ id }) => id));
+      .then(([res]) => (res as { id: string }[]).map(({ id }) => id));
     const Data = {
       ...data,
       source,
@@ -32,11 +34,12 @@ const messageNotebook = ({
         postToConnection({
           ConnectionId,
           Data,
+          requestId,
         })
           .then(() => true)
           .catch((e) => {
             if (process.env.NODE_ENV === "production") {
-              return endClient(ConnectionId, `Missed Message (${e.message})`)
+              return endClient(ConnectionId, `Missed Message (${e.message})`, requestId)
                 .then(() => false)
                 .catch(() => false);
             } else {
