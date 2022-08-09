@@ -102,16 +102,93 @@ const disconnectFromBackend = (_: string) => {
   // addConnectCommand();
 };
 
+type AddCommand = (args: { label: string; callback: () => void }) => void;
+type RemoveCommand = (args: { label: string }) => void;
+
+const documentBodyListeners: Record<string, (a: KeyboardEvent) => void> = {};
+const defaultAddCommand: AddCommand = ({ label, callback }) => {
+  const eventListener = (e: KeyboardEvent) => {
+    if (e.key === "p" && e.metaKey) {
+      callback();
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+  documentBodyListeners[label] = eventListener;
+  document.body.addEventListener("keydown", eventListener);
+};
+const defaultRemoveCommand: RemoveCommand = (args) => {
+  document.body.removeEventListener(
+    "keydown",
+    documentBodyListeners[args.label]
+  );
+};
+
 const setupSamePageClient = ({
   isAutoConnect,
   app,
   workspace,
+  addCommand = defaultAddCommand,
+  removeCommand = defaultRemoveCommand,
 }: {
   isAutoConnect: boolean;
+  addCommand?: AddCommand;
+  removeCommand?: RemoveCommand;
 } & Notebook) => {
   if (isAutoConnect) {
     connectToBackend({ app, workspace });
   }
+  const addConnectCommand = () => {
+    removeDisconnectCommand();
+    addCommand({
+      label: "Connect to SamePage Network",
+      callback: () => connectToBackend({ app, workspace }),
+    });
+  };
+
+  const removeConnectCommand = () => {
+    addDisconnectCommand();
+    removeCommand({
+      label: "Connect to SamePage Network",
+    });
+  };
+
+  const addDisconnectCommand = () => {
+    addCommand({
+      label: "Disconnect from SamePage Network",
+      callback: () => {
+        // https://www.rfc-editor.org/rfc/rfc6455.html#section-7.4.1
+        // websocket closure codes
+        if (samePageBackend.channel)
+          samePageBackend.channel.close(1000, "User Command");
+        disconnectFromBackend("User Command");
+      },
+    });
+  };
+
+  const removeDisconnectCommand = () => {
+    removeCommand({
+      label: "Disconnect from SamePage Network",
+    });
+  };
+
+  addConnectCommand();
+
+  // loadP2P();
+  // addNotebookListener 5x
+  // addCommand USAGE_LABEL
+  // render notifications
+
+  return () => {
+    // removeCommand USAGE
+    if (samePageBackend.channel)
+      samePageBackend.channel.close(1000, "Disabled Client");
+    disconnectFromBackend("Disabled Client");
+    removeConnectCommand();
+    removeDisconnectCommand();
+    // unloadP2P();
+    // Object.keys(connectedGraphs).forEach((g) => delete connectedGraphs[g]);
+  };
 };
 
 export default setupSamePageClient;

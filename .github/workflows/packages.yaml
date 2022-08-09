@@ -4,7 +4,7 @@ on:
   push:
     branches: main
     paths:
-      - "packages/client"
+      - "packages/client/**"
       - ".github/workflows/packages.yaml"
 
 jobs:
