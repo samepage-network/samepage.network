@@ -23,3 +23,5 @@ jobs:
       - name: publish
         run: npm publish --access public
         working-directory: packages/client
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
