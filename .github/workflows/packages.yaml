@@ -1,0 +1,25 @@
+name: Publish package
+on:
+  workflow_dispatch:
+  push:
+    branches: main
+    paths:
+      - "packages/client"
+      - ".github/workflows/packages.yaml"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: install
+        run: npm install
+      - name: build
+        run: npx tsc
+        working-directory: packages/client
+      - name: prepare
+        run: cp LICENSE README.md package.json dist
+        working-directory: packages/client
+      - name: publish
+        run: npm publish --access public
+        working-directory: packages/client
