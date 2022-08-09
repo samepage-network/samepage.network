@@ -16,6 +16,11 @@ Description for samepage.network.
     1. (SKIP FOR NOW) - `STRIPE_WEBHOOK_SECRET` - Get from `@dvargas92495`
 1. `npm start` to run the app
 
+## Clients
+
+- [Roam](https://github.com/dvargas92495/roamjs-samepage)
+- [LogSeq](https://github.com/dvargas92495/s)
+
 ## Contributing
 
 1. Create a new branch locally

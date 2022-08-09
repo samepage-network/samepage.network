@@ -65,7 +65,6 @@ const dataHandler = async (
         success: true,
         messages,
       },
-      requestId,
     });
     cxn.destroy();
   } else if (operation === "OFFER") {
@@ -77,7 +76,6 @@ const dataHandler = async (
         to: clientId,
         offer,
       },
-      requestId,
     });
   } else if (operation === "ANSWER") {
     const { to, answer } = props as { to: string; answer: string };
@@ -87,7 +85,6 @@ const dataHandler = async (
         operation: `ANSWER`,
         answer,
       },
-      requestId,
     });
   } else if (operation === "PROXY") {
     const { proxyOperation, app, workspace, ...proxyData } = props as {
@@ -116,14 +113,12 @@ const dataHandler = async (
         : postError({
             event,
             Message: `Could not find online client with id: ${clientId}`,
-            requestId,
           })
     ).finally(() => cxn.destroy());
   } else {
     return postError({
       event,
       Message: `Invalid server operation: ${operation}`,
-      requestId,
     });
   }
 };
@@ -194,7 +189,6 @@ export const handler: WSHandler = (event, context) =>
       postError({
         event,
         Message: `Uncaught Server Error: ${e.message}`,
-        requestId: context.awsRequestId,
       }).then(() => {
         console.log("Uncaught WebSocket error: ", e);
         return {

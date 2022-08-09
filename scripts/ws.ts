@@ -1,19 +1,34 @@
-import { WebSocketServer } from "ws";
-import {
-  addLocalSocket,
-  removeLocalSocket,
-} from "../app/data/postToConnection.server";
+import { WebSocketServer, WebSocket } from "ws";
+import express from "express";
 import { handler as onconnect } from "../api/ws/onconnect";
 import { handler as ondisconnect } from "../api/ws/ondisconnect";
 import { v4 } from "uuid";
 import dotenv from "dotenv";
+import endClient from "~/data/endClient.server";
 
 dotenv.config({ path: ".env" });
 const port = Number(process.argv[2]) || 3010;
+const httpPort = Number(process.argv[3]) || 3011;
 process.env["NODE_ENV"] = process.env.NODE_ENV || "development";
 
+const localSockets: Record<string, WebSocket> = {};
+
+const addLocalSocket = (id: string, ws: WebSocket): void => {
+  localSockets[id] = ws;
+};
+
+const removeLocalSocket = (id: string): void => {
+  if (
+    localSockets[id]?.readyState === WebSocket.OPEN ||
+    localSockets[id]?.readyState === WebSocket.CONNECTING
+  ) {
+    localSockets[id].close();
+  }
+  delete localSockets[id];
+};
+
 const wss = new WebSocketServer({ port }, () => {
-  console.log("server started on port:", port);
+  console.log("ws server started on port:", port);
   wss.on("connection", (ws) => {
     const connectionId = v4();
     console.log("new ws connection", connectionId);
@@ -49,4 +64,22 @@ const wss = new WebSocketServer({ port }, () => {
   wss.on("close", (s: unknown) => {
     console.log("server closing...", s);
   });
+});
+
+const app = express();
+app.use(express.json());
+app.use(
+  express.urlencoded({
+    extended: true,
+  })
+);
+app.post("/connection", (req) => {
+  const { ConnectionId, Data } = req.body;
+
+  const connection = localSockets[ConnectionId];
+  if (connection) return Promise.resolve(connection.send(Data));
+  else return endClient(ConnectionId, "Missed Message", v4());
+});
+app.listen(httpPort, () => {
+  console.log("http server started on port:", httpPort);
 });

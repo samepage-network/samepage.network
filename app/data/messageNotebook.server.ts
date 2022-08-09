@@ -1,6 +1,6 @@
 import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
 import endClient from "./endClient.server";
-import postToConnection, { removeLocalSocket } from "./postToConnection.server";
+import postToConnection from "./postToConnection.server";
 import { v4 } from "uuid";
 import getMysql from "@dvargas92495/app/backend/mysql.server";
 import { Notebook } from "~/types";
@@ -34,18 +34,16 @@ const messageNotebook = ({
         postToConnection({
           ConnectionId,
           Data,
-          requestId,
         })
           .then(() => true)
           .catch((e) => {
-            if (process.env.NODE_ENV === "production") {
-              return endClient(ConnectionId, `Missed Message (${e.message})`, requestId)
-                .then(() => false)
-                .catch(() => false);
-            } else {
-              removeLocalSocket(ConnectionId);
-              return false;
-            }
+            return endClient(
+              ConnectionId,
+              `Missed Message (${e.message})`,
+              requestId
+            )
+              .then(() => false)
+              .catch(() => false);
           })
       )
     ).then((all) => !!all.length && all.every((i) => i));

@@ -1,7 +1,7 @@
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
-import remixAppLoader from "@dvargas92495/app/backend/remixAppLoader.server";
-import remixAppAction from "@dvargas92495/app/backend/remixAppAction.server";
+import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
+import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
 import Button from "@dvargas92495/app/components/Button";
 import deleteSharedPage from "~/data/deleteSharedPage.server";
 import getSharedPageByUuid from "~/data/getSharedPageByUuid.server";
@@ -78,8 +78,7 @@ const SinglePagePage = () => {
 };
 
 export const loader: LoaderFunction = (args) => {
-  // TODO: replace with remixAdminLoader
-  return remixAppLoader(args, ({ params }) =>
+  return remixAdminLoader(args, ({ params }) =>
     getSharedPageByUuid(
       params["uuid"] || "",
       args.context?.lambdaContext?.requestId || v4()
@@ -88,8 +87,7 @@ export const loader: LoaderFunction = (args) => {
 };
 
 export const action: ActionFunction = (args) => {
-  // TODO replace with remixAdminAction
-  return remixAppAction(args, {
+  return remixAdminAction(args, {
     DELETE: ({ params }) =>
       deleteSharedPage(
         params["uuid"] || "",
