@@ -1,31 +1,79 @@
-import { Status, Notebook, json } from "./types";
+import { v4 } from "uuid";
+import dispatchAppEvent from "./internal/dispatchAppEvent";
+import {
+  addNotebookListener,
+  removeNotebookListener,
+} from "./internal/setupMessageHandlers";
+import setupP2PFeatures, {
+  getP2PConnection,
+} from "./internal/setupP2PFeatures";
+import {
+  Status,
+  Notebook,
+  json,
+  SendToNotebook,
+  AddCommand,
+  RemoveCommand,
+  SendToBackend,
+} from "./types";
 
-function sendChunkedMessage(_: {
-  data: { operation: string };
-  sender: (data: any) => void;
-}) {
-  throw new Error("Function not implemented.");
-}
+const authenticationHandlers: {
+  handler: () => Promise<unknown>;
+  label: string;
+}[] = [];
+
+export const addAuthenticationHandler = (
+  args: typeof authenticationHandlers[number]
+) => authenticationHandlers.push(args);
+
+export const removeAuthenticationHandler = (label: string) =>
+  authenticationHandlers.splice(
+    authenticationHandlers.findIndex((h) => h.label === label),
+    1
+  );
 
 function receiveChunkedMessage(_: any) {
   throw new Error("Function not implemented.");
 }
+
+const CONNECTED_EVENT = "roamjs:samepage:connected";
+const MESSAGE_LIMIT = 15750; // 16KB minus 250b buffer for metadata
 
 const samePageBackend: {
   channel?: WebSocket;
   status: Status;
 } = { status: "DISCONNECTED" };
 
-const CONNECTED_EVENT = "roamjs:samepage:connected";
+const sendChunkedMessage = ({
+  data,
+  sender,
+}: {
+  data: { [k: string]: json };
+  sender: (data: { [k: string]: json }) => void;
+}) => {
+  const fullMessage = JSON.stringify(data);
+  const uuid = v4();
+  const size = new Blob([fullMessage]).size;
+  const total = Math.ceil(size / MESSAGE_LIMIT);
+  const chunkSize = Math.ceil(fullMessage.length / total);
+  for (let chunk = 0; chunk < total; chunk++) {
+    const message = fullMessage.slice(
+      chunkSize * chunk,
+      chunkSize * (chunk + 1)
+    );
+    sender({
+      message,
+      uuid,
+      chunk,
+      total,
+    });
+  }
+};
 
-const sendToBackend = ({
+const sendToBackend: SendToBackend = ({
   operation,
   data = {},
   unauthenticated = false,
-}: {
-  operation: string;
-  data?: { [key: string]: json };
-  unauthenticated?: boolean;
 }) => {
   const send = () =>
     sendChunkedMessage({
@@ -49,61 +97,40 @@ const sendToBackend = ({
     });
 };
 
-const connectToBackend = (notebook: Notebook) => {
-  if (samePageBackend.status === "DISCONNECTED") {
-    samePageBackend.status = "PENDING";
-    samePageBackend.channel = new WebSocket(
-      process.env.WEBSOCKET_URL ||
-        (process.env.NODE_ENV === "development"
-          ? "ws://127.0.0.1:3010"
-          : "ws://ws.samepage.network")
-    );
-    samePageBackend.channel.onopen = () => {
-      sendToBackend({
-        operation: "AUTHENTICATION",
-        data: notebook,
-        unauthenticated: true,
-      });
-    };
-
-    samePageBackend.channel.onclose = (args) => {
-      console.warn("Same page network disconnected:", args);
-      disconnectFromBackend("Network Disconnected");
-    };
-    samePageBackend.channel.onerror = (_) => {
-      //   onError(ev);
-    };
-
-    samePageBackend.channel.onmessage = (data) => {
-      //   if (JSON.parse(data.data).message === "Internal server error")
-      // renderToast({
-      //   id: "network-error",
-      //   content: `Unknown Internal Server Error. Request ID: ${
-      //     JSON.parse(data.data).requestId
-      //   }`,
-      //   intent: "danger",
-      // });
-
-      receiveChunkedMessage(data.data);
-    };
+const onError = (e: { error: Error } | Event) => {
+  if (
+    "error" in e &&
+    !e.error.message.includes("Transport channel closed") &&
+    !e.error.message.includes("User-Initiated Abort, reason=Close called")
+  ) {
+    // handled in disconnect
+    console.error(e);
+    dispatchAppEvent({
+      id: "samepage-ws-error",
+      content: `SamePage Error: ${e.error}`,
+      intent: "error",
+    });
   }
 };
 
-const disconnectFromBackend = (_: string) => {
-  if (samePageBackend.status !== "DISCONNECTED") {
-    samePageBackend.status = "DISCONNECTED";
-    samePageBackend.channel = undefined;
-    //   renderToast({
-    //     id: "samepage-disconnect",
-    //     content: `Disconnected from SamePage Network: ${reason}`,
-    //     intent: Intent.WARNING,
-    //   });
-  }
-  // addConnectCommand();
-};
+const sendToNotebook: SendToNotebook = ({ target, operation, data = {} }) => {
+  const connection = getP2PConnection(target);
 
-type AddCommand = (args: { label: string; callback: () => void }) => void;
-type RemoveCommand = (args: { label: string }) => void;
+  if (connection?.status === "CONNECTED") {
+    sendChunkedMessage({
+      data: { operation, ...data },
+      sender: (d) => connection.channel.send(JSON.stringify(d)),
+    });
+  } else if (
+    samePageBackend.channel &&
+    samePageBackend.status === "CONNECTED"
+  ) {
+    sendToBackend({
+      operation: "PROXY",
+      data: { ...data, ...target, proxyOperation: operation },
+    });
+  }
+};
 
 const documentBodyListeners: Record<string, (a: KeyboardEvent) => void> = {};
 const defaultAddCommand: AddCommand = ({ label, callback }) => {
@@ -135,9 +162,63 @@ const setupSamePageClient = ({
   addCommand?: AddCommand;
   removeCommand?: RemoveCommand;
 } & Notebook) => {
+  const connectToBackend = (notebook: Notebook) => {
+    if (samePageBackend.status === "DISCONNECTED") {
+      samePageBackend.status = "PENDING";
+      samePageBackend.channel = new WebSocket(
+        process.env.WEBSOCKET_URL ||
+          (process.env.NODE_ENV === "development"
+            ? "ws://127.0.0.1:3010"
+            : "ws://ws.samepage.network")
+      );
+      samePageBackend.channel.onopen = () => {
+        sendToBackend({
+          operation: "AUTHENTICATION",
+          data: notebook,
+          unauthenticated: true,
+        });
+      };
+
+      samePageBackend.channel.onclose = (args) => {
+        console.warn("Same page network disconnected:", args);
+        disconnectFromBackend("Network Disconnected");
+      };
+      samePageBackend.channel.onerror = (ev) => {
+        onError(ev);
+      };
+
+      samePageBackend.channel.onmessage = (data) => {
+        if (JSON.parse(data.data).message === "Internal server error")
+          dispatchAppEvent({
+            id: "network-error",
+            content: `Unknown Internal Server Error. Request ID: ${
+              JSON.parse(data.data).requestId
+            }`,
+            intent: "error",
+          });
+
+        receiveChunkedMessage(data.data);
+      };
+    }
+  };
+
+  const disconnectFromBackend = (reason: string) => {
+    if (samePageBackend.status !== "DISCONNECTED") {
+      samePageBackend.status = "DISCONNECTED";
+      samePageBackend.channel = undefined;
+      dispatchAppEvent({
+        id: "samepage-disconnect",
+        content: `Disconnected from SamePage Network: ${reason}`,
+        intent: "warning",
+      });
+    }
+    addConnectCommand();
+  };
+
   if (isAutoConnect) {
     connectToBackend({ app, workspace });
   }
+
   const addConnectCommand = () => {
     removeDisconnectCommand();
     addCommand({
@@ -174,16 +255,21 @@ const setupSamePageClient = ({
 
   addConnectCommand();
 
-  // loadP2P();
+  const unloadP2P = setupP2PFeatures({
+    notebook: { app, workspace },
+    addCommand,
+    removeCommand,
+    sendToBackend,
+  });
   // addNotebookListener 5x
   // addCommand USAGE_LABEL
   // render notifications
 
-  // window.samepage = {
-  //    addNotebookListener,
-  //    removeNotebookListener,
-  //    sendToNotebook,
-  // };
+  window.samepage = {
+    addNotebookListener,
+    removeNotebookListener,
+    sendToNotebook,
+  };
 
   return () => {
     // removeCommand USAGE
@@ -192,8 +278,7 @@ const setupSamePageClient = ({
     disconnectFromBackend("Disabled Client");
     removeConnectCommand();
     removeDisconnectCommand();
-    // unloadP2P();
-    // Object.keys(connectedGraphs).forEach((g) => delete connectedGraphs[g]);
+    unloadP2P();
   };
 };
 

@@ -7,10 +7,21 @@ export type json =
   | json[]
   | { [key: string]: json };
 
-export type MessageHandlers = {
-  [operation: string]: (data: json, workspace: string) => void;
+export type AppEvent = {
+  id: string;
+  content: string;
+  intent?: "info" | "warning" | "error";
 };
 
+export type MessageHandlers = {
+  [operation: string]: (data: json, source: Notebook) => void;
+};
+
+export type AddCommand = (args: {
+  label: string;
+  callback: () => void;
+}) => void;
+export type RemoveCommand = (args: { label: string }) => void;
 export type Notebook = { app: number; workspace: string };
 export type Status = "DISCONNECTED" | "PENDING" | "CONNECTED";
 
@@ -32,6 +43,11 @@ export type SendToNotebook = (args: {
   target: Notebook;
   operation: string;
   data?: { [k: string]: json };
+}) => void;
+export type SendToBackend = (args: {
+  operation: string;
+  data?: { [key: string]: json };
+  unauthenticated?: boolean;
 }) => void;
 
 declare global {
