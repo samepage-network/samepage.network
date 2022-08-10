@@ -179,6 +179,12 @@ const setupSamePageClient = ({
   // addCommand USAGE_LABEL
   // render notifications
 
+  // window.samepage = {
+  //    addNotebookListener,
+  //    removeNotebookListener,
+  //    sendToNotebook,
+  // };
+
   return () => {
     // removeCommand USAGE
     if (samePageBackend.channel)

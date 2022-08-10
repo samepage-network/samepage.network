@@ -1,4 +1,4 @@
-name: Migrate Data
+name: Publish Data Infrastructure
 on:
   workflow_dispatch:
   push:
