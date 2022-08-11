@@ -27,4 +27,4 @@ jobs:
         working-directory: packages/client
       - name: publish
         run: npm publish --access public
-        working-directory: packages/client
+        working-directory: packages/client/dist
