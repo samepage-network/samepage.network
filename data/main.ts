@@ -1,4 +1,5 @@
 import base from "fuegojs/dist/base";
+import Apps from "~/enums/apps";
 import schema from "./schema";
 import { ActionsSecret, GithubProvider } from "@cdktf/provider-github";
 
@@ -13,25 +14,28 @@ base({
       (c) => c.node.id === "deploy_aws_access_key"
     );
     const accessSecret = this.node.children.find(
-      (c) => c.node.id === "deploy_aws_access_key"
+      (c) => c.node.id === "deploy_aws_access_secret"
     );
 
     const provider = new GithubProvider(this, "GITHUB_PERSONAL", {
       token: process.env.GITHUB_TOKEN,
       owner: "dvargas92495",
-      alias: "personal"
+      alias: "personal",
     });
-    new ActionsSecret(this, "logseq_deploy_aws_access_key", {
-      repository: "logseq-samepage",
-      secretName: "DEPLOY_AWS_ACCESS_KEY",
-      plaintextValue: (accessKey as ActionsSecret).plaintextValue,
-      provider,
-    });
-    new ActionsSecret(this, "logseq_deploy_aws_access_secret", {
-      repository: "logseq-samepage",
-      secretName: "DEPLOY_AWS_ACCESS_SECRET",
-      plaintextValue: (accessSecret as ActionsSecret).plaintextValue,
-      provider,
+    Apps.forEach((args) => {
+      const key = "key" in args ? args.key : args.name.toLowerCase();
+      new ActionsSecret(this, `${key}_deploy_aws_access_key`, {
+        repository: `${key}-samepage`,
+        secretName: "SAMEPAGE_AWS_ACCESS_KEY",
+        plaintextValue: (accessKey as ActionsSecret).plaintextValue,
+        provider,
+      });
+      new ActionsSecret(this, `${key}_deploy_aws_access_secret`, {
+        repository: `${key}-samepage`,
+        secretName: "SAMEPAGE_AWS_ACCESS_SECRET",
+        plaintextValue: (accessSecret as ActionsSecret).plaintextValue,
+        provider,
+      });
     });
   },
 });
