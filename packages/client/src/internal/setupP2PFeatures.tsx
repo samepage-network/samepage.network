@@ -1,16 +1,12 @@
-import type {
-  Notebook,
-  RemoveCommand,
-  SendToBackend,
-  Status,
-} from "../types";
+import type { Notebook, Status } from "../types";
 import { v4 } from "uuid";
 import {
   addNotebookListener,
   receiveChunkedMessage,
 } from "./setupMessageHandlers";
 import dispatchAppEvent from "./dispatchAppEvent";
-
+import { sendToBackend } from "./setupWsFeatures";
+import { removeCommand } from "./registry";
 
 const FAILED_STATES = ["failed", "closed"];
 
@@ -311,13 +307,7 @@ const receiveAnswer = ({ answer }: { answer: string }) => {
   }
 };
 
-const setupP2PFeatures = ({
-  removeCommand,
-  sendToBackend,
-}: {
-  removeCommand: RemoveCommand;
-  sendToBackend: SendToBackend;
-}) => {
+const setupP2PFeatures = () => {
   addNotebookListener({
     operation: "INITIALIZE_P2P",
     handler: (props) => {
