@@ -1,20 +1,16 @@
 import type {
-  AddCommand,
   Notebook,
   RemoveCommand,
   SendToBackend,
   Status,
 } from "../types";
-import React, { useCallback, useEffect, useState } from "react";
 import { v4 } from "uuid";
 import {
   addNotebookListener,
   receiveChunkedMessage,
 } from "./setupMessageHandlers";
 import dispatchAppEvent from "./dispatchAppEvent";
-import ReactDOM from "react-dom";
 
-type AlertProps = { onClose: () => void; notebook: Notebook };
 
 const FAILED_STATES = ["failed", "closed"];
 
@@ -93,11 +89,6 @@ const onError = (e: { error: Error } | Event) => {
     });
   }
 };
-
-const isSafari =
-  window.navigator.userAgent.includes("Safari") &&
-  !window.navigator.userAgent.includes("Chrome") &&
-  !window.navigator.userAgent.includes("Android");
 
 const getPeerConnection = (onClose?: () => void) => {
   const connection = new RTCPeerConnection({
@@ -320,211 +311,13 @@ const receiveAnswer = ({ answer }: { answer: string }) => {
   }
 };
 
-const SetupAlert = ({ onClose, notebook }: AlertProps) => {
-  const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [readyToRecieve, setReadyToRecieve] = useState(isSafari);
-  const [code, setCode] = useState("");
-  const [answer, setAnswer] = useState("");
-  useEffect(() => {
-    getSetupCode({ onClose, notebook }).then(setCode);
-  }, [setLoading]);
-  return (
-    <>
-      <style>
-        {`.bp3-alert > .bp3-dialog-header {
-  margin: -20px -20px 20px;
-}`}
-      </style>
-      <div
-        // loading={!readyToRecieve || loading}
-        // isOpen={true}
-        // onConfirm={() => {
-        //   setLoading(true);
-        //   receiveAnswer({ answer });
-        // }}
-        // canOutsideClickCancel
-        // confirmButtonText={"Connect"}
-        // onCancel={() => {
-        //   onClose();
-        // }}
-        style={isSafari ? { minWidth: 800 } : {}}
-        // @ts-ignore
-        title={"Setup Connection"}
-        // isCloseButtonShown={false}
-      >
-        {!isSafari ? (
-          <>
-            <p>
-              Click the button below to copy the handshake code and send it to
-              your peer:
-            </p>
-            <p>
-              <button
-                style={{ minWidth: 120 }}
-                disabled={!code || loading}
-                onClick={() => {
-                  window.navigator.clipboard.writeText(code);
-                  setCopied(true);
-                  setTimeout(() => {
-                    setReadyToRecieve(true);
-                    setCopied(false);
-                  }, 3000);
-                }}
-              >
-                {copied ? "Copied!" : "Copy"}
-              </button>
-            </p>
-          </>
-        ) : (
-          <>
-            <p>Copy the handshake code and send it to your peer:</p>
-            <pre>{code}</pre>
-          </>
-        )}
-        <p>Then, enter the handshake code sent by your peer:</p>
-        <label>
-          Peer's Handshake Code
-          <input
-            value={answer}
-            disabled={!readyToRecieve || loading}
-            onChange={(e) => {
-              setAnswer(e.target.value);
-              setLoading(!e.target.value);
-            }}
-            style={{ wordBreak: "keep-all" }}
-          />
-        </label>
-        <p>Finally, click connect below:</p>
-      </div>
-    </>
-  );
-};
-
-const ConnectAlert = ({ onClose, notebook }: AlertProps) => {
-  const [loading, setLoading] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [offer, setOffer] = useState("");
-  const [code, setCode] = useState("");
-  const onConfirm = useCallback(() => {
-    setLoading(true);
-    getConnectCode({
-      offer,
-      onClose,
-      notebook,
-    }).then((code) => {
-      window.navigator.clipboard.writeText(code);
-      setCopied(true);
-      setCode(code);
-    });
-  }, [setLoading, offer, setCopied, setCode]);
-  return (
-    <>
-      <style>
-        {`.bp3-alert > .bp3-dialog-header {
-  margin: -20px -20px 20px;
-}`}
-      </style>
-      <div
-        //   Alert
-        // loading={loading}
-        // isOpen={true}
-        // onConfirm={onConfirm}
-        // canOutsideClickCancel
-        // confirmButtonText={"Connect"}
-        // onCancel={() => {
-        //   onClose();
-        // }}
-        onClick={onConfirm}
-        style={isSafari ? { minWidth: 800 } : {}}
-        // @ts-ignore
-        title={"Connect to Host"}
-        // isCloseButtonShown={false}
-      >
-        {copied ? (
-          !isSafari ? (
-            <p>A response handshake code was copied! Send it to your peer.</p>
-          ) : (
-            <>
-              <p>
-                Now copy the handshake code below and send it back to your peer.
-              </p>
-              <pre>{code}</pre>
-            </>
-          )
-        ) : (
-          <>
-            <p>Enter the handshake code sent by your peer:</p>
-            <label>
-              Peer's Handshake Code
-              <input
-                value={offer}
-                onChange={(e) => {
-                  setOffer(e.target.value);
-                }}
-                disabled={loading}
-                style={{ wordBreak: "keep-all" }}
-              />
-            </label>
-            <p>Then, click connect below:</p>
-          </>
-        )}
-      </div>
-    </>
-  );
-};
-
-const renderOverlay = (
-  id: string,
-  notebook: Notebook,
-  Overlay: (props: AlertProps) => React.ReactElement
-) => {
-  const parent = document.createElement("div");
-  parent.id = id;
-
-  const onClose = () => {
-    ReactDOM.unmountComponentAtNode(parent);
-    parent.remove();
-  };
-  ReactDOM.render(
-    React.createElement(Overlay, {
-      notebook,
-      onClose,
-    }),
-    parent
-  );
-  return onClose;
-};
-
 const setupP2PFeatures = ({
-  notebook,
-  addCommand,
   removeCommand,
   sendToBackend,
 }: {
-  notebook: Notebook;
-  addCommand: AddCommand;
   removeCommand: RemoveCommand;
   sendToBackend: SendToBackend;
 }) => {
-  if (false) {
-    // we need to revisit p2p logic/UI
-    // we may need to nuke all of this manual stuff. Manual still requires
-    // a server, might as well be us
-    addCommand({
-      label: "Setup Direct Notebook Connection",
-      callback: () => {
-        renderOverlay("samepage-p2p-setup", notebook, SetupAlert);
-      },
-    });
-    addCommand({
-      label: "Connect Directly To Notebook",
-      callback: () => {
-        renderOverlay("samepage-p2p-connect", notebook, ConnectAlert);
-      },
-    });
-  }
-
   addNotebookListener({
     operation: "INITIALIZE_P2P",
     handler: (props) => {

@@ -10,7 +10,13 @@ export type json =
 export type AppEvent = {
   id: string;
   content: string;
-  intent?: "info" | "warning" | "error";
+  intent?: "info" | "warning" | "error" | "success";
+};
+
+export type Stats = {
+  minutes: 0;
+  messages: 0;
+  date: "";
 };
 
 export type MessageHandlers = {
