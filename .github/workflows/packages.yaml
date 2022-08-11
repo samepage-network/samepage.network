@@ -7,6 +7,9 @@ on:
       - "packages/client/**"
       - ".github/workflows/packages.yaml"
 
+env:
+  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
 jobs:
   deploy:
     runs-on: ubuntu-20.04
@@ -18,10 +21,10 @@ jobs:
         run: npx tsc
         working-directory: packages/client
       - name: prepare
-        run: cp LICENSE README.md package.json dist
+        run: |
+          cp LICENSE README.md package.json dist
+          echo '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}' > ~/.npmrc
         working-directory: packages/client
       - name: publish
         run: npm publish --access public
         working-directory: packages/client
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
