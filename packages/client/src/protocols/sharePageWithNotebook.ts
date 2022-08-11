@@ -1,8 +1,8 @@
-import apiClient from "../internal/apiClient";
+import apiClient, { apiGet } from "../internal/apiClient";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { addCommand, removeCommand } from "../internal/registry";
 import sendToNotebook from "../sendToNotebook";
-import { Notebook } from "../types";
+import { App, Notebook } from "../types";
 
 const COMMAND_PALETTE_LABEL = "Share Page With Notebook";
 // const sharedPagesState = {}; AUTOMERGE AND ATJSON NOW
@@ -16,6 +16,7 @@ const setupSharePageWithNotebook = ({
   getUpdateLog: () => {}[];
   render: (props: {
     onSubmit: (props: { notebookPageId: string } & Notebook) => void;
+    apps: App[];
   }) => void;
 }) => {
   //   window.roamAlphaAPI.ui.commandPalette.addCommand({
@@ -60,7 +61,9 @@ const setupSharePageWithNotebook = ({
             });
           });
       };
-      render({ onSubmit });
+      apiGet<{ apps: { id: number; name: string }[] }>("apps").then((r) =>
+        render({ onSubmit, apps: r.apps })
+      );
     },
   });
   //   addAuthenticationHandler({

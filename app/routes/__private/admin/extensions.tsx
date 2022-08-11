@@ -40,9 +40,9 @@ const AdminExtensionsPage = () => {
   );
 };
 
-export const loader: LoaderFunction = (args) => {
-  return remixAdminLoader(args, async ({ searchParams }) => {
-    const app = searchParams.app;
+export const loader: LoaderFunction = () => {
+  // return remixAdminLoader(args, async ({ searchParams }) => {
+    const app = "";//args.request.searchParams.app;
     if (!app) return {};
     if (app === "1")
       return axios
@@ -65,7 +65,7 @@ export const loader: LoaderFunction = (args) => {
           },
         })
     );
-  });
+  // });
 };
 
 export default AdminExtensionsPage;

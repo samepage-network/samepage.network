@@ -29,6 +29,7 @@ export type AddCommand = (args: {
 }) => void;
 export type RemoveCommand = (args: { label: string }) => void;
 export type Notebook = { app: number; workspace: string };
+export type App = { id: number; name: string };
 export type Status = "DISCONNECTED" | "PENDING" | "CONNECTED";
 
 export type SharedPages = {

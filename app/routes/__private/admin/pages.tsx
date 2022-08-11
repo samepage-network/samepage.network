@@ -1,6 +1,6 @@
 import { LoaderFunction } from "@remix-run/node";
 import { Link, useLoaderData } from "@remix-run/react";
-import remixAppLoader from "@dvargas92495/app/backend/remixAppLoader.server";
+import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
 import listPageNotebookLinks from "~/data/listPageNotebookLinks.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
@@ -30,9 +30,9 @@ const AdminPagesPage = () => {
 };
 
 export const loader: LoaderFunction = (args) => {
-  return remixAppLoader(args, () =>
-    listPageNotebookLinks(args.context?.lambdaContext?.requestId || v4())
-  );
+  // return remixAdminLoader(args, () =>
+  return listPageNotebookLinks(args.context?.lambdaContext?.requestId || v4());
+  // );
 };
 
 export default AdminPagesPage;

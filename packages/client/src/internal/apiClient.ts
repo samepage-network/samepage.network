@@ -36,6 +36,29 @@ const handleFetch = <T extends Record<string, unknown> = Record<string, never>>(
   });
 };
 
+const handleUrlFetch =
+  (method: "GET" | "DELETE") =>
+  <T extends Record<string, unknown> = Record<string, never>>(
+    args: string | HandleFetchArgs,
+    _data?: Record<string, unknown>
+  ) => {
+    const { data = {}, ...fetchArgs } =
+      typeof args === "string" ? { path: args, data: _data } : args;
+
+    return handleFetch<T>((url, init) => {
+      Object.entries(data).forEach(([k, v]) =>
+        url.searchParams.set(k, v as string)
+      );
+      return [
+        url,
+        {
+          ...init,
+          method,
+        },
+      ];
+    }, fetchArgs);
+  };
+
 const handleBodyFetch =
   (method: "POST" | "PUT") =>
   <T extends Record<string, unknown> = Record<string, never>>(
@@ -63,7 +86,9 @@ const handleBodyFetch =
     );
   };
 
-const apiPost = handleBodyFetch("POST");
+export const apiPost = handleBodyFetch("POST");
+
+export const apiGet = handleUrlFetch("GET");
 
 const apiClient = <T extends Record<string, unknown>>(
   data: Record<string, unknown> = {}

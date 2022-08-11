@@ -78,12 +78,12 @@ const SinglePagePage = () => {
 };
 
 export const loader: LoaderFunction = (args) => {
-  return remixAdminLoader(args, ({ params }) =>
-    getSharedPageByUuid(
-      params["uuid"] || "",
+  // return remixAdminLoader(args, ({ params }) =>
+    return getSharedPageByUuid(
+      args.params["uuid"] || "",
       args.context?.lambdaContext?.requestId || v4()
     )
-  );
+  // );
 };
 
 export const action: ActionFunction = (args) => {
