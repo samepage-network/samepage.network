@@ -83,7 +83,7 @@ const setupWsFeatures = ({
     if (samePageBackend.status === "DISCONNECTED") {
       samePageBackend.status = "PENDING";
       samePageBackend.channel = new WebSocket(
-        process.env.WEBSOCKET_URL ||
+        process.env.WEB_SOCKET_URL ||
           (process.env.NODE_ENV === "development"
             ? "ws://127.0.0.1:3010"
             : "ws://ws.samepage.network")
