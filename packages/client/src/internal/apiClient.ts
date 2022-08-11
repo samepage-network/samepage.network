@@ -13,7 +13,11 @@ const handleFetch = <T extends Record<string, unknown> = Record<string, never>>(
   }: Pick<RequestInit, "method"> & Omit<HandleFetchArgs, "data">
 ) => {
   const url = new URL(
-    `${domain || process.env.API_URL || "https://api.samepage.network"}/${path}`
+    `${
+      domain ||
+      (typeof process !== "undefined" && process.env.API_URL) ||
+      "https://api.samepage.network"
+    }/${path}`
   );
   return fetch(
     ...transformArgs(url, {
@@ -41,10 +45,7 @@ const handleBodyFetch =
     const { data, ...fetchArgs } =
       typeof args === "string" ? { path: args, data: _data } : args;
 
-    const body =
-      process.env.NODE_ENV === "development"
-        ? JSON.stringify({ dev: true, ...data })
-        : JSON.stringify(data || {});
+    const body = JSON.stringify(data || {});
 
     return handleFetch<T>(
       (url, init) => [
