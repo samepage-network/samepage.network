@@ -19,6 +19,7 @@ base({
     const provider = new GithubProvider(this, "GITHUB_PERSONAL", {
       token: process.env.GITHUB_TOKEN,
       owner: "dvargas92495",
+      alias: "personal"
     });
     new ActionsSecret(this, "logseq_deploy_aws_access_key", {
       repository: "logseq-samepage",
