@@ -1,4 +1,4 @@
-import { AddCommand, RemoveCommand } from "./types";
+import { AddCommand, RemoveCommand } from "../types";
 
 export let addCommand: AddCommand;
 export let removeCommand: RemoveCommand;

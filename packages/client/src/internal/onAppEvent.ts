@@ -1,5 +1,5 @@
-import { APP_EVENT } from "./internal/events";
-import { AppEvent } from "./types";
+import { APP_EVENT } from "./events";
+import { AppEvent } from "../types";
 
 const onAppEvent = (handler: (event: AppEvent) => void) =>
   document.body.addEventListener(APP_EVENT, ((e: CustomEvent) =>
