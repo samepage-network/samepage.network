@@ -20,7 +20,7 @@ base({
       secretName: "DEPLOY_AWS_ACCESS_KEY",
       plaintextValue: (accessKey as ActionsSecret).plaintextValue,
     });
-    new ActionsSecret(this, "logseq_deploy_aws_access_key", {
+    new ActionsSecret(this, "logseq_deploy_aws_access_secret", {
       repository: "logseq-samepage",
       secretName: "DEPLOY_AWS_ACCESS_SECRET",
       plaintextValue: (accessSecret as ActionsSecret).plaintextValue,
