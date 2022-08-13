@@ -79,6 +79,7 @@ const onError = (e: { error: Error } | Event) => {
     // handled in disconnect
     console.error(e);
     dispatchAppEvent({
+      type: "log",
       id: "samepage-p2p-error",
       content: `SamePage Error: ${e.error}`,
       intent: "error",
@@ -100,6 +101,7 @@ const getPeerConnection = (onClose?: () => void) => {
   const disconnectStateHandler = () => {
     if (FAILED_STATES.includes(connection.iceConnectionState)) {
       dispatchAppEvent({
+        type: "log",
         id: "samepage-failed-connection",
         content: "Failed to connect to graph",
         intent: "error",
@@ -136,8 +138,10 @@ const onConnect = ({
   const notebook = JSON.parse(e.data) as Notebook;
   const name = `${notebook.app}/${notebook.workspace}`;
   dispatchAppEvent({
+    type: "log",
     id: `samepage-on-connect`,
     content: `Successfully connected to notebook: ${name}!`,
+    intent: "info",
   });
   callback();
   connectedGraphs[name] = {
@@ -160,6 +164,7 @@ const onDisconnect = (notebook: Notebook) => () => {
   const name = `${notebook.app}/${notebook.workspace}`;
   if (connectedGraphs[name].status !== "DISCONNECTED") {
     dispatchAppEvent({
+      type: "log",
       id: "samepage-disconnect",
       content: `Disconnected from notebook ${name}`,
       intent: "warning",
@@ -298,6 +303,7 @@ const receiveAnswer = ({ answer }: { answer: string }) => {
       );
   } else {
     dispatchAppEvent({
+      type: "log",
       id: "connection-answer-error",
       intent: "error",
       content: `Error: No graph setup for connection with label: ${label}`,

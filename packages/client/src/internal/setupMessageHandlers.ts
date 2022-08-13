@@ -14,6 +14,7 @@ export const handleMessage = (content: string, source?: Notebook) => {
   if (handler) handler(props, source || props.source || "");
   else if (!props.ephemeral)
     dispatchAppEvent({
+      type: "log",
       id: `network-error-${operation}`,
       content: `Unknown network operation: ${
         operation || "No operation specified"

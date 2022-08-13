@@ -1,4 +1,4 @@
-import { Status, SendToBackend, Notebook } from "../types";
+import { Status, SendToBackend, Notebook, AppEvent } from "../types";
 import apiClient from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
 import { CONNECTED_EVENT } from "./events";
@@ -10,6 +10,8 @@ import {
   receiveChunkedMessage,
   removeNotebookListener,
 } from "./setupMessageHandlers";
+
+const USAGE_LABEL = "View SamePage Usage";
 
 const authenticationHandlers: {
   handler: () => Promise<unknown>;
@@ -40,6 +42,7 @@ const onError = (e: { error: Error } | Event) => {
     // handled in disconnect
     console.error(e);
     dispatchAppEvent({
+      type: "log",
       id: "samepage-ws-error",
       content: `SamePage Error: ${e.error}`,
       intent: "error",
@@ -109,6 +112,7 @@ const setupWsFeatures = ({
       samePageBackend.channel.onmessage = (data) => {
         if (JSON.parse(data.data).message === "Internal server error")
           dispatchAppEvent({
+            type: "log",
             id: "network-error",
             content: `Unknown Internal Server Error. Request ID: ${
               JSON.parse(data.data).requestId
@@ -126,6 +130,7 @@ const setupWsFeatures = ({
       samePageBackend.status = "DISCONNECTED";
       samePageBackend.channel = undefined;
       dispatchAppEvent({
+        type: "log",
         id: "samepage-disconnect",
         content: `Disconnected from SamePage Network: ${reason}`,
         intent: "warning",
@@ -178,6 +183,7 @@ const setupWsFeatures = ({
     handler: (args) => {
       const { message } = args as { message: string };
       dispatchAppEvent({
+        type: "log",
         id: "websocket-error",
         content: message,
         intent: "error",
@@ -210,6 +216,7 @@ const setupWsFeatures = ({
             if (messages.length) {
               let progress = 0;
               dispatchAppEvent({
+                type: "log",
                 intent: "info",
                 content: `Loaded ${progress} of ${messages.length} remote messages...`,
                 id: "load-remote-message",
@@ -225,6 +232,7 @@ const setupWsFeatures = ({
                   }).then((r) => {
                     progress = progress + 1;
                     dispatchAppEvent({
+                      type: "log",
                       intent: "info",
                       content: `Loaded ${progress} of ${messages.length} remote messages...`,
                       id: "load-remote-message",
@@ -234,6 +242,7 @@ const setupWsFeatures = ({
                 )
               ).finally(() => {
                 dispatchAppEvent({
+                  type: "log",
                   intent: "info",
                   content: `Finished loading remote messages`,
                   id: "load-remote-message",
@@ -248,6 +257,7 @@ const setupWsFeatures = ({
         Promise.all(authenticationHandlers.map(({ handler }) => handler()))
           .then(() => {
             dispatchAppEvent({
+              type: "log",
               id: "samepage-success",
               content: "Successfully connected to SamePage Network!",
               intent: "success",
@@ -257,6 +267,7 @@ const setupWsFeatures = ({
             samePageBackend.status = "DISCONNECTED";
             if (samePageBackend.channel) samePageBackend.channel.close();
             dispatchAppEvent({
+              type: "log",
               id: "samepage-failure",
               content: `Failed to connect to SamePage Network: ${e.message}`,
               intent: "error",
@@ -266,6 +277,7 @@ const setupWsFeatures = ({
         samePageBackend.status = "DISCONNECTED";
         if (samePageBackend.channel) samePageBackend.channel.close();
         dispatchAppEvent({
+          type: "log",
           id: "samepage-failure",
           content: `Failed to connect to SamePage Network: ${reason}`,
           intent: "error",
@@ -274,7 +286,16 @@ const setupWsFeatures = ({
     },
   });
 
+  addCommand({
+    label: USAGE_LABEL,
+    callback: () =>
+      apiClient<AppEvent>({
+        method: "usage",
+      }).then((r) => dispatchAppEvent(r)),
+  });
+
   return () => {
+    removeCommand({ label: USAGE_LABEL });
     removeNotebookListener({ operation: "AUTHENTICATION" });
     removeNotebookListener({ operation: "ERROR" });
     if (samePageBackend.channel)

@@ -1,8 +1,9 @@
 import { APP_EVENT } from "./events";
 import { AppEvent } from "../types";
+import { onAppEventHandler } from "./registry";
 
-const onAppEvent = (handler: (event: AppEvent) => void) =>
+const onAppEvent = () =>
   document.body.addEventListener(APP_EVENT, ((e: CustomEvent) =>
-    handler(e.detail as AppEvent)) as EventListener);
+    onAppEventHandler(e.detail as AppEvent)) as EventListener);
 
 export default onAppEvent;

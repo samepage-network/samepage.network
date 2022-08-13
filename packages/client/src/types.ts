@@ -5,19 +5,31 @@ export type json =
   | null
   | { toJSON: () => string }
   | json[]
-  | { [key: string]: json };
+  | { [key: string]: json }
+  | Uint8Array
 
-export type AppEvent = {
+type LogEvent = {
+  type: "log";
   id: string;
   content: string;
-  intent?: "info" | "warning" | "error" | "success";
+  intent: "info" | "warning" | "error" | "success";
 };
 
-export type Stats = {
-  minutes: 0;
-  messages: 0;
-  date: "";
+type UsageEvent = {
+  type: "usage";
+  minutes: number;
+  messages: number;
+  date: string;
 };
+
+type SharePageEvent = {
+  type: "share-page";
+  source: Notebook;
+  notebookPageId: string;
+  pageUuid: string;
+};
+
+export type AppEvent = LogEvent | UsageEvent | SharePageEvent;
 
 export type MessageHandlers = {
   [operation: string]: (data: json, source: Notebook) => void;
