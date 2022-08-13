@@ -39,9 +39,9 @@ const setupSharePageWithNotebook = ({
   saveState,
 }: {
   renderInitPage: (props: { onSubmit: OnInitHandler; apps: App[] }) => void;
-  renderViewPages: (props: {notebookPageIds: string[]}) => void;
+  renderViewPages: (props: { notebookPageIds: string[] }) => void;
 
-  applyState: (state: AtJson) => unknown;
+  applyState: (notebookPageId: string, state: AtJson) => unknown;
   calculateState: (
     notebookPageId: string
   ) => ConstructorParameters<typeof Document>[0];
@@ -94,7 +94,7 @@ const setupSharePageWithNotebook = ({
               dispatchAppEvent({
                 type: "init-page",
                 notebookPageId,
-              })
+              });
               dispatchAppEvent({
                 type: "log",
                 id: "share-page-success",
@@ -183,7 +183,7 @@ const setupSharePageWithNotebook = ({
       );
       console.log(patch);
       sharedPages[notebookPageId] = newDoc;
-      applyState(newDoc);
+      applyState(notebookPageId, newDoc);
     },
   });
 
