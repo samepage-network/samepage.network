@@ -30,29 +30,33 @@ const SHARE_PAGE_UPDATE_OPERATION = "SHARE_PAGE_UPDATE";
 const sharedPages: Record<string, Automerge.FreezeObject<AtJson>> = {};
 
 const setupSharePageWithNotebook = ({
-  render,
+  renderInitPage,
+  renderViewPages,
+
   applyState,
   calculateState,
   loadState,
   saveState,
 }: {
+  renderInitPage: (props: { onSubmit: OnInitHandler; apps: App[] }) => void;
+  renderViewPages: (props: {notebookPageIds: string[]}) => void;
+
+  applyState: (state: AtJson) => unknown;
   calculateState: (
     notebookPageId: string
   ) => ConstructorParameters<typeof Document>[0];
+  loadState: (notebookPageId: string) => Promise<Automerge.BinaryDocument>;
   saveState: (
     notebookPageId: string,
     state: Automerge.BinaryDocument
   ) => Promise<unknown>;
-  loadState: (notebookPageId: string) => Promise<Automerge.BinaryDocument>;
-  applyState: (state: AtJson) => unknown;
-  render: (props: { onSubmit: OnInitHandler; apps: App[] }) => void;
 }) => {
   addCommand({
     label: VIEW_COMMAND_PALETTE_LABEL,
     callback: () => {
       apiClient<{ notebookPageIds: string[] }>({
         method: "list-shared-pages",
-      });
+      }).then(renderViewPages);
     },
   });
   addCommand({
@@ -88,6 +92,10 @@ const setupSharePageWithNotebook = ({
               }),
             ]).then(() => {
               dispatchAppEvent({
+                type: "init-page",
+                notebookPageId,
+              })
+              dispatchAppEvent({
                 type: "log",
                 id: "share-page-success",
                 content: `Successfully initialized shared page! We will now await for the other notebooks to accept.`,
@@ -105,7 +113,7 @@ const setupSharePageWithNotebook = ({
           }
         });
       };
-      render({ onSubmit, apps });
+      renderInitPage({ onSubmit, apps });
     },
   });
   addAuthenticationHandler({
@@ -148,14 +156,14 @@ const setupSharePageWithNotebook = ({
       if (success)
         dispatchAppEvent({
           type: "log",
-          id: "share-page-success",
+          id: "share-page-accepted",
           content: `Successfully shared ${notebookPageId} with ${source.app}/${source.workspace}!`,
           intent: "success",
         });
       else
         dispatchAppEvent({
           type: "log",
-          id: "share-page-failure",
+          id: "share-page-rejected",
           content: `Graph ${source.app}/${source.workspace} rejected ${notebookPageId}`,
           intent: "info",
         });

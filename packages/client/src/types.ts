@@ -6,7 +6,7 @@ export type json =
   | { toJSON: () => string }
   | json[]
   | { [key: string]: json }
-  | Uint8Array
+  | Uint8Array;
 
 type LogEvent = {
   type: "log";
@@ -29,7 +29,12 @@ type SharePageEvent = {
   pageUuid: string;
 };
 
-export type AppEvent = LogEvent | UsageEvent | SharePageEvent;
+type InitPageEvent = {
+  type: "init-page";
+  notebookPageId: string;
+};
+
+export type AppEvent = LogEvent | UsageEvent | SharePageEvent | InitPageEvent;
 
 export type MessageHandlers = {
   [operation: string]: (data: json, source: Notebook) => void;
