@@ -6,11 +6,11 @@ import {
 import setupP2PFeatures from "./internal/setupP2PFeatures";
 import onAppEvent from "./internal/onAppEvent";
 import { Notebook, AddCommand, RemoveCommand, AppEvent } from "./types";
-import setupRegistry, { apps } from "./internal/registry";
+import setupRegistry from "./internal/registry";
 import sendToNotebook from "./sendToNotebook";
 import setupWsFeatures from "./internal/setupWsFeatures";
 
-const setupSamePageClient = ({
+const setupSamePageClient = async ({
   isAutoConnect,
   app,
   workspace,
@@ -23,8 +23,8 @@ const setupSamePageClient = ({
   removeCommand?: RemoveCommand;
   onAppEventHandler?: (evt: AppEvent) => void;
 } & Notebook) => {
-  apiGet<{ apps: { id: number; name: string }[] }>("apps").then((r) =>
-    setupRegistry({ apps: r.apps })
+  const { apps } = await apiGet<{ apps: { id: number; name: string }[] }>(
+    "apps"
   );
   setupRegistry({
     addCommand,
@@ -32,6 +32,7 @@ const setupSamePageClient = ({
     onAppEventHandler,
     app,
     workspace,
+    apps,
   });
   onAppEvent();
   const unloadWS = setupWsFeatures({ isAutoConnect });
@@ -48,9 +49,7 @@ const setupSamePageClient = ({
       unloadP2P();
       unloadWS();
     },
-    getAppName: (id: number) => {
-      return apps[id].name;
-    },
+    apps,
     addNotebookListener,
     removeNotebookListener,
     sendToNotebook,
