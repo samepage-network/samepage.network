@@ -38,18 +38,26 @@ export let addCommand = defaultAddCommand;
 export let removeCommand = defaultRemoveCommand;
 export let onAppEventHandler = defaultOnAppEventHandler;
 export let apps: Apps = {};
+export let app: number;
+export let workspace: string;
 
 const setupRegistry = ({
+  app: _app,
+  workspace: _workspace,
   addCommand: _addCommand,
   removeCommand: _removeCommand,
   apps: _apps,
   onAppEventHandler: _onAppEventHandler,
 }: {
+  app?: number;
+  workspace?: string;
   addCommand?: AddCommand;
   removeCommand?: RemoveCommand;
   apps?: App[];
   onAppEventHandler?: (event: AppEvent) => void;
 }) => {
+  if (_app) app = _app;
+  if (_workspace) workspace = _workspace;
   if (_addCommand) addCommand = _addCommand;
   if (_removeCommand) removeCommand = _removeCommand;
   if (_apps)

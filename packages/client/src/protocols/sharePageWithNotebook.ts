@@ -1,6 +1,13 @@
 import apiClient from "../internal/apiClient";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
-import { addCommand, Apps, apps, removeCommand } from "../internal/registry";
+import {
+  addCommand,
+  app,
+  Apps,
+  apps,
+  removeCommand,
+  workspace,
+} from "../internal/registry";
 import sendToNotebook from "../sendToNotebook";
 import { Notebook } from "../types";
 import Automerge from "automerge";
@@ -32,16 +39,12 @@ const sharedPages: Record<string, Automerge.FreezeObject<AtJson>> = {};
 const setupSharePageWithNotebook = ({
   renderInitPage,
   renderViewPages,
-  app,
-  workspace,
 
   applyState,
   calculateState,
   loadState,
   saveState,
 }: {
-  app: number;
-  workspace: string;
   renderInitPage: (props: { onSubmit: OnInitHandler; apps: Apps }) => void;
   renderViewPages: (props: { notebookPageIds: string[] }) => void;
 
@@ -218,6 +221,30 @@ const setupSharePageWithNotebook = ({
     ]);
   };
 
+  const disconnectPage = (notebookPageId: string) => {
+    return apiClient<{ id: string; created: boolean }>({
+      method: "disconnect-shared-page",
+      data: { app, workspace, notebookPageId },
+    })
+      .then(() => {
+        delete sharedPages[notebookPageId];
+        dispatchAppEvent({
+          type: "log",
+          content: `Successfully disconnected ${notebookPageId} from being shared.`,
+          id: "disconnect-shared-page",
+          intent: "success",
+        });
+      })
+      .catch((e) =>
+        dispatchAppEvent({
+          type: "log",
+          content: `Failed to disconnect page ${notebookPageId}: ${e.message}`,
+          id: "disconnect-shared-page",
+          intent: "error",
+        })
+      );
+  };
+
   return {
     unload: () => {
       removeNotebookListener({ operation: SHARE_PAGE_RESPONSE_OPERATION });
@@ -232,6 +259,7 @@ const setupSharePageWithNotebook = ({
       });
     },
     updatePage,
+    disconnectPage,
   };
 };
 

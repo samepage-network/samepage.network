@@ -1,8 +1,8 @@
-import { Status, SendToBackend, Notebook, AppEvent } from "../types";
+import { Status, SendToBackend, AppEvent } from "../types";
 import apiClient from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
 import { CONNECTED_EVENT } from "./events";
-import { addCommand, removeCommand } from "./registry";
+import { addCommand, app, removeCommand, workspace } from "./registry";
 import sendChunkedMessage from "./sendChunkedMessage";
 import {
   addNotebookListener,
@@ -79,10 +79,8 @@ export const sendToBackend: SendToBackend = ({
 
 const setupWsFeatures = ({
   isAutoConnect,
-  app,
-  workspace,
-}: { isAutoConnect: boolean } & Notebook) => {
-  const connectToBackend = (notebook: Notebook) => {
+}: { isAutoConnect: boolean }) => {
+  const connectToBackend = () => {
     if (samePageBackend.status === "DISCONNECTED") {
       samePageBackend.status = "PENDING";
       samePageBackend.channel = new WebSocket(
@@ -96,7 +94,10 @@ const setupWsFeatures = ({
       samePageBackend.channel.onopen = () => {
         sendToBackend({
           operation: "AUTHENTICATION",
-          data: notebook,
+          data: {
+            app,
+            workspace,
+          },
           unauthenticated: true,
         });
       };
@@ -140,14 +141,14 @@ const setupWsFeatures = ({
   };
 
   if (isAutoConnect) {
-    connectToBackend({ app, workspace });
+    connectToBackend();
   }
 
   const addConnectCommand = () => {
     removeDisconnectCommand();
     addCommand({
       label: "Connect to SamePage Network",
-      callback: () => connectToBackend({ app, workspace }),
+      callback: () => connectToBackend(),
     });
   };
 
