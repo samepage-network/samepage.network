@@ -47,6 +47,7 @@ export type AddCommand = (args: {
 export type RemoveCommand = (args: { label: string }) => void;
 export type Notebook = { app: number; workspace: string };
 export type App = { id: number; name: string };
+export type Apps = Record<number, Omit<App, "id">>;
 export type Status = "DISCONNECTED" | "PENDING" | "CONNECTED";
 
 export type SharedPages = {

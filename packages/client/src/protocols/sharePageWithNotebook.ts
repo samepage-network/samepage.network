@@ -3,13 +3,12 @@ import dispatchAppEvent from "../internal/dispatchAppEvent";
 import {
   addCommand,
   app,
-  Apps,
   apps,
   removeCommand,
   workspace,
 } from "../internal/registry";
 import sendToNotebook from "../sendToNotebook";
-import { Notebook } from "../types";
+import { Notebook, Apps } from "../types";
 import Automerge from "automerge";
 import Document from "@atjson/document";
 import {
@@ -40,6 +39,7 @@ const setupSharePageWithNotebook = ({
   renderInitPage,
   renderViewPages,
 
+  getAllNotebookPageIds,
   applyState,
   calculateState,
   loadState,
@@ -48,10 +48,11 @@ const setupSharePageWithNotebook = ({
   renderInitPage: (props: { onSubmit: OnInitHandler; apps: Apps }) => void;
   renderViewPages: (props: { notebookPageIds: string[] }) => void;
 
-  applyState: (notebookPageId: string, state: AtJson) => unknown;
+  getAllNotebookPageIds: () => Promise<string[]>;
+  applyState: (notebookPageId: string, state: AtJson) => Promise<unknown>;
   calculateState: (
     notebookPageId: string
-  ) => ConstructorParameters<typeof Document>[0];
+  ) => Promise<ConstructorParameters<typeof Document>[0]>;
   loadState: (notebookPageId: string) => Promise<Automerge.BinaryDocument>;
   saveState: (
     notebookPageId: string,
@@ -73,7 +74,7 @@ const setupSharePageWithNotebook = ({
         return apiClient<{ id: string; created: boolean }>({
           method: "init-shared-page",
           ...props,
-        }).then((r) => {
+        }).then(async (r) => {
           if (r.created) {
             const { notebookPageId, notebooks } = props;
             notebooks.forEach((target) =>
@@ -86,9 +87,8 @@ const setupSharePageWithNotebook = ({
                 },
               })
             );
-            const doc = Automerge.from(
-              new Document(calculateState(notebookPageId)).toJSON()
-            );
+            const docInit = await calculateState(notebookPageId);
+            const doc = Automerge.from(new Document(docInit).toJSON());
             sharedPages[notebookPageId] = doc;
             return Promise.all([
               saveState(notebookPageId, Automerge.save(doc)),
@@ -127,14 +127,8 @@ const setupSharePageWithNotebook = ({
   addAuthenticationHandler({
     label: AUTHENTICATED_LABEL,
     handler: () =>
-      apiClient<{ notebookPageIds: string[] }>({
-        method: "list-shared-pages",
-      }).then(({ notebookPageIds }) => {
-        // This might be unnecessary if we could successfully
-        // store a copy of state in client. The list
-        // of shared pages is probably "local first".
-        //
-        // prob better to lazy load
+      getAllNotebookPageIds().then((notebookPageIds) => {
+        // prob better to lazy load - or put all of this logic in a web worker...
         return Promise.all(
           notebookPageIds.map((id) =>
             loadState(id).then((state) => {
@@ -205,7 +199,7 @@ const setupSharePageWithNotebook = ({
   }: {
     notebookPageId: string;
     label: string;
-    callback: (doc: Automerge.FreezeObject<AtJson>) => {};
+    callback: (doc: AtJson) => {};
   }) => {
     const oldDoc = sharedPages[notebookPageId];
     const doc = Automerge.change(oldDoc, label, callback);

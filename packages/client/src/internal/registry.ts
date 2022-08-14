@@ -1,4 +1,4 @@
-import { AddCommand, App, AppEvent, RemoveCommand } from "../types";
+import { AddCommand, App, AppEvent, Apps, RemoveCommand } from "../types";
 
 const documentBodyListeners: Record<string, (a: KeyboardEvent) => void> = {};
 const defaultAddCommand: AddCommand = ({ label, callback }) => {
@@ -33,7 +33,6 @@ const defaultOnAppEventHandler = (evt: AppEvent) => {
   }
 };
 
-export type Apps = Record<number, Omit<App, "id">>;
 export let addCommand = defaultAddCommand;
 export let removeCommand = defaultRemoveCommand;
 export let onAppEventHandler = defaultOnAppEventHandler;
