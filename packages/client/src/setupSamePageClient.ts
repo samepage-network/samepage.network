@@ -26,7 +26,13 @@ const setupSamePageClient = ({
   apiGet<{ apps: { id: number; name: string }[] }>("apps").then((r) =>
     setupRegistry({ apps: r.apps })
   );
-  setupRegistry({ addCommand, removeCommand, onAppEventHandler, app, workspace });
+  setupRegistry({
+    addCommand,
+    removeCommand,
+    onAppEventHandler,
+    app,
+    workspace,
+  });
   onAppEvent();
   const unloadWS = setupWsFeatures({ isAutoConnect });
   const unloadP2P = setupP2PFeatures();
@@ -45,6 +51,9 @@ const setupSamePageClient = ({
     getAppName: (id: number) => {
       return apps[id].name;
     },
+    addNotebookListener,
+    removeNotebookListener,
+    sendToNotebook,
   };
 };
 
