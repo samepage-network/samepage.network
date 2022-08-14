@@ -33,10 +33,11 @@ const defaultOnAppEventHandler = (evt: AppEvent) => {
   }
 };
 
+export type Apps = Record<number, Omit<App, "id">>;
 export let addCommand = defaultAddCommand;
 export let removeCommand = defaultRemoveCommand;
 export let onAppEventHandler = defaultOnAppEventHandler;
-export let apps: App[] = [];
+export let apps: Apps = {};
 
 const setupRegistry = ({
   addCommand: _addCommand,
@@ -51,7 +52,8 @@ const setupRegistry = ({
 }) => {
   if (_addCommand) addCommand = _addCommand;
   if (_removeCommand) removeCommand = _removeCommand;
-  if (_apps) apps = _apps;
+  if (_apps)
+    apps = Object.fromEntries(_apps.map(({ id, ...app }) => [id, app]));
   if (_onAppEventHandler) onAppEventHandler = _onAppEventHandler;
 };
 

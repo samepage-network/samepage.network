@@ -6,7 +6,7 @@ import {
 import setupP2PFeatures from "./internal/setupP2PFeatures";
 import onAppEvent from "./internal/onAppEvent";
 import { Notebook, AddCommand, RemoveCommand, AppEvent } from "./types";
-import setupRegistry from "./internal/registry";
+import setupRegistry, { apps } from "./internal/registry";
 import sendToNotebook from "./sendToNotebook";
 import setupWsFeatures from "./internal/setupWsFeatures";
 
@@ -37,9 +37,14 @@ const setupSamePageClient = ({
     sendToNotebook,
   };
 
-  return () => {
-    unloadP2P();
-    unloadWS();
+  return {
+    unload: () => {
+      unloadP2P();
+      unloadWS();
+    },
+    getAppName: (id: number) => {
+      return apps[id].name;
+    },
   };
 };
 

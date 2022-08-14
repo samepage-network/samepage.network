@@ -1,8 +1,8 @@
 import apiClient from "../internal/apiClient";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
-import { addCommand, apps, removeCommand } from "../internal/registry";
+import { addCommand, Apps, apps, removeCommand } from "../internal/registry";
 import sendToNotebook from "../sendToNotebook";
-import { App, Notebook } from "../types";
+import { Notebook } from "../types";
 import Automerge from "automerge";
 import Document from "@atjson/document";
 import {
@@ -32,13 +32,17 @@ const sharedPages: Record<string, Automerge.FreezeObject<AtJson>> = {};
 const setupSharePageWithNotebook = ({
   renderInitPage,
   renderViewPages,
+  app,
+  workspace,
 
   applyState,
   calculateState,
   loadState,
   saveState,
 }: {
-  renderInitPage: (props: { onSubmit: OnInitHandler; apps: App[] }) => void;
+  app: number;
+  workspace: string;
+  renderInitPage: (props: { onSubmit: OnInitHandler; apps: Apps }) => void;
   renderViewPages: (props: { notebookPageIds: string[] }) => void;
 
   applyState: (notebookPageId: string, state: AtJson) => unknown;
@@ -88,7 +92,8 @@ const setupSharePageWithNotebook = ({
               apiClient({
                 method: "update-shared-page",
                 changes: Automerge.getAllChanges(doc),
-                ...props,
+                app,
+                workspace,
               }),
             ]).then(() => {
               dispatchAppEvent({
@@ -129,9 +134,13 @@ const setupSharePageWithNotebook = ({
         // prob better to lazy load
         return Promise.all(
           notebookPageIds.map((id) =>
-            loadState(id).then(
-              (state) => (sharedPages[id] = Automerge.load(state))
-            )
+            loadState(id).then((state) => {
+              sharedPages[id] = Automerge.load(state);
+              dispatchAppEvent({
+                type: "init-page",
+                notebookPageId: id,
+              });
+            })
           )
         );
       }),
@@ -186,50 +195,43 @@ const setupSharePageWithNotebook = ({
       applyState(notebookPageId, newDoc);
     },
   });
+  const updatePage = ({
+    notebookPageId,
+    label,
+    callback,
+  }: {
+    notebookPageId: string;
+    label: string;
+    callback: (doc: Automerge.FreezeObject<AtJson>) => {};
+  }) => {
+    const oldDoc = sharedPages[notebookPageId];
+    const doc = Automerge.change(oldDoc, label, callback);
+    sharedPages[notebookPageId] = doc;
+    return Promise.all([
+      saveState(notebookPageId, Automerge.save(doc)),
+      apiClient({
+        method: "update-shared-page",
+        changes: Automerge.getChanges(oldDoc, doc),
+        app,
+        workspace,
+      }),
+    ]);
+  };
 
-  //   observers.add(
-  //     createHTMLObserver({
-  //       className: "rm-title-display",
-  //       tag: "H1",
-  //       callback: (h: HTMLElement) => {
-  //         const title = getPageTitleValueByHtmlElement(h);
-  //         const uid = getPageUidByPageTitle(title);
-  //         const attribute = `data-roamjs-shared-${uid}`;
-  //         const containerParent = h.parentElement?.parentElement;
-  //         if (containerParent && !containerParent.hasAttribute(attribute)) {
-  //           containerParent.setAttribute(attribute, "true");
-  //           apiClient<{ log: Action[]; exists: boolean }>({
-  //             method: "get-shared-page",
-  //             data: {
-  //               uid,
-  //             },
-  //           }).then((r) => {
-  //             if (r.exists) {
-  //               renderStatus({ parentUid: uid });
-  //             }
-  //           });
-  //         }
-  //       },
-  //     })
-  //   );
-
-  //   document.body.addEventListener(EVENT_NAME, eventListener);
-
-  return () => {
-    // document.body.removeEventListener(EVENT_NAME, eventListener);
-    // blocksObserved.forEach(unwatchUid);
-    // blocksObserved.clear();
-    // observers.forEach((o) => o.disconnect());
-    removeNotebookListener({ operation: SHARE_PAGE_RESPONSE_OPERATION });
-    removeNotebookListener({ operation: SHARE_PAGE_UPDATE_OPERATION });
-    removeNotebookListener({ operation: SHARE_PAGE_OPERATION });
-    removeAuthenticationHandler(AUTHENTICATED_LABEL);
-    removeCommand({
-      label: COMMAND_PALETTE_LABEL,
-    });
-    removeCommand({
-      label: VIEW_COMMAND_PALETTE_LABEL,
-    });
+  return {
+    unload: () => {
+      removeNotebookListener({ operation: SHARE_PAGE_RESPONSE_OPERATION });
+      removeNotebookListener({ operation: SHARE_PAGE_UPDATE_OPERATION });
+      removeNotebookListener({ operation: SHARE_PAGE_OPERATION });
+      removeAuthenticationHandler(AUTHENTICATED_LABEL);
+      removeCommand({
+        label: COMMAND_PALETTE_LABEL,
+      });
+      removeCommand({
+        label: VIEW_COMMAND_PALETTE_LABEL,
+      });
+    },
+    updatePage,
   };
 };
 
