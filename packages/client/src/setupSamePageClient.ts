@@ -25,7 +25,7 @@ const setupSamePageClient = async ({
 } & Notebook) => {
   const { apps } = await apiGet<{ apps: { id: number; name: string }[] }>(
     "apps"
-  );
+  ).catch(() => ({ apps: [] }));
   setupRegistry({
     addCommand,
     removeCommand,
@@ -34,7 +34,7 @@ const setupSamePageClient = async ({
     workspace,
     apps,
   });
-  onAppEvent();
+  const offAppEvent = onAppEvent();
   const unloadWS = setupWsFeatures({ isAutoConnect });
   const unloadP2P = setupP2PFeatures();
 
@@ -48,6 +48,7 @@ const setupSamePageClient = async ({
     unload: () => {
       unloadP2P();
       unloadWS();
+      offAppEvent();
     },
     apps,
     addNotebookListener,

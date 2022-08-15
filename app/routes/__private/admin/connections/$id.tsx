@@ -1,6 +1,6 @@
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
-import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
+// import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
 import Button from "@dvargas92495/app/components/Button";
 import { ActionFunction, redirect } from "@remix-run/node";
 import { Form } from "@remix-run/react";
@@ -18,13 +18,13 @@ const SingleConnectionPage = () => {
 };
 
 export const action: ActionFunction = (args) => {
-  return remixAdminAction(args, {
-    DELETE: ({ params }) =>
-      deleteOnlineClient({
-        id: params["id"] || "",
+  // return remixAdminAction(args, {
+  //   DELETE: ({ params }) =>
+     return deleteOnlineClient({
+        id: args.params["id"] || "",
         requestId: args.context?.lambdaContext?.awsRequestId || v4(),
-      }).then(() => redirect("/admin/connections")),
-  });
+      }).then(() => redirect("/admin/connections"))//,
+  // });
 };
 
 export default SingleConnectionPage;

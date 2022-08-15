@@ -1,8 +1,9 @@
 import { AppEvent } from "../types";
+import { APP_EVENT } from "./events";
 
 const dispatchAppEvent = (detail: AppEvent) => {
   document.body.dispatchEvent(
-    new CustomEvent(`samepage:event`, {
+    new CustomEvent(APP_EVENT, {
       detail,
     })
   );

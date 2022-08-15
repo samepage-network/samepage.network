@@ -73,53 +73,64 @@ const setupSharePageWithNotebook = ({
       const onSubmit: OnInitHandler = (props) => {
         return apiClient<{ id: string; created: boolean }>({
           method: "init-shared-page",
-          ...props,
-        }).then(async (r) => {
-          if (r.created) {
-            const { notebookPageId, notebooks } = props;
-            notebooks.forEach((target) =>
-              sendToNotebook({
-                target,
-                operation: "SHARE_PAGE",
-                data: {
+          notebookPageId: props.notebookPageId,
+          app,
+          workspace,
+        })
+          .then(async (r) => {
+            if (r.created) {
+              const { notebookPageId, notebooks } = props;
+              notebooks.forEach((target) =>
+                sendToNotebook({
+                  target,
+                  operation: "SHARE_PAGE",
+                  data: {
+                    notebookPageId,
+                    pageUuid: r.id,
+                  },
+                })
+              );
+              const docInit = await calculateState(notebookPageId);
+              const doc = Automerge.from(new Document(docInit).toJSON());
+              sharedPages[notebookPageId] = doc;
+              return Promise.all([
+                saveState(notebookPageId, Automerge.save(doc)),
+                apiClient({
+                  method: "update-shared-page",
+                  changes: Automerge.getAllChanges(doc),
+                  app,
+                  workspace,
+                }),
+              ]).then(() => {
+                dispatchAppEvent({
+                  type: "init-page",
                   notebookPageId,
-                  pageUuid: r.id,
-                },
-              })
-            );
-            const docInit = await calculateState(notebookPageId);
-            const doc = Automerge.from(new Document(docInit).toJSON());
-            sharedPages[notebookPageId] = doc;
-            return Promise.all([
-              saveState(notebookPageId, Automerge.save(doc)),
-              apiClient({
-                method: "update-shared-page",
-                changes: Automerge.getAllChanges(doc),
-                app,
-                workspace,
-              }),
-            ]).then(() => {
-              dispatchAppEvent({
-                type: "init-page",
-                notebookPageId,
+                });
+                dispatchAppEvent({
+                  type: "log",
+                  id: "share-page-success",
+                  content: `Successfully initialized shared page! We will now await for the other notebooks to accept.`,
+                  intent: "info",
+                });
               });
+            } else {
               dispatchAppEvent({
                 type: "log",
-                id: "share-page-success",
-                content: `Successfully initialized shared page! We will now await for the other notebooks to accept.`,
-                intent: "info",
+                id: "samepage-warning",
+                content: "This page is already shared from this notebook",
+                intent: "warning",
               });
-            });
-          } else {
+              return Promise.resolve();
+            }
+          })
+          .catch((e) => {
             dispatchAppEvent({
               type: "log",
-              id: "samepage-warning",
-              content: "This page is already shared from this notebook",
-              intent: "warning",
+              intent: "error",
+              id: "share-page-failure",
+              content: `Failed to share page with notebooks: ${e.message}`,
             });
-            return Promise.resolve();
-          }
-        });
+          });
       };
       renderInitPage({ onSubmit, apps });
     },
@@ -205,6 +216,7 @@ const setupSharePageWithNotebook = ({
       method: "init-shared-page",
       app,
       workspace,
+      notebookPageId,
       download: false,
     })
       .then((r) => {
@@ -230,7 +242,7 @@ const setupSharePageWithNotebook = ({
           type: "log",
           intent: "error",
           id: "share-page-failure",
-          content: `Failed to share page with notebooks: ${e.message}!`,
+          content: `Failed to share page with notebooks: ${e.message}`,
         });
       });
 
@@ -301,19 +313,15 @@ const setupSharePageWithNotebook = ({
     ]);
   };
 
-  const rejectPage = ({
-    source,
-  }: {
-    source: Notebook;
-  }) => {
+  const rejectPage = ({ source }: { source: Notebook }) => {
     sendToNotebook({
       target: source,
       operation: "SHARE_PAGE_RESPONSE",
       data: {
         success: false,
-      }
-    })
-  } 
+      },
+    });
+  };
 
   const disconnectPage = (notebookPageId: string) => {
     return apiClient<{ id: string; created: boolean }>({
