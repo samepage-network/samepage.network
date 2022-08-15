@@ -88,6 +88,7 @@ const setupSharePageWithNotebook = ({
                 apiClient({
                   method: "update-shared-page",
                   changes: Automerge.getAllChanges(doc),
+                  notebookPageId,
                 }),
               ]).then(() => {
                 dispatchAppEvent({
@@ -222,7 +223,7 @@ const setupSharePageWithNotebook = ({
           type: "log",
           intent: "success",
           id: "share-page-success",
-          content: `Successfully shared pages! We will now await for them to accept.`,
+          content: `Successfully shared page! We will now await for them to accept.`,
         });
       })
       .catch((e) => {
@@ -295,6 +296,7 @@ const setupSharePageWithNotebook = ({
       apiClient({
         method: "update-shared-page",
         changes: Automerge.getChanges(oldDoc, doc),
+        notebookPageId,
       }),
     ]);
   };
