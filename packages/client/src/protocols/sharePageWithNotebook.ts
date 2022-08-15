@@ -1,10 +1,6 @@
 import apiClient from "../internal/apiClient";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
-import {
-  addCommand,
-  apps,
-  removeCommand,
-} from "../internal/registry";
+import { addCommand, apps, removeCommand } from "../internal/registry";
 import sendToNotebook from "../sendToNotebook";
 import { Notebook, Apps } from "../types";
 import Automerge from "automerge";
@@ -37,7 +33,6 @@ const setupSharePageWithNotebook = ({
   renderInitPage,
   renderViewPages,
 
-  getAllNotebookPageIds,
   applyState,
   calculateState,
   loadState,
@@ -46,7 +41,6 @@ const setupSharePageWithNotebook = ({
   renderInitPage: (props: { onSubmit: OnInitHandler; apps: Apps }) => void;
   renderViewPages: (props: { notebookPageIds: string[] }) => void;
 
-  getAllNotebookPageIds: () => Promise<string[]>;
   applyState: (notebookPageId: string, state: AtJson) => Promise<unknown>;
   calculateState: (
     notebookPageId: string
@@ -132,7 +126,9 @@ const setupSharePageWithNotebook = ({
   addAuthenticationHandler({
     label: AUTHENTICATED_LABEL,
     handler: () =>
-      getAllNotebookPageIds().then((notebookPageIds) => {
+      apiClient<{ notebookPageIds: string[] }>({
+        method: "list-shared-pages",
+      }).then(({ notebookPageIds }) => {
         // prob better to lazy load - or put all of this logic in a web worker...
         return Promise.all(
           notebookPageIds.map((id) =>
