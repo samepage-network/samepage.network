@@ -1,3 +1,5 @@
+import { app, workspace } from "./registry";
+
 export type HandleFetchArgs = {
   path?: string;
   domain?: string;
@@ -97,7 +99,11 @@ const apiClient = <T extends Record<string, unknown>>(
 ) =>
   apiPost<T>({
     path: "page",
-    data,
+    data: {
+      ...data,
+      app,
+      workspace,
+    },
   });
 
 export default apiClient;

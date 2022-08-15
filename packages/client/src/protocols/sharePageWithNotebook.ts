@@ -2,10 +2,8 @@ import apiClient from "../internal/apiClient";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import {
   addCommand,
-  app,
   apps,
   removeCommand,
-  workspace,
 } from "../internal/registry";
 import sendToNotebook from "../sendToNotebook";
 import { Notebook, Apps } from "../types";
@@ -74,8 +72,6 @@ const setupSharePageWithNotebook = ({
         return apiClient<{ id: string; created: boolean }>({
           method: "init-shared-page",
           notebookPageId: props.notebookPageId,
-          app,
-          workspace,
         })
           .then(async (r) => {
             if (r.created) {
@@ -98,8 +94,6 @@ const setupSharePageWithNotebook = ({
                 apiClient({
                   method: "update-shared-page",
                   changes: Automerge.getAllChanges(doc),
-                  app,
-                  workspace,
                 }),
               ]).then(() => {
                 dispatchAppEvent({
@@ -214,8 +208,6 @@ const setupSharePageWithNotebook = ({
     apiClient<{ exists: boolean; uuid: string }>({
       // TODO replace with just a get for the id
       method: "init-shared-page",
-      app,
-      workspace,
       notebookPageId,
       download: false,
     })
@@ -307,8 +299,6 @@ const setupSharePageWithNotebook = ({
       apiClient({
         method: "update-shared-page",
         changes: Automerge.getChanges(oldDoc, doc),
-        app,
-        workspace,
       }),
     ]);
   };
@@ -326,7 +316,7 @@ const setupSharePageWithNotebook = ({
   const disconnectPage = (notebookPageId: string) => {
     return apiClient<{ id: string; created: boolean }>({
       method: "disconnect-shared-page",
-      data: { app, workspace, notebookPageId },
+      data: { notebookPageId },
     })
       .then(() => {
         delete sharedPages[notebookPageId];
