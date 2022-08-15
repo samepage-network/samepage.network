@@ -77,20 +77,27 @@ export const sendToBackend: SendToBackend = ({
     });
 };
 
-const setupWsFeatures = ({
-  isAutoConnect,
-}: { isAutoConnect: boolean }) => {
+const getWsUrl = () => {
+  try {
+    return process.env.WEB_SOCKET_URL || "";
+  } catch {
+    try {
+      if (process.env.NODE_ENV === "development") {
+        return "wss://127.0.0.1:3010";
+      } else {
+        return "wss://ws.samepage.network";
+      }
+    } catch {
+      return "wss://ws.samepage.network";
+    }
+  }
+};
+
+const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
   const connectToBackend = () => {
     if (samePageBackend.status === "DISCONNECTED") {
       samePageBackend.status = "PENDING";
-      samePageBackend.channel = new WebSocket(
-        typeof process === "undefined"
-          ? "wss://ws.samepage.network"
-          : process.env.WEB_SOCKET_URL ||
-            (process.env.NODE_ENV === "development"
-              ? "wss://127.0.0.1:3010"
-              : "wss://ws.samepage.network")
-      );
+      samePageBackend.channel = new WebSocket(getWsUrl());
       samePageBackend.channel.onopen = () => {
         sendToBackend({
           operation: "AUTHENTICATION",

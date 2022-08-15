@@ -4,6 +4,14 @@ export type HandleFetchArgs = {
   data?: Record<string, unknown>;
 };
 
+const getApiUrl = () => {
+  try {
+    return process.env.API_URL;
+  } catch {
+    return "https://api.samepage.network";
+  }
+};
+
 const handleFetch = <T extends Record<string, unknown> = Record<string, never>>(
   transformArgs: (...info: [URL, RequestInit]) => Parameters<typeof fetch>,
   {
@@ -12,13 +20,7 @@ const handleFetch = <T extends Record<string, unknown> = Record<string, never>>(
     domain,
   }: Pick<RequestInit, "method"> & Omit<HandleFetchArgs, "data">
 ) => {
-  const url = new URL(
-    `${
-      domain ||
-      (typeof process !== "undefined" && process.env.API_URL) ||
-      "https://api.samepage.network"
-    }/${path}`
-  );
+  const url = new URL(`${domain || getApiUrl()}/${path}`);
   return fetch(
     ...transformArgs(url, {
       method,
