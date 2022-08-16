@@ -96,6 +96,10 @@ const getWsUrl = () => {
 const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
   const connectToBackend = () => {
     if (samePageBackend.status === "DISCONNECTED") {
+      dispatchAppEvent({
+        type: "connection",
+        status: "PENDING",
+      });
       samePageBackend.status = "PENDING";
       samePageBackend.channel = new WebSocket(getWsUrl());
       samePageBackend.channel.onopen = () => {
@@ -136,6 +140,10 @@ const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
   const disconnectFromBackend = (reason: string) => {
     if (samePageBackend.status !== "DISCONNECTED") {
       samePageBackend.status = "DISCONNECTED";
+      dispatchAppEvent({
+        type: "connection",
+        status: "DISCONNECTED",
+      });
       samePageBackend.channel = undefined;
       dispatchAppEvent({
         type: "log",
@@ -217,6 +225,10 @@ const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
       };
       if (success) {
         samePageBackend.status = "CONNECTED";
+        dispatchAppEvent({
+          type: "connection",
+          status: "CONNECTED",
+        });
         document.body.dispatchEvent(new Event(CONNECTED_EVENT));
         removeConnectCommand();
         addAuthenticationHandler({
@@ -273,6 +285,10 @@ const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
           })
           .catch((e) => {
             samePageBackend.status = "DISCONNECTED";
+            dispatchAppEvent({
+              type: "connection",
+              status: "DISCONNECTED",
+            });
             if (samePageBackend.channel) samePageBackend.channel.close();
             dispatchAppEvent({
               type: "log",
@@ -283,6 +299,10 @@ const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
           });
       } else {
         samePageBackend.status = "DISCONNECTED";
+        dispatchAppEvent({
+          type: "connection",
+          status: "DISCONNECTED",
+        });
         if (samePageBackend.channel) samePageBackend.channel.close();
         dispatchAppEvent({
           type: "log",

@@ -8,6 +8,16 @@ export type json =
   | { [key: string]: json }
   | Uint8Array;
 
+  export type AddCommand = (args: {
+    label: string;
+    callback: () => void;
+  }) => void;
+  export type RemoveCommand = (args: { label: string }) => void;
+  export type Notebook = { app: number; workspace: string };
+  export type App = { id: number; name: string };
+  export type Apps = Record<number, Omit<App, "id">>;
+  export type Status = "DISCONNECTED" | "PENDING" | "CONNECTED";
+
 type LogEvent = {
   type: "log";
   id: string;
@@ -34,21 +44,21 @@ type InitPageEvent = {
   notebookPageId: string;
 };
 
-export type AppEvent = LogEvent | UsageEvent | SharePageEvent | InitPageEvent;
+type ConnectionEvent = {
+  type: "connection";
+  status: Status
+};
+
+export type AppEvent =
+  | LogEvent
+  | UsageEvent
+  | SharePageEvent
+  | InitPageEvent
+  | ConnectionEvent;
 
 export type MessageHandlers = {
   [operation: string]: (data: json, source: Notebook) => void;
 };
-
-export type AddCommand = (args: {
-  label: string;
-  callback: () => void;
-}) => void;
-export type RemoveCommand = (args: { label: string }) => void;
-export type Notebook = { app: number; workspace: string };
-export type App = { id: number; name: string };
-export type Apps = Record<number, Omit<App, "id">>;
-export type Status = "DISCONNECTED" | "PENDING" | "CONNECTED";
 
 export type SharedPages = {
   indices: Record<string, number>;

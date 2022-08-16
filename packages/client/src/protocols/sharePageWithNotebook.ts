@@ -87,7 +87,9 @@ const setupSharePageWithNotebook = ({
                 saveState(notebookPageId, Automerge.save(doc)),
                 apiClient({
                   method: "update-shared-page",
-                  changes: Automerge.getAllChanges(doc),
+                  changes: Automerge.getAllChanges(doc)
+                    .map((c) => String.fromCharCode.apply(null, Array.from(c)))
+                    .map((s) => window.btoa(s)),
                   notebookPageId,
                 }),
               ]).then(() => {
@@ -181,13 +183,21 @@ const setupSharePageWithNotebook = ({
     operation: SHARE_PAGE_UPDATE_OPERATION,
     handler: (data) => {
       const { changes, notebookPageId } = data as {
-        changes: Automerge.BinaryChange[];
+        changes: string[];
         notebookPageId: string;
       };
 
       const [newDoc, patch] = Automerge.applyChanges(
         sharedPages[notebookPageId],
-        changes
+        changes.map(
+          (c) =>
+            new Uint8Array(
+              window
+                .atob(c)
+                .split("")
+                .map((c) => c.charCodeAt(0))
+            ) as Automerge.BinaryChange
+        )
       );
       console.log(patch);
       sharedPages[notebookPageId] = newDoc;
@@ -295,7 +305,9 @@ const setupSharePageWithNotebook = ({
       saveState(notebookPageId, Automerge.save(doc)),
       apiClient({
         method: "update-shared-page",
-        changes: Automerge.getChanges(oldDoc, doc),
+        changes: Automerge.getChanges(oldDoc, doc)
+          .map((c) => String.fromCharCode.apply(null, Array.from(c)))
+          .map((s) => window.btoa(s)),
         notebookPageId,
       }),
     ]);
