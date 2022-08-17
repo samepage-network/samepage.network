@@ -1,4 +1,4 @@
-const APPS = [
+export const APPS = [
   {
     id: 1,
     name: "Roam",
@@ -14,9 +14,7 @@ const APPS = [
   },
 ] as const;
 
-export type App = typeof APPS[number]
+export type App = typeof APPS[number];
 export type AppId = App["id"];
 
 export const appNameById = Object.fromEntries(APPS.map((a) => [a.id, a.name]));
-
-export default APPS;

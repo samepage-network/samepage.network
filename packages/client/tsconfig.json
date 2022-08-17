@@ -18,10 +18,7 @@
     "sourceMap": true,
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
-    "importHelpers": true,
-    "paths": {
-      "@samepage/shared": ["../shared/src"]
-    }
+    "importHelpers": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "**/__tests__/*"]
