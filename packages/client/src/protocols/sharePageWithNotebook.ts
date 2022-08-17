@@ -254,13 +254,20 @@ const setupSharePageWithNotebook = ({
     notebookPageId: string;
     source: Notebook;
   }) =>
-    apiClient<{ state: Automerge.BinaryDocument }>({
+    apiClient<{ state: string }>({
       method: "join-shared-page",
       notebookPageId,
       pageUuid,
     })
       .then(({ state }) => {
-        const doc = Automerge.load<AtJson>(state);
+        const doc = Automerge.load<AtJson>(
+          new Uint8Array(
+            window
+              .atob(state)
+              .split("")
+              .map((c) => c.charCodeAt(0))
+          ) as Automerge.BinaryDocument
+        );
         sharedPages[notebookPageId] = doc;
         return Promise.all([
           applyState(notebookPageId, doc),
