@@ -1,10 +1,10 @@
-name: Publish package
+name: Publish @samepage/client
 on:
   workflow_dispatch:
   push:
     branches: main
     paths:
-      - "packages/**"
+      - "packages/client/**"
       - ".github/workflows/packages.yaml"
 
 env:
@@ -19,21 +19,12 @@ jobs:
         run: npm install
       - name: authenticate
         run: echo '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}' > ~/.npmrc
-      - name: build shared
-        run: npx tsc
-        working-directory: packages/shared
-      - name: prepare shared
-        run: cp ../../LICENSE README.md package.json dist
-        working-directory: packages/shared
-      - name: publish shared
-        run: npm publish --access public
-        working-directory: packages/shared/dist
-      - name: build client
+      - name: build
         run: npx tsc
         working-directory: packages/client
       - name: prepare
         run: cp ../../LICENSE README.md package.json dist
         working-directory: packages/client
-      - name: publish client
+      - name: publish
         run: npm publish --access public
         working-directory: packages/client/dist

@@ -1,6 +1,6 @@
 {
   "name": "@samepage/shared",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Utilities and standards that are used in both the front end packages and the backend network.",
   "main": "index.js",
   "types": "index.d.ts",

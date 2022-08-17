@@ -4,7 +4,7 @@ import type {
   MessageHandlers,
   RemoveNotebookListener,
 } from "../types";
-import type { Notebook } from "../../../../app/types";
+import type { Notebook } from "@samepage/shared";
 
 const messageHandlers: MessageHandlers = {};
 

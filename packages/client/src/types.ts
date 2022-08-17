@@ -1,4 +1,4 @@
-import type { Notebook } from "../../../app/types";
+import type { Notebook } from "@samepage/shared";
 
 export type json =
   | string

@@ -2,7 +2,7 @@ import apiClient from "../internal/apiClient";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { addCommand, apps, removeCommand } from "../internal/registry";
 import sendToNotebook from "../sendToNotebook";
-import { Notebook, Apps, Schema } from "../../../../app/types";
+import { Notebook, Apps, Schema } from "@samepage/shared";
 import Automerge from "automerge";
 import {
   addAuthenticationHandler,

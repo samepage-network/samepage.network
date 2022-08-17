@@ -1,6 +1,6 @@
 {
   "name": "@samepage/client",
-  "version": "0.3.13",
+  "version": "0.3.14",
   "description": "Utilities that help your TFT's extension interface with the SamePage Network",
   "main": "index.js",
   "types": "index.d.ts",
@@ -33,7 +33,6 @@
     "node": ">=16.0.0"
   },
   "peerDependencies": {
-    "automerge": "^1.0.1-preview.7",
     "uuid": "^8.3.2"
   }
 }
