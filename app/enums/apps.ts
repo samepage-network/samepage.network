@@ -14,7 +14,8 @@ const APPS = [
   },
 ] as const;
 
-export type AppId = typeof APPS[number]["id"];
+export type App = typeof APPS[number]
+export type AppId = App["id"];
 
 export const appNameById = Object.fromEntries(APPS.map((a) => [a.id, a.name]));
 
