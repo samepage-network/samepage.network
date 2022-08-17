@@ -1,3 +1,5 @@
+import type { Notebook } from "../../../app/types";
+
 export type json =
   | string
   | number
@@ -8,15 +10,13 @@ export type json =
   | { [key: string]: json }
   | Uint8Array;
 
-  export type AddCommand = (args: {
-    label: string;
-    callback: () => void;
-  }) => void;
-  export type RemoveCommand = (args: { label: string }) => void;
-  export type Notebook = { app: number; workspace: string };
-  export type App = { id: number; name: string };
-  export type Apps = Record<number, Omit<App, "id">>;
-  export type Status = "DISCONNECTED" | "PENDING" | "CONNECTED";
+export type AddCommand = (args: {
+  label: string;
+  callback: () => void;
+}) => void;
+export type RemoveCommand = (args: { label: string }) => void;
+
+export type Status = "DISCONNECTED" | "PENDING" | "CONNECTED";
 
 type LogEvent = {
   type: "log";
@@ -46,7 +46,7 @@ type InitPageEvent = {
 
 type ConnectionEvent = {
   type: "connection";
-  status: Status
+  status: Status;
 };
 
 export type AppEvent =

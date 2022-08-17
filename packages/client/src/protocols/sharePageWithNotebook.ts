@@ -2,9 +2,8 @@ import apiClient from "../internal/apiClient";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { addCommand, apps, removeCommand } from "../internal/registry";
 import sendToNotebook from "../sendToNotebook";
-import { Notebook, Apps } from "../types";
+import { Notebook, Apps, Schema } from "../../../../app/types";
 import Automerge from "automerge";
-import Document from "@atjson/document";
 import {
   addAuthenticationHandler,
   removeAuthenticationHandler,
@@ -14,7 +13,6 @@ import {
   removeNotebookListener,
 } from "../internal/setupMessageHandlers";
 
-type AtJson = ReturnType<Document["toJSON"]>;
 type OnInitHandler = (props: {
   notebookPageId: string;
   notebooks: Notebook[];
@@ -26,8 +24,9 @@ const AUTHENTICATED_LABEL = "LIST_SHARED_PAGES";
 const SHARE_PAGE_OPERATION = "SHARE_PAGE";
 const SHARE_PAGE_RESPONSE_OPERATION = "SHARE_PAGE_RESPONSE";
 const SHARE_PAGE_UPDATE_OPERATION = "SHARE_PAGE_UPDATE";
+const SHARE_PAGE_FORCE_OPERATION = "SHARE_PAGE_FORCE";
 
-const sharedPages: Record<string, Automerge.FreezeObject<AtJson>> = {};
+const sharedPages: Record<string, Automerge.FreezeObject<Schema>> = {};
 
 const setupSharePageWithNotebook = ({
   renderInitPage,
@@ -41,10 +40,10 @@ const setupSharePageWithNotebook = ({
   renderInitPage: (props: { onSubmit: OnInitHandler; apps: Apps }) => void;
   renderViewPages: (props: { notebookPageIds: string[] }) => void;
 
-  applyState: (notebookPageId: string, state: AtJson) => Promise<unknown>;
+  applyState: (notebookPageId: string, state: Schema) => Promise<unknown>;
   calculateState: (
     notebookPageId: string
-  ) => Promise<ConstructorParameters<typeof Document>[0]>;
+  ) => Promise<Omit<Schema, "contentType">>;
   loadState: (notebookPageId: string) => Promise<Automerge.BinaryDocument>;
   saveState: (
     notebookPageId: string,
@@ -81,7 +80,11 @@ const setupSharePageWithNotebook = ({
                 })
               );
               const docInit = await calculateState(notebookPageId);
-              const doc = Automerge.from(new Document(docInit).toJSON());
+              const doc = Automerge.from<Schema>({
+                ...docInit,
+                contentType:
+                  "application/vnd.atjson+samepage; version=2022-08-17",
+              });
               sharedPages[notebookPageId] = doc;
               return Promise.all([
                 saveState(notebookPageId, Automerge.save(doc)),
@@ -204,6 +207,25 @@ const setupSharePageWithNotebook = ({
       applyState(notebookPageId, newDoc);
     },
   });
+  addNotebookListener({
+    operation: SHARE_PAGE_FORCE_OPERATION,
+    handler: (data) => {
+      const { state, notebookPageId } = data as {
+        state: string;
+        notebookPageId: string;
+      };
+      const newDoc = Automerge.load<Schema>(
+        new Uint8Array(
+          window
+            .atob(state)
+            .split("")
+            .map((c) => c.charCodeAt(0))
+        ) as Automerge.BinaryDocument
+      );
+      sharedPages[notebookPageId] = newDoc;
+      applyState(notebookPageId, newDoc);
+    },
+  });
 
   const sharePage = ({
     notebookPageId,
@@ -260,7 +282,7 @@ const setupSharePageWithNotebook = ({
       pageUuid,
     })
       .then(({ state }) => {
-        const doc = Automerge.load<AtJson>(
+        const doc = Automerge.load<Schema>(
           new Uint8Array(
             window
               .atob(state)
@@ -303,7 +325,7 @@ const setupSharePageWithNotebook = ({
   }: {
     notebookPageId: string;
     label: string;
-    callback: (doc: AtJson) => void;
+    callback: (doc: Schema) => void;
   }) => {
     const oldDoc = sharedPages[notebookPageId];
     const doc = Automerge.change(oldDoc, label, callback);
@@ -354,6 +376,29 @@ const setupSharePageWithNotebook = ({
       );
   };
 
+  const forcePushPage = (notebookPageId: string) =>
+    apiClient({
+      method: "force-push-page",
+      data: {
+        notebookPageId,
+        state: window.btoa(
+          String.fromCharCode.apply(
+            null,
+            Array.from(Automerge.save(sharedPages[notebookPageId]))
+          )
+        ),
+      },
+    });
+
+  const listConnectedNotebooks = (notebookPageId: string) =>
+    apiClient<{
+      notebooks: { app: string; workspace: string; version: number }[];
+      networks: { app: string; workspace: string; version: number }[];
+    }>({
+      method: "list-page-notebooks",
+      data: { notebookPageId },
+    });
+
   return {
     unload: () => {
       removeNotebookListener({ operation: SHARE_PAGE_RESPONSE_OPERATION });
@@ -372,6 +417,8 @@ const setupSharePageWithNotebook = ({
     joinPage,
     rejectPage,
     disconnectPage,
+    forcePushPage,
+    listConnectedNotebooks,
   };
 };
 

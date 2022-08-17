@@ -1,3 +1,4 @@
+import { Notebook } from "../../../../app/types";
 import { Status, SendToBackend, AppEvent } from "../types";
 import apiClient from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
@@ -245,7 +246,7 @@ const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
                 messages.map((msg) =>
                   apiClient<{
                     data: string;
-                    source: { workspace: string; app: number };
+                    source: Notebook;
                   }>({
                     method: "load-message",
                     messageUuid: msg,

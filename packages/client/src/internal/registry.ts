@@ -1,4 +1,6 @@
-import { AddCommand, App, AppEvent, Apps, RemoveCommand } from "../types";
+import type { AddCommand, AppEvent, RemoveCommand } from "../types";
+import type { App } from "../../../../app/enums/apps";
+import type { Apps } from "../../../../app/types";
 
 const documentBodyListeners: Record<string, (a: KeyboardEvent) => void> = {};
 const defaultAddCommand: AddCommand = ({ label, callback }) => {

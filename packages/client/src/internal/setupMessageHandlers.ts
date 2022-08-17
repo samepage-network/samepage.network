@@ -1,10 +1,10 @@
 import dispatchAppEvent from "./dispatchAppEvent";
-import {
+import type {
   AddNotebookListener,
   MessageHandlers,
-  Notebook,
   RemoveNotebookListener,
 } from "../types";
+import type { Notebook } from "../../../../app/types";
 
 const messageHandlers: MessageHandlers = {};
 

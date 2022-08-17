@@ -5,7 +5,9 @@ import {
 } from "./internal/setupMessageHandlers";
 import setupP2PFeatures from "./internal/setupP2PFeatures";
 import onAppEvent from "./internal/onAppEvent";
-import { Notebook, AddCommand, RemoveCommand, AppEvent, App } from "./types";
+import type { AddCommand, RemoveCommand, AppEvent } from "./types";
+import type { Notebook } from "../../../app/types";
+import type { App } from "../../../app/enums/apps";
 import setupRegistry from "./internal/registry";
 import sendToNotebook from "./sendToNotebook";
 import setupWsFeatures from "./internal/setupWsFeatures";
