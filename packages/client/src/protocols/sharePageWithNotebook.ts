@@ -1,6 +1,12 @@
 import apiClient from "../internal/apiClient";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
-import { addCommand, apps, removeCommand } from "../internal/registry";
+import {
+  addCommand,
+  app,
+  apps,
+  removeCommand,
+  workspace,
+} from "../internal/registry";
 import sendToNotebook from "../sendToNotebook";
 import { Notebook, Apps, Schema } from "@samepage/shared";
 import Automerge from "automerge";
@@ -80,11 +86,14 @@ const setupSharePageWithNotebook = ({
                 })
               );
               const docInit = await calculateState(notebookPageId);
-              const doc = Automerge.from<Schema>({
-                ...docInit,
-                contentType:
-                  "application/vnd.atjson+samepage; version=2022-08-17",
-              });
+              const doc = Automerge.from<Schema>(
+                {
+                  ...docInit,
+                  contentType:
+                    "application/vnd.atjson+samepage; version=2022-08-17",
+                },
+                { actorId: `${app}/${workspace}` }
+              );
               sharedPages[notebookPageId] = doc;
               return Promise.all([
                 saveState(notebookPageId, Automerge.save(doc)),
@@ -220,7 +229,8 @@ const setupSharePageWithNotebook = ({
             .atob(state)
             .split("")
             .map((c) => c.charCodeAt(0))
-        ) as Automerge.BinaryDocument
+        ) as Automerge.BinaryDocument,
+        { actorId: `${app}/${workspace}` }
       );
       sharedPages[notebookPageId] = newDoc;
       applyState(notebookPageId, newDoc);
@@ -288,7 +298,8 @@ const setupSharePageWithNotebook = ({
               .atob(state)
               .split("")
               .map((c) => c.charCodeAt(0))
-          ) as Automerge.BinaryDocument
+          ) as Automerge.BinaryDocument,
+          { actorId: `${app}/${workspace}` }
         );
         sharedPages[notebookPageId] = doc;
         return Promise.all([
@@ -379,15 +390,13 @@ const setupSharePageWithNotebook = ({
   const forcePushPage = (notebookPageId: string) =>
     apiClient({
       method: "force-push-page",
-      data: {
-        notebookPageId,
-        state: window.btoa(
-          String.fromCharCode.apply(
-            null,
-            Array.from(Automerge.save(sharedPages[notebookPageId]))
-          )
-        ),
-      },
+      notebookPageId,
+      state: window.btoa(
+        String.fromCharCode.apply(
+          null,
+          Array.from(Automerge.save(sharedPages[notebookPageId]))
+        )
+      ),
     });
 
   const listConnectedNotebooks = (notebookPageId: string) =>
@@ -396,7 +405,7 @@ const setupSharePageWithNotebook = ({
       networks: { app: string; workspace: string; version: number }[];
     }>({
       method: "list-page-notebooks",
-      data: { notebookPageId },
+      notebookPageId,
     });
 
   return {
