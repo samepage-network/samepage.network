@@ -67,14 +67,28 @@ const setupSharePageWithNotebook = ({
   addCommand({
     label: COMMAND_PALETTE_LABEL,
     callback: () => {
-      const onSubmit: OnInitHandler = (props) => {
-        return apiClient<{ id: string; created: boolean }>({
-          method: "init-shared-page",
-          notebookPageId: props.notebookPageId,
-        })
-          .then(async (r) => {
+      const onSubmit: OnInitHandler = async (props) => {
+        const { notebookPageId, notebooks } = props;
+        const docInit = await calculateState(notebookPageId);
+        const doc = Automerge.from<Schema>(
+          {
+            ...docInit,
+            contentType: "application/vnd.atjson+samepage; version=2022-08-17",
+          },
+          { actorId: `${app}/${workspace}` }
+        );
+        sharedPages[notebookPageId] = doc;
+        const state = Automerge.save(doc);
+        return Promise.all([
+          saveState(notebookPageId, state),
+          apiClient<{ id: string; created: boolean }>({
+            method: "init-shared-page",
+            notebookPageId: props.notebookPageId,
+            state,
+          }),
+        ])
+          .then(async ([, r]) => {
             if (r.created) {
-              const { notebookPageId, notebooks } = props;
               notebooks.forEach((target) =>
                 sendToNotebook({
                   target,
@@ -85,36 +99,15 @@ const setupSharePageWithNotebook = ({
                   },
                 })
               );
-              const docInit = await calculateState(notebookPageId);
-              const doc = Automerge.from<Schema>(
-                {
-                  ...docInit,
-                  contentType:
-                    "application/vnd.atjson+samepage; version=2022-08-17",
-                },
-                { actorId: `${app}/${workspace}` }
-              );
-              sharedPages[notebookPageId] = doc;
-              return Promise.all([
-                saveState(notebookPageId, Automerge.save(doc)),
-                apiClient({
-                  method: "update-shared-page",
-                  changes: Automerge.getAllChanges(doc)
-                    .map((c) => String.fromCharCode.apply(null, Array.from(c)))
-                    .map((s) => window.btoa(s)),
-                  notebookPageId,
-                }),
-              ]).then(() => {
-                dispatchAppEvent({
-                  type: "init-page",
-                  notebookPageId,
-                });
-                dispatchAppEvent({
-                  type: "log",
-                  id: "share-page-success",
-                  content: `Successfully initialized shared page! We will now await for the other notebooks to accept.`,
-                  intent: "info",
-                });
+              dispatchAppEvent({
+                type: "init-page",
+                notebookPageId,
+              });
+              dispatchAppEvent({
+                type: "log",
+                id: "share-page-success",
+                content: `Successfully initialized shared page! We will now await for the other notebooks to accept.`,
+                intent: "info",
               });
             } else {
               dispatchAppEvent({
@@ -148,7 +141,9 @@ const setupSharePageWithNotebook = ({
         return Promise.all(
           notebookPageIds.map((id) =>
             loadState(id).then((state) => {
-              sharedPages[id] = Automerge.load(state);
+              sharedPages[id] = Automerge.load(state, {
+                actorId: `${app}/${workspace}`,
+              });
               dispatchAppEvent({
                 type: "init-page",
                 notebookPageId: id,
@@ -406,6 +401,17 @@ const setupSharePageWithNotebook = ({
     }>({
       method: "list-page-notebooks",
       notebookPageId,
+    }).then(({ networks, notebooks }) => {
+      const localHistory = Automerge.getHistory(sharedPages[notebookPageId]);
+      const localVersion = localHistory[localHistory.length - 1]?.change?.time;
+      return {
+        networks,
+        notebooks: notebooks.map((n) =>
+          n.workspace !== workspace || n.app !== apps[app].name
+            ? n
+            : { ...n, version: localVersion }
+        ),
+      };
     });
 
   return {
