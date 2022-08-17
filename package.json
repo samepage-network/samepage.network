@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@dvargas92495/app": "^0.12.8",
-    "@samepage/shared": "^0.1.1",
+    "@samepage/shared": "^0.1.2",
     "markdown-to-jsx": "^7.1.7",
     "mdx-bundler": "^9.0.1",
     "ws": "^8.8.1"
