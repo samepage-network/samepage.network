@@ -92,7 +92,9 @@ const setupSharePageWithNotebook = ({
               apiClient<{ id: string; created: boolean }>({
                 method: "init-shared-page",
                 notebookPageId: props.notebookPageId,
-                state,
+                state: window.btoa(
+                  String.fromCharCode.apply(null, Array.from(state))
+                ),
               }),
             ]);
           })
