@@ -3,7 +3,7 @@ import endClient from "./endClient.server";
 import postToConnection from "./postToConnection.server";
 import { v4 } from "uuid";
 import getMysql from "@dvargas92495/app/backend/mysql.server";
-import { Notebook } from "~/types";
+import { Notebook } from "@samepage/shared";
 
 const messageNotebook = ({
   source,
@@ -29,6 +29,7 @@ const messageNotebook = ({
       ...data,
       source,
     };
+    console.log('got clients');
     const online = await Promise.all(
       ids.map((ConnectionId) =>
         postToConnection({

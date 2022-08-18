@@ -1,5 +1,5 @@
 import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
-import { AppId, appNameById } from "~/enums/apps";
+import { AppId, appNameById } from "@samepage/shared";
 
 const listPageNotebookLinks = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);

@@ -1,9 +1,6 @@
 import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
-import { AppId } from "~/enums/apps";
-import {
-  ConflictError,
-  NotFoundError,
-} from "@dvargas92495/app/backend/errors.server";
+import { AppId, appNameById, Notebook, Schema } from "@samepage/shared";
+import { NotFoundError } from "@dvargas92495/app/backend/errors.server";
 import catchError from "~/data/catchError.server";
 import getMysql from "@dvargas92495/app/backend/mysql.server";
 import { downloadFileContent } from "@dvargas92495/app/backend/downloadFile.server";
@@ -12,9 +9,11 @@ import { v4 } from "uuid";
 import messageNotebook from "~/data/messageNotebook.server";
 import differenceInMinutes from "date-fns/differenceInMinutes";
 import format from "date-fns/format";
-import { Action, Notebook } from "~/types";
 import crypto from "crypto";
 import getSharedPage from "~/data/getSharedPage.server";
+import Automerge from "automerge";
+import downloadSharedPage from "~/data/downloadSharedPage.server";
+import saveSharedPage from "~/data/saveSharedPage.server";
 
 type Method = Notebook & { requestId: string } & (
     | { method: "usage" }
@@ -25,6 +24,7 @@ type Method = Notebook & { requestId: string } & (
     | {
         method: "init-shared-page";
         notebookPageId: string;
+        state: string;
       }
     | {
         method: "join-shared-page";
@@ -34,12 +34,17 @@ type Method = Notebook & { requestId: string } & (
     | {
         method: "update-shared-page";
         notebookPageId: string;
-        log: Action[];
+        changes: string[];
+      }
+    | {
+        method: "force-push-page";
+        notebookPageId: string;
+        state: string;
       }
     | {
         method: "get-shared-page";
         notebookPageId: string;
-        localIndex?: number;
+        download: boolean;
       }
     | {
         method: "list-page-notebooks";
@@ -60,6 +65,21 @@ type Method = Notebook & { requestId: string } & (
         target: Notebook;
       }
   );
+
+const getActorId = () =>
+  `SamePage/mainnet`
+    .split("")
+    .map((s) => s.charCodeAt(0).toString(16))
+    .join("");
+
+const loadAutomerge = (binary: Automerge.BinaryDocument) => {
+  try {
+    return Automerge.load<Schema>(binary, { actorId: getActorId() });
+  } catch (e) {
+    console.error(`Corrupt automerge file. Returning an empty one instead.`);
+    return Automerge.init<Schema>({ actorId: getActorId() });
+  }
+};
 
 const logic = async (
   req: Method
@@ -146,7 +166,7 @@ const logic = async (
         .catch(catchError("Failed to load a message"));
     }
     case "init-shared-page": {
-      const { notebookPageId } = args;
+      const { notebookPageId, state } = args;
       return getMysql(req.requestId)
         .then(async (cxn) => {
           const [results] = await cxn.execute(
@@ -157,6 +177,11 @@ const logic = async (
           if (link) return { id: link.page_uuid, created: false };
           const pageUuid = v4();
           const args = [pageUuid, notebookPageId, workspace, app];
+          await saveSharedPage({
+            pageUuid,
+            doc: state,
+            requestId: req.requestId,
+          });
           await cxn.execute(
             `INSERT INTO pages (uuid, version)
             VALUES (?, 0)`,
@@ -168,10 +193,6 @@ const logic = async (
             args
           );
           cxn.destroy();
-          await uploadFile({
-            Key: `data/page/${pageUuid}.json`,
-            Body: JSON.stringify({ log: [], state: {} }),
-          });
           return { created: true, id: pageUuid };
         })
         .catch(catchError("Failed to init a shared page"));
@@ -179,98 +200,107 @@ const logic = async (
     case "join-shared-page": {
       const { pageUuid, notebookPageId } = args;
       // could replace with sql check
-      return downloadFileContent({
-        Key: `data/page/${pageUuid}.json`,
-      })
-        .catch((e) =>
-          e.name === "NoSuchKey"
-            ? Promise.reject(
-                new ConflictError(
-                  `No shared page exists under uuid ${pageUuid}`
-                )
-              )
-            : Promise.reject(e)
-        )
-        .then((r) => {
-          return getMysql(req.requestId).then((cxn) => {
+      return downloadSharedPage(pageUuid)
+        .then((state) => {
+          return getMysql(req.requestId).then(async (cxn) => {
             const args = [pageUuid, notebookPageId, workspace, app];
-            return cxn
+            const results = await cxn
               .execute(
-                `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, workspace, app)
-            VALUES (UUID(), ?, ?, ?, ?)`,
+                `SELECT uuid FROM page_notebook_links WHERE page_uuid = ? AND notebook_page_id = ? AND workspace = ? AND app = ?`,
                 args
               )
-              .then(() => r)
-              .catch((e) =>
-                Promise.reject(
-                  new Error(
-                    `Failed to insert link: ${JSON.stringify(
-                      args,
-                      null,
-                      4
-                    )}\nReason: ${e.message}`
-                  )
-                )
-              )
-              .finally(() => cxn.destroy());
+              .then(([a]) => a as { uuid: string }[]);
+            if (!results.length)
+              await cxn.execute(
+                `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, workspace, app)
+          VALUES (UUID(), ?, ?, ?, ?)`,
+                args
+              );
+            cxn.destroy();
+            return { state: Buffer.from(state).toString("base64") };
           });
         })
         .catch(catchError("Failed to join a shared page"));
     }
     case "update-shared-page": {
-      const { notebookPageId, log } = args;
+      const { notebookPageId, changes } = args;
       const cxn = await getMysql(req.requestId);
-      const { uuid: pageUuid, version } = await getSharedPage({
+      const { uuid: pageUuid } = await getSharedPage({
         workspace,
         notebookPageId,
         app,
         requestId: req.requestId,
       });
-      if (!log.length) {
+      if (!changes.length) {
         cxn.destroy();
-        return {
-          newIndex: version,
-        };
+        return {};
       }
-      return downloadFileContent({
-        Key: `data/page/${pageUuid}.json`,
-      })
-        .then((r) => JSON.parse(r))
-        .then(async (data) => {
-          const updatedLog = data.log.concat(log) as Action[];
-          const state = data.state;
-          log.forEach(({ action, params }) => {
-            if (action === "createBlock" && params.block && params.location) {
-              const { uid = "", ...block } = params.block;
-              state[params.location["parent-uid"]] = {
-                ...state[params.location["parent-uid"]],
-                children: (
-                  state[params.location["parent-uid"]]?.children || []
-                )?.splice(params.location.order, 0, uid),
-              };
-              state[uid] = block;
-            } else if (action === "updateBlock" && params.block) {
-              const { uid = "", ...block } = params.block;
-              state[uid] = {
-                ...block,
-                children: state[uid]?.children || [],
-              };
-            } else if (action === "deleteBlock" && params.block) {
-              delete state[params.block.uid || ""];
-            }
-          });
-          await uploadFile({
-            Key: `data/page/${pageUuid}.json`,
-            Body: JSON.stringify({ log: updatedLog, state }),
-            Metadata: { index: updatedLog.length.toString() },
-          });
-          await cxn.execute(`UPDATE pages SET version = ? WHERE uuid = ?`, [
-            updatedLog.length,
+      return downloadSharedPage(pageUuid)
+        .then(async (binary) => {
+          const oldDoc = loadAutomerge(binary);
+          const binaryChanges = changes.map(
+            (c) =>
+              new Uint8Array(
+                Buffer.from(c, "base64")
+                  .toString("binary")
+                  .split("")
+                  .map((c) => c.charCodeAt(0))
+              ) as Automerge.BinaryChange
+          );
+          const [newDoc, patch] = Automerge.applyChanges(oldDoc, binaryChanges);
+          return saveSharedPage({
             pageUuid,
-          ]);
-          return updatedLog.length;
+            doc: newDoc,
+            requestId: req.requestId,
+          }).then(() => patch);
         })
-        .then((newIndex) => {
+        .then((patch) => {
+          return cxn
+            .execute(
+              `SELECT workspace, app FROM page_notebook_links WHERE page_uuid = ?`,
+              [pageUuid]
+            )
+            .then(([r]) => {
+              return Promise.all(
+                (r as Notebook[])
+                  .filter((item) => {
+                    return item.workspace !== workspace || item.app !== app;
+                  })
+                  .map((target) =>
+                    messageNotebook({
+                      source: { app, workspace },
+                      target,
+                      data: {
+                        changes,
+                        notebookPageId,
+                        operation: "SHARE_PAGE_UPDATE",
+                      },
+                      requestId: req.requestId,
+                    })
+                  )
+              );
+            })
+            .then(() => ({
+              patch,
+            }));
+        })
+        .catch(catchError("Failed to update a shared page"))
+        .finally(() => {
+          cxn.destroy();
+        });
+    }
+    case "force-push-page": {
+      const { notebookPageId, state } = args;
+      const cxn = await getMysql(req.requestId);
+      const { uuid: pageUuid } = await getSharedPage({
+        workspace,
+        notebookPageId,
+        app,
+        requestId: req.requestId,
+      });
+
+      return saveSharedPage({ pageUuid, doc: state, requestId: req.requestId })
+        .then(() => {
           return cxn
             .execute(
               `SELECT workspace, app FROM page_notebook_links WHERE page_uuid = ?`,
@@ -287,10 +317,9 @@ const logic = async (
                       source: { app, workspace },
                       target,
                       data: {
-                        log,
+                        state,
                         notebookPageId,
-                        index: newIndex,
-                        operation: "SHARE_PAGE_UPDATE",
+                        operation: "SHARE_PAGE_FORCE",
                       },
                       requestId: req.requestId,
                     })
@@ -298,14 +327,14 @@ const logic = async (
               );
             })
             .then(() => ({
-              newIndex,
+              success: true,
             }));
         })
-        .catch(catchError("Failed to update a shared page"))
+        .catch(catchError("Failed to force push a shared page"))
         .finally(() => cxn.destroy());
     }
     case "get-shared-page": {
-      const { notebookPageId, localIndex } = args;
+      const { notebookPageId, download } = args;
       const cxn = await getMysql(req.requestId);
       return getSharedPage({
         workspace,
@@ -316,23 +345,17 @@ const logic = async (
       })
         .then((page) => {
           if (!page) {
-            return { exists: false, log: [] };
+            return { exists: false, uuid: "" };
           }
-          if (typeof localIndex === "undefined") {
-            return { exists: true, log: [] };
+          const { uuid: pageUuid } = page;
+          if (!download) {
+            return { exists: true, uuid: pageUuid };
           }
-          const { uuid: pageUuid, version: remoteIndex } = page;
-          if (remoteIndex <= localIndex) {
-            return { log: [], exists: true };
-          }
-          return downloadFileContent({
-            Key: `data/page/${pageUuid}.json`,
-          })
-            .then((r) => JSON.parse(r))
-            .then((r) => ({
-              log: (r.log || []).slice(localIndex),
-              exists: true,
-            }));
+          return downloadSharedPage(pageUuid).then((state) => ({
+            state,
+            exists: true,
+            uuid: pageUuid,
+          }));
         })
         .catch(catchError("Failed to get a shared page"))
         .finally(() => cxn.destroy());
@@ -341,25 +364,34 @@ const logic = async (
       const { notebookPageId } = args;
       return getMysql(req.requestId)
         .then(async (cxn) => {
-          console.log({
-            workspace,
-            notebookPageId,
-            app,
-          });
-          const { uuid: pageUuid } = await getSharedPage({
+          const { uuid: pageUuid, version } = await getSharedPage({
             workspace,
             notebookPageId,
             app,
             requestId: req.requestId,
           });
-          const notebooks = await cxn
+          // TODO cache versions in page_notebook_links
+          const clients = await cxn
             .execute(
               `SELECT app, workspace FROM page_notebook_links WHERE page_uuid = ?`,
               [pageUuid]
             )
             .then(([res]) => res as Notebook[]);
           cxn.destroy();
-          return { notebooks };
+          return {
+            notebooks: clients.map((c) => ({
+              workspace: c.workspace,
+              app: appNameById[c.app] as string,
+              version: 0,
+            })),
+            networks: [
+              {
+                app: "SamePage",
+                workspace: "mainnet",
+                version,
+              },
+            ],
+          };
         })
         .catch(catchError("Failed to retrieve page notebooks"));
     }
@@ -368,23 +400,18 @@ const logic = async (
         .then(async (cxn) => {
           const entries = await cxn
             .execute(
-              `SELECT l.notebook_page_id, p.version 
+              `SELECT l.notebook_page_id 
               FROM page_notebook_links l
               INNER JOIN pages p ON l.page_uuid = p.uuid
           WHERE l.workspace = ? AND l.app = ?`,
               [workspace, app]
             )
-            .then(([r]) => r as { notebook_page_id: string; version: number }[])
-            .then((r) =>
-              r.map(({ notebook_page_id, version }) => [
-                notebook_page_id,
-                version,
-              ])
-            );
+            .then(([r]) => r as { notebook_page_id: string }[])
+            .then((r) => r.map(({ notebook_page_id }) => notebook_page_id));
           cxn.destroy();
           return entries;
         })
-        .then((entries) => ({ indices: Object.fromEntries(entries) }))
+        .then((notebookPageIds) => ({ notebookPageIds }))
         .catch(catchError("Failed to retrieve shared pages"));
     }
     case "disconnect-shared-page": {
@@ -466,5 +493,5 @@ const logic = async (
 
 export const handler = createAPIGatewayProxyHandler({
   logic,
-  allowedOrigins: ["https://roamresearch.com"],
+  allowedOrigins: ["https://roamresearch.com", "https://logseq.com"],
 });

@@ -1,5 +1,5 @@
 import base from "fuegojs/dist/base";
-import Apps from "../app/enums/apps";
+import { APPS } from "@samepage/shared";
 import schema from "./schema";
 import { ActionsSecret, GithubProvider } from "@cdktf/provider-github";
 
@@ -22,7 +22,7 @@ base({
       owner: "dvargas92495",
       alias: "personal",
     });
-    Apps.forEach((args) => {
+    APPS.forEach((args) => {
       const key = "key" in args ? args.key : args.name.toLowerCase();
       new ActionsSecret(this, `${key}_deploy_aws_access_key`, {
         repository: `${key}-samepage`,

@@ -1,4 +1,4 @@
-import type { WSHandler } from "~/types";
+import type { WSHandler } from "./sendmessage";
 // import emailError from "@dvargas92495/app/backend/emailError.server";
 // import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
 

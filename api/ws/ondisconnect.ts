@@ -1,4 +1,4 @@
-import type { WSHandler } from "~/types";
+import type { WSHandler } from "./sendmessage";
 import endClient from "~/data/endClient.server";
 
 export const handler: WSHandler = (event, context) => {

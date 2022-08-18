@@ -22,8 +22,8 @@ const onlineClient = z.object({
 
 const clientSession = z.object({
   id: z.string().describe("primary"),
-  instance: z.string().describe("unique"),
-  app: z.number().max(Math.pow(2, 8)).describe("unique"),
+  instance: z.string(),
+  app: z.number().max(Math.pow(2, 8)),
   createdDate: z.date(),
   endDate: z.date(),
   disconnectedBy: z.string(),

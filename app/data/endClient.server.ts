@@ -2,7 +2,12 @@ import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
 import { z } from "zod";
 import schema from "../../data/schema";
 
-const endClient = (id: string, reason: string, requestId: string): Promise<void> => {
+const endClient = (
+  id: string,
+  reason: string,
+  requestId: string
+): Promise<void> => {
+  console.log("ending", id, "for", reason);
   return getMysqlConnection(requestId).then(async (cxn) => {
     const [source] = await cxn
       .execute(`SELECT * FROM online_clients WHERE id = ?`, [id])

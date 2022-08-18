@@ -9,14 +9,22 @@ export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCa
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 import { v4 } from "uuid";
 
+const parseActorId = (s: string) =>
+  s
+    .split("")
+    .map((c, i, a) =>
+      i % 2 === 0 ? String.fromCharCode(parseInt(c + a[i + 1], 16)) : ""
+    )
+    .join("");
+
 const SinglePagePage = () => {
-  const { data, notebooks } =
+  const { data, notebooks, history } =
     useLoaderData<Awaited<ReturnType<typeof getSharedPageByUuid>>>();
   return (
-    <div className={"flex flex-col gap-12"}>
-      <div className={"flex gap-8"}>
-        <div className="bg-gray-200 flex flex-col-reverse text-gray-800 max-w-sm w-full border border-gray-800 overflow-auto">
-          {data.log.map((l, index) => (
+    <div className={"flex flex-col gap-12 h-full"}>
+      <div className={"flex gap-8 flex-grow-1"}>
+        <div className="bg-gray-200 flex flex-col-reverse text-gray-800 max-w-sm w-full border border-gray-800 overflow-auto justify-end">
+          {history.map((l, index) => (
             <div
               key={index}
               className={"border-t border-t-gray-800 p-4 relative"}
@@ -24,41 +32,24 @@ const SinglePagePage = () => {
               <div className={"text-sm absolute top-2 right-2"}>{index}</div>
               <div>
                 <span className={"font-bold"}>Action: </span>
-                <span>{l.action}</span>
+                <span>{l.change.message}</span>
               </div>
               <div>
-                <span className={"font-bold"}>Params: </span>
-                <ul className="ml-4 list-disc">
-                  <li>
-                    <span className={"font-bold"}>Block UID: </span>
-                    <span>{l.params.block?.uid}</span>
-                  </li>
-                  <li>
-                    <span className={"font-bold"}>Block String: </span>
-                    <span>{l.params.block?.string}</span>
-                  </li>
-                  <li>
-                    <span className={"font-bold"}>Location Parent: </span>
-                    <span>{l.params.location?.["parent-uid"]}</span>
-                  </li>
-                  <li>
-                    <span className={"font-bold"}>Location Order: </span>
-                    <span>{l.params.location?.order}</span>
-                  </li>
-                </ul>
+                <span className={"font-bold"}>Actor: </span>
+                <span>{parseActorId(l.change.actor)}</span>
+              </div>
+              <div>
+                <span className={"font-bold"}>Date: </span>
+                <span>{new Date(l.change.time * 1000).toLocaleString()}</span>
               </div>
             </div>
           ))}
           <h1 className="text-3xl p-4">Log</h1>
         </div>
-        <div className="flex-grow border-gray-800 flex flex-col">
+        <div className="flex-grow border-gray-800 flex flex-col h-full">
           <h1 className={"text-3xl py-4"}>State</h1>
-          <pre
-            className={
-              "max-h-48 overflow-auto whitespace-pre-wrap flex-grow h-full"
-            }
-          >
-            {JSON.stringify(data.state, null, 4)}
+          <pre className={"overflow-auto whitespace-pre-wrap flex-grow h-full"}>
+            {JSON.stringify(data, null, 4)}
           </pre>
         </div>
       </div>
@@ -79,21 +70,21 @@ const SinglePagePage = () => {
 
 export const loader: LoaderFunction = (args) => {
   // return remixAdminLoader(args, ({ params }) =>
-    return getSharedPageByUuid(
-      args.params["uuid"] || "",
-      args.context?.lambdaContext?.requestId || v4()
-    )
+  return getSharedPageByUuid(
+    args.params["uuid"] || "",
+    args.context?.lambdaContext?.requestId || v4()
+  );
   // );
 };
 
 export const action: ActionFunction = (args) => {
-  return remixAdminAction(args, {
-    DELETE: ({ params }) =>
-      deleteSharedPage(
-        params["uuid"] || "",
-        args.context?.lambdaContext?.requestId || v4()
-      ).then(() => redirect("/admin/pages")),
-  });
+  // return remixAdminAction(args, {
+  //   DELETE: ({ params }) =>
+  return deleteSharedPage(
+    args.params["uuid"] || "",
+    args.context?.lambdaContext?.requestId || v4()
+  ).then(() => redirect("/admin/pages"));
+  // });
 };
 
 export default SinglePagePage;

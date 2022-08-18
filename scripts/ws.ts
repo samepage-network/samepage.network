@@ -73,13 +73,33 @@ app.use(
     extended: true,
   })
 );
-app.post("/connection", (req) => {
+app.post("/connection", (req, res) => {
   const { ConnectionId, Data } = req.body;
 
   const connection = localSockets[ConnectionId];
-  if (connection) return Promise.resolve(connection.send(Data));
-  else return endClient(ConnectionId, "Missed Message", v4());
+
+  (connection
+    ? Promise.resolve(connection.send(Data))
+    : endClient(ConnectionId, "Missed Message", v4())
+  ).then(() => res.json({ success: true }));
 });
 app.listen(httpPort, () => {
   console.log("http server started on port:", httpPort);
+});
+
+process.on("exit", (code) => {
+  console.log("normal exit:", code);
+  process.exit(code);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
+
+process.on("SIGINT", () => {
+  Promise.all(
+    Object.keys(localSockets).map((id) =>
+      endClient(id, "Server Terminated", v4())
+    )
+  ).then(() => process.exit());
 });

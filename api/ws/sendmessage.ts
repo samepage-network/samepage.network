@@ -1,12 +1,16 @@
 import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
 import postError from "~/data/postError.server";
-import type { WSEvent, WSHandler } from "~/types";
 import { v4 } from "uuid";
 import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
 import { downloadFileContent } from "@dvargas92495/app/backend/downloadFile.server";
-import { AppId } from "~/enums/apps";
+import { AppId } from "@samepage/shared";
 import postToConnection from "~/data/postToConnection.server";
 import messageNotebook from "~/data/messageNotebook.server";
+import type {
+  APIGatewayProxyEvent,
+  APIGatewayProxyResult,
+  Context,
+} from "aws-lambda";
 
 // postToConnection({
 //   ConnectionId,
@@ -16,6 +20,15 @@ import messageNotebook from "~/data/messageNotebook.server";
 //     graph,
 //   },
 // })
+
+export type WSEvent = Pick<APIGatewayProxyEvent, "body"> & {
+  requestContext: Pick<APIGatewayProxyEvent["requestContext"], "connectionId">;
+};
+
+export type WSHandler = (
+  event: WSEvent,
+  context: Pick<Context, "awsRequestId">
+) => Promise<APIGatewayProxyResult>;
 
 const dataHandler = async (
   event: WSEvent,
@@ -97,7 +110,11 @@ const dataHandler = async (
       .execute(`SELECT app, instance FROM online_clients WHERE id = ?`, [
         clientId,
       ])
-      .then(([a]) => a as { app: AppId; instance: string }[]);
+      .then(([a]) => a as { app: AppId; instance: string }[])
+      .catch((e) => {
+        console.error("Failed to find online client", e.message);
+        return [];
+      });
     return (
       source
         ? messageNotebook({

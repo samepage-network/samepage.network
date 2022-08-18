@@ -18,8 +18,13 @@ const getSender = (ConnectionId: string) => {
         .promise()
         .then(() => Promise.resolve());
   } else {
-    return (Data: string): Promise<void> =>
-      axios.post("http://localhost:3011/connection", { ConnectionId, Data });
+    return (Data: string): Promise<void> => {
+      return axios
+        .post("http://localhost:3011/connection", {
+          ConnectionId,
+          Data,
+        });
+    };
   }
 };
 

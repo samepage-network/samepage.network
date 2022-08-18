@@ -1,11 +1,11 @@
-import { downloadFileContent } from "@dvargas92495/app/backend/downloadFile.server";
+import { downloadFileBuffer } from "@dvargas92495/app/backend/downloadFile.server";
 import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
-import { AppId } from "~/enums/apps";
-import { Action } from "~/types";
+import { AppId, Schema } from "@samepage/shared";
+import Automerge from "automerge";
 
 const getSharedPageByUuid = async (uuid: string, requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
-  const [notebooks, data] = await Promise.all([
+  const [notebooks, { data, history }] = await Promise.all([
     cxn
       .execute(
         `SELECT app, workspace, notebook_page_id, uuid FROM page_notebook_links WHERE page_uuid = ?`,
@@ -20,12 +20,19 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
             uuid: string;
           }[]
       ),
-    downloadFileContent({ Key: `data/page/${uuid}.json` }),
+    downloadFileBuffer({ Key: `data/page/${uuid}.json` }).then((d) => {
+      if (d.length === 0) return { data: {}, history: [] };
+      const data = Automerge.load<Schema>(
+        new Uint8Array(d) as Automerge.BinaryDocument
+      );
+      return { data, history: Automerge.getHistory(data) };
+    }),
   ]);
   cxn.destroy();
   return {
     notebooks,
-    data: JSON.parse(data) as { log: Action[]; state: Record<string, {}> },
+    data,
+    history,
   };
 };
 

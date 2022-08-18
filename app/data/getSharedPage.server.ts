@@ -1,5 +1,5 @@
 import { NotFoundError } from "@dvargas92495/app/backend/errors.server";
-import { Notebook } from "~/types";
+import { Notebook } from "@samepage/shared";
 import getMysql from "@dvargas92495/app/backend/mysql.server";
 
 type SharedPage = { uuid: string; version: number };

@@ -1,7 +1,7 @@
 import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
 import schema from "data/schema";
 import { z } from "zod";
-import { appNameById } from "~/enums/apps";
+import { appNameById } from "@samepage/shared";
 
 const listOnlineClients = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
