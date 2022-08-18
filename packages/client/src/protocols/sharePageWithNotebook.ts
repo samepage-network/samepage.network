@@ -34,6 +34,12 @@ const SHARE_PAGE_FORCE_OPERATION = "SHARE_PAGE_FORCE";
 
 const sharedPages: Record<string, Automerge.FreezeObject<Schema>> = {};
 
+const getActorId = () =>
+  `${app}/${workspace}`
+    .split("")
+    .map((s) => s.charCodeAt(0).toString(16))
+    .join("");
+
 const setupSharePageWithNotebook = ({
   renderInitPage,
   renderViewPages,
@@ -69,24 +75,27 @@ const setupSharePageWithNotebook = ({
     callback: () => {
       const onSubmit: OnInitHandler = async (props) => {
         const { notebookPageId, notebooks } = props;
-        const docInit = await calculateState(notebookPageId);
-        const doc = Automerge.from<Schema>(
-          {
-            ...docInit,
-            contentType: "application/vnd.atjson+samepage; version=2022-08-17",
-          },
-          { actorId: `${app}/${workspace}` }
-        );
-        sharedPages[notebookPageId] = doc;
-        const state = Automerge.save(doc);
-        return Promise.all([
-          saveState(notebookPageId, state),
-          apiClient<{ id: string; created: boolean }>({
-            method: "init-shared-page",
-            notebookPageId: props.notebookPageId,
-            state,
-          }),
-        ])
+        return calculateState(notebookPageId)
+          .then((docInit) => {
+            const doc = Automerge.from<Schema>(
+              {
+                ...docInit,
+                contentType:
+                  "application/vnd.atjson+samepage; version=2022-08-17",
+              },
+              { actorId: getActorId() }
+            );
+            sharedPages[notebookPageId] = doc;
+            const state = Automerge.save(doc);
+            return Promise.all([
+              saveState(notebookPageId, state),
+              apiClient<{ id: string; created: boolean }>({
+                method: "init-shared-page",
+                notebookPageId: props.notebookPageId,
+                state,
+              }),
+            ]);
+          })
           .then(async ([, r]) => {
             if (r.created) {
               notebooks.forEach((target) =>
@@ -142,7 +151,7 @@ const setupSharePageWithNotebook = ({
           notebookPageIds.map((id) =>
             loadState(id).then((state) => {
               sharedPages[id] = Automerge.load(state, {
-                actorId: `${app}/${workspace}`,
+                actorId: getActorId(),
               });
               dispatchAppEvent({
                 type: "init-page",
@@ -225,7 +234,7 @@ const setupSharePageWithNotebook = ({
             .split("")
             .map((c) => c.charCodeAt(0))
         ) as Automerge.BinaryDocument,
-        { actorId: `${app}/${workspace}` }
+        { actorId: getActorId() }
       );
       sharedPages[notebookPageId] = newDoc;
       applyState(notebookPageId, newDoc);
@@ -240,8 +249,7 @@ const setupSharePageWithNotebook = ({
     notebooks: Notebook[];
   }) =>
     apiClient<{ exists: boolean; uuid: string }>({
-      // TODO replace with just a get for the id
-      method: "init-shared-page",
+      method: "get-shared-page",
       notebookPageId,
       download: false,
     })
@@ -294,7 +302,7 @@ const setupSharePageWithNotebook = ({
               .split("")
               .map((c) => c.charCodeAt(0))
           ) as Automerge.BinaryDocument,
-          { actorId: `${app}/${workspace}` }
+          { actorId: getActorId() }
         );
         sharedPages[notebookPageId] = doc;
         return Promise.all([
