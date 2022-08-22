@@ -371,7 +371,7 @@ const setupSharePageWithNotebook = ({
   const disconnectPage = (notebookPageId: string) => {
     return apiClient<{ id: string; created: boolean }>({
       method: "disconnect-shared-page",
-      data: { notebookPageId },
+      notebookPageId,
     })
       .then(() => {
         delete sharedPages[notebookPageId];
