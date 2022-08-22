@@ -25,7 +25,7 @@ type LogEvent = {
   intent: "info" | "warning" | "error" | "success";
 };
 
-type UsageEvent = {
+export type UsageEvent = {
   type: "usage";
   minutes: number;
   messages: number;

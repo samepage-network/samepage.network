@@ -1,2 +1,2 @@
 export { default as setupSamePageClient } from "./setupSamePageClient";
-export { default as loadSharePageWithNotebook } from "./protocols/sharePageWithNotebook";
+export { default as setupSharePageWithNotebook } from "./protocols/sharePageWithNotebook";

@@ -1,5 +1,5 @@
 import { Notebook } from "@samepage/shared";
-import { Status, SendToBackend, AppEvent } from "../types";
+import { Status, SendToBackend, UsageEvent } from "../types";
 import apiClient from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
 import { CONNECTED_EVENT } from "./events";
@@ -37,15 +37,18 @@ const samePageBackend: {
 const onError = (e: { error: Error } | Event) => {
   if (
     "error" in e &&
-    !e.error.message.includes("Transport channel closed") &&
-    !e.error.message.includes("User-Initiated Abort, reason=Close called")
+    e.error.message.includes("Transport channel closed") &&
+    e.error.message.includes("User-Initiated Abort, reason=Close called")
   ) {
     // handled in disconnect
+  } else {
     console.error(e);
     dispatchAppEvent({
       type: "log",
       id: "samepage-ws-error",
-      content: `SamePage Error: ${e.error}`,
+      content: `SamePage Error: ${
+        "error" in e ? e.error.message : "Unknown error occurred"
+      }`,
       intent: "error",
     });
   }
@@ -84,7 +87,7 @@ const getWsUrl = () => {
   } catch {
     try {
       if (process.env.NODE_ENV === "development") {
-        return "wss://127.0.0.1:3010";
+        return "ws://127.0.0.1:3010";
       } else {
         return "wss://ws.samepage.network";
       }
@@ -318,9 +321,9 @@ const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
   addCommand({
     label: USAGE_LABEL,
     callback: () =>
-      apiClient<AppEvent>({
+      apiClient<Omit<UsageEvent, "type">>({
         method: "usage",
-      }).then((r) => dispatchAppEvent(r)),
+      }).then((r) => dispatchAppEvent({ ...r, type: "usage" })),
   });
 
   return () => {

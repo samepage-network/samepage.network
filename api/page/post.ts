@@ -1,6 +1,9 @@
 import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
 import { AppId, appNameById, Notebook, Schema } from "@samepage/shared";
-import { NotFoundError } from "@dvargas92495/app/backend/errors.server";
+import {
+  BadRequestError,
+  NotFoundError,
+} from "@dvargas92495/app/backend/errors.server";
 import catchError from "~/data/catchError.server";
 import getMysql from "@dvargas92495/app/backend/mysql.server";
 import { downloadFileContent } from "@dvargas92495/app/backend/downloadFile.server";
@@ -199,23 +202,32 @@ const logic = async (
     }
     case "join-shared-page": {
       const { pageUuid, notebookPageId } = args;
+      if (!notebookPageId) {
+        throw new BadRequestError("`notebookPageId` is required");
+      }
       // could replace with sql check
       return downloadSharedPage(pageUuid)
         .then((state) => {
           return getMysql(req.requestId).then(async (cxn) => {
-            const args = [pageUuid, notebookPageId, workspace, app];
             const results = await cxn
               .execute(
-                `SELECT uuid FROM page_notebook_links WHERE page_uuid = ? AND notebook_page_id = ? AND workspace = ? AND app = ?`,
-                args
+                `SELECT uuid, notebook_page_id FROM page_notebook_links WHERE page_uuid = ? AND workspace = ? AND app = ?`,
+                [pageUuid, workspace, app]
               )
-              .then(([a]) => a as { uuid: string }[]);
+              .then(([a]) => a as { uuid: string; notebook_page_id: string }[]);
             if (!results.length)
               await cxn.execute(
                 `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, workspace, app)
           VALUES (UUID(), ?, ?, ?, ?)`,
-                args
+                [pageUuid, notebookPageId, workspace, app]
               );
+            else if (
+              results.some((r) => r.notebook_page_id !== notebookPageId)
+            ) {
+              throw new BadRequestError(
+                `Already joined this page via Notebook Page Id: ${results[0].notebook_page_id}`
+              );
+            }
             cxn.destroy();
             return { state: Buffer.from(state).toString("base64") };
           });
@@ -257,22 +269,22 @@ const logic = async (
         .then((patch) => {
           return cxn
             .execute(
-              `SELECT workspace, app FROM page_notebook_links WHERE page_uuid = ?`,
+              `SELECT workspace, app, notebook_page_id FROM page_notebook_links WHERE page_uuid = ?`,
               [pageUuid]
             )
             .then(([r]) => {
               return Promise.all(
-                (r as Notebook[])
+                (r as (Notebook & { notebook_page_id: string })[])
                   .filter((item) => {
                     return item.workspace !== workspace || item.app !== app;
                   })
-                  .map((target) =>
+                  .map(({ notebook_page_id, ...target }) =>
                     messageNotebook({
                       source: { app, workspace },
                       target,
                       data: {
                         changes,
-                        notebookPageId,
+                        notebookPageId: notebook_page_id,
                         operation: "SHARE_PAGE_UPDATE",
                       },
                       requestId: req.requestId,
@@ -303,22 +315,22 @@ const logic = async (
         .then(() => {
           return cxn
             .execute(
-              `SELECT workspace, app FROM page_notebook_links WHERE page_uuid = ?`,
+              `SELECT workspace, app, notebook_page_id FROM page_notebook_links WHERE page_uuid = ?`,
               [pageUuid]
             )
             .then(([r]) => {
               return Promise.all(
-                (r as { app: AppId; workspace: string }[])
+                (r as (Notebook & { notebook_page_id: string })[])
                   .filter((item) => {
                     return item.workspace !== workspace || item.app !== app;
                   })
-                  .map((target) =>
+                  .map(({ notebook_page_id, ...target }) =>
                     messageNotebook({
                       source: { app, workspace },
                       target,
                       data: {
                         state,
-                        notebookPageId,
+                        notebookPageId: notebook_page_id,
                         operation: "SHARE_PAGE_FORCE",
                       },
                       requestId: req.requestId,
