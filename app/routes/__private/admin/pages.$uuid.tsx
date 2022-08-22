@@ -4,10 +4,12 @@ import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server"
 import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
 import Button from "@dvargas92495/app/components/Button";
 import deleteSharedPage from "~/data/deleteSharedPage.server";
+import disconnectNotebookFromPage from "~/data/disconnectNotebookFromPage.server";
 import getSharedPageByUuid from "~/data/getSharedPageByUuid.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 import { v4 } from "uuid";
+import { appNameById } from "@samepage/shared";
 
 const parseActorId = (s: string) =>
   s
@@ -54,15 +56,30 @@ const SinglePagePage = () => {
         </div>
       </div>
       <h1 className={"py-4 text-3xl"}>Notebooks</h1>
-      <ul className="ml-4 list-disc">
+      <ul className="ml-4 list-disc max-w-lg">
         {notebooks.map((l) => (
           <li key={l.uuid}>
-            {l.app}/{l.workspace}/{l.notebook_page_id}
+            <div className={"flex items-center w-full justify-between mb-2"}>
+              <span>
+                {appNameById[l.app]} / {l.workspace} / {l.notebook_page_id}
+              </span>
+              <Form method={"delete"}>
+                <Button
+                  name={"link"}
+                  value={l.uuid}
+                  className={
+                    "rounded-md px-2 text-sm uppercase bg-yellow-500 hover:bg-yellow-700 active:bg-yellow-800 disabled:bg-yellow-500"
+                  }
+                >
+                  Disconnect
+                </Button>
+              </Form>
+            </div>
           </li>
         ))}
       </ul>
       <Form method={"delete"}>
-        <Button>Delete</Button>
+        <Button className="bg-red-500 hover:bg-red-700 active:bg-red-800 disabled:bg-red-500">Delete</Button>
       </Form>
     </div>
   );
@@ -77,13 +94,16 @@ export const loader: LoaderFunction = (args) => {
   // );
 };
 
-export const action: ActionFunction = (args) => {
+export const action: ActionFunction = async (args) => {
   // return remixAdminAction(args, {
   //   DELETE: ({ params }) =>
-  return deleteSharedPage(
-    args.params["uuid"] || "",
-    args.context?.lambdaContext?.requestId || v4()
-  ).then(() => redirect("/admin/pages"));
+  const data = await args.request.formData();
+  const link = data.get("link");
+  const uuid = args.params["uuid"] || "";
+  const requestId = args.context?.lambdaContext?.requestId || v4();
+  return typeof link === "string"
+    ? disconnectNotebookFromPage({ uuid: link, requestId })
+    : deleteSharedPage(uuid, requestId).then(() => redirect("/admin/pages"));
   // });
 };
 
