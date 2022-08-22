@@ -17,7 +17,8 @@ const parseActorId = (s: string) =>
     .map((c, i, a) =>
       i % 2 === 0 ? String.fromCharCode(parseInt(c + a[i + 1], 16)) : ""
     )
-    .join("");
+    .join("")
+    .replace(/^\d+\//, (val) => `${appNameById[val.slice(0, -1)]}/`);
 
 const SinglePagePage = () => {
   const { data, notebooks, history } =
@@ -79,7 +80,9 @@ const SinglePagePage = () => {
         ))}
       </ul>
       <Form method={"delete"}>
-        <Button className="bg-red-500 hover:bg-red-700 active:bg-red-800 disabled:bg-red-500">Delete</Button>
+        <Button className="bg-red-500 hover:bg-red-700 active:bg-red-800 disabled:bg-red-500">
+          Delete
+        </Button>
       </Form>
     </div>
   );

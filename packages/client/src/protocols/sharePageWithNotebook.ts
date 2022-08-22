@@ -185,14 +185,16 @@ const setupSharePageWithNotebook = ({
         dispatchAppEvent({
           type: "log",
           id: "share-page-accepted",
-          content: `Successfully shared ${notebookPageId} with ${source.app}/${source.workspace}!`,
+          content: `Successfully shared ${notebookPageId} with ${
+            apps[source.app].name
+          } / ${source.workspace}!`,
           intent: "success",
         });
       else
         dispatchAppEvent({
           type: "log",
           id: "share-page-rejected",
-          content: `Graph ${source.app}/${source.workspace} rejected ${notebookPageId}`,
+          content: `Notebook ${apps[source.app].name} / ${source.workspace} rejected ${notebookPageId}`,
           intent: "info",
         });
     },
@@ -310,7 +312,12 @@ const setupSharePageWithNotebook = ({
         return Promise.all([
           applyState(notebookPageId, doc),
           saveState(notebookPageId, Automerge.save(doc)),
-        ]);
+        ]).catch((e) =>
+          apiClient({
+            method: "disconnect-shared-page",
+            notebookPageId,
+          }).then(() => Promise.reject(e))
+        );
       })
       .then(() => {
         sendToNotebook({
@@ -369,7 +376,7 @@ const setupSharePageWithNotebook = ({
   };
 
   const disconnectPage = (notebookPageId: string) => {
-    return apiClient<{ id: string; created: boolean }>({
+    return apiClient({
       method: "disconnect-shared-page",
       notebookPageId,
     })
