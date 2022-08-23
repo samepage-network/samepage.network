@@ -17,6 +17,9 @@ jobs:
       - uses: actions/checkout@v2
       - name: install
         run: npm install
+      - name: package deps
+        run: npm install
+        working-directory: packages/client
       - name: authenticate
         run: echo '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}' > ~/.npmrc
       - name: build
