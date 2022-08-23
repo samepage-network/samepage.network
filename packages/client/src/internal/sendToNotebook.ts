@@ -1,7 +1,7 @@
-import sendChunkedMessage from "./internal/sendChunkedMessage";
-import { getP2PConnection } from "./internal/setupP2PFeatures";
-import { sendToBackend } from "./internal/setupWsFeatures";
-import { SendToNotebook } from "./types";
+import sendChunkedMessage from "./sendChunkedMessage";
+import { getP2PConnection } from "./setupP2PFeatures";
+import { sendToBackend } from "./setupWsFeatures";
+import { SendToNotebook } from "../types";
 
 const sendToNotebook: SendToNotebook = ({ target, operation, data = {} }) => {
   const connection = getP2PConnection(target);

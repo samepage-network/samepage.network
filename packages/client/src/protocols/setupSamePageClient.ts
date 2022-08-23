@@ -1,15 +1,15 @@
-import { apiGet } from "./internal/apiClient";
+import { apiGet } from "../internal/apiClient";
 import {
   addNotebookListener,
   removeNotebookListener,
-} from "./internal/setupMessageHandlers";
-import setupP2PFeatures from "./internal/setupP2PFeatures";
-import onAppEvent from "./internal/onAppEvent";
-import type { AddCommand, RemoveCommand, AppEvent } from "./types";
+} from "../internal/setupMessageHandlers";
+import setupP2PFeatures from "../internal/setupP2PFeatures";
+import onAppEvent from "../internal/onAppEvent";
+import type { AddCommand, RemoveCommand, AppEvent } from "../types";
 import type { App, Notebook } from "@samepage/shared";
-import setupRegistry from "./internal/registry";
-import sendToNotebook from "./sendToNotebook";
-import setupWsFeatures from "./internal/setupWsFeatures";
+import setupRegistry from "../internal/registry";
+import sendToNotebook from "../internal/sendToNotebook";
+import setupWsFeatures from "../internal/setupWsFeatures";
 
 const setupSamePageClient = async ({
   isAutoConnect,
