@@ -67,6 +67,11 @@ type Method = Notebook & { requestId: string } & (
         request: string;
         target: Notebook;
       }
+    | {
+        oldNotebookPageId: string;
+        newNotebookPageId: string;
+        method: "link-different-page";
+      }
   );
 
 const getActorId = () =>
@@ -497,6 +502,27 @@ const logic = async (
       })
         .then(() => ({ success: true }))
         .catch(catchError("Failed to respond to query"));
+    }
+    case "link-different-page": {
+      const { oldNotebookPageId, newNotebookPageId } = args;
+      const cxn = await getMysql(req.requestId);
+      const [result] = await cxn
+        .execute(
+          `SELECT uuid FROM page_notebook_links WHERE app = ? AND workspace = ? AND notebook_page_id = ?`,
+          [app, workspace, oldNotebookPageId]
+        )
+        .then(([a]) => a as { uuid: string }[]);
+      if (!result) {
+        throw new NotFoundError(
+          `Couldn't find old notebook page id: ${oldNotebookPageId}`
+        );
+      }
+      await cxn.execute(
+        `UPDATE page_notebook_links SET notebook_page_id = ? WHERE uuid = ?`,
+        [newNotebookPageId, result.uuid]
+      );
+      cxn.destroy();
+      return { success: true };
     }
     default:
       throw new NotFoundError(`Unknown method: ${JSON.stringify(args)}`);
