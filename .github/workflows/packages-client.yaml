@@ -5,7 +5,7 @@ on:
     branches: main
     paths:
       - "packages/client/**"
-      - ".github/workflows/packages.yaml"
+      - ".github/workflows/packages-client.yaml"
 
 env:
   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
