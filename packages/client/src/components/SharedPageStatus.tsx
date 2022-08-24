@@ -101,13 +101,13 @@ const InviteNotebook = ({
             setIsOpen(true);
           }}
         />
-        <SharePageDialog
-          onSubmit={({ notebooks }) => sharePage({ notebooks, notebookPageId })}
-          onClose={() => setIsOpen(false)}
-          isOpen={isOpen}
-          portalContainer={portalContainer}
-        />
       </Tooltip>
+      <SharePageDialog
+        onSubmit={({ notebooks }) => sharePage({ notebooks, notebookPageId })}
+        onClose={() => setIsOpen(false)}
+        isOpen={isOpen}
+        portalContainer={portalContainer}
+      />
     </>
   );
 };
