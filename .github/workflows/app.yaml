@@ -23,6 +23,7 @@ env:
   ORIGIN: https://samepage.network
   STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
   STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+  WEB_SOCKET_URL: https://ws.samepage.network
 
 jobs:
   deploy:

@@ -32,6 +32,7 @@
       "classnames": ["packages/client/node_modules/classnames"],
       "deep-equal": ["packages/client/node_modules/deep-equal"],
       "dom-helpers/*": ["packages/client/node_modules/dom-helpers/*"],
+      "dom4": ["packages/client/node_modules/dom4"],
       "gud": ["packages/client/node_modules/gud"],
       "object-is": ["packages/client/node_modules/object-is"],
       "popper.js": ["packages/client/node_modules/popper.js"],
