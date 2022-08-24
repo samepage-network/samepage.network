@@ -39,28 +39,30 @@ const getActorId = () =>
     .join("");
 
 const setupSharePageWithNotebook = ({
-  renderInitPage,
-  renderViewPages,
+  renderInitPage = () => {},
+  renderViewPages = () => {},
 
-  applyState,
-  calculateState,
-  loadState,
-  saveState,
-  removeState,
+  applyState = Promise.resolve,
+  calculateState = () =>
+    Promise.resolve({ annotations: [], content: new Automerge.Text() }),
+  loadState = () =>
+    Promise.resolve(new Uint8Array(0) as Automerge.BinaryDocument),
+  saveState = Promise.resolve,
+  removeState = Promise.resolve,
 }: {
-  renderInitPage: (props: { onSubmit: OnInitHandler; apps: Apps }) => void;
-  renderViewPages: (props: { notebookPageIds: string[] }) => void;
+  renderInitPage?: (props: { onSubmit: OnInitHandler; apps: Apps }) => void;
+  renderViewPages?: (props: { notebookPageIds: string[] }) => void;
 
-  applyState: (notebookPageId: string, state: Schema) => Promise<unknown>;
-  calculateState: (
+  applyState?: (notebookPageId: string, state: Schema) => Promise<unknown>;
+  calculateState?: (
     notebookPageId: string
   ) => Promise<Omit<Schema, "contentType">>;
-  loadState: (notebookPageId: string) => Promise<Automerge.BinaryDocument>;
-  saveState: (
+  loadState?: (notebookPageId: string) => Promise<Automerge.BinaryDocument>;
+  saveState?: (
     notebookPageId: string,
     state: Automerge.BinaryDocument
   ) => Promise<unknown>;
-  removeState: (notebookPageId: string) => Promise<unknown>;
+  removeState?: (notebookPageId: string) => Promise<unknown>;
 }) => {
   addCommand({
     label: VIEW_COMMAND_PALETTE_LABEL,
@@ -403,13 +405,35 @@ const setupSharePageWithNotebook = ({
   };
 
   const forcePushPage = (notebookPageId: string) =>
-    loadState(notebookPageId).then((state) =>
-      apiClient({
-        method: "force-push-page",
-        notebookPageId,
-        state: window.btoa(String.fromCharCode.apply(null, Array.from(state))),
-      })
-    );
+    loadState(notebookPageId)
+      .then((state) =>
+        apiClient({
+          method: "force-push-page",
+          notebookPageId,
+          state: window.btoa(
+            String.fromCharCode.apply(null, Array.from(state))
+          ),
+        })
+      )
+      .then(() =>
+        dispatchAppEvent({
+          type: "log",
+          content: `Successfully pushed page state to other notebooks.`,
+          id: "push-shared-page",
+          intent: "success",
+        })
+      )
+      .catch((e) =>
+        dispatchAppEvent({
+          type: "log",
+          content: `Failed to pushed page state to other notebooks: ${e.message}`,
+          id: "push-shared-page",
+          intent: "error",
+        })
+      );
+
+  const getLocalHistory = (notebookPageId: string) =>
+    loadAutomergeDoc(notebookPageId).then((doc) => Automerge.getHistory(doc));
 
   const listConnectedNotebooks = (notebookPageId: string) =>
     Promise.all([
@@ -420,9 +444,8 @@ const setupSharePageWithNotebook = ({
         method: "list-page-notebooks",
         notebookPageId,
       }),
-      loadAutomergeDoc(notebookPageId),
-    ]).then(([{ networks, notebooks }, doc]) => {
-      const localHistory = Automerge.getHistory(doc);
+      getLocalHistory(notebookPageId),
+    ]).then(([{ networks, notebooks }, localHistory]) => {
       const localVersion = localHistory[localHistory.length - 1]?.change?.time;
       return {
         networks,
@@ -454,6 +477,7 @@ const setupSharePageWithNotebook = ({
     disconnectPage,
     forcePushPage,
     listConnectedNotebooks,
+    getLocalHistory,
   };
 };
 

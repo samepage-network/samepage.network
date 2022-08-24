@@ -26,7 +26,7 @@ const SharePageDialog = ({
   isOpen?: boolean;
 }) => {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
-  const [currentApp, setCurrentApp] = useState<number>(2);
+  const [currentApp, setCurrentApp] = useState<number>(1);
   const [currentworkspace, setCurrentWorkspace] = useState("");
   const [loading, setLoading] = useState(false);
   const onClick = useCallback(() => {
@@ -90,11 +90,11 @@ const SharePageDialog = ({
               popoverProps={{
                 minimal: true,
                 captureDismiss: true,
-                portalContainer: window.parent.document.body,
+                portalContainer,
               }}
             >
               <Button
-                text={apps[currentApp].name}
+                text={apps[currentApp]?.name || "Unknown"}
                 rightIcon="double-caret-vertical"
               />
             </AppSelect>

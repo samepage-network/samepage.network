@@ -11,13 +11,15 @@ const defaultAddCommand: AddCommand = ({ label, callback }) => {
     }
   };
   documentBodyListeners[label] = eventListener;
-  document.body.addEventListener("keydown", eventListener);
+  if (typeof document !== "undefined")
+    document.body.addEventListener("keydown", eventListener);
 };
 const defaultRemoveCommand: RemoveCommand = (args) => {
-  document.body.removeEventListener(
-    "keydown",
-    documentBodyListeners[args.label]
-  );
+  if (typeof document !== "undefined")
+    document.body.removeEventListener(
+      "keydown",
+      documentBodyListeners[args.label]
+    );
 };
 
 const defaultOnAppEventHandler = (evt: AppEvent) => {

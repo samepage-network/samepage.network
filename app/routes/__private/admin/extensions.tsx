@@ -3,7 +3,6 @@ import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server"
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 import { appNameById } from "@samepage/shared";
-import axios from "axios";
 import { downloadFileContent } from "@dvargas92495/app/backend/downloadFile.server";
 
 const AdminExtensionsPage = () => {
@@ -24,16 +23,6 @@ const AdminExtensionsPage = () => {
           >
             Download
           </a>
-          {/* 
-          <Link
-            className={
-              "px-4 py-2 font-notmal rounded-full bg-sky-500 shadow-sm hover:bg-sky-700 active:bg-sky-900 hover:shadow-md active:shadow-none disabled:cursor-not-allowed disabled:bg-opacity-50 disabled:opacity-50 disabled:hover:bg-sky-500 disabled:hover:shadow-none disabled:active:bg-sky-500 disabled:hover:bg-opacity-50"
-            }
-            to={`?app=${app.id}`}
-            reloadDocument
-          >
-            Download
-          </Link> */}
         </div>
       ))}
     </div>
@@ -44,18 +33,6 @@ export const loader: LoaderFunction = () => {
   // return remixAdminLoader(args, async ({ searchParams }) => {
   const app = ""; //args.request.searchParams.app;
   if (!app) return {};
-  if (app === "1")
-    return axios
-      .get("https://roamjs.com/samepage/download/extension.js", {
-        responseType: "document",
-      })
-      .then(
-        (r) =>
-          new Response(r.data, {
-            status: 200,
-            headers: r.headers,
-          })
-      );
   return downloadFileContent({ Key: `/data/extensions/${app}.js` }).then(
     (r) =>
       new Response(r, {

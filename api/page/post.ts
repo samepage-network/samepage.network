@@ -369,7 +369,7 @@ const logic = async (
             return { exists: true, uuid: pageUuid };
           }
           return downloadSharedPage(pageUuid).then((state) => ({
-            state,
+            state: Buffer.from(state).toString("base64"),
             exists: true,
             uuid: pageUuid,
           }));

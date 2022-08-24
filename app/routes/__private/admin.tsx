@@ -22,14 +22,14 @@ const AdminDashboard = () => {
     <Dashboard
       footer={<UserFooter />}
       root={"admin"}
-      tabs={["connections", "pages", "extensions"]}
+      tabs={["connections", "pages", "extensions", "components"]}
     />
   );
 };
 
 export const loader: LoaderFunction = (args) => {
   // return remixAdminLoader(args, async () => {
-    return {};
+  return {};
   // });
 };
 
