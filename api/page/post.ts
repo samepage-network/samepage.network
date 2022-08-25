@@ -175,6 +175,11 @@ const logic = async (
     }
     case "init-shared-page": {
       const { notebookPageId, state } = args;
+      if (!notebookPageId) {
+        throw new BadRequestError(
+          `Missing notebookPageId for notebook: ${app} / ${workspace}`
+        );
+      }
       return getMysql(req.requestId)
         .then(async (cxn) => {
           const [results] = await cxn.execute(

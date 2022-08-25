@@ -33,7 +33,9 @@ jobs:
       - name: install
         run: npm install
       - name: package deps
-        run: npm install
+        run: | 
+          npm install
+          rm -Rf node_modules/react node_modules/react-dom
         working-directory: packages/client
       - name: build
         run: npm run build
