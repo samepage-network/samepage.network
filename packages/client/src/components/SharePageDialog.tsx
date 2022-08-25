@@ -59,10 +59,11 @@ const SharePageDialog = ({
               gap: 16,
               alignItems: "center",
               marginBottom: 4,
+              justifyContent: "space-between",
             }}
           >
             <span style={{ flexGrow: 1 }}>
-              {g.app} - {g.workspace}
+              {apps[g.app].name}/{g.workspace}
             </span>
             <Button
               minimal
@@ -71,7 +72,7 @@ const SharePageDialog = ({
             />
           </div>
         ))}
-        <div style={{ display: "flex", gap: "16px" }}>
+        <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
           <Label style={{ maxWidth: "120px", width: "100%" }}>
             App
             <AppSelect
