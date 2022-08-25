@@ -12,6 +12,13 @@ import {
 import { Select } from "@blueprintjs/select";
 import { apps } from "../internal/registry";
 
+export type Props = {
+  onClose: () => void;
+  onSubmit: (p: { notebooks: Notebook[] }) => void | Promise<void>;
+  portalContainer?: HTMLElement;
+  isOpen?: boolean;
+};
+
 const AppSelect = Select.ofType<number>();
 
 const SharePageDialog = ({
@@ -19,21 +26,20 @@ const SharePageDialog = ({
   isOpen = true,
   onSubmit,
   portalContainer,
-}: {
-  onClose: () => void;
-  onSubmit: (p: { notebooks: Notebook[] }) => void | Promise<void>;
-  portalContainer?: HTMLElement;
-  isOpen?: boolean;
-}) => {
+}: Props) => {
   const [notebooks, setNotebooks] = useState<Notebook[]>([]);
   const [currentApp, setCurrentApp] = useState<number>(1);
   const [currentworkspace, setCurrentWorkspace] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const onClick = useCallback(() => {
     setLoading(true);
     Promise.resolve(onSubmit({ notebooks }))
       .then(onClose)
-      .catch(() => setLoading(false));
+      .catch((e) => {
+        setError(e.message);
+        setLoading(false);
+      });
   }, [onSubmit, onClose, notebooks]);
 
   return (
@@ -54,6 +60,7 @@ const SharePageDialog = ({
         </p>
         {notebooks.map((g, i) => (
           <div
+            key={`${g.app}/${g.workspace}`}
             style={{
               display: "flex",
               gap: 16,
@@ -125,6 +132,7 @@ const SharePageDialog = ({
       </div>
       <div className={Classes.DIALOG_FOOTER}>
         <div className={Classes.DIALOG_FOOTER_ACTIONS}>
+          <span className="text-red-700">{error}</span>
           <Button text={"Cancel"} onClick={onClose} disabled={loading} />
           <Button
             text={"Send"}

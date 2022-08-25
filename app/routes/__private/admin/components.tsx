@@ -47,6 +47,7 @@ const ComponentsPage = () => {
 
 export const loader: LoaderFunction = () => {
   return [
+    "NotificationContainer",
     "SharedPageStatus", 
     // "SharePageDialog"
   ];
