@@ -4,7 +4,6 @@ import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server"
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 import { appNameById } from "@samepage/shared";
-import { downloadFileContent } from "@dvargas92495/app/backend/downloadFile.server";
 import listExtensionsMetadata from "~/data/listExtensionsMetadata.server";
 
 const AdminExtensionsPage = () => {
@@ -36,20 +35,8 @@ const AdminExtensionsPage = () => {
   );
 };
 
-export const loader: LoaderFunction = () => {
-  // return remixAdminLoader(args, async ({ searchParams }) => {
-  const app = ""; //args.request.searchParams.app;
-  if (!app) return listExtensionsMetadata();
-  return downloadFileContent({ Key: `/data/extensions/${app}.js` }).then(
-    (r) =>
-      new Response(r, {
-        status: 200,
-        headers: {
-          "Content-Type": "application/javascript",
-        },
-      })
-  );
-  // });
+export const loader: LoaderFunction = (args) => {
+  return remixAdminLoader(args, listExtensionsMetadata);
 };
 
 export default AdminExtensionsPage;

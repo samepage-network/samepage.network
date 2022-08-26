@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { v4 } from "uuid";
 
-const NOTIFICATION_EVENT = "roamjs:samepage:notification";
+const NOTIFICATION_EVENT = "samepage:notification";
 
 type Notification = {
   uuid: string;
@@ -26,7 +26,7 @@ const defaults: {
 };
 
 type Props = {
-  actions?: Record<string, (args: Record<string, string>) => Promise<void>>;
+  actions?: Record<string, (args: Record<string, string>) => Promise<unknown>>;
   api?: {
     addNotification: (n: Notification) => Promise<unknown>;
     deleteNotification: (uuid: string) => Promise<unknown>;

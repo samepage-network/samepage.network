@@ -27,10 +27,6 @@ const AdminDashboard = () => {
   );
 };
 
-export const loader: LoaderFunction = (args) => {
-  // return remixAdminLoader(args, async () => {
-  return {};
-  // });
-};
+export const loader: LoaderFunction = remixAdminLoader;
 
 export default AdminDashboard;

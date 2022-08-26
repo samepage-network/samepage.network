@@ -1,6 +1,7 @@
 import { LoaderFunction, redirect, ActionFunction } from "@remix-run/node";
 import { Link, useLoaderData, Form } from "@remix-run/react";
 import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
+import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
 import listPageNotebookLinks from "~/data/listPageNotebookLinks.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
@@ -47,20 +48,19 @@ const AdminPagesPage = () => {
 };
 
 export const loader: LoaderFunction = (args) => {
-  // return remixAdminLoader(args, () =>
-  return listPageNotebookLinks(args.context?.lambdaContext?.requestId || v4());
-  // );
+  return remixAdminLoader(args, ({ context: { requestId } }) =>
+    listPageNotebookLinks(requestId)
+  );
 };
 
 export const action: ActionFunction = async (args) => {
-  // return remixAdminAction(args, {
-  //   DELETE: ({ params }) =>
-  const data = await args.request.formData();
-  return deleteSharedPage(
-    data.get("uuid") as string,
-    args.context?.lambdaContext?.requestId || v4()
-  ).then(() => redirect("/admin/pages"));
-  // });
+  return remixAdminAction(args, {
+    DELETE: ({ data, context: { requestId } }) => {
+      return deleteSharedPage(data.uuid?.[0], requestId).then(() =>
+        redirect("/admin/pages")
+      );
+    },
+  });
 };
 
 export default AdminPagesPage;

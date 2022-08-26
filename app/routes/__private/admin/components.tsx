@@ -2,6 +2,7 @@ import { Link, Outlet, useLoaderData, useMatches } from "@remix-run/react";
 import type { LoaderFunction, LinksFunction } from "@remix-run/node";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
+import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
 import blueprintcss from "@blueprintjs/core/lib/css/blueprint.css";
 import blueprinticonscss from "@blueprintjs/icons/lib/css/blueprint-icons.css";
 
@@ -45,12 +46,12 @@ const ComponentsPage = () => {
   );
 };
 
-export const loader: LoaderFunction = () => {
-  return [
+export const loader: LoaderFunction = (args) => {
+  return remixAdminLoader(args, () => [
     "NotificationContainer",
-    "SharedPageStatus", 
+    "SharedPageStatus",
     // "SharePageDialog"
-  ];
+  ]);
 };
 
 export const links: LinksFunction = () => {

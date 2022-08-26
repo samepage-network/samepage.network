@@ -221,6 +221,7 @@ const SharedPageStatus = ({
             position={"left"}
             hasBackdrop={false}
             size={DrawerSize.SMALL}
+            canOutsideClickClose={false}
           >
             <div className={Classes.DRAWER_BODY}>
               <HistoryContent

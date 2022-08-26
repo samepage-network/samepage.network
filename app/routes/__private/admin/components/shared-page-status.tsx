@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import type { LoaderFunction } from "@remix-run/node";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
 import type Automerge from "automerge";
+import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
 
 const SharedPageStatusPage = () => {
   const { listConnectedNotebooks, getLocalHistory } = useMemo(
@@ -40,12 +41,14 @@ const SharedPageStatusPage = () => {
 };
 
 export const loader: LoaderFunction = (args) => {
-  const uuid = new URL(args.request.url).searchParams.get("uuid");
-  return uuid
-    ? downloadSharedPage(uuid).then((r) => ({
-        state: Buffer.from(r).toString("base64"),
-      }))
-    : { state: "" };
+  return remixAdminLoader(args, () => {
+    const uuid = new URL(args.request.url).searchParams.get("uuid");
+    return uuid
+      ? downloadSharedPage(uuid).then((r) => ({
+          state: Buffer.from(r).toString("base64"),
+        }))
+      : { state: "" };
+  });
 };
 
 export default SharedPageStatusPage;

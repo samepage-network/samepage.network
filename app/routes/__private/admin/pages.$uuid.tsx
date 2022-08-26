@@ -89,25 +89,26 @@ const SinglePagePage = () => {
 };
 
 export const loader: LoaderFunction = (args) => {
-  // return remixAdminLoader(args, ({ params }) =>
-  return getSharedPageByUuid(
-    args.params["uuid"] || "",
-    args.context?.lambdaContext?.requestId || v4()
+  return remixAdminLoader(args, ({ params }) =>
+    getSharedPageByUuid(
+      params["uuid"] || "",
+      (args.context?.lambdaContext as Record<string, string>)?.requestId || v4()
+    )
   );
-  // );
 };
 
 export const action: ActionFunction = async (args) => {
-  // return remixAdminAction(args, {
-  //   DELETE: ({ params }) =>
-  const data = await args.request.formData();
-  const link = data.get("link");
-  const uuid = args.params["uuid"] || "";
-  const requestId = args.context?.lambdaContext?.requestId || v4();
-  return typeof link === "string"
-    ? disconnectNotebookFromPage({ uuid: link, requestId })
-    : deleteSharedPage(uuid, requestId).then(() => redirect("/admin/pages"));
-  // });
+  return remixAdminAction(args, {
+    DELETE: ({ params, data, context: { requestId } }) => {
+      const link = data["link"];
+      const uuid = params["uuid"] || "";
+      return typeof link === "string"
+        ? disconnectNotebookFromPage({ uuid: link, requestId })
+        : deleteSharedPage(uuid, requestId).then(() =>
+            redirect("/admin/pages")
+          );
+    },
+  });
 };
 
 export default SinglePagePage;

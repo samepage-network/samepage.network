@@ -5,7 +5,6 @@ import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server"
 import listOnlineClients from "~/data/listOnlineClients.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
-import { v4 } from "uuid";
 
 const ConnectionsPage = () => {
   const navigate = useNavigate();
@@ -23,9 +22,9 @@ const ConnectionsPage = () => {
 };
 
 export const loader: LoaderFunction = (args) => {
-  // return remixAdminLoader(args, () =>
-  return listOnlineClients(args.context?.lambdaContext?.requestId || v4());
-  // );
+  return remixAdminLoader(args, ({ context: { requestId } }) =>
+    listOnlineClients(requestId)
+  );
 };
 
 export default ConnectionsPage;
