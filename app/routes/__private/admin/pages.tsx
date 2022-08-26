@@ -5,7 +5,6 @@ import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server"
 import listPageNotebookLinks from "~/data/listPageNotebookLinks.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
-import { v4 } from "uuid";
 import Button from "@dvargas92495/app/components/Button";
 import deleteSharedPage from "~/data/deleteSharedPage.server";
 
