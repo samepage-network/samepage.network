@@ -225,21 +225,28 @@ const logic = async (
                 [pageUuid, workspace, app]
               )
               .then(([a]) => a as { uuid: string; notebook_page_id: string }[]);
-            if (!results.length)
+            const b64State = Buffer.from(state).toString("base64");
+            if (!results.length) {
+              const uuid = v4();
               await cxn.execute(
                 `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, workspace, app)
-          VALUES (UUID(), ?, ?, ?, ?)`,
-                [pageUuid, notebookPageId, workspace, app]
+          VALUES (?, ?, ?, ?, ?)`,
+                [uuid, pageUuid, notebookPageId, workspace, app]
               );
-            else if (
-              results.some((r) => r.notebook_page_id !== notebookPageId)
-            ) {
-              throw new BadRequestError(
-                `Already joined this page via Notebook Page Id: ${results[0].notebook_page_id}`
-              );
+              cxn.destroy();
+              return {
+                state: b64State,
+                linkCreated: true,
+                notebookPageId: uuid,
+              };
+            } else {
+              cxn.destroy();
+              return {
+                state: b64State,
+                linkCreated: false,
+                notebookPageId: results[0].notebook_page_id,
+              };
             }
-            cxn.destroy();
-            return { state: Buffer.from(state).toString("base64") };
           });
         })
         .catch(catchError("Failed to join a shared page"));

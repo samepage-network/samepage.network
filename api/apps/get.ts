@@ -2,7 +2,7 @@ import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGat
 import { APPS } from "@samepage/shared";
 
 const logic = () => ({
-  apps: APPS,
+  apps: Object.fromEntries(APPS.map(({ id, ...app }) => [id, app])),
 });
 
 export const handler = createAPIGatewayProxyHandler({

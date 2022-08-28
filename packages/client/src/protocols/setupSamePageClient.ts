@@ -6,7 +6,7 @@ import {
 import setupP2PFeatures from "../internal/setupP2PFeatures";
 import onAppEvent from "../internal/onAppEvent";
 import type { AddCommand, RemoveCommand, AppEvent } from "../types";
-import type { App, Notebook } from "@samepage/shared";
+import type { Apps, Notebook } from "@samepage/shared";
 import setupRegistry from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
 import setupWsFeatures from "../internal/setupWsFeatures";
@@ -24,8 +24,8 @@ const setupSamePageClient = async ({
   removeCommand?: RemoveCommand;
   onAppEventHandler?: (evt: AppEvent) => void;
 } & Notebook) => {
-  const { apps } = await apiGet<{ apps: App[] }>("apps").catch(() => ({
-    apps: [] as App[],
+  const { apps } = await apiGet<{ apps: Apps }>("apps").catch(() => ({
+    apps: [] as Apps,
   }));
   setupRegistry({
     addCommand,

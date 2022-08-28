@@ -310,20 +310,32 @@ const setupSharePageWithNotebook = ({
     notebookPageId: string;
     source: Notebook;
   }) =>
-    apiClient<{ state: string }>({
+    apiClient<{ state: string; notebookPageId: string; linkCreated: boolean }>({
       method: "join-shared-page",
       notebookPageId,
       pageUuid,
     })
-      .then(({ state }) => {
-        const doc = loadAutomergeFromBase64(state);
-        return saveAndApply(notebookPageId, doc).catch((e) =>
-          apiClient({
-            method: "disconnect-shared-page",
-            notebookPageId,
-          }).then(() => Promise.reject(e))
-        );
-      })
+      .then(
+        ({ state, linkCreated, notebookPageId: responseNotebookPageId }) => {
+          const doc = loadAutomergeFromBase64(state);
+          if (linkCreated) {
+            return saveAndApply(notebookPageId, doc).catch((e) =>
+              apiClient({
+                method: "disconnect-shared-page",
+                notebookPageId,
+              }).then(() => Promise.reject(e))
+            );
+          } else {
+            dispatchAppEvent({
+              type: "log",
+              id: "shared-page-warning",
+              content: `Already joined this page via Notebook Page Id: ${responseNotebookPageId}`,
+              intent: "warning",
+            });
+            return saveAndApply(responseNotebookPageId, doc);
+          }
+        }
+      )
       .then(() => {
         sendToNotebook({
           target: source,

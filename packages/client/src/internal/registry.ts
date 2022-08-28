@@ -1,5 +1,5 @@
 import type { AddCommand, AppEvent, RemoveCommand } from "../types";
-import type { App, Apps } from "@samepage/shared";
+import type { Apps } from "@samepage/shared";
 
 const documentBodyListeners: Record<string, (a: KeyboardEvent) => void> = {};
 const defaultAddCommand: AddCommand = ({ label, callback }) => {
@@ -55,15 +55,14 @@ const setupRegistry = ({
   workspace?: string;
   addCommand?: AddCommand;
   removeCommand?: RemoveCommand;
-  apps?: App[];
+  apps?: Apps;
   onAppEventHandler?: (event: AppEvent) => void;
 }) => {
   if (_app) app = _app;
   if (_workspace) workspace = _workspace;
   if (_addCommand) addCommand = _addCommand;
   if (_removeCommand) removeCommand = _removeCommand;
-  if (_apps)
-    apps = Object.fromEntries(_apps.map(({ id, ...app }) => [id, app]));
+  if (_apps) apps = _apps;
   if (_onAppEventHandler) onAppEventHandler = _onAppEventHandler;
 };
 
