@@ -281,22 +281,20 @@ const logic = async (
               ) as Automerge.BinaryChange
           );
           const [newDoc, patch] = Automerge.applyChanges(oldDoc, binaryChanges);
-          const { time } = Automerge.decodeChange(
-            Automerge.getLastLocalChange(newDoc)
+          return saveSharedPage({
+            pageUuid,
+            doc: newDoc,
+            requestId: req.requestId,
+          }).then(({ version }) =>
+            cxn
+              .execute(
+                `UPDATE page_notebook_links SET version = ? WHERE app = ? AND workspace = ? AND notebook_page_id = ?`,
+                [version, app, workspace, notebookPageId]
+              )
+              .then(() => patch)
           );
-          return Promise.all([
-            saveSharedPage({
-              pageUuid,
-              doc: newDoc,
-              requestId: req.requestId,
-            }).then(() => patch),
-            cxn.execute(
-              `UPDATE page_notebook_links SET version = ? WHERE app = ? AND workspace = ? AND notebook_page_id = ?`,
-              [time, app, workspace, notebookPageId]
-            ),
-          ]);
         })
-        .then(([patch]) => {
+        .then((patch) => {
           return cxn
             .execute(
               `SELECT workspace, app, notebook_page_id FROM page_notebook_links WHERE page_uuid = ?`,
@@ -415,16 +413,16 @@ const logic = async (
           // TODO cache versions in page_notebook_links
           const clients = await cxn
             .execute(
-              `SELECT app, workspace FROM page_notebook_links WHERE page_uuid = ?`,
+              `SELECT app, workspace, version FROM page_notebook_links WHERE page_uuid = ?`,
               [pageUuid]
             )
-            .then(([res]) => res as Notebook[]);
+            .then(([res]) => res as (Notebook & { version: number })[]);
           cxn.destroy();
           return {
             notebooks: clients.map((c) => ({
               workspace: c.workspace,
               app: appNameById[c.app] as string,
-              version: 0,
+              version: c.version,
             })),
             networks: [
               {
