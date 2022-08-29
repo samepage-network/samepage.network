@@ -24,10 +24,13 @@ const saveSharedPage = ({
         ? Automerge.load(new Uint8Array(buffer) as Automerge.BinaryDocument)
         : doc
     );
-    return cxn.execute(`UPDATE pages SET version = ? WHERE uuid = ?`, [
-      Automerge.decodeChange(change).time,
-      pageUuid,
-    ]);
+    const version = change ? Automerge.decodeChange(change).time : 0;
+    return cxn
+      .execute(`UPDATE pages SET version = ? WHERE uuid = ?`, [
+        version,
+        pageUuid,
+      ])
+      .then(() => ({ version }));
   });
 };
 

@@ -423,9 +423,10 @@ const setupSharePageWithNotebook = ({
       }),
       loadAutomergeDoc(notebookPageId),
     ]).then(([{ networks, notebooks }, doc]) => {
-      const localVersion = Automerge.decodeChange(
-        Automerge.getLastLocalChange(doc)
-      ).time;
+      const change = Automerge.getLastLocalChange(doc);
+      const localVersion = change
+        ? Automerge.decodeChange(change).time
+        : Automerge.getHistory(doc).slice(-1)[0].change.time;
       return {
         networks,
         notebooks: notebooks.map((n) =>

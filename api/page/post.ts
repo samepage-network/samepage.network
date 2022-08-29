@@ -194,8 +194,7 @@ const logic = async (
           const [link] = results as { page_uuid: string }[];
           if (link) return { id: link.page_uuid, created: false };
           const pageUuid = v4();
-          const args = [pageUuid, notebookPageId, workspace, app];
-          await saveSharedPage({
+          const { version } = await saveSharedPage({
             pageUuid,
             doc: state,
             requestId: req.requestId,
@@ -206,9 +205,9 @@ const logic = async (
             [pageUuid]
           );
           await cxn.execute(
-            `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, workspace, app)
-            VALUES (UUID(), ?, ?, ?, ?)`,
-            args
+            `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, workspace, app, version)
+            VALUES (UUID(), ?, ?, ?, ?, ?)`,
+            [pageUuid, notebookPageId, workspace, app, version]
           );
           cxn.destroy();
           return { created: true, id: pageUuid };

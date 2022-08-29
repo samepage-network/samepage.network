@@ -135,7 +135,7 @@ const NotificationContainer = ({
         <div style={{ background: "white", width: 280 }}>
           <div
             style={{
-              display: "flex",
+            display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
               padding: 8,
