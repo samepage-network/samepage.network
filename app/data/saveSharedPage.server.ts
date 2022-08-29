@@ -19,14 +19,13 @@ const saveSharedPage = ({
     Body: buffer,
   }).then(async () => {
     const cxn = await getMysqlConnection(requestId);
-    const history = Automerge.getHistory(
+    const change = Automerge.getLastLocalChange(
       typeof doc === "string"
         ? Automerge.load(new Uint8Array(buffer) as Automerge.BinaryDocument)
         : doc
     );
-    console.log('update sql')
     return cxn.execute(`UPDATE pages SET version = ? WHERE uuid = ?`, [
-      history.slice(-1)[0]?.change?.time || 0,
+      Automerge.decodeChange(change).time,
       pageUuid,
     ]);
   });

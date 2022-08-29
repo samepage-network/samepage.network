@@ -72,6 +72,11 @@ type Method = Notebook & { requestId: string } & (
         newNotebookPageId: string;
         method: "link-different-page";
       }
+    | {
+        method: "save-page-version";
+        notebookPageId: string;
+        version: number;
+      }
   );
 
 const getActorId = () =>
@@ -277,13 +282,22 @@ const logic = async (
               ) as Automerge.BinaryChange
           );
           const [newDoc, patch] = Automerge.applyChanges(oldDoc, binaryChanges);
-          return saveSharedPage({
-            pageUuid,
-            doc: newDoc,
-            requestId: req.requestId,
-          }).then(() => patch);
+          const { time } = Automerge.decodeChange(
+            Automerge.getLastLocalChange(newDoc)
+          );
+          return Promise.all([
+            saveSharedPage({
+              pageUuid,
+              doc: newDoc,
+              requestId: req.requestId,
+            }).then(() => patch),
+            cxn.execute(
+              `UPDATE page_notebook_links SET version = ? WHERE app = ? AND workspace = ? AND notebook_page_id = ?`,
+              [time, app, workspace, notebookPageId]
+            ),
+          ]);
         })
-        .then((patch) => {
+        .then(([patch]) => {
           return cxn
             .execute(
               `SELECT workspace, app, notebook_page_id FROM page_notebook_links WHERE page_uuid = ?`,
@@ -532,6 +546,16 @@ const logic = async (
       await cxn.execute(
         `UPDATE page_notebook_links SET notebook_page_id = ? WHERE uuid = ?`,
         [newNotebookPageId, result.uuid]
+      );
+      cxn.destroy();
+      return { success: true };
+    }
+    case "save-page-version": {
+      const { version, notebookPageId } = args;
+      const cxn = await getMysql(req.requestId);
+      await cxn.execute(
+        `UPDATE page_notebook_links SET version = ? WHERE app = ? AND workspace = ? AND notebook_page_id = ?`,
+        [version, app, workspace, notebookPageId]
       );
       cxn.destroy();
       return { success: true };

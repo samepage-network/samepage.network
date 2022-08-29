@@ -152,7 +152,20 @@ const setupSharePageWithNotebook = ({
     Promise.all([
       applyState(notebookPageId, doc),
       saveState(notebookPageId, Automerge.save(doc)),
-    ]);
+    ]).then(() =>
+      apiClient({
+        method: "save-page-version",
+        notebookPageId,
+        version: Automerge.decodeChange(Automerge.getLastLocalChange(doc)).time,
+      }).catch((e) =>
+        dispatchAppEvent({
+          type: "log",
+          id: "update-version",
+          content: `Failed to broadcast new version: ${e.message}`,
+          intent: "warning",
+        })
+      )
+    );
 
   const loadAutomergeDoc = (notebookPageId: string) =>
     loadState(notebookPageId).then((state) =>
@@ -185,15 +198,15 @@ const setupSharePageWithNotebook = ({
   addNotebookListener({
     operation: SHARE_PAGE_RESPONSE_OPERATION,
     handler: (data, source) => {
-      const { success, notebookPageId } = data as {
+      const { success, pageUuid } = data as {
         success: boolean;
-        notebookPageId: string;
+        pageUuid: string;
       };
       if (success)
         dispatchAppEvent({
           type: "log",
           id: "share-page-accepted",
-          content: `Successfully shared ${notebookPageId} with ${
+          content: `Successfully shared ${pageUuid} with ${
             apps[source.app].name
           } / ${source.workspace}!`,
           intent: "success",
@@ -204,7 +217,7 @@ const setupSharePageWithNotebook = ({
           id: "share-page-rejected",
           content: `Notebook ${apps[source.app].name} / ${
             source.workspace
-          } rejected ${notebookPageId}`,
+          } rejected ${pageUuid}`,
           intent: "info",
         });
     },
@@ -285,10 +298,9 @@ const setupSharePageWithNotebook = ({
       .then(() => {
         sendToNotebook({
           target: source,
-          operation: "SHARE_PAGE_RESPONSE",
+          operation: SHARE_PAGE_RESPONSE_OPERATION,
           data: {
             success: true,
-            notebookPageId,
             pageUuid,
           },
         });
@@ -328,12 +340,19 @@ const setupSharePageWithNotebook = ({
     });
   };
 
-  const rejectPage = ({ source }: { source: Notebook }) => {
+  const rejectPage = ({
+    source,
+    pageUuid,
+  }: {
+    source: Notebook;
+    pageUuid: string;
+  }) => {
     sendToNotebook({
       target: source,
-      operation: "SHARE_PAGE_RESPONSE",
+      operation: SHARE_PAGE_RESPONSE_OPERATION,
       data: {
         success: false,
+        pageUuid,
       },
     });
   };
@@ -402,9 +421,11 @@ const setupSharePageWithNotebook = ({
         method: "list-page-notebooks",
         notebookPageId,
       }),
-      getLocalHistory(notebookPageId),
-    ]).then(([{ networks, notebooks }, localHistory]) => {
-      const localVersion = localHistory[localHistory.length - 1]?.change?.time;
+      loadAutomergeDoc(notebookPageId),
+    ]).then(([{ networks, notebooks }, doc]) => {
+      const localVersion = Automerge.decodeChange(
+        Automerge.getLastLocalChange(doc)
+      ).time;
       return {
         networks,
         notebooks: notebooks.map((n) =>

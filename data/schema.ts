@@ -6,6 +6,7 @@ const pageNotebookLink = z.object({
   notebookPageId: z.string().describe("unique"),
   workspace: z.string().describe("unique"),
   app: z.number().max(Math.pow(2, 8)).describe("unique"),
+  version: z.number(),
 });
 
 const page = z.object({
@@ -15,8 +16,8 @@ const page = z.object({
 
 const onlineClient = z.object({
   id: z.string().describe("primary"),
-  instance: z.string().describe("unique"),
-  app: z.number().max(Math.pow(2, 8)).describe("unique"),
+  instance: z.string(),
+  app: z.number().max(Math.pow(2, 8)),
   createdDate: z.date(),
 });
 

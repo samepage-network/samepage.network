@@ -9,11 +9,8 @@ type Notification = {
   uuid: string;
   title: string;
   description: string;
-  actions: {
-    label: string;
-    method: string;
-    args: Record<string, string>;
-  }[];
+  data: Record<string, string>;
+  buttons: string[];
 };
 
 const defaults: {
@@ -156,11 +153,11 @@ const NotificationContainer = ({
                 <p>{not.description}</p>
                 <div style={{ gap: 8 }} className={"flex"}>
                   <ActionButtons
-                    actions={not.actions.map((a) => ({
-                      label: a.label,
+                    actions={not.buttons.map((label) => ({
+                      label,
                       callback: () => {
-                        const action = actions[a.method];
-                        if (action) return action(a.args);
+                        const action = actions[label];
+                        if (action) return action(not.data);
                         return Promise.resolve();
                       },
                     }))}

@@ -138,6 +138,7 @@ const SharePageDialog = ({
             <InputGroup
               value={currentworkspace}
               onChange={(e) => setCurrentWorkspace(e.target.value)}
+              autoFocus
             />
           </Label>
           <Button
