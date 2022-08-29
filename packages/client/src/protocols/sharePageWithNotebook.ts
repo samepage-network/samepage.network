@@ -34,6 +34,13 @@ const getActorId = () =>
     .map((s) => s.charCodeAt(0).toString(16))
     .join("");
 
+const getLastLocalVersion = (doc: Automerge.FreezeObject<Schema>) => {
+  const change = Automerge.getLastLocalChange(doc);
+  return change
+    ? Automerge.decodeChange(change).time
+    : Automerge.getHistory(doc).slice(-1)[0].change.time;
+};
+
 const setupSharePageWithNotebook = ({
   renderViewPages = () => {},
 
@@ -156,7 +163,7 @@ const setupSharePageWithNotebook = ({
       apiClient({
         method: "save-page-version",
         notebookPageId,
-        version: Automerge.decodeChange(Automerge.getLastLocalChange(doc)).time,
+        version: getLastLocalVersion(doc),
       }).catch((e) =>
         dispatchAppEvent({
           type: "log",
@@ -423,16 +430,12 @@ const setupSharePageWithNotebook = ({
       }),
       loadAutomergeDoc(notebookPageId),
     ]).then(([{ networks, notebooks }, doc]) => {
-      const change = Automerge.getLastLocalChange(doc);
-      const localVersion = change
-        ? Automerge.decodeChange(change).time
-        : Automerge.getHistory(doc).slice(-1)[0].change.time;
       return {
         networks,
         notebooks: notebooks.map((n) =>
           n.workspace !== workspace || n.app !== apps[app].name
             ? n
-            : { ...n, version: localVersion }
+            : { ...n, version: getLastLocalVersion(doc) }
         ),
       };
     });

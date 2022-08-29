@@ -233,8 +233,8 @@ const logic = async (
             if (!results.length) {
               const uuid = v4();
               await cxn.execute(
-                `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, workspace, app)
-          VALUES (?, ?, ?, ?, ?)`,
+                `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, workspace, app, version)
+          VALUES (?, ?, ?, ?, ?, 0)`,
                 [uuid, pageUuid, notebookPageId, workspace, app]
               );
               cxn.destroy();
