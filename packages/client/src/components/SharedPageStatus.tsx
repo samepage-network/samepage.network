@@ -5,8 +5,6 @@ import {
   DrawerSize,
   IconName,
   MaybeElement,
-  Popover,
-  Spinner,
   Tooltip,
 } from "@blueprintjs/core";
 import { appNameById } from "@samepage/shared";
@@ -23,79 +21,11 @@ export type Props = {
   Pick<
     SharePageReturn,
     | "disconnectPage"
-    | "sharePage"
     | "forcePushPage"
     | "listConnectedNotebooks"
     | "getLocalHistory"
   >
 >;
-
-const formatVersion = (s: number) =>
-  s ? new Date(s * 1000).toLocaleString() : "unknown";
-
-const ConnectedNotebooks = ({
-  notebookPageId,
-  listConnectedNotebooks,
-}: {
-  notebookPageId: string;
-  listConnectedNotebooks: SharePageReturn["listConnectedNotebooks"];
-}) => {
-  const [loading, setLoading] = useState(true);
-  const [notebooks, setNotebooks] = useState<
-    Awaited<ReturnType<SharePageReturn["listConnectedNotebooks"]>>["notebooks"]
-  >([]);
-  const [networks, setNetworks] = useState<
-    Awaited<ReturnType<SharePageReturn["listConnectedNotebooks"]>>["networks"]
-  >([]);
-  useEffect(() => {
-    listConnectedNotebooks(notebookPageId)
-      .then((r) => {
-        setNotebooks(r.notebooks);
-        setNetworks(r.networks);
-      })
-      .finally(() => setLoading(false));
-  }, [setLoading]);
-  return (
-    <div className="flex p-4 rounded-md flex-col max-w-sm w-full">
-      {loading ? (
-        <Spinner />
-      ) : (
-        <>
-          <h3 className="text-lg font-bold">Notebooks:</h3>
-          <ul>
-            {notebooks.map((c) => (
-              <li key={`${c.app}-${c.workspace}`}>
-                <div className="flex items-center justify-between text-base">
-                  <span>
-                    {c.app}/{c.workspace}
-                  </span>
-                  <span className="opacity-75 text-gray-600 text-xs">
-                    {formatVersion(c.version)}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-          <h3 className="text-lg font-bold">Networks:</h3>
-          <ul>
-            {networks.map((c) => (
-              <li key={`${c.app}-${c.workspace}`}>
-                <div className="flex items-center justify-between text-base">
-                  <span>
-                    {c.app}/{c.workspace}
-                  </span>
-                  <span className="opacity-75 text-gray-600 text-xs">
-                    {formatVersion(c.version)}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </div>
-  );
-};
 
 const parseActorId = (s: string) =>
   s
@@ -180,7 +110,6 @@ const TooltipButtonOverlay = ({
 const SharedPageStatus = ({
   notebookPageId,
   portalContainer,
-  sharePage = () => Promise.resolve(),
   disconnectPage = () => Promise.resolve(),
   forcePushPage = () => Promise.resolve(),
   listConnectedNotebooks = () =>
@@ -195,21 +124,18 @@ const SharedPageStatus = ({
       ref={containerRef}
     >
       <i>Shared</i>
-      <Tooltip
-        content={"Notebooks Connected"}
+      <TooltipButtonOverlay
+        tooltipContent={"Invite Notebook"}
         portalContainer={portalContainer}
-      >
-        <Popover
-          content={
-            <ConnectedNotebooks
-              notebookPageId={notebookPageId}
-              listConnectedNotebooks={listConnectedNotebooks}
-            />
-          }
-          target={<Button icon={"info-sign"} minimal disabled={loading} />}
-          portalContainer={portalContainer}
-        />
-      </Tooltip>
+        icon={"share"}
+        Overlay={(props) => (
+          <SharePageDialog
+            {...props}
+            notebookPageId={notebookPageId}
+            listConnectedNotebooks={listConnectedNotebooks}
+          />
+        )}
+      />
       <TooltipButtonOverlay
         tooltipContent={"View History"}
         portalContainer={portalContainer}
@@ -229,19 +155,6 @@ const SharedPageStatus = ({
               />
             </div>
           </Drawer>
-        )}
-      />
-      <TooltipButtonOverlay
-        tooltipContent={"Invite Notebook"}
-        portalContainer={portalContainer}
-        icon={"plus"}
-        Overlay={(props) => (
-          <SharePageDialog
-            {...props}
-            onSubmit={({ notebooks }) =>
-              sharePage({ notebooks, notebookPageId })
-            }
-          />
         )}
       />
       <Tooltip

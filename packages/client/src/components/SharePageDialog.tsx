@@ -1,51 +1,68 @@
-import type { Notebook, AppId } from "@samepage/shared";
-import React, { useCallback, useState } from "react";
+import type { AppId } from "@samepage/shared";
+import React, { useEffect, useState } from "react";
 import {
   Button,
   Classes,
   Dialog,
+  Icon,
   Label,
   InputGroup,
-  Intent,
   MenuItem,
+  Spinner,
+  Tooltip,
 } from "@blueprintjs/core";
 import { Select } from "@blueprintjs/select";
 import { apps } from "../internal/registry";
+import type sharePageWithNotebook from "../protocols/sharePageWithNotebook";
+import apiClient from "../internal/apiClient";
+import sendToNotebook from "../internal/sendToNotebook";
+import dispatchAppEvent from "../internal/dispatchAppEvent";
+
+type ListConnectedNotebooks = ReturnType<
+  typeof sharePageWithNotebook
+>["listConnectedNotebooks"];
+
+const formatVersion = (s: number) =>
+  s ? new Date(s * 1000).toLocaleString() : "unknown";
 
 export type Props = {
   onClose: () => void;
-  onSubmit: (p: { notebooks: Notebook[] }) => void | Promise<void>;
   portalContainer?: HTMLElement;
   isOpen?: boolean;
+  notebookPageId: string;
+  listConnectedNotebooks: ListConnectedNotebooks;
 };
 
-const AppSelect = Select.ofType<number>();
+const AppSelect = Select.ofType<AppId>();
 
 const SharePageDialog = ({
   onClose,
   isOpen = true,
-  onSubmit,
   portalContainer,
+  listConnectedNotebooks,
+  notebookPageId,
 }: Props) => {
-  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
-  const [currentApp, setCurrentApp] = useState<number>(1);
+  const [notebooks, setNotebooks] = useState<
+    Awaited<ReturnType<ListConnectedNotebooks>>["notebooks"]
+  >([]);
+  const [currentApp, setCurrentApp] = useState<AppId>(1);
   const [currentworkspace, setCurrentWorkspace] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const onClick = useCallback(() => {
+  useEffect(() => {
     setLoading(true);
-    Promise.resolve(onSubmit({ notebooks }))
-      .then(onClose)
-      .catch((e) => {
-        setError(e.message);
-        setLoading(false);
-      });
-  }, [onSubmit, onClose, notebooks]);
+    listConnectedNotebooks(notebookPageId)
+      .then((r) => {
+        setNotebooks(r.notebooks);
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [setLoading, setError]);
 
   return (
     <Dialog
       isOpen={isOpen}
-      title={`Share Page with Notebook`}
+      title={`Share Page on SamePage`}
       onClose={onClose}
       canOutsideClickClose
       canEscapeKeyClose
@@ -54,10 +71,6 @@ const SharePageDialog = ({
       portalContainer={portalContainer}
     >
       <div className={Classes.DIALOG_BODY}>
-        <p>
-          Sharing this page means that all notebooks with access to it will be
-          able to edit its child blocks.
-        </p>
         {notebooks.map((g, i) => (
           <div
             key={`${g.app}/${g.workspace}`}
@@ -70,20 +83,33 @@ const SharePageDialog = ({
             }}
           >
             <span style={{ flexGrow: 1 }}>
-              {apps[g.app].name}/{g.workspace}
+              {g.app}/{g.workspace}
             </span>
-            <Button
-              minimal
-              icon={"trash"}
-              onClick={() => setNotebooks(notebooks.filter((_, j) => j !== i))}
-            />
+            <span>
+              {g.version ? (
+                <Tooltip
+                  content={`Version: ${formatVersion(g.version)}`}
+                  portalContainer={portalContainer}
+                >
+                  <Icon icon={"info-sign"} />
+                </Tooltip>
+              ) : (
+                <Button
+                  minimal
+                  icon={"trash"}
+                  onClick={() =>
+                    setNotebooks(notebooks.filter((_, j) => j !== i))
+                  }
+                />
+              )}
+            </span>
           </div>
         ))}
         <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
           <Label style={{ maxWidth: "120px", width: "100%" }}>
             App
             <AppSelect
-              items={Object.keys(apps).map((a) => Number(a))}
+              items={Object.keys(apps).map((a) => Number(a) as AppId)}
               activeItem={currentApp}
               onItemSelect={(e) => setCurrentApp(e)}
               itemRenderer={(item, { modifiers, handleClick }) => (
@@ -120,27 +146,55 @@ const SharePageDialog = ({
             disabled={!currentApp || !currentworkspace}
             onClick={() => {
               if (currentApp && currentworkspace) {
+                setLoading(true);
+                apiClient<{ exists: boolean; uuid: string }>({
+                  method: "get-shared-page",
+                  notebookPageId,
+                  download: false,
+                })
+                  .then((r) => {
+                    sendToNotebook({
+                      target: {
+                        app: currentApp,
+                        workspace: currentworkspace,
+                      },
+                      operation: "SHARE_PAGE",
+                      data: {
+                        notebookPageId,
+                        pageUuid: r.uuid,
+                      },
+                    });
+                    dispatchAppEvent({
+                      type: "log",
+                      intent: "success",
+                      id: "share-page-success",
+                      content: `Successfully shared page! We will now await for the other notebook(s) to accept`,
+                    });
+                  })
+                  .catch((e) => {
+                    dispatchAppEvent({
+                      type: "log",
+                      intent: "error",
+                      id: "share-page-failure",
+                      content: `Failed to share page with notebooks: ${e.message}`,
+                    });
+                  })
+                  .finally(() => setLoading(false));
                 setNotebooks([
                   ...notebooks,
-                  { workspace: currentworkspace, app: currentApp as AppId },
+                  {
+                    workspace: currentworkspace,
+                    app: apps[currentApp as AppId].name,
+                    version: 0,
+                  },
                 ]);
                 setCurrentWorkspace("");
               }
             }}
           />
         </div>
-      </div>
-      <div className={Classes.DIALOG_FOOTER}>
-        <div className={Classes.DIALOG_FOOTER_ACTIONS}>
-          <span className="text-red-700">{error}</span>
-          <Button text={"Cancel"} onClick={onClose} disabled={loading} />
-          <Button
-            text={"Send"}
-            intent={Intent.PRIMARY}
-            onClick={onClick}
-            disabled={loading || !notebooks.length}
-          />
-        </div>
+        <span className="text-red-700">{error}</span>
+        {loading && <Spinner size={16} />}
       </div>
     </Dialog>
   );

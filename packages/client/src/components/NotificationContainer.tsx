@@ -117,10 +117,8 @@ const NotificationContainer = ({
   }, [addNotification, setNotificatons, notificationsRef, getNotifications]);
   return notifications.length ? (
     <div
+      className="samepage-notification-container absolute bottom-2 right-2"
       style={{
-        position: "absolute",
-        bottom: 8,
-        right: 8,
         zIndex: 1000,
         boxShadow: "0px 0px 8px #00000080",
       }}
