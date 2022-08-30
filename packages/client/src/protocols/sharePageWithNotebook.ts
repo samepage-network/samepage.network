@@ -3,9 +3,9 @@ import dispatchAppEvent from "../internal/dispatchAppEvent";
 import {
   addCommand,
   app,
-  apps,
   removeCommand,
   workspace,
+  apps,
 } from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
 import type { Notebook, Schema } from "@samepage/shared";
@@ -41,8 +41,10 @@ const getLastLocalVersion = (doc: Automerge.FreezeObject<Schema>) => {
     : Automerge.getHistory(doc).slice(-1)[0].change.time;
 };
 
+const notebookPageIds = new Set<string>();
 const setupSharePageWithNotebook = ({
   renderViewPages = () => {},
+  renderSharedPageStatus = () => {},
 
   getCurrentNotebookPageId = () => Promise.resolve(v4()),
   applyState = Promise.resolve,
@@ -54,6 +56,10 @@ const setupSharePageWithNotebook = ({
   removeState = Promise.resolve,
 }: {
   renderViewPages?: (props: { notebookPageIds: string[] }) => void;
+  renderSharedPageStatus?: (props: {
+    notebookPageId: string;
+    created: boolean;
+  }) => void;
 
   getCurrentNotebookPageId?: () => Promise<string>;
   applyState?: (notebookPageId: string, state: Schema) => Promise<unknown>;
@@ -67,6 +73,17 @@ const setupSharePageWithNotebook = ({
   ) => Promise<unknown>;
   removeState?: (notebookPageId: string) => Promise<unknown>;
 }) => {
+  const initPage = ({
+    notebookPageId,
+    created = false,
+  }: {
+    notebookPageId: string;
+    created?: boolean;
+  }) => {
+    notebookPageIds.add(notebookPageId);
+    renderSharedPageStatus({ notebookPageId, created });
+  };
+
   addCommand({
     label: VIEW_COMMAND_PALETTE_LABEL,
     callback: () => {
@@ -104,9 +121,9 @@ const setupSharePageWithNotebook = ({
             })
             .then(async ([, r]) => {
               if (r.created) {
-                dispatchAppEvent({
-                  type: "init-page",
+                initPage({
                   notebookPageId,
+                  created: true,
                 });
                 dispatchAppEvent({
                   type: "log",
@@ -143,8 +160,7 @@ const setupSharePageWithNotebook = ({
       }).then(({ notebookPageIds }) => {
         return Promise.all(
           notebookPageIds.map((id) =>
-            dispatchAppEvent({
-              type: "init-page",
+            initPage({
               notebookPageId: id,
             })
           )
@@ -311,8 +327,7 @@ const setupSharePageWithNotebook = ({
             pageUuid,
           },
         });
-        dispatchAppEvent({
-          type: "init-page",
+        initPage({
           notebookPageId,
         });
         dispatchAppEvent({
@@ -371,6 +386,7 @@ const setupSharePageWithNotebook = ({
     })
       .then(() => {
         removeState(notebookPageId);
+        notebookPageIds.delete(notebookPageId);
         dispatchAppEvent({
           type: "log",
           content: `Successfully disconnected ${notebookPageId} from being shared.`,
@@ -442,6 +458,7 @@ const setupSharePageWithNotebook = ({
 
   return {
     unload: () => {
+      notebookPageIds.clear();
       removeNotebookListener({ operation: SHARE_PAGE_RESPONSE_OPERATION });
       removeNotebookListener({ operation: SHARE_PAGE_UPDATE_OPERATION });
       removeNotebookListener({ operation: SHARE_PAGE_OPERATION });
@@ -460,6 +477,7 @@ const setupSharePageWithNotebook = ({
     forcePushPage,
     listConnectedNotebooks,
     getLocalHistory,
+    isShared: (notebookPageId: string) => notebookPageIds.has(notebookPageId),
   };
 };
 

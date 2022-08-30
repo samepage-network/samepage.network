@@ -20,7 +20,7 @@ const NotificationContainerPage = () => {
                 document.querySelector<HTMLInputElement>(
                   "input[name=description]"
                 )?.value || "None",
-              actions: [{ label: "accept", method: "accept", args: {} }],
+              buttons: ["accept"],
             })
           }
         >

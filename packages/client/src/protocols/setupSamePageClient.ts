@@ -1,41 +1,36 @@
-import { apiGet } from "../internal/apiClient";
 import {
   addNotebookListener,
   removeNotebookListener,
 } from "../internal/setupMessageHandlers";
 import setupP2PFeatures from "../internal/setupP2PFeatures";
-import onAppEvent from "../internal/onAppEvent";
+import registerAppEventListener from "../internal/registerAppEventListener";
 import type { AddCommand, RemoveCommand, AppEvent } from "../types";
-import type { Apps, Notebook } from "@samepage/shared";
+import type { Notebook } from "@samepage/shared";
 import setupRegistry from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
 import setupWsFeatures from "../internal/setupWsFeatures";
 
-const setupSamePageClient = async ({
-  isAutoConnect,
+const setupSamePageClient = ({
+  isAutoConnect = false,
   app,
   workspace,
   addCommand,
   removeCommand,
   onAppEventHandler,
 }: {
-  isAutoConnect: boolean;
+  isAutoConnect?: boolean;
   addCommand?: AddCommand;
   removeCommand?: RemoveCommand;
-  onAppEventHandler?: (evt: AppEvent) => void;
-} & Notebook) => {
-  const { apps } = await apiGet<{ apps: Apps }>("apps").catch(() => ({
-    apps: [] as Apps,
-  }));
+  onAppEventHandler?: (evt: AppEvent) => boolean;
+} & Partial<Notebook> = {}) => {
   setupRegistry({
     addCommand,
     removeCommand,
     onAppEventHandler,
     app,
     workspace,
-    apps,
   });
-  const offAppEvent = onAppEvent();
+  const unregisterAppEventListener = registerAppEventListener();
   const unloadWS = setupWsFeatures({ isAutoConnect });
   const unloadP2P = setupP2PFeatures();
 
@@ -49,9 +44,8 @@ const setupSamePageClient = async ({
     unload: () => {
       unloadP2P();
       unloadWS();
-      offAppEvent();
+      unregisterAppEventListener();
     },
-    apps,
     addNotebookListener,
     removeNotebookListener,
     sendToNotebook,

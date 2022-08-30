@@ -17,6 +17,7 @@ type SharePageReturn = ReturnType<typeof setupSharePageWithNotebook>;
 export type Props = {
   notebookPageId: string;
   portalContainer?: HTMLElement;
+  defaultOpenInviteDialog?: boolean;
 } & Partial<
   Pick<
     SharePageReturn,
@@ -75,6 +76,7 @@ const TooltipButtonOverlay = ({
   icon,
   portalContainer,
   tooltipContent,
+  defaultIsOpen = false,
 }: {
   Overlay?: (props: {
     isOpen: boolean;
@@ -84,8 +86,9 @@ const TooltipButtonOverlay = ({
   icon?: IconName | MaybeElement;
   portalContainer?: HTMLElement;
   tooltipContent?: string | JSX.Element | undefined;
+  defaultIsOpen?: boolean;
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultIsOpen);
   return (
     <>
       <Tooltip content={tooltipContent} portalContainer={portalContainer}>
@@ -110,6 +113,7 @@ const TooltipButtonOverlay = ({
 const SharedPageStatus = ({
   notebookPageId,
   portalContainer,
+  defaultOpenInviteDialog,
   disconnectPage = () => Promise.resolve(),
   forcePushPage = () => Promise.resolve(),
   listConnectedNotebooks = () =>
@@ -125,6 +129,7 @@ const SharedPageStatus = ({
     >
       <i>Shared</i>
       <TooltipButtonOverlay
+        defaultIsOpen={defaultOpenInviteDialog}
         tooltipContent={"Invite Notebook"}
         portalContainer={portalContainer}
         icon={"share"}

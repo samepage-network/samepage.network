@@ -135,7 +135,7 @@ const NotificationContainer = ({
         <div style={{ background: "white", width: 280 }}>
           <div
             style={{
-            display: "flex",
+              display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
               padding: 8,
@@ -163,6 +163,12 @@ const NotificationContainer = ({
                     }))}
                     onSuccess={() => removeNotificaton(not)}
                   />
+                  <Button
+                    icon={"trash"}
+                    minimal
+                    small
+                    onClick={() => removeNotificaton(not)}
+                  />
                 </div>
               </div>
             ))}
@@ -186,10 +192,15 @@ const NotificationContainer = ({
   );
 };
 
-export const notify = (detail: Omit<Notification, "uuid">) =>
+export const notify = ({
+  title = "Title",
+  description = "description",
+  data = {},
+  buttons = [],
+}: Partial<Omit<Notification, "uuid">>) =>
   document.body.dispatchEvent(
     new CustomEvent(NOTIFICATION_EVENT, {
-      detail: { ...detail, uuid: v4() },
+      detail: { title, description, data, buttons, uuid: v4() },
     })
   );
 

@@ -39,11 +39,6 @@ type SharePageEvent = {
   pageUuid: string;
 };
 
-type InitPageEvent = {
-  type: "init-page";
-  notebookPageId: string;
-};
-
 type ConnectionEvent = {
   type: "connection";
   status: Status;
@@ -53,7 +48,6 @@ export type AppEvent =
   | LogEvent
   | UsageEvent
   | SharePageEvent
-  | InitPageEvent
   | ConnectionEvent;
 
 export type MessageHandlers = {

@@ -49,6 +49,54 @@ const SharePageDialog = ({
   const [currentworkspace, setCurrentWorkspace] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const onInvite = () => {
+    if (currentApp && currentworkspace) {
+      setLoading(true);
+      apiClient<{ exists: boolean; uuid: string }>({
+        method: "get-shared-page",
+        notebookPageId,
+        download: false,
+      })
+        .then((r) => {
+          sendToNotebook({
+            target: {
+              app: currentApp,
+              workspace: currentworkspace,
+            },
+            operation: "SHARE_PAGE",
+            data: {
+              notebookPageId,
+              pageUuid: r.uuid,
+            },
+          });
+          dispatchAppEvent({
+            type: "log",
+            intent: "success",
+            id: "share-page-success",
+            content: `Successfully shared page! We will now await for the other notebook(s) to accept`,
+          });
+        })
+        .catch((e) => {
+          dispatchAppEvent({
+            type: "log",
+            intent: "error",
+            id: "share-page-failure",
+            content: `Failed to share page with notebooks: ${e.message}`,
+          });
+        })
+        .finally(() => setLoading(false));
+      setNotebooks([
+        ...notebooks,
+        {
+          workspace: currentworkspace,
+          app: apps[currentApp as AppId].name,
+          version: 0,
+        },
+      ]);
+      setCurrentWorkspace("");
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       setLoading(true);
@@ -112,7 +160,6 @@ const SharePageDialog = ({
             App
             <AppSelect
               items={Object.keys(apps).map((a) => Number(a) as AppId)}
-              activeItem={currentApp}
               onItemSelect={(e) => setCurrentApp(e)}
               itemRenderer={(item, { modifiers, handleClick }) => (
                 <MenuItem
@@ -141,59 +188,14 @@ const SharePageDialog = ({
               value={currentworkspace}
               onChange={(e) => setCurrentWorkspace(e.target.value)}
               autoFocus
+              onKeyDown={(e) => e.key === "Enter" && onInvite()}
             />
           </Label>
           <Button
             minimal
             icon={"plus"}
             disabled={!currentApp || !currentworkspace}
-            onClick={() => {
-              if (currentApp && currentworkspace) {
-                setLoading(true);
-                apiClient<{ exists: boolean; uuid: string }>({
-                  method: "get-shared-page",
-                  notebookPageId,
-                  download: false,
-                })
-                  .then((r) => {
-                    sendToNotebook({
-                      target: {
-                        app: currentApp,
-                        workspace: currentworkspace,
-                      },
-                      operation: "SHARE_PAGE",
-                      data: {
-                        notebookPageId,
-                        pageUuid: r.uuid,
-                      },
-                    });
-                    dispatchAppEvent({
-                      type: "log",
-                      intent: "success",
-                      id: "share-page-success",
-                      content: `Successfully shared page! We will now await for the other notebook(s) to accept`,
-                    });
-                  })
-                  .catch((e) => {
-                    dispatchAppEvent({
-                      type: "log",
-                      intent: "error",
-                      id: "share-page-failure",
-                      content: `Failed to share page with notebooks: ${e.message}`,
-                    });
-                  })
-                  .finally(() => setLoading(false));
-                setNotebooks([
-                  ...notebooks,
-                  {
-                    workspace: currentworkspace,
-                    app: apps[currentApp as AppId].name,
-                    version: 0,
-                  },
-                ]);
-                setCurrentWorkspace("");
-              }
-            }}
+            onClick={onInvite}
           />
         </div>
         <span className="text-red-700">{error}</span>

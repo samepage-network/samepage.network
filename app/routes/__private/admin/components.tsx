@@ -18,7 +18,7 @@ const ComponentsPage = () => {
       .map((s) => `${s.slice(0, 1).toUpperCase()}${s.slice(1)}`)
       .join("");
   return (
-    <div className="flex max-h-full w-full gap-8">
+    <div className="flex h-full w-full gap-8">
       <style>{`div a {
   color: inherit;
 }`}</style>
