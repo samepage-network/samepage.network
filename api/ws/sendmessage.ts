@@ -42,20 +42,6 @@ const dataHandler = async (
   if (operation === "AUTHENTICATION") {
     const { app, workspace } = props as { app: AppId; workspace: string };
     const cxn = await getMysqlConnection(requestId);
-    const existing = await cxn
-      .execute(
-        `SELECT id, created_date 
-      FROM online_clients 
-      WHERE app = ? AND instance = ?`,
-        [app, workspace]
-      )
-      .then(([r]) => r as { created_date: Date }[]);
-    if (existing.length)
-      return Promise.reject(
-        new Error(
-          `Already connected to SamePage on another device, at ${existing[0].created_date.toLocaleString()}`
-        )
-      );
     const [_, messages] = await Promise.all([
       // one downside of inserting here instead of onconnect is the clock drift on created date
       // a client could theoretically connect without authenticate and would get free usage

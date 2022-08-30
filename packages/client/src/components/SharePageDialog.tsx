@@ -50,14 +50,16 @@ const SharePageDialog = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
-    setLoading(true);
-    listConnectedNotebooks(notebookPageId)
-      .then((r) => {
-        setNotebooks(r.notebooks);
-      })
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [setLoading, setError]);
+    if (isOpen) {
+      setLoading(true);
+      listConnectedNotebooks(notebookPageId)
+        .then((r) => {
+          setNotebooks(r.notebooks);
+        })
+        .catch((e) => setError(e.message))
+        .finally(() => setLoading(false));
+    }
+  }, [setLoading, setError, isOpen]);
 
   return (
     <Dialog

@@ -111,7 +111,7 @@ const setupSharePageWithNotebook = ({
                 dispatchAppEvent({
                   type: "log",
                   id: "share-page-success",
-                  content: `Successfully initialized shared page! We will now await for the other notebooks to accept.`,
+                  content: `Successfully initialized shared page! Click on the invite button below to share the page with other notebooks!`,
                   intent: "info",
                 });
               } else {
