@@ -19,7 +19,32 @@ type MetadataAnnotation = {
     parent: string;
   };
 } & AnnotationBase;
-type Annotation = BlockAnnotation | MetadataAnnotation;
+type BoldAnnotation = {
+  type: "bold";
+} & AnnotationBase;
+type ItalicsAnnotation = {
+  type: "italics";
+} & AnnotationBase;
+type StrikethroughAnnotation = {
+  type: "strikethrough";
+} & AnnotationBase;
+type HighlightingAnnotation = {
+  type: "highlighting";
+} & AnnotationBase;
+type ExternalLinkAnnotation = {
+  type: "link";
+  attributes: {
+    href: string;
+  };
+} & AnnotationBase;
+type Annotation =
+  | BlockAnnotation
+  | MetadataAnnotation
+  | BoldAnnotation
+  | ItalicsAnnotation
+  | StrikethroughAnnotation
+  | HighlightingAnnotation
+  | ExternalLinkAnnotation;
 export type Schema = {
   contentType: `application/vnd.atjson+samepage; version=${Version}`;
   content: Automerge.Text;
@@ -83,11 +108,7 @@ type ConnectionEvent = {
   status: Status;
 };
 
-export type AppEvent =
-  | LogEvent
-  | UsageEvent
-  | SharePageEvent
-  | ConnectionEvent;
+export type AppEvent = LogEvent | UsageEvent | SharePageEvent | ConnectionEvent;
 
 export type MessageHandlers = {
   [operation: string]: (data: json, source: Notebook) => void;
