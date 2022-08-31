@@ -1,22 +1,24 @@
 import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
-import { AppId, appNameById } from "@samepage/shared";
+import type { AppId } from "client/src/types";
+import { appsById } from "client/src/internal/apps";
 
 const listPageNotebookLinks = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
-  const results = await cxn
-    .execute("SELECT * FROM page_notebook_links")
-    .then(([r]) => r as {
-      page_uuid: string;
-      app: AppId;
-      workspace: string;
-      notebook_page_id: string;
-      uuid: string;
-    }[]);
+  const results = await cxn.execute("SELECT * FROM page_notebook_links").then(
+    ([r]) =>
+      r as {
+        page_uuid: string;
+        app: AppId;
+        workspace: string;
+        notebook_page_id: string;
+        uuid: string;
+      }[]
+  );
   cxn.destroy();
   const pages = results.reduce((p, c) => {
     if (p[c.page_uuid]) {
       p[c.page_uuid].push({
-        app: appNameById[c.app],
+        app: appsById[c.app].name,
         workspace: c.workspace,
         id: c.notebook_page_id,
         uuid: c.uuid,
@@ -24,7 +26,7 @@ const listPageNotebookLinks = async (requestId: string) => {
     } else {
       p[c.page_uuid] = [
         {
-          app: appNameById[c.app],
+          app: appsById[c.app].name,
           workspace: c.workspace,
           id: c.notebook_page_id,
           uuid: c.uuid,

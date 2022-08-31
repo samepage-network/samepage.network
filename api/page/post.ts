@@ -1,5 +1,6 @@
 import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
-import { AppId, appNameById, Notebook, Schema } from "@samepage/shared";
+import type { AppId, Notebook, Schema } from "client/src/types";
+import { appsById } from "client/src/internal/apps";
 import {
   BadRequestError,
   NotFoundError,
@@ -427,13 +428,12 @@ const logic = async (
       const { notebookPageId } = args;
       return getMysql(requestId)
         .then(async (cxn) => {
-          const { uuid: pageUuid, version } = await getSharedPage({
+          const { uuid: pageUuid } = await getSharedPage({
             workspace,
             notebookPageId,
             app,
             requestId: requestId,
           });
-          // TODO cache versions in page_notebook_links
           const clients = await cxn
             .execute(
               `SELECT app, workspace, version FROM page_notebook_links WHERE page_uuid = ?`,
@@ -444,16 +444,9 @@ const logic = async (
           return {
             notebooks: clients.map((c) => ({
               workspace: c.workspace,
-              app: appNameById[c.app] as string,
+              app: appsById[c.app].name,
               version: c.version,
             })),
-            networks: [
-              {
-                app: "SamePage",
-                workspace: "mainnet",
-                version,
-              },
-            ],
           };
         })
         .catch(catchError("Failed to retrieve page notebooks"));

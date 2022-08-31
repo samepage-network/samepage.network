@@ -1,5 +1,4 @@
-import { Notebook } from "@samepage/shared";
-import { Status, SendToBackend, UsageEvent } from "../types";
+import type { Status, SendToBackend, UsageEvent, Notebook } from "../types";
 import apiClient from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
 import { CONNECTED_EVENT } from "./events";

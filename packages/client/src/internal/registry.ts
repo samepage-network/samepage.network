@@ -1,5 +1,11 @@
-import type { AddCommand, AppEvent, RemoveCommand } from "../types";
-import { AppId, Apps, APPS } from "@samepage/shared";
+import type {
+  AddCommand,
+  AppEvent,
+  RemoveCommand,
+  AppId,
+  Apps,
+} from "../types";
+import APPS from "./apps";
 
 const documentBodyListeners: Record<string, (a: KeyboardEvent) => void> = {};
 const defaultAddCommand: AddCommand = ({ label, callback }) => {
@@ -30,8 +36,8 @@ export let onAppEventHandler = defaultOnAppEventHandler;
 export let apps: Apps = Object.fromEntries(
   APPS.map(({ id, ...app }) => [id, app])
 );
-export let app: AppId = 1;
-export let workspace = "SamePage";
+export let app: AppId = 0;
+export let workspace = "Main";
 
 const setupRegistry = ({
   app: _app,

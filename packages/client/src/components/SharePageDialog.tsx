@@ -1,5 +1,5 @@
-import type { AppId } from "@samepage/shared";
-import React, { useEffect, useState } from "react";
+import type { AppId } from "../types";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Button,
   Classes,
@@ -96,6 +96,7 @@ const SharePageDialog = ({
       setCurrentWorkspace("");
     }
   };
+  const appSelectRef = useRef<Select<AppId>>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -174,11 +175,24 @@ const SharePageDialog = ({
                 minimal: true,
                 captureDismiss: true,
                 portalContainer,
+                portalClassName: "samepage-invite-app",
               }}
+              ref={appSelectRef}
             >
               <Button
                 text={apps[currentApp]?.name || "Unknown"}
                 rightIcon="double-caret-vertical"
+                onBlur={(e) => {
+                  if (
+                    e.relatedTarget !== null &&
+                    !(e.relatedTarget as HTMLElement).closest?.(
+                      ".samepage-invite-app"
+                    )
+                  ) {
+                    appSelectRef.current?.setState({ isOpen: false });
+                    e.stopPropagation();
+                  }
+                }}
               />
             </AppSelect>
           </Label>

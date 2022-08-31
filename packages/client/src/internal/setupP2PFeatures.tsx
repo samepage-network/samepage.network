@@ -1,5 +1,4 @@
-import type { Status } from "../types";
-import type { Notebook } from "@samepage/shared";
+import type { Status, Notebook } from "../types";
 import { v4 } from "uuid";
 import {
   addNotebookListener,

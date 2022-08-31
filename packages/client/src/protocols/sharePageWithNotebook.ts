@@ -8,7 +8,7 @@ import {
   apps,
 } from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
-import type { Notebook, Schema } from "@samepage/shared";
+import type { Notebook, Schema } from "../types";
 import Automerge from "automerge";
 import {
   addAuthenticationHandler,

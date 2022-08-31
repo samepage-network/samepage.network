@@ -1,4 +1,43 @@
-import type { Notebook } from "@samepage/shared";
+import type APPS from "./internal/apps";
+import type Automerge from "automerge";
+
+// Add future versions in this union
+type Version = "2022-08-17";
+type AnnotationBase = { start: number; end: number };
+type BlockAnnotation = {
+  type: "block";
+  attributes: {
+    identifier: string;
+    level: number;
+    viewType: "bullet" | "numbered" | "document";
+  };
+} & AnnotationBase;
+type MetadataAnnotation = {
+  type: "metadata";
+  attributes: {
+    title: string;
+    parent: string;
+  };
+} & AnnotationBase;
+type Annotation = BlockAnnotation | MetadataAnnotation;
+export type Schema = {
+  contentType: `application/vnd.atjson+samepage; version=${Version}`;
+  content: Automerge.Text;
+  annotations: Annotation[];
+};
+
+export type Notebook = { workspace: string; app: AppId };
+
+export type App = typeof APPS[number];
+export type Apps = Record<number, Omit<App, "id">>;
+// Playing around with the idea of the SamePage Network as App 0
+// In the future, we will want organizations to be able to self host networks
+// on whichever cloud or on-prem solution they want. These networks should have global
+// ids and labels just like apps, making it all addressable via the 0 app:
+// - SamePage/Main
+// - SamePage/Org
+// - etc.
+export type AppId = App["id"] | 0;
 
 export type json =
   | string

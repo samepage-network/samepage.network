@@ -9,7 +9,7 @@ import getSharedPageByUuid from "~/data/getSharedPageByUuid.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 import { v4 } from "uuid";
-import { appNameById } from "@samepage/shared";
+import { appsById } from "client/src/internal/apps";
 
 const parseActorId = (s: string) =>
   s
@@ -18,7 +18,7 @@ const parseActorId = (s: string) =>
       i % 2 === 0 ? String.fromCharCode(parseInt(c + a[i + 1], 16)) : ""
     )
     .join("")
-    .replace(/^\d+\//, (val) => `${appNameById[val.slice(0, -1)]}/`);
+    .replace(/^\d+\//, (val) => `${appsById[val.slice(0, -1)].name}/`);
 
 const SinglePagePage = () => {
   const { data, notebooks, history } =
@@ -62,7 +62,7 @@ const SinglePagePage = () => {
           <li key={l.uuid}>
             <div className={"flex items-center w-full justify-between mb-2"}>
               <span>
-                {appNameById[l.app]} / {l.workspace} / {l.notebook_page_id}
+                {appsById[l.app].name} / {l.workspace} / {l.notebook_page_id}
               </span>
               <Form method={"delete"}>
                 <Button

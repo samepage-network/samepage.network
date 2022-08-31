@@ -1,5 +1,5 @@
 import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
-import { APPS } from "@samepage/shared";
+import APPS from "client/src/internal/apps";
 
 const logic = () => ({
   apps: Object.fromEntries(APPS.map(({ id, ...app }) => [id, app])),

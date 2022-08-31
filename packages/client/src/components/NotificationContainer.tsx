@@ -2,8 +2,8 @@ import { Button, Spinner } from "@blueprintjs/core";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { v4 } from "uuid";
-
-const NOTIFICATION_EVENT = "samepage:notification";
+import { onAppEvent } from "../internal/registerAppEventListener";
+import { appsById } from "../internal/apps";
 
 type Notification = {
   uuid: string;
@@ -102,15 +102,34 @@ const NotificationContainer = ({
       notificationsRef.current = nots;
       setNotificatons(nots);
     });
-    const listener = ((e: CustomEvent) => {
-      addNotification(e.detail).then(() => {
-        notificationsRef.current.push(e.detail);
-        setNotificatons([...notificationsRef.current]);
-      });
-    }) as EventListener;
-    document.body.addEventListener(NOTIFICATION_EVENT, listener);
-    return () =>
-      document.body.removeEventListener(NOTIFICATION_EVENT, listener);
+    onAppEvent("share-page", (evt) => {
+      const app = appsById[evt.source.app]?.name;
+      const args = {
+        workspace: evt.source.workspace,
+        app: `${evt.source.app}`,
+        pageUuid: evt.pageUuid,
+      };
+      if (
+        notificationsRef.current.every(
+          (n) =>
+            n.data.workspace !== args.workspace ||
+            n.data.app !== args.app ||
+            n.data.pageUuid !== args.pageUuid
+        )
+      ) {
+        const notif = {
+          uuid: v4(),
+          title: "Share Page",
+          description: `Notebook ${app}/${evt.source.workspace} is attempting to share page ${evt.notebookPageId}. Would you like to accept?`,
+          buttons: ["accept", "reject"],
+          data: args,
+        };
+        addNotification(notif).then(() => {
+          notificationsRef.current.push(notif);
+          setNotificatons([...notificationsRef.current]);
+        });
+      }
+    });
   }, [addNotification, setNotificatons, notificationsRef, getNotifications]);
   return notifications.length ? (
     <div
@@ -191,17 +210,5 @@ const NotificationContainer = ({
     <></>
   );
 };
-
-export const notify = ({
-  title = "Title",
-  description = "description",
-  data = {},
-  buttons = [],
-}: Partial<Omit<Notification, "uuid">>) =>
-  document.body.dispatchEvent(
-    new CustomEvent(NOTIFICATION_EVENT, {
-      detail: { title, description, data, buttons, uuid: v4() },
-    })
-  );
 
 export default NotificationContainer;

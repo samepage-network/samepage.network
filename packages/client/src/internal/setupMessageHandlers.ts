@@ -3,8 +3,8 @@ import type {
   AddNotebookListener,
   MessageHandlers,
   RemoveNotebookListener,
+  Notebook,
 } from "../types";
-import type { Notebook } from "@samepage/shared";
 
 const messageHandlers: MessageHandlers = {};
 

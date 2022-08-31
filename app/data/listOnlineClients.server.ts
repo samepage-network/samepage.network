@@ -1,7 +1,7 @@
 import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
 import schema from "data/schema";
 import { z } from "zod";
-import { appNameById } from "@samepage/shared";
+import { appsById } from "client/src/internal/apps";
 
 const listOnlineClients = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
@@ -23,7 +23,7 @@ const listOnlineClients = async (requestId: string) => {
       .map((d) => ({
         id: d.id,
         workspace: d.instance || "Pending",
-        app: d.app ? appNameById[d.app] : "None",
+        app: d.app ? appsById[d.app].name : "SamePage",
         date: d.created_date.toLocaleString(),
       })),
   };

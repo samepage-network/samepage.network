@@ -7,7 +7,7 @@ import {
   MaybeElement,
   Tooltip,
 } from "@blueprintjs/core";
-import { appNameById } from "@samepage/shared";
+import { appsById } from "../internal/apps";
 import React, { useState, useRef, useEffect } from "react";
 import type setupSharePageWithNotebook from "../protocols/sharePageWithNotebook";
 import SharePageDialog from "./SharePageDialog";
@@ -35,7 +35,7 @@ const parseActorId = (s: string) =>
       i % 2 === 0 ? String.fromCharCode(parseInt(c + a[i + 1], 16)) : ""
     )
     .join("")
-    .replace(/^\d+\//, (val) => `${appNameById[val.slice(0, -1)]}/`);
+    .replace(/^\d+\//, (val) => `${appsById[val.slice(0, -1)].name}/`);
 
 const HistoryContent = ({
   getHistory,
