@@ -119,10 +119,11 @@ const logic = async (
               }\` but received type \`${i.received}\``
             : i.message
         )
-        .map((s) => `- ${s}\n`)}`
+        .map((s) => `- ${s}\n`)
+        .join("")}`
     );
   const { app, workspace, requestId, ...args } = result.data;
-  console.log("Received method:", args.method);
+  console.log("Received method:", args.method, requestId);
   switch (args.method) {
     case "usage": {
       const currentDate = new Date();
