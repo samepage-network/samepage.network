@@ -37,7 +37,7 @@ type ExternalLinkAnnotation = {
     href: string;
   };
 } & AnnotationBase;
-type Annotation =
+export type Annotation =
   | BlockAnnotation
   | MetadataAnnotation
   | BoldAnnotation
@@ -50,6 +50,10 @@ export type Schema = {
   content: Automerge.Text;
   annotations: Annotation[];
 };
+export type InitialSchema = {
+  content: string;
+  annotations: Annotation[];
+}
 
 export type Notebook = { workspace: string; app: AppId };
 

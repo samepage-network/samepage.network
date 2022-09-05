@@ -1,6 +1,6 @@
 {
   "name": "@samepage/client",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "description": "Utilities that help your TFT's extension interface with the SamePage Network",
   "main": "index.js",
   "types": "index.d.ts",
@@ -39,5 +39,12 @@
     "automerge": "^1.0.1-preview.7",
     "react": ">=17",
     "react-dom": ">=17"
+  },
+  "dependencies": {
+    "nearley": "^2.20.1"
+  },
+  "devDependencies": {
+    "@types/moo": "^0.5.5",
+    "@types/nearley": "^2.11.2"
   }
 }
