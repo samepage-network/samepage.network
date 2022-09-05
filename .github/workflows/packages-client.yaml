@@ -31,8 +31,3 @@ jobs:
       - name: publish
         run: npm publish --access public
         working-directory: packages/client/dist
-      - name: publish as unscoped package
-        run: |
-          sed -i 's/@samepage\/client/samepage/' package.json
-          npm publish --access public
-        working-directory: packages/client/dist

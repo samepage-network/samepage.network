@@ -581,5 +581,9 @@ const logic = async (
 
 export const handler = createAPIGatewayProxyHandler({
   logic,
-  allowedOrigins: ["https://roamresearch.com", "https://logseq.com"],
+  allowedOrigins: [
+    "https://roamresearch.com",
+    "https://logseq.com",
+    "app://obsidian.md",
+  ],
 });

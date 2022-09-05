@@ -318,7 +318,16 @@ const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
     callback: () =>
       apiClient<Omit<UsageEvent, "type">>({
         method: "usage",
-      }).then((r) => dispatchAppEvent({ ...r, type: "usage" })),
+      })
+        .then((r) => dispatchAppEvent({ ...r, type: "usage" }))
+        .catch((e) =>
+          dispatchAppEvent({
+            type: "log",
+            id: "samepage-failure",
+            content: `Failed to load SamePage Usage: ${e.message}`,
+            intent: "error",
+          })
+        ),
   });
 
   return () => {

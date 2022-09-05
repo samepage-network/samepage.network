@@ -15,6 +15,7 @@ export type CliArgs = {
   out?: string;
   external?: string | string[];
   include?: string | string[];
+  css?: string;
 };
 
 const compile = ({
@@ -22,6 +23,7 @@ const compile = ({
   nodeEnv,
   external,
   include,
+  css,
 }: CliArgs & { nodeEnv: "production" | "development" | "test" }) =>
   Promise.all(
     readDir(appPath("./src"))
@@ -43,12 +45,29 @@ const compile = ({
       })
     )
     .then((r) => {
-      const finish = () =>
+      const finish = () => {
         (typeof include === "string" ? [include] : include || [])
           .concat(cssFiles)
           .forEach((f) => {
             fs.cpSync(f, path.join("dist", path.basename(f)));
           });
+        if (css) {
+          const outCssFilename = path.join(
+            "dist",
+            `${css.replace(/.css$/, "")}.css`
+          );
+          fs.readdirSync("dist")
+            .filter((f) => /.css$/.test(f))
+            .forEach((f) => {
+              const cssFileContent = fs
+                .readFileSync(path.join("dist", f))
+                .toString();
+              fs.rmSync(path.join("dist", f));
+              fs.appendFileSync(outCssFilename, cssFileContent);
+              fs.appendFileSync(outCssFilename, "\n\n");
+            });
+        }
+      };
       finish();
       const { rebuild: rebuilder } = r;
       return rebuilder
