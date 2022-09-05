@@ -1,3 +1,4 @@
+import getNodeEnv from "./getNodeEnv";
 import { app, workspace } from "./registry";
 
 export type HandleFetchArgs = {
@@ -7,10 +8,15 @@ export type HandleFetchArgs = {
 };
 
 const getApiUrl = () => {
+  const env = getNodeEnv();
+  const defaultUrl =
+    env === "development"
+      ? "http://localhost:3003"
+      : "https://api.samepage.network";
   try {
-    return process.env.API_URL;
+    return process.env.API_URL || defaultUrl;
   } catch {
-    return "https://api.samepage.network";
+    return defaultUrl;
   }
 };
 

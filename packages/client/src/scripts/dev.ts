@@ -2,6 +2,8 @@ import chokidar from "chokidar";
 import fs from "fs";
 import nearleyCompile from "./internal/nearley";
 import compile, { CliArgs } from "./internal/compile";
+import appPath from "./internal/appPath";
+import path from "path";
 
 const dev = ({
   mirror,
@@ -13,7 +15,9 @@ const dev = ({
   const finish = () => {
     if (mirror) {
       if (!fs.existsSync(mirror)) fs.mkdirSync(mirror, { recursive: true });
-      fs.readdirSync("dist").forEach((f) => fs.cpSync(f, mirror));
+      fs.readdirSync("dist").forEach((f) =>
+        fs.cpSync(appPath(path.join(`dist`, f)), path.join(mirror, f))
+      );
     }
   };
   return new Promise((resolve) => {

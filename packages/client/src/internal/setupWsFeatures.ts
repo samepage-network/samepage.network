@@ -2,6 +2,7 @@ import type { Status, SendToBackend, UsageEvent, Notebook } from "../types";
 import apiClient from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
 import { CONNECTED_EVENT } from "./events";
+import getNodeEnv from "./getNodeEnv";
 import { addCommand, app, removeCommand, workspace } from "./registry";
 import sendChunkedMessage from "./sendChunkedMessage";
 import {
@@ -81,18 +82,13 @@ export const sendToBackend: SendToBackend = ({
 };
 
 const getWsUrl = () => {
+  const env = getNodeEnv();
+  const defaultUrl =
+    env === "development" ? "ws://127.0.0.1:3010" : "wss://ws.samepage.network";
   try {
-    return process.env.WEB_SOCKET_URL || "";
+    return process.env.WEB_SOCKET_URL || defaultUrl;
   } catch {
-    try {
-      if (process.env.NODE_ENV === "development") {
-        return "ws://127.0.0.1:3010";
-      } else {
-        return "wss://ws.samepage.network";
-      }
-    } catch {
-      return "wss://ws.samepage.network";
-    }
+    return defaultUrl;
   }
 };
 

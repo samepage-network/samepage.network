@@ -14,9 +14,9 @@ import nearleyl from "nearley/lib/lint";
 const nearleyCompile = (f: string) => {
   const parserGrammar = nearley.Grammar.fromCompiled(nearleylang);
   const parser = new nearley.Parser(parserGrammar);
-  const base = f.replace(/\.ne/, "").replace(/^\.\//, "");
-  const input = fs.createReadStream(`./${base}.ne`);
-  const output = fs.createWriteStream(`./${base}.ts`);
+  const base = f.replace(/\.ne$/, "");
+  const input = fs.createReadStream(`${base}.ne`);
+  const output = fs.createWriteStream(`${base}.ts`);
   return new Promise<void>((resolve, reject) =>
     input
       .pipe(new nearleys(parser))

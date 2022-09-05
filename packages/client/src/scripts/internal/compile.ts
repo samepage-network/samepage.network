@@ -24,7 +24,7 @@ const compile = ({
   include,
 }: CliArgs & { nodeEnv: "production" | "development" | "test" }) =>
   Promise.all(
-    readDir(appPath("."))
+    readDir(appPath("./src"))
       .filter((t) => /\.ne$/.test(t))
       .map(nearleyCompile)
   )
@@ -38,6 +38,7 @@ const compile = ({
           "process.env.BLUEPRINT_NAMESPACE": '"bp4"',
           "process.env.NODE_ENV": `"${nodeEnv}"`,
         },
+        format: "cjs",
         external: typeof external === "string" ? [external] : external,
       })
     )
