@@ -1,36 +1,32 @@
-import esbuild from "esbuild";
 import chokidar from "chokidar";
+import fs from "fs";
 import nearleyCompile from "./internal/nearley";
+import compile, { CliArgs } from "./internal/compile";
 
-const dev = ({ out }: { out?: string } = {}) => {
-  let rebuilder: esbuild.BuildInvalidate;
+const dev = ({
+  mirror,
+  ...cliArgs
+}: CliArgs & {
+  mirror?: string;
+} = {}) => {
+  let rebuilder: () => Promise<void>;
+  const finish = () => {
+    if (mirror) {
+      if (!fs.existsSync(mirror)) fs.mkdirSync(mirror, { recursive: true });
+      fs.readdirSync("dist").forEach((f) => fs.cpSync(f, mirror));
+    }
+  };
   return new Promise((resolve) => {
     chokidar
       .watch(["src"])
       .on("add", (file) => {
-        if (file === "src/index.tsx") {
+        if (/src\/index.tsx?$/.test(file)) {
           console.log(`building ${file}...`);
-          esbuild
-            .build({
-              entryPoints: out
-                ? { [out]: "./src/index.tsx" }
-                : ["./src/index.tsx"],
-              outdir: "dist",
-              bundle: true,
-              define: {
-                "process.env.API_URL": '"http://localhost:3003"',
-                "process.env.NODE_ENV": '"development"',
-                "process.env.WEB_SOCKET_URL": '"ws://127.0.0.1:3010"',
-              },
-              incremental: true,
-            })
-            .then((r) => {
-              rebuilder = r.rebuild;
-              console.log(`successfully built ${file}...`);
-            });
-        } else if (/\.ne$/.test(file)) {
-          nearleyCompile(file).then(() => {
-            console.log(`successfully compiled ${file}...`);
+          compile({ ...cliArgs, nodeEnv: "development" }).then((r) => {
+            const { rebuild } = r;
+            rebuilder = async () => rebuild && rebuild().then(finish);
+            finish();
+            console.log(`successfully built ${file}...`);
           });
         }
       })
@@ -38,7 +34,7 @@ const dev = ({ out }: { out?: string } = {}) => {
         console.log(`File ${file} has been changed`);
         if (/\.tsx?$/.test(file) && rebuilder) {
           rebuilder()
-            .then(() => console.log(`Rebuilt index.tsx`))
+            .then(() => console.log(`Rebuilt extension`))
             .catch((e) => console.error(`Failed to rebuild`, file, e));
         } else if (/\.ne$/.test(file)) {
           nearleyCompile(file).then(() => {
