@@ -6,6 +6,8 @@ const defaultSettings = [
     default: false,
     description: "Automatically connect to the SamePage Network",
   },
-];
+] as const;
+
+export type DefaultSetting = typeof defaultSettings[number];
 
 export default defaultSettings;

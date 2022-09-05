@@ -1,6 +1,6 @@
 {
   "name": "@samepage/client",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "Utilities that help your TFT's extension interface with the SamePage Network",
   "main": "index.js",
   "types": "index.d.ts",
@@ -39,6 +39,7 @@
     "@blueprintjs/select": ">=3.18.6",
     "@types/uuid": "3.4.0",
     "automerge": "^1.0.1-preview.7",
+    "esbuild": ">=0.13.15",
     "nearley": ">=2.20.1",
     "react": ">=17",
     "react-dom": ">=17"
