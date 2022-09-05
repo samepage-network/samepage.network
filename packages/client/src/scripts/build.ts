@@ -13,11 +13,11 @@ const cssFiles = [
 
 const grammarFiles = readDir(appPath(".")).filter((t) => /\.ne$/.test(t));
 
-const build = (_ = {}) =>
+const build = ({ out }: { out?: string } = {}) =>
   Promise.all(grammarFiles.map(nearleyCompile))
     .then(() =>
       esbuild.build({
-        entryPoints: ["./src/index.tsx"],
+        entryPoints: out ? { [out]: "./src/index.tsx" } : ["./src/index.tsx"],
         outdir: "dist",
         bundle: true,
         define: {

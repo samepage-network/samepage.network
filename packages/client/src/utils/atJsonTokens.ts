@@ -29,7 +29,7 @@ const DEFAULT_TOKENS: moo.Rules = {
   text: { match: /[^^~_*[\]]+/, lineBreaks: true },
 };
 
-export const compileLexer = (tokens: moo.Rules, remove: string[] = []) => {
+export const compileLexer = (tokens: moo.Rules = {}, remove: string[] = []) => {
   const finalTokens = {
     ...DEFAULT_TOKENS,
     ...tokens,

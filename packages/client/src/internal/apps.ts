@@ -15,5 +15,8 @@ const APPS = [
 ] as const;
 
 export const appsById = Object.fromEntries(APPS.map(({ id, ...a }) => [id, a]));
+export const appIdByName = Object.fromEntries(
+  APPS.map(({ id, name }) => [name, id] as const)
+);
 
 export default APPS;

@@ -4,7 +4,8 @@ import {
 } from "../internal/setupMessageHandlers";
 import setupP2PFeatures from "../internal/setupP2PFeatures";
 import registerAppEventListener from "../internal/registerAppEventListener";
-import type { AddCommand, RemoveCommand, AppEvent, Notebook } from "../types";
+import type { AddCommand, RemoveCommand, AppEvent } from "../types";
+import APPS, { appIdByName } from "../internal/apps";
 import setupRegistry from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
 import setupWsFeatures from "../internal/setupWsFeatures";
@@ -21,12 +22,14 @@ const setupSamePageClient = ({
   addCommand?: AddCommand;
   removeCommand?: RemoveCommand;
   onAppEventHandler?: (evt: AppEvent) => boolean;
-} & Partial<Notebook> = {}) => {
+  workspace?: string;
+  app?: typeof APPS[number]["name"];
+} = {}) => {
   setupRegistry({
     addCommand,
     removeCommand,
     onAppEventHandler,
-    app,
+    app: app ? appIdByName[app] : undefined,
     workspace,
   });
   const unregisterAppEventListener = registerAppEventListener();
