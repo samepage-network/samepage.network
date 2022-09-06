@@ -7,6 +7,7 @@ import getNodeEnv from "./getNodeEnv";
 import {
   addCommand,
   app,
+  appRoot,
   removeCommand,
   renderOverlay,
   workspace,
@@ -99,13 +100,7 @@ const getWsUrl = () => {
   }
 };
 
-const setupWsFeatures = ({
-  isAutoConnect,
-  portalContainer,
-}: {
-  isAutoConnect: boolean;
-  portalContainer?: HTMLElement;
-}) => {
+const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
   const connectToBackend = () => {
     if (samePageBackend.status === "DISCONNECTED") {
       dispatchAppEvent({
@@ -334,8 +329,9 @@ const setupWsFeatures = ({
       })
         .then((props) =>
           renderOverlay({
+            id: "samepage-usage-chart",
             Overlay: UsageChart,
-            props: { ...props, portalContainer },
+            props: { ...props, portalContainer: appRoot },
           })
         )
         .catch((e) =>

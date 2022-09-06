@@ -23,7 +23,11 @@ import { v4 } from "uuid";
 import ViewSharedPages, {
   ViewSharedPagesProps,
 } from "../components/ViewSharedPages";
-import NotificationContainer, { NotificationContainerProps } from "../components/NotificationContainer";
+import NotificationContainer, {
+  NotificationContainerProps,
+} from "../components/NotificationContainer";
+import SharedPageStatus from "../components/SharedPageStatus";
+import createHTMLObserver from "../utils/createHTMLObserver";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
@@ -48,8 +52,6 @@ const getLastLocalVersion = (doc: Automerge.FreezeObject<Schema>) => {
 
 const notebookPageIds = new Set<string>();
 const setupSharePageWithNotebook = ({
-  renderSharedPageStatus = () => {},
-
   overlayProps = {},
   getCurrentNotebookPageId = () => Promise.resolve(v4()),
   applyState = Promise.resolve,
@@ -60,15 +62,17 @@ const setupSharePageWithNotebook = ({
   saveState = Promise.resolve,
   removeState = Promise.resolve,
 }: {
-  renderViewPages?: (props: { notebookPageIds: string[] }) => void;
-  renderSharedPageStatus?: (props: {
-    notebookPageId: string;
-    created: boolean;
-  }) => void;
-
   overlayProps?: {
     viewSharedPageProps?: ViewSharedPagesProps;
     notificationContainerProps?: NotificationContainerProps;
+    sharedPageStatusProps?: {
+      getHtmlElement: (
+        notebookPageId: string
+      ) => Promise<HTMLElement | undefined>;
+      selector: string;
+      getNotebookPageId: (element: HTMLElement) => Promise<string | null>;
+      getPath: (el: HTMLElement) => HTMLElement;
+    };
   };
   getCurrentNotebookPageId?: () => Promise<string>;
   applyState?: (notebookPageId: string, state: Schema) => Promise<unknown>;
@@ -82,7 +86,125 @@ const setupSharePageWithNotebook = ({
   ) => Promise<unknown>;
   removeState?: (notebookPageId: string) => Promise<unknown>;
 } = {}) => {
-  const { viewSharedPageProps, notificationContainerProps } = overlayProps;
+  const {
+    viewSharedPageProps,
+    notificationContainerProps,
+    sharedPageStatusProps,
+  } = overlayProps;
+
+  const disconnectPage = (notebookPageId: string) => {
+    return apiClient({
+      method: "disconnect-shared-page",
+      notebookPageId,
+    })
+      .then(() => {
+        removeState(notebookPageId);
+        notebookPageIds.delete(notebookPageId);
+        dispatchAppEvent({
+          type: "log",
+          content: `Successfully disconnected ${notebookPageId} from being shared.`,
+          id: "disconnect-shared-page",
+          intent: "success",
+        });
+      })
+      .catch((e) => {
+        dispatchAppEvent({
+          type: "log",
+          content: `Failed to disconnect page ${notebookPageId}: ${e.message}`,
+          id: "disconnect-shared-page",
+          intent: "error",
+        });
+        return Promise.reject(e);
+      });
+  };
+
+  const forcePushPage = (notebookPageId: string) =>
+    loadState(notebookPageId)
+      .then((state) =>
+        apiClient({
+          method: "force-push-page",
+          notebookPageId,
+          state: window.btoa(
+            String.fromCharCode.apply(null, Array.from(state))
+          ),
+        })
+      )
+      .then(() =>
+        dispatchAppEvent({
+          type: "log",
+          content: `Successfully pushed page state to other notebooks.`,
+          id: "push-shared-page",
+          intent: "success",
+        })
+      )
+      .catch((e) =>
+        dispatchAppEvent({
+          type: "log",
+          content: `Failed to pushed page state to other notebooks: ${e.message}`,
+          id: "push-shared-page",
+          intent: "error",
+        })
+      );
+
+  const getLocalHistory = (notebookPageId: string) =>
+    loadAutomergeDoc(notebookPageId).then((doc) => Automerge.getHistory(doc));
+
+  const listConnectedNotebooks = (notebookPageId: string) =>
+    Promise.all([
+      apiClient<{
+        notebooks: { app: string; workspace: string; version: number }[];
+        networks: { app: string; workspace: string; version: number }[];
+      }>({
+        method: "list-page-notebooks",
+        notebookPageId,
+      }),
+      loadAutomergeDoc(notebookPageId),
+    ]).then(([{ networks, notebooks }, doc]) => {
+      return {
+        networks,
+        notebooks: notebooks.map((n) =>
+          n.workspace !== workspace || n.app !== apps[app].name
+            ? n
+            : { ...n, version: getLastLocalVersion(doc) }
+        ),
+      };
+    });
+
+  const renderSharedPageStatus = ({
+    notebookPageId,
+    created = false,
+    el,
+  }: {
+    notebookPageId: string;
+    el: HTMLElement;
+    created?: boolean;
+  }) => {
+    renderOverlay({
+      id: `samepage-shared-${notebookPageId}`,
+      Overlay: SharedPageStatus,
+      props: {
+        notebookPageId,
+        defaultOpenInviteDialog: created,
+        disconnectPage,
+        forcePushPage,
+        getLocalHistory,
+        listConnectedNotebooks,
+      },
+      path: sharedPageStatusProps?.getPath(el),
+    });
+  };
+  const sharedPageObserver = sharedPageStatusProps
+    ? createHTMLObserver({
+        selector: sharedPageStatusProps.selector,
+        callback: (el) => {
+          sharedPageStatusProps.getNotebookPageId(el).then((notebookPageId) => {
+            if (notebookPageId && notebookPageIds.has(notebookPageId)) {
+              renderSharedPageStatus({ el, notebookPageId });
+            }
+          });
+        },
+      })
+    : undefined;
 
   const initPage = ({
     notebookPageId,
@@ -92,8 +214,56 @@ const setupSharePageWithNotebook = ({
     created?: boolean;
   }) => {
     notebookPageIds.add(notebookPageId);
-    renderSharedPageStatus({ notebookPageId, created });
+
+    if (sharedPageStatusProps) {
+      sharedPageStatusProps
+        .getHtmlElement(notebookPageId)
+        .then(
+          (el) => el && renderSharedPageStatus({ notebookPageId, created, el })
+        );
+    }
   };
+
+  const linkNewPage = ({
+    title,
+    oldNotebookPageId,
+    newNotebookPageId,
+  }: {
+    title: string;
+    oldNotebookPageId: string;
+    newNotebookPageId: string;
+  }) =>
+    apiClient({
+      oldNotebookPageId,
+      newNotebookPageId,
+      method: "link-different-page",
+    })
+      .then(() => {
+        notebookPageIds.delete(oldNotebookPageId);
+        notebookPageIds.add(newNotebookPageId);
+        return loadState(oldNotebookPageId).then((state) =>
+          Promise.all([
+            removeState(oldNotebookPageId),
+            saveState(oldNotebookPageId, state),
+          ])
+        );
+      })
+      .then(() =>
+        dispatchAppEvent({
+          type: "log",
+          id: "link-page-success",
+          content: `Successfully linked ${title} to shared page!`,
+          intent: "info",
+        })
+      )
+      .catch((e) =>
+        dispatchAppEvent({
+          type: "log",
+          id: "link-page-success",
+          content: `Failed to link to new shared page: ${e.message}`,
+          intent: "error",
+        })
+      );
 
   if (viewSharedPageProps)
     addCommand({
@@ -103,6 +273,7 @@ const setupSharePageWithNotebook = ({
           method: "list-shared-pages",
         }).then((props) =>
           renderOverlay({
+            id: "samepage-view-shared-pages",
             Overlay: ViewSharedPages,
             props: {
               ...props,
@@ -420,126 +591,9 @@ const setupSharePageWithNotebook = ({
     });
   };
 
-  const disconnectPage = (notebookPageId: string) => {
-    return apiClient({
-      method: "disconnect-shared-page",
-      notebookPageId,
-    })
-      .then(() => {
-        removeState(notebookPageId);
-        notebookPageIds.delete(notebookPageId);
-        dispatchAppEvent({
-          type: "log",
-          content: `Successfully disconnected ${notebookPageId} from being shared.`,
-          id: "disconnect-shared-page",
-          intent: "success",
-        });
-      })
-      .catch((e) =>
-        dispatchAppEvent({
-          type: "log",
-          content: `Failed to disconnect page ${notebookPageId}: ${e.message}`,
-          id: "disconnect-shared-page",
-          intent: "error",
-        })
-      );
-  };
-
-  const forcePushPage = (notebookPageId: string) =>
-    loadState(notebookPageId)
-      .then((state) =>
-        apiClient({
-          method: "force-push-page",
-          notebookPageId,
-          state: window.btoa(
-            String.fromCharCode.apply(null, Array.from(state))
-          ),
-        })
-      )
-      .then(() =>
-        dispatchAppEvent({
-          type: "log",
-          content: `Successfully pushed page state to other notebooks.`,
-          id: "push-shared-page",
-          intent: "success",
-        })
-      )
-      .catch((e) =>
-        dispatchAppEvent({
-          type: "log",
-          content: `Failed to pushed page state to other notebooks: ${e.message}`,
-          id: "push-shared-page",
-          intent: "error",
-        })
-      );
-
-  const getLocalHistory = (notebookPageId: string) =>
-    loadAutomergeDoc(notebookPageId).then((doc) => Automerge.getHistory(doc));
-
-  const listConnectedNotebooks = (notebookPageId: string) =>
-    Promise.all([
-      apiClient<{
-        notebooks: { app: string; workspace: string; version: number }[];
-        networks: { app: string; workspace: string; version: number }[];
-      }>({
-        method: "list-page-notebooks",
-        notebookPageId,
-      }),
-      loadAutomergeDoc(notebookPageId),
-    ]).then(([{ networks, notebooks }, doc]) => {
-      return {
-        networks,
-        notebooks: notebooks.map((n) =>
-          n.workspace !== workspace || n.app !== apps[app].name
-            ? n
-            : { ...n, version: getLastLocalVersion(doc) }
-        ),
-      };
-    });
-
-  const linkNewPage = ({
-    title,
-    oldNotebookPageId,
-    newNotebookPageId,
-  }: {
-    title: string;
-    oldNotebookPageId: string;
-    newNotebookPageId: string;
-  }) =>
-    apiClient({
-      oldNotebookPageId,
-      newNotebookPageId,
-      method: "link-different-page",
-    })
-      .then(() => {
-        notebookPageIds.delete(oldNotebookPageId);
-        notebookPageIds.add(newNotebookPageId);
-        return loadState(oldNotebookPageId).then((state) =>
-          Promise.all([
-            removeState(oldNotebookPageId),
-            saveState(oldNotebookPageId, state),
-          ])
-        );
-      })
-      .then(() =>
-        dispatchAppEvent({
-          type: "log",
-          id: "link-page-success",
-          content: `Successfully linked ${title} to shared page!`,
-          intent: "info",
-        })
-      )
-      .catch((e) =>
-        dispatchAppEvent({
-          type: "log",
-          id: "link-page-success",
-          content: `Failed to link to new shared page: ${e.message}`,
-          intent: "error",
-        })
-      );
-
   if (notificationContainerProps) {
     renderOverlay({
+      id: "samepage-notification-container",
       Overlay: NotificationContainer,
       props: notificationContainerProps,
     });
@@ -548,6 +602,7 @@ const setupSharePageWithNotebook = ({
   return {
     unload: () => {
       notebookPageIds.clear();
+      sharedPageObserver?.disconnect();
       removeNotebookListener({ operation: SHARE_PAGE_RESPONSE_OPERATION });
       removeNotebookListener({ operation: SHARE_PAGE_UPDATE_OPERATION });
       removeNotebookListener({ operation: SHARE_PAGE_OPERATION });
@@ -562,10 +617,6 @@ const setupSharePageWithNotebook = ({
     updatePage,
     joinPage,
     rejectPage,
-    disconnectPage,
-    forcePushPage,
-    listConnectedNotebooks,
-    getLocalHistory,
     isShared: (notebookPageId: string) => notebookPageIds.has(notebookPageId),
   };
 };

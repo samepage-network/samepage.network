@@ -9,24 +9,24 @@ import {
 } from "@blueprintjs/core";
 import { appsById } from "../internal/apps";
 import React, { useState, useRef, useEffect } from "react";
-import type setupSharePageWithNotebook from "../protocols/sharePageWithNotebook";
-import SharePageDialog from "./SharePageDialog";
+import SharePageDialog, { ListConnectedNotebooks } from "./SharePageDialog";
+import { OverlayProps, Schema } from "../types";
+import type Automerge from "automerge";
 
-type SharePageReturn = ReturnType<typeof setupSharePageWithNotebook>;
+type GetLocalHistory = (
+  notebookPageId: string
+) => Promise<Automerge.State<Schema>[]>;
 
 export type Props = {
   notebookPageId: string;
   portalContainer?: HTMLElement;
   defaultOpenInviteDialog?: boolean;
-} & Partial<
-  Pick<
-    SharePageReturn,
-    | "disconnectPage"
-    | "forcePushPage"
-    | "listConnectedNotebooks"
-    | "getLocalHistory"
-  >
->;
+
+  disconnectPage?: (notebookPageId: string) => Promise<void>;
+  forcePushPage?: (notebookPageId: string) => Promise<void>;
+  listConnectedNotebooks?: ListConnectedNotebooks;
+  getLocalHistory?: GetLocalHistory;
+};
 
 const parseActorId = (s: string) =>
   s
@@ -40,11 +40,11 @@ const parseActorId = (s: string) =>
 const HistoryContent = ({
   getHistory,
 }: {
-  getHistory: () => ReturnType<SharePageReturn["getLocalHistory"]>;
+  getHistory: () => ReturnType<GetLocalHistory>;
 }) => {
-  const [history, setHistory] = useState<
-    Awaited<ReturnType<SharePageReturn["getLocalHistory"]>>
-  >([]);
+  const [history, setHistory] = useState<Awaited<ReturnType<GetLocalHistory>>>(
+    []
+  );
   useEffect(() => {
     getHistory().then(setHistory);
   }, [getHistory, setHistory]);
@@ -111,6 +111,7 @@ const TooltipButtonOverlay = ({
 };
 
 const SharedPageStatus = ({
+  onClose,
   notebookPageId,
   portalContainer,
   defaultOpenInviteDialog,
@@ -119,7 +120,7 @@ const SharedPageStatus = ({
   listConnectedNotebooks = () =>
     Promise.resolve({ networks: [], notebooks: [] }),
   getLocalHistory = () => Promise.resolve([]),
-}: Props) => {
+}: OverlayProps<Props>) => {
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLSpanElement>(null);
   return (
@@ -172,7 +173,9 @@ const SharedPageStatus = ({
           minimal
           onClick={() => {
             setLoading(true);
-            disconnectPage(notebookPageId).finally(() => setLoading(false));
+            disconnectPage(notebookPageId)
+              .then(onClose)
+              .catch(() => setLoading(false));
           }}
         />
       </Tooltip>

@@ -13,14 +13,14 @@ import {
 } from "@blueprintjs/core";
 import { Select } from "@blueprintjs/select";
 import { apps } from "../internal/registry";
-import type sharePageWithNotebook from "../protocols/sharePageWithNotebook";
 import apiClient from "../internal/apiClient";
 import sendToNotebook from "../internal/sendToNotebook";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 
-type ListConnectedNotebooks = ReturnType<
-  typeof sharePageWithNotebook
->["listConnectedNotebooks"];
+export type ListConnectedNotebooks = (notebookPageId: string) => Promise<{
+  networks: { app: string; workspace: string; version: number }[];
+  notebooks: { app: string; workspace: string; version: number }[];
+}>;
 
 const formatVersion = (s: number) =>
   s ? new Date(s * 1000).toLocaleString() : "unknown";

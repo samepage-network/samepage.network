@@ -39,6 +39,7 @@ export let addCommand = defaultAddCommand;
 export let removeCommand = defaultRemoveCommand;
 export let onAppEventHandler = defaultOnAppEventHandler;
 export let renderOverlay = defaultRenderOverlay;
+export let appRoot = document.body;
 export let apps: Apps = Object.fromEntries(
   APPS.map(({ id, ...app }) => [id, app])
 );
@@ -52,6 +53,7 @@ const setupRegistry = ({
   removeCommand: _removeCommand,
   onAppEventHandler: _onAppEventHandler,
   renderOverlay: _renderOverlay,
+  appRoot: _appRoot,
 }: {
   app?: AppId;
   workspace?: string;
@@ -59,6 +61,7 @@ const setupRegistry = ({
   removeCommand?: RemoveCommand;
   renderOverlay?: RenderOverlay;
   onAppEventHandler?: (event: AppEvent) => boolean;
+  appRoot?: HTMLElement;
 }) => {
   if (_app) app = _app;
   if (_workspace) workspace = _workspace;
@@ -71,28 +74,35 @@ const setupRegistry = ({
         id = v4(),
         Overlay = (props) => React.createElement("div", props),
         props = {},
+        path = "body",
       } = {}) => {
         const parent = document.createElement("div");
         parent.id = id;
-        document.body.appendChild(parent);
-        const root = ReactDOM.createRoot(parent);
-        const onClose = () => {
-          root.unmount();
-          parent.remove();
-        };
-        root.render(
-          //@ts-ignore what is happening here...
-          React.createElement(Overlay, {
-            ...props,
-            onClose,
-            isOpen: true,
-          })
-        );
-        return onClose;
+        const pathElement =
+          typeof path === "string" ? document.querySelector(path) : path;
+        if (pathElement && !pathElement.querySelector(`#${id}`)) {
+          pathElement.appendChild(parent);
+          const root = ReactDOM.createRoot(parent);
+          const onClose = () => {
+            root.unmount();
+            parent.remove();
+          };
+          root.render(
+            //@ts-ignore what is happening here...
+            React.createElement(Overlay, {
+              ...props,
+              onClose,
+              isOpen: true,
+            })
+          );
+          return onClose;
+        }
+        return () => {};
       };
     });
   }
   if (_onAppEventHandler) onAppEventHandler = _onAppEventHandler;
+  if (_appRoot) appRoot = _appRoot;
 };
 
 export default setupRegistry;

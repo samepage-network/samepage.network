@@ -92,6 +92,7 @@ export type RenderOverlay = <T extends Record<string, unknown>>(args: {
   id?: string;
   Overlay?: (props: OverlayProps<T>) => React.ReactElement;
   props?: T;
+  path?: string | HTMLElement | null;
 }) => () => void;
 
 export type Status = "DISCONNECTED" | "PENDING" | "CONNECTED";

@@ -42,6 +42,7 @@ const PageLink = ({
         minimal
         onClick={() => {
           renderOverlay({
+            id: "samepage-link-new-page",
             Overlay: LinkNewPage,
             props: { notebookPageId, linkNewPage },
           });

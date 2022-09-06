@@ -12,7 +12,7 @@ import type Automerge from "automerge";
 
 const SharedPageStatusPage = () => {
   const { pages } = useLoaderData<{ pages: string[] }>();
-  const { listConnectedNotebooks, getLocalHistory } = useMemo(() => {
+  const { unload } = useMemo(() => {
     return setupSharePageWithNotebook({
       loadState: (notebookPageId) =>
         fetch(
@@ -51,8 +51,7 @@ const SharedPageStatusPage = () => {
       <SharedPageStatus
         key={notebookPageId}
         notebookPageId={notebookPageId}
-        listConnectedNotebooks={listConnectedNotebooks}
-        getLocalHistory={getLocalHistory}
+        onClose={unload}
       />
     </>
   );
