@@ -1,5 +1,6 @@
 import type APPS from "./internal/apps";
 import type Automerge from "automerge";
+import React from "react";
 
 // Add future versions in this union
 type Version = "2022-08-17";
@@ -53,7 +54,7 @@ export type Schema = {
 export type InitialSchema = {
   content: string;
   annotations: Annotation[];
-}
+};
 
 export type Notebook = { workspace: string; app: AppId };
 
@@ -83,6 +84,15 @@ export type AddCommand = (args: {
   callback: () => void;
 }) => void;
 export type RemoveCommand = (args: { label: string }) => void;
+export type OverlayProps<T extends Record<string, unknown>> = {
+  onClose: () => void;
+  isOpen?: boolean;
+} & T;
+export type RenderOverlay = <T extends Record<string, unknown>>(args: {
+  id?: string;
+  Overlay?: (props: OverlayProps<T>) => React.ReactElement;
+  props?: T;
+}) => () => void;
 
 export type Status = "DISCONNECTED" | "PENDING" | "CONNECTED";
 

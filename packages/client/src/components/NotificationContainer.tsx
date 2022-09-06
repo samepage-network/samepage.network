@@ -15,14 +15,14 @@ type Notification = {
 
 const defaults: {
   state: Record<string, Notification>;
-} & Props["api"] = {
+} & NotificationContainerProps["api"] = {
   state: {},
   addNotification: async (not) => (defaults.state[not.uuid] = not),
   deleteNotification: async (uuid) => delete defaults.state[uuid],
   getNotifications: async () => Object.values(defaults.state),
 };
 
-type Props = {
+export type NotificationContainerProps = {
   actions?: Record<string, (args: Record<string, string>) => Promise<unknown>>;
   api?: {
     addNotification: (n: Notification) => Promise<unknown>;
@@ -81,7 +81,7 @@ const ActionButtons = ({
 const NotificationContainer = ({
   actions = {},
   api: { addNotification, deleteNotification, getNotifications } = defaults,
-}: Props) => {
+}: NotificationContainerProps) => {
   const [notifications, setNotificatons] = useState<Notification[]>([]);
   const notificationsRef = useRef<Notification[]>(notifications);
   const removeNotificaton = useCallback(

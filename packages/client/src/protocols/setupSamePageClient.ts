@@ -4,7 +4,7 @@ import {
 } from "../internal/setupMessageHandlers";
 import setupP2PFeatures from "../internal/setupP2PFeatures";
 import registerAppEventListener from "../internal/registerAppEventListener";
-import type { AddCommand, RemoveCommand, AppEvent } from "../types";
+import type { AddCommand, RemoveCommand, AppEvent, RenderOverlay } from "../types";
 import APPS, { appIdByName } from "../internal/apps";
 import setupRegistry from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
@@ -17,11 +17,13 @@ const setupSamePageClient = ({
   addCommand,
   removeCommand,
   onAppEventHandler,
+  renderOverlay,
 }: {
   isAutoConnect?: boolean;
   addCommand?: AddCommand;
   removeCommand?: RemoveCommand;
   onAppEventHandler?: (evt: AppEvent) => boolean;
+  renderOverlay?: RenderOverlay;
   workspace?: string;
   app?: typeof APPS[number]["name"];
 } = {}) => {
@@ -29,6 +31,7 @@ const setupSamePageClient = ({
     addCommand,
     removeCommand,
     onAppEventHandler,
+    renderOverlay,
     app: app ? appIdByName[app] : undefined,
     workspace,
   });

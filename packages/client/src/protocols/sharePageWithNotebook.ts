@@ -6,6 +6,7 @@ import {
   removeCommand,
   workspace,
   apps,
+  renderOverlay,
 } from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
 import type { Notebook, Schema } from "../types";
@@ -19,6 +20,10 @@ import {
   removeNotebookListener,
 } from "../internal/setupMessageHandlers";
 import { v4 } from "uuid";
+import ViewSharedPages, {
+  ViewSharedPagesProps,
+} from "../components/ViewSharedPages";
+import NotificationContainer, { NotificationContainerProps } from "../components/NotificationContainer";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
@@ -43,9 +48,9 @@ const getLastLocalVersion = (doc: Automerge.FreezeObject<Schema>) => {
 
 const notebookPageIds = new Set<string>();
 const setupSharePageWithNotebook = ({
-  renderViewPages = () => {},
   renderSharedPageStatus = () => {},
 
+  overlayProps = {},
   getCurrentNotebookPageId = () => Promise.resolve(v4()),
   applyState = Promise.resolve,
   calculateState = () =>
@@ -61,6 +66,10 @@ const setupSharePageWithNotebook = ({
     created: boolean;
   }) => void;
 
+  overlayProps?: {
+    viewSharedPageProps?: ViewSharedPagesProps;
+    notificationContainerProps?: NotificationContainerProps;
+  };
   getCurrentNotebookPageId?: () => Promise<string>;
   applyState?: (notebookPageId: string, state: Schema) => Promise<unknown>;
   calculateState?: (
@@ -72,7 +81,9 @@ const setupSharePageWithNotebook = ({
     state: Automerge.BinaryDocument
   ) => Promise<unknown>;
   removeState?: (notebookPageId: string) => Promise<unknown>;
-}) => {
+} = {}) => {
+  const { viewSharedPageProps, notificationContainerProps } = overlayProps;
+
   const initPage = ({
     notebookPageId,
     created = false,
@@ -84,14 +95,44 @@ const setupSharePageWithNotebook = ({
     renderSharedPageStatus({ notebookPageId, created });
   };
 
-  addCommand({
-    label: VIEW_COMMAND_PALETTE_LABEL,
-    callback: () => {
-      apiClient<{ notebookPageIds: string[] }>({
-        method: "list-shared-pages",
-      }).then(renderViewPages);
-    },
-  });
+  if (viewSharedPageProps)
+    addCommand({
+      label: VIEW_COMMAND_PALETTE_LABEL,
+      callback: () => {
+        apiClient<{ notebookPageIds: string[] }>({
+          method: "list-shared-pages",
+        }).then((props) =>
+          renderOverlay({
+            Overlay: ViewSharedPages,
+            props: {
+              ...props,
+              ...viewSharedPageProps,
+              linkNewPage: (oldNotebookPageId, title) =>
+                (viewSharedPageProps.linkNewPage
+                  ? viewSharedPageProps.linkNewPage(oldNotebookPageId, title)
+                  : Promise.resolve(v4())
+                ).then((newNotebookPageId) => {
+                  if (!newNotebookPageId) {
+                    dispatchAppEvent({
+                      type: "log",
+                      id: "link-shared-page",
+                      content: `Unable to link page: ${title}`,
+                      intent: "error",
+                    });
+                    return "";
+                  }
+                  return linkNewPage({
+                    oldNotebookPageId,
+                    newNotebookPageId,
+                    title,
+                  }).then(() => newNotebookPageId);
+                }),
+            },
+          })
+        );
+      },
+    });
+
   addCommand({
     label: COMMAND_PALETTE_LABEL,
     callback: () => {
@@ -455,6 +496,54 @@ const setupSharePageWithNotebook = ({
         ),
       };
     });
+
+  const linkNewPage = ({
+    title,
+    oldNotebookPageId,
+    newNotebookPageId,
+  }: {
+    title: string;
+    oldNotebookPageId: string;
+    newNotebookPageId: string;
+  }) =>
+    apiClient({
+      oldNotebookPageId,
+      newNotebookPageId,
+      method: "link-different-page",
+    })
+      .then(() => {
+        notebookPageIds.delete(oldNotebookPageId);
+        notebookPageIds.add(newNotebookPageId);
+        return loadState(oldNotebookPageId).then((state) =>
+          Promise.all([
+            removeState(oldNotebookPageId),
+            saveState(oldNotebookPageId, state),
+          ])
+        );
+      })
+      .then(() =>
+        dispatchAppEvent({
+          type: "log",
+          id: "link-page-success",
+          content: `Successfully linked ${title} to shared page!`,
+          intent: "info",
+        })
+      )
+      .catch((e) =>
+        dispatchAppEvent({
+          type: "log",
+          id: "link-page-success",
+          content: `Failed to link to new shared page: ${e.message}`,
+          intent: "error",
+        })
+      );
+
+  if (notificationContainerProps) {
+    renderOverlay({
+      Overlay: NotificationContainer,
+      props: notificationContainerProps,
+    });
+  }
 
   return {
     unload: () => {

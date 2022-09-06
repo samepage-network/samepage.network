@@ -50,7 +50,7 @@ export const loader: LoaderFunction = (args) => {
   return remixAdminLoader(args, () => [
     "NotificationContainer",
     "SharedPageStatus",
-    // "SharePageDialog"
+    "ViewSharedPages",
   ]);
 };
 
