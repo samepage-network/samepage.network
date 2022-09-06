@@ -24,9 +24,9 @@ jobs:
         run: echo '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}' > ~/.npmrc
       - name: build
         run: npx tsc
-        working-directory: packages
+        working-directory: package
       - name: prepare
-        run: cp ../../LICENSE README.md package.json dist
+        run: cp ../LICENSE README.md package.json dist
         working-directory: package
       - name: publish
         run: npm publish --access public
