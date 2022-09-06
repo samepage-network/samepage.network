@@ -1,5 +1,5 @@
 import { useState } from "react";
-import ViewSharedPages from "client/src/components/ViewSharedPages";
+import ViewSharedPages from "package/src/components/ViewSharedPages";
 import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
 import type { LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";

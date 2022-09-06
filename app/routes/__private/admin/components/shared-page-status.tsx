@@ -1,5 +1,5 @@
-import SharedPageStatus from "client/src/components/SharedPageStatus";
-import setupSharePageWithNotebook from "client/src/protocols/sharePageWithNotebook";
+import SharedPageStatus from "package/src/components/SharedPageStatus";
+import setupSharePageWithNotebook from "package/src/protocols/sharePageWithNotebook";
 import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { useState, useMemo } from "react";

@@ -4,8 +4,8 @@ on:
   push:
     branches: main
     paths:
-      - "packages/client/**"
-      - ".github/workflows/packages-client.yaml"
+      - "package/**"
+      - ".github/workflows/package.yaml"
 
 env:
   NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
@@ -19,15 +19,15 @@ jobs:
         run: npm install
       - name: package deps
         run: npm install
-        working-directory: packages/client
+        working-directory: package
       - name: authenticate
         run: echo '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}' > ~/.npmrc
       - name: build
         run: npx tsc
-        working-directory: packages/client
+        working-directory: packages
       - name: prepare
         run: cp ../../LICENSE README.md package.json dist
-        working-directory: packages/client
+        working-directory: package
       - name: publish
         run: npm publish --access public
-        working-directory: packages/client/dist
+        working-directory: package/dist

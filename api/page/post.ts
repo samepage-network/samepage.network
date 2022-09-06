@@ -1,6 +1,6 @@
 import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
-import type { AppId, Notebook, Schema } from "client/src/types";
-import { appsById } from "client/src/internal/apps";
+import type { AppId, Notebook, Schema } from "package/src/types";
+import { appsById } from "package/src/internal/apps";
 import {
   BadRequestError,
   NotFoundError,

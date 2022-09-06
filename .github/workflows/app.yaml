@@ -36,7 +36,7 @@ jobs:
         run: | 
           npm install
           rm -Rf node_modules/react node_modules/react-dom
-        working-directory: packages/client
+        working-directory: package
       - name: build
         run: npm run build
       - name: deploy

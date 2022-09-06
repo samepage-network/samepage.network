@@ -3,7 +3,7 @@ import postError from "~/data/postError.server";
 import { v4 } from "uuid";
 import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
 import { downloadFileContent } from "@dvargas92495/app/backend/downloadFile.server";
-import type { AppId } from "client/src/types";
+import type { AppId } from "package/src/types";
 import postToConnection from "~/data/postToConnection.server";
 import messageNotebook from "~/data/messageNotebook.server";
 import type {

@@ -9,7 +9,7 @@ import getSharedPageByUuid from "~/data/getSharedPageByUuid.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 import { v4 } from "uuid";
-import { appsById } from "client/src/internal/apps";
+import { appsById } from "package/src/internal/apps";
 
 const parseActorId = (s: string) =>
   s

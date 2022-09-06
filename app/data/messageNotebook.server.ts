@@ -3,7 +3,7 @@ import endClient from "./endClient.server";
 import postToConnection from "./postToConnection.server";
 import { v4 } from "uuid";
 import getMysql from "@dvargas92495/app/backend/mysql.server";
-import type { Notebook } from "client/src/types";
+import type { Notebook } from "package/src/types";
 
 const messageNotebook = ({
   source,

@@ -1,6 +1,6 @@
 import { downloadFileBuffer } from "@dvargas92495/app/backend/downloadFile.server";
 import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
-import type { AppId, Schema } from "client/src/types";
+import type { AppId, Schema } from "package/src/types";
 import Automerge from "automerge";
 
 const getSharedPageByUuid = async (uuid: string, requestId: string) => {

@@ -1,7 +1,7 @@
 import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
 import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
 import Automerge from "automerge";
-import type { Schema } from "client/src/types";
+import type { Schema } from "package/src/types";
 
 const saveSharedPage = ({
   pageUuid,

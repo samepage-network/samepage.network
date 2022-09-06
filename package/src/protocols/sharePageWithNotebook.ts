@@ -71,7 +71,7 @@ const setupSharePageWithNotebook = ({
       ) => Promise<HTMLElement | undefined>;
       selector: string;
       getNotebookPageId: (element: HTMLElement) => Promise<string | null>;
-      getPath: (el: HTMLElement) => HTMLElement;
+      getPath: (el: HTMLElement) => HTMLElement | null;
     };
   };
   getCurrentNotebookPageId?: () => Promise<string>;

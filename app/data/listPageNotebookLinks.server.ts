@@ -1,6 +1,6 @@
 import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
-import type { AppId } from "client/src/types";
-import { appsById } from "client/src/internal/apps";
+import type { AppId } from "package/src/types";
+import { appsById } from "package/src/internal/apps";
 
 const listPageNotebookLinks = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);

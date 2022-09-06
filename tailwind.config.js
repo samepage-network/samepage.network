@@ -2,7 +2,7 @@ module.exports = {
   content: [
     "./app/**/*.tsx",
     "./node_modules/@dvargas92495/app/**/*.js",
-    "./packages/client/src/components/**/*.tsx",
+    "./package/src/components/**/*.tsx",
   ],
   theme: {
     extend: {},
