@@ -5,12 +5,6 @@ import esbuild from "esbuild";
 import fs from "fs";
 import path from "path";
 
-const cssFiles = [
-  "node_modules/normalize.css/normalize.css",
-  "node_modules/@blueprintjs/icons/lib/css/blueprint-icons.css",
-  "node_modules/@blueprintjs/core/lib/css/blueprint.css",
-];
-
 export type CliArgs = {
   out?: string;
   external?: string | string[];
@@ -46,19 +40,26 @@ const compile = ({
     )
     .then((r) => {
       const finish = () => {
-        (typeof include === "string" ? [include] : include || [])
-          .concat(cssFiles)
-          .forEach((f) => {
+        (typeof include === "string" ? [include] : include || []).forEach(
+          (f) => {
             fs.cpSync(f, path.join("dist", path.basename(f)));
-          });
+          }
+        );
         if (css) {
           const outCssFilename = path.join(
             "dist",
             `${css.replace(/.css$/, "")}.css`
           );
-          fs.readdirSync("dist")
-            .filter((f) => /.css$/.test(f))
-            .forEach((f) => {
+          const inputCssFiles = fs
+            .readdirSync("dist")
+            .filter((f) => /.css$/.test(f));
+
+          if (inputCssFiles.length === 0) {
+            console.warn("No css files in the dist/ directory");
+          } else if (inputCssFiles.length === 1) {
+            fs.renameSync(path.join("dist", inputCssFiles[0]), outCssFilename);
+          } else {
+            inputCssFiles.forEach((f) => {
               const cssFileContent = fs
                 .readFileSync(path.join("dist", f))
                 .toString();
@@ -66,6 +67,7 @@ const compile = ({
               fs.appendFileSync(outCssFilename, cssFileContent);
               fs.appendFileSync(outCssFilename, "\n\n");
             });
+          }
         }
       };
       finish();
