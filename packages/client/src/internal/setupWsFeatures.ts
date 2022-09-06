@@ -1,9 +1,16 @@
-import type { Status, SendToBackend, UsageEvent, Notebook } from "../types";
+import UsageChart, { UsageChartProps } from "../components/UsageChart";
+import type { Status, SendToBackend, Notebook } from "../types";
 import apiClient from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
 import { CONNECTED_EVENT } from "./events";
 import getNodeEnv from "./getNodeEnv";
-import { addCommand, app, removeCommand, workspace } from "./registry";
+import {
+  addCommand,
+  app,
+  removeCommand,
+  renderOverlay,
+  workspace,
+} from "./registry";
 import sendChunkedMessage from "./sendChunkedMessage";
 import {
   addNotebookListener,
@@ -92,7 +99,13 @@ const getWsUrl = () => {
   }
 };
 
-const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
+const setupWsFeatures = ({
+  isAutoConnect,
+  portalContainer,
+}: {
+  isAutoConnect: boolean;
+  portalContainer?: HTMLElement;
+}) => {
   const connectToBackend = () => {
     if (samePageBackend.status === "DISCONNECTED") {
       dispatchAppEvent({
@@ -316,10 +329,15 @@ const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
   addCommand({
     label: USAGE_LABEL,
     callback: () =>
-      apiClient<Omit<UsageEvent, "type">>({
+      apiClient<Omit<UsageChartProps, "portalContainer">>({
         method: "usage",
       })
-        .then((r) => dispatchAppEvent({ ...r, type: "usage" }))
+        .then((props) =>
+          renderOverlay({
+            Overlay: UsageChart,
+            props: { ...props, portalContainer },
+          })
+        )
         .catch((e) =>
           dispatchAppEvent({
             type: "log",

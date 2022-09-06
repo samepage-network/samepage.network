@@ -1,5 +1,4 @@
 import React from "react";
-import { createRoot } from "react-dom/client";
 import { v4 } from "uuid";
 import type {
   AddCommand,
@@ -34,29 +33,7 @@ const defaultRemoveCommand: RemoveCommand = (args) => {
 
 const defaultOnAppEventHandler = (_: AppEvent): boolean => false;
 
-const defaultRenderOverlay: RenderOverlay = ({
-  id = v4(),
-  Overlay = (props) => React.createElement("div", props),
-  props = {},
-} = {}) => {
-  const parent = document.createElement("div");
-  parent.id = id;
-  document.body.appendChild(parent);
-  const root = createRoot(parent);
-  const onClose = () => {
-    root.unmount();
-    parent.remove();
-  };
-  root.render(
-    //@ts-ignore what is happening here...
-    React.createElement(Overlay, {
-      ...props,
-      onClose,
-      isOpen: true,
-    })
-  );
-  return onClose;
-};
+const defaultRenderOverlay: RenderOverlay = () => () => {};
 
 export let addCommand = defaultAddCommand;
 export let removeCommand = defaultRemoveCommand;
@@ -88,6 +65,33 @@ const setupRegistry = ({
   if (_addCommand) addCommand = _addCommand;
   if (_removeCommand) removeCommand = _removeCommand;
   if (_renderOverlay) renderOverlay = _renderOverlay;
+  else {
+    import("react-dom/client").then((ReactDOM) => {
+      renderOverlay = ({
+        id = v4(),
+        Overlay = (props) => React.createElement("div", props),
+        props = {},
+      } = {}) => {
+        const parent = document.createElement("div");
+        parent.id = id;
+        document.body.appendChild(parent);
+        const root = ReactDOM.createRoot(parent);
+        const onClose = () => {
+          root.unmount();
+          parent.remove();
+        };
+        root.render(
+          //@ts-ignore what is happening here...
+          React.createElement(Overlay, {
+            ...props,
+            onClose,
+            isOpen: true,
+          })
+        );
+        return onClose;
+      };
+    });
+  }
   if (_onAppEventHandler) onAppEventHandler = _onAppEventHandler;
 };
 

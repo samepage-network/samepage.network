@@ -1,4 +1,4 @@
-name: Publish @samepage/client
+name: Publish samepage npm package
 on:
   workflow_dispatch:
   push:

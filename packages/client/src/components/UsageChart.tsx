@@ -1,7 +1,7 @@
 import React from "react";
 import { Classes, Dialog } from "@blueprintjs/core";
 
-export type Props = {
+export type UsageChartProps = {
   minutes: number;
   messages: number;
   date: string;
@@ -9,7 +9,7 @@ export type Props = {
   onClose: () => void;
 };
 
-const UsageChart = ({ onClose, portalContainer, ...stats }: Props) => {
+const UsageChart = ({ onClose, portalContainer, ...stats }: UsageChartProps) => {
   return (
     <Dialog
       onClose={onClose}

@@ -103,13 +103,6 @@ type LogEvent = {
   intent: "info" | "warning" | "error" | "success";
 };
 
-export type UsageEvent = {
-  type: "usage";
-  minutes: number;
-  messages: number;
-  date: string;
-};
-
 type SharePageEvent = {
   type: "share-page";
   source: Notebook;
@@ -122,7 +115,7 @@ type ConnectionEvent = {
   status: Status;
 };
 
-export type AppEvent = LogEvent | UsageEvent | SharePageEvent | ConnectionEvent;
+export type AppEvent = LogEvent | SharePageEvent | ConnectionEvent;
 
 export type MessageHandlers = {
   [operation: string]: (data: json, source: Notebook) => void;

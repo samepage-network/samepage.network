@@ -18,12 +18,14 @@ const setupSamePageClient = ({
   removeCommand,
   onAppEventHandler,
   renderOverlay,
+  portalContainer,
 }: {
   isAutoConnect?: boolean;
   addCommand?: AddCommand;
   removeCommand?: RemoveCommand;
   onAppEventHandler?: (evt: AppEvent) => boolean;
   renderOverlay?: RenderOverlay;
+  portalContainer?: HTMLElement;
   workspace?: string;
   app?: typeof APPS[number]["name"];
 } = {}) => {
@@ -36,7 +38,7 @@ const setupSamePageClient = ({
     workspace,
   });
   const unregisterAppEventListener = registerAppEventListener();
-  const unloadWS = setupWsFeatures({ isAutoConnect });
+  const unloadWS = setupWsFeatures({ isAutoConnect, portalContainer });
   const unloadP2P = setupP2PFeatures();
 
   window.samepage = {
