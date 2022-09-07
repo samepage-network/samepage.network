@@ -58,7 +58,7 @@ const compile = ({
           setup(build) {
             build.onResolve({ filter: /\.ne$/ }, (args) => ({
               path: path.resolve(args.resolveDir, args.path),
-              namespace: "nearley-ne",
+              namespace: "nearley-ns",
             }));
             build.onLoad({ filter: /.*/, namespace: "nearley-ns" }, (args) =>
               nearleyCompile(args.path).then((contents) => ({
