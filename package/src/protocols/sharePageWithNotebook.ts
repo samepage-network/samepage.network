@@ -173,7 +173,7 @@ const setupSharePageWithNotebook = ({
     created?: boolean;
   }) => {
     renderOverlay({
-      id: `samepage-shared-${notebookPageId}`,
+      id: `samepage-shared-${notebookPageId.replace(/[^\w_-]/g, "")}`,
       Overlay: SharedPageStatus,
       props: {
         notebookPageId,

@@ -6,8 +6,11 @@ const createHTMLObserver = <T extends HTMLElement>({
   selector: string;
 }) => {
   const getChildren = (d: Node) =>
-    Array.from((d as HTMLElement).querySelectorAll<T>(selector));
-  const isNode = (d: Node): d is T => (d as HTMLElement).matches(selector);
+    d.nodeType === d.ELEMENT_NODE
+      ? Array.from((d as HTMLElement).querySelectorAll<T>(selector))
+      : [];
+  const isNode = (d: Node): d is T =>
+    d.nodeType === d.ELEMENT_NODE && (d as Element).matches(selector);
   const getNodes = (nodes: NodeList) =>
     Array.from(nodes)
       .filter((d: Node) => isNode(d) || d.hasChildNodes())

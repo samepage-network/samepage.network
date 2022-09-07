@@ -24,9 +24,24 @@ const compile = ({
       .filter((t) => /\.ne$/.test(t))
       .map(nearleyCompile)
   )
-    .then(() =>
-      esbuild.build({
-        entryPoints: out ? { [out]: "./src/index.ts" } : ["./src/index.ts"],
+    .then(() => {
+      const root = fs
+        .readdirSync("./src", { withFileTypes: true })
+        .filter((f) => f.isFile() && /\.ts/.test(f.name))
+        .map((f) => f.name);
+      const entry =
+        root.length === 1
+          ? `./src/${root[0]}`
+          : `./src/${["index.ts", "main.ts"].find((f) => root.includes(f))}`;
+      if (!entry) {
+        return Promise.reject(
+          `Could not find a suitable entry file in ./src directory. Found: [${root.join(
+            ", "
+          )}]`
+        );
+      }
+      return esbuild.build({
+        entryPoints: out ? { [out]: entry } : [entry],
         outdir: "dist",
         bundle: true,
         incremental: nodeEnv === "development",
@@ -36,8 +51,8 @@ const compile = ({
         },
         format: "cjs",
         external: typeof external === "string" ? [external] : external,
-      })
-    )
+      });
+    })
     .then((r) => {
       const finish = () => {
         (typeof include === "string" ? [include] : include || []).forEach(

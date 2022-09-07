@@ -1,4 +1,4 @@
-name: Publish samepage npm package
+name: Publish NPM Package
 on:
   workflow_dispatch:
   push:

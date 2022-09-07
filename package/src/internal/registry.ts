@@ -70,37 +70,43 @@ const setupRegistry = ({
   if (_removeCommand) removeCommand = _removeCommand;
   if (_renderOverlay) renderOverlay = _renderOverlay;
   else {
-    import("react-dom/client").then((ReactDOM) => {
-      renderOverlay = ({
-        id = v4(),
-        Overlay = (props) => React.createElement("div", props),
-        props = {},
-        path = "body",
-      } = {}) => {
-        const parent = document.createElement("div");
-        parent.id = id;
-        const pathElement =
-          typeof path === "string" ? document.querySelector(path) : path;
-        if (pathElement && !pathElement.querySelector(`#${id}`)) {
-          pathElement.appendChild(parent);
-          const root = ReactDOM.createRoot(parent);
-          const onClose = () => {
-            root.unmount();
-            parent.remove();
-          };
-          root.render(
-            //@ts-ignore what is happening here...
-            React.createElement(Overlay, {
-              ...props,
-              onClose,
-              isOpen: true,
-            })
-          );
-          return onClose;
-        }
-        return () => {};
-      };
-    });
+    import("react-dom/client")
+      .then((ReactDOM) => {
+        renderOverlay = ({
+          id = v4(),
+          Overlay = (props) => React.createElement("div", props),
+          props = {},
+          path = "body",
+        } = {}) => {
+          const parent = document.createElement("div");
+          parent.id = id;
+          const pathElement =
+            typeof path === "string" ? document.querySelector(path) : path;
+          if (pathElement && !pathElement.querySelector(`#${id}`)) {
+            pathElement.appendChild(parent);
+            const root = ReactDOM.createRoot(parent);
+            const onClose = () => {
+              root.unmount();
+              parent.remove();
+            };
+            root.render(
+              //@ts-ignore what is happening here...
+              React.createElement(Overlay, {
+                ...props,
+                onClose,
+                isOpen: true,
+              })
+            );
+            return onClose;
+          }
+          return () => {};
+        };
+      })
+      .catch(() =>
+        Promise.reject(
+          "SamePage's default `renderOverlay` method uses React18. If you require an earlier version of React, please provide your own `renderOverlay` method."
+        )
+      );
   }
   if (_onAppEventHandler) onAppEventHandler = _onAppEventHandler;
   if (_appRoot) appRoot = _appRoot;
