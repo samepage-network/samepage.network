@@ -26,7 +26,7 @@ jobs:
         run: npx tsc
         working-directory: package
       - name: prepare
-        run: cp ../LICENSE README.md package.json dist
+        run: cp ../LICENSE README.md package.json src/declare.d.ts dist
         working-directory: package
       - name: publish
         run: npm publish --access public

@@ -1,6 +1,6 @@
 import type APPS from "./internal/apps";
 import type Automerge from "automerge";
-import React from "react";
+import React from "react"; 
 
 // Add future versions in this union
 type Version = "2022-08-17";
