@@ -609,6 +609,7 @@ const setupSharePageWithNotebook = ({
     unload: () => {
       notebookPageIds.clear();
       sharedPageObserver?.disconnect();
+      Object.values(sharedPageUnmounts).forEach(u => u());
       removeNotebookListener({ operation: SHARE_PAGE_RESPONSE_OPERATION });
       removeNotebookListener({ operation: SHARE_PAGE_UPDATE_OPERATION });
       removeNotebookListener({ operation: SHARE_PAGE_OPERATION });

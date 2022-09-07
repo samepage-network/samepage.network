@@ -1,6 +1,4 @@
-import appPath from "./appPath";
 import nearleyCompile from "./nearley";
-import readDir from "./readDir";
 import esbuild from "esbuild";
 import fs from "fs";
 import path from "path";
@@ -18,40 +16,60 @@ const compile = ({
   external,
   include,
   css,
-}: CliArgs & { nodeEnv: "production" | "development" | "test" }) =>
-  Promise.all(
-    readDir(appPath("./src"))
-      .filter((t) => /\.ne$/.test(t))
-      .map(nearleyCompile)
-  )
-    .then(() => {
-      const root = fs
-        .readdirSync("./src", { withFileTypes: true })
-        .filter((f) => f.isFile() && /\.ts/.test(f.name))
-        .map((f) => f.name);
-      const entry =
-        root.length === 1
-          ? `./src/${root[0]}`
-          : `./src/${["index.ts", "main.ts"].find((f) => root.includes(f))}`;
-      if (!entry) {
-        return Promise.reject(
-          `Could not find a suitable entry file in ./src directory. Found: [${root.join(
-            ", "
-          )}]`
-        );
-      }
-      return esbuild.build({
-        entryPoints: out ? { [out]: entry } : [entry],
-        outdir: "dist",
-        bundle: true,
-        incremental: nodeEnv === "development",
-        define: {
-          "process.env.BLUEPRINT_NAMESPACE": '"bp4"',
-          "process.env.NODE_ENV": `"${nodeEnv}"`,
+}: CliArgs & { nodeEnv: "production" | "development" | "test" }) => {
+  const rootDir = fs
+    .readdirSync("./src", { withFileTypes: true })
+    .filter((f) => f.isFile())
+    .map((f) => f.name);
+  const rootTs = rootDir.filter((f) => /\.ts$/.test(f));
+  const rootCss = rootDir.filter((f) => /\.css$/.test(f));
+  const entryTs =
+    rootTs.length === 1
+      ? `./src/${rootTs[0]}`
+      : `./src/${["index.ts", "main.ts"].find((f) => rootTs.includes(f))}`;
+  const entryCss =
+    rootCss.length === 1
+      ? `./src/${rootCss[0]}`
+      : `./src/${["index.css", "main.css"].find((f) => rootCss.includes(f))}`;
+  if (!entryTs) {
+    return Promise.reject(
+      `Could not find a suitable entry file in ./src directory. Found: [${rootTs.join(
+        ", "
+      )}]`
+    );
+  }
+  return esbuild
+    .build({
+      entryPoints: out
+        ? { [out]: entryTs, ...(entryCss ? { [out]: entryCss } : {}) }
+        : [entryTs, ...(entryCss ? [entryCss] : [])],
+      outdir: "dist",
+      bundle: true,
+      incremental: nodeEnv === "development",
+      define: {
+        "process.env.BLUEPRINT_NAMESPACE": '"bp4"',
+        "process.env.NODE_ENV": `"${nodeEnv}"`,
+      },
+      format: "cjs",
+      external: typeof external === "string" ? [external] : external,
+      plugins: [
+        {
+          name: "nearley",
+          setup(build) {
+            build.onResolve({ filter: /\.ne$/ }, (args) => ({
+              path: path.resolve(args.resolveDir, args.path),
+              namespace: "nearley-ne",
+            }));
+            build.onLoad({ filter: /.*/, namespace: "nearley-ns" }, (args) =>
+              nearleyCompile(args.path).then((contents) => ({
+                contents,
+                loader: "ts",
+                resolveDir: path.dirname(args.path),
+              }))
+            );
+          },
         },
-        format: "cjs",
-        external: typeof external === "string" ? [external] : external,
-      });
+      ],
     })
     .then((r) => {
       const finish = () => {
@@ -95,5 +113,6 @@ const compile = ({
           }
         : r;
     });
+};
 
 export default compile;

@@ -1,6 +1,5 @@
 import chokidar from "chokidar";
 import fs from "fs";
-import nearleyCompile from "./internal/nearley";
 import compile, { CliArgs } from "./internal/compile";
 import appPath from "./internal/appPath";
 import path from "path";
@@ -36,14 +35,10 @@ const dev = ({
       })
       .on("change", (file) => {
         console.log(`File ${file} has been changed`);
-        if (/\.tsx?$/.test(file) && rebuilder) {
+        if (rebuilder) {
           rebuilder()
             .then(() => console.log(`Rebuilt extension`))
             .catch((e) => console.error(`Failed to rebuild`, file, e));
-        } else if (/\.ne$/.test(file)) {
-          nearleyCompile(file).then(() => {
-            console.log(`successfully compiled ${file}...`);
-          });
         }
       });
     process.on("exit", resolve);

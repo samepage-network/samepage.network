@@ -35,7 +35,7 @@ export const compileLexer = (tokens: moo.Rules = {}, remove: string[] = []) => {
     ...tokens,
   };
   remove.forEach((k) => delete finalTokens[k]);
-  return moo.compile(DEFAULT_TOKENS);
+  return moo.compile(finalTokens);
 };
 
 type Processor<T> = (
