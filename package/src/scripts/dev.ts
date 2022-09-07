@@ -24,7 +24,7 @@ const dev = ({
     chokidar
       .watch(["src"])
       .on("add", (file) => {
-        if (/src\/index.tsx?$/.test(file)) {
+        if (/src\/[a-z]+.tsx?$/.test(file)) {
           console.log(`building ${file}...`);
           compile({ ...cliArgs, nodeEnv: "development" }).then((r) => {
             const { rebuild } = r;

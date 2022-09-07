@@ -68,8 +68,8 @@ const setupSharePageWithNotebook = ({
         notebookPageId: string
       ) => Promise<HTMLElement | undefined>;
       selector?: string;
-      getNotebookPageId?: (element: HTMLElement) => Promise<string | null>;
-      getPath: (el: HTMLElement) => HTMLElement | null;
+      getNotebookPageId?: (element: Node) => Promise<string | null>;
+      getPath: (el: Node) => HTMLElement | null;
     };
   };
   getCurrentNotebookPageId?: () => Promise<string>;
@@ -163,16 +163,17 @@ const setupSharePageWithNotebook = ({
       };
     });
 
+  const sharedPageUnmounts: Record<string, () => void> = {};
   const renderSharedPageStatus = ({
     notebookPageId,
     created = false,
     el,
   }: {
     notebookPageId: string;
-    el: HTMLElement;
+    el: Node;
     created?: boolean;
   }) => {
-    renderOverlay({
+    sharedPageUnmounts[notebookPageId] = renderOverlay({
       id: `samepage-shared-${notebookPageId.replace(/[^\w_-]/g, "")}`,
       Overlay: SharedPageStatus,
       props: {
@@ -198,6 +199,15 @@ const setupSharePageWithNotebook = ({
               }
             });
         },
+        onRemove: (el) =>
+          sharedPageStatusProps
+            .getNotebookPageId?.(el)
+            .then((notebookPageId) => {
+              if (notebookPageId) {
+                sharedPageUnmounts[notebookPageId]?.();
+                delete sharedPageUnmounts[notebookPageId];
+              }
+            }),
       })
     : undefined;
 
