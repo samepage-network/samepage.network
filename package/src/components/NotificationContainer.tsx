@@ -5,7 +5,7 @@ import { v4 } from "uuid";
 import { onAppEvent } from "../internal/registerAppEventListener";
 import { appsById } from "../internal/apps";
 
-type Notification = {
+export type Notification = {
   uuid: string;
   title: string;
   description: string;

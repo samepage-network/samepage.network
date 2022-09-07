@@ -106,6 +106,26 @@ export const createTextToken: Processor<InitialSchema> = (_data) => {
   return { content: data[0].text, annotations: [] };
 };
 
+export const reduceTokens: Processor<InitialSchema> = (data) => {
+  const [tokens] = data as [InitialSchema[]];
+  return tokens.reduce(
+    (total, current) => ({
+      content: `${total.content}${current.content}`,
+      annotations: total.annotations.concat(
+        current.annotations.map((a) => ({
+          ...a,
+          start: a.start + total.content.length,
+          end: a.end + total.content.length,
+        }))
+      ),
+    }),
+    {
+      content: "",
+      annotations: [],
+    } as InitialSchema
+  );
+}
+
 export const disambiguateTokens: Processor<InitialSchema> = (
   data,
   _,

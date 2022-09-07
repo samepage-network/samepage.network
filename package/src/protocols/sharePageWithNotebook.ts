@@ -9,7 +9,7 @@ import {
   renderOverlay,
 } from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
-import type { Notebook, Schema } from "../types";
+import type { InitialSchema, Notebook, Schema } from "../types";
 import Automerge from "automerge";
 import {
   addAuthenticationHandler,
@@ -55,10 +55,8 @@ const setupSharePageWithNotebook = ({
   overlayProps = {},
   getCurrentNotebookPageId = () => Promise.resolve(v4()),
   applyState = Promise.resolve,
-  calculateState = () =>
-    Promise.resolve({ annotations: [], content: new Automerge.Text() }),
-  loadState = () =>
-    Promise.resolve(new Uint8Array(0) as Automerge.BinaryDocument),
+  calculateState = () => Promise.resolve({ annotations: [], content: "" }),
+  loadState = () => Promise.resolve(new Uint8Array(0)),
   saveState = Promise.resolve,
   removeState = Promise.resolve,
 }: {
@@ -66,24 +64,19 @@ const setupSharePageWithNotebook = ({
     viewSharedPageProps?: ViewSharedPagesProps;
     notificationContainerProps?: NotificationContainerProps;
     sharedPageStatusProps?: {
-      getHtmlElement: (
+      getHtmlElement?: (
         notebookPageId: string
       ) => Promise<HTMLElement | undefined>;
-      selector: string;
-      getNotebookPageId: (element: HTMLElement) => Promise<string | null>;
+      selector?: string;
+      getNotebookPageId?: (element: HTMLElement) => Promise<string | null>;
       getPath: (el: HTMLElement) => HTMLElement | null;
     };
   };
   getCurrentNotebookPageId?: () => Promise<string>;
   applyState?: (notebookPageId: string, state: Schema) => Promise<unknown>;
-  calculateState?: (
-    notebookPageId: string
-  ) => Promise<Omit<Schema, "contentType">>;
-  loadState?: (notebookPageId: string) => Promise<Automerge.BinaryDocument>;
-  saveState?: (
-    notebookPageId: string,
-    state: Automerge.BinaryDocument
-  ) => Promise<unknown>;
+  calculateState?: (notebookPageId: string) => Promise<InitialSchema>;
+  loadState?: (notebookPageId: string) => Promise<Uint8Array>;
+  saveState?: (notebookPageId: string, state: Uint8Array) => Promise<unknown>;
   removeState?: (notebookPageId: string) => Promise<unknown>;
 } = {}) => {
   const {
@@ -195,13 +188,15 @@ const setupSharePageWithNotebook = ({
   };
   const sharedPageObserver = sharedPageStatusProps
     ? createHTMLObserver({
-        selector: sharedPageStatusProps.selector,
+        selector: sharedPageStatusProps.selector || "body",
         callback: (el) => {
-          sharedPageStatusProps.getNotebookPageId(el).then((notebookPageId) => {
-            if (notebookPageId && notebookPageIds.has(notebookPageId)) {
-              renderSharedPageStatus({ el, notebookPageId });
-            }
-          });
+          sharedPageStatusProps
+            .getNotebookPageId?.(el)
+            .then((notebookPageId) => {
+              if (notebookPageId && notebookPageIds.has(notebookPageId)) {
+                renderSharedPageStatus({ el, notebookPageId });
+              }
+            });
         },
       })
     : undefined;
@@ -217,7 +212,7 @@ const setupSharePageWithNotebook = ({
 
     if (sharedPageStatusProps) {
       sharedPageStatusProps
-        .getHtmlElement(notebookPageId)
+        .getHtmlElement?.(notebookPageId)
         .then(
           (el) => el && renderSharedPageStatus({ notebookPageId, created, el })
         );
@@ -313,7 +308,8 @@ const setupSharePageWithNotebook = ({
             .then((docInit) => {
               const doc = Automerge.from<Schema>(
                 {
-                  ...docInit,
+                  content: new Automerge.Text(docInit.content),
+                  annotations: docInit.annotations,
                   contentType:
                     "application/vnd.atjson+samepage; version=2022-08-17",
                 },
@@ -404,7 +400,7 @@ const setupSharePageWithNotebook = ({
 
   const loadAutomergeDoc = (notebookPageId: string) =>
     loadState(notebookPageId).then((state) =>
-      Automerge.load<Schema>(state, {
+      Automerge.load<Schema>(state as Automerge.BinaryDocument, {
         actorId: getActorId(),
       })
     );
