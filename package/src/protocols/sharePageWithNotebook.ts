@@ -173,7 +173,7 @@ const setupSharePageWithNotebook = ({
     el: Node;
     created?: boolean;
   }) => {
-    sharedPageUnmounts[notebookPageId] = renderOverlay({
+    const unmount = renderOverlay({
       id: `samepage-shared-${notebookPageId.replace(/[^\w_-]/g, "")}`,
       Overlay: SharedPageStatus,
       props: {
@@ -186,6 +186,7 @@ const setupSharePageWithNotebook = ({
       },
       path: sharedPageStatusProps?.getPath(el),
     });
+    if (unmount) sharedPageUnmounts[notebookPageId] = unmount;
   };
   const sharedPageObserver = sharedPageStatusProps
     ? createHTMLObserver({
@@ -609,7 +610,7 @@ const setupSharePageWithNotebook = ({
     unload: () => {
       notebookPageIds.clear();
       sharedPageObserver?.disconnect();
-      Object.values(sharedPageUnmounts).forEach(u => u());
+      Object.values(sharedPageUnmounts).forEach((u) => u());
       removeNotebookListener({ operation: SHARE_PAGE_RESPONSE_OPERATION });
       removeNotebookListener({ operation: SHARE_PAGE_UPDATE_OPERATION });
       removeNotebookListener({ operation: SHARE_PAGE_OPERATION });
