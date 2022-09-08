@@ -38,7 +38,7 @@ export const compileLexer = (tokens: moo.Rules = {}, remove: string[] = []) => {
   return moo.compile(finalTokens);
 };
 
-type Processor<T> = (
+export type Processor<T> = (
   ...args: Parameters<nearley.Postprocessor>
 ) => T | Parameters<nearley.Postprocessor>[2];
 
@@ -124,7 +124,7 @@ export const reduceTokens: Processor<InitialSchema> = (data) => {
       annotations: [],
     } as InitialSchema
   );
-}
+};
 
 export const disambiguateTokens: Processor<InitialSchema> = (
   data,
@@ -144,20 +144,5 @@ export const disambiguateTokens: Processor<InitialSchema> = (
   ) {
     return reject;
   }
-  return tokens.reduce(
-    (total, current) => ({
-      content: `${total.content}${current.content}`,
-      annotations: total.annotations.concat(
-        current.annotations.map((a) => ({
-          ...a,
-          start: a.start + total.content.length,
-          end: a.end + total.content.length,
-        }))
-      ),
-    }),
-    {
-      content: "",
-      annotations: [],
-    } as InitialSchema
-  );
+  return reduceTokens(data);
 };

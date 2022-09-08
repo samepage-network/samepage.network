@@ -108,13 +108,15 @@ const NotificationContainer = ({
         workspace: evt.source.workspace,
         app: `${evt.source.app}`,
         pageUuid: evt.pageUuid,
+        title: evt.notebookPageId,
       };
       if (
         notificationsRef.current.every(
           (n) =>
             n.data.workspace !== args.workspace ||
             n.data.app !== args.app ||
-            n.data.pageUuid !== args.pageUuid
+            n.data.pageUuid !== args.pageUuid ||
+            n.data.title !== args.title
         )
       ) {
         const notif = {

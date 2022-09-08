@@ -1,6 +1,6 @@
 {
   "name": "samepage",
-  "version": "0.12.7",
+  "version": "0.12.8",
   "description": "Utilities that help your TFT's extension interface with the SamePage Network",
   "main": "index.js",
   "types": "index.d.ts",
