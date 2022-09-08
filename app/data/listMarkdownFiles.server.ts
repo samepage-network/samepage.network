@@ -17,7 +17,7 @@ const gatherDocs = (path: string): Promise<DirectoryNode[]> =>
                 path: `/${f.path}`,
                 children,
               }))
-            : { name: f.name.replace(/\.md$/, ""), path: `/${f.path}` }
+            : { name: f.name.replace(/\.md$/, ""), path: `/${f.path.replace(/\.md$/, "")}` }
         )
       )
     );
@@ -28,7 +28,7 @@ const listMarkdownFiles = () => {
       ? Promise.resolve(
           fs
             .readdirSync("docs")
-            .map((f) => ({ path: `/docs/${f}`, name: f.replace(/\.md$/, "") }))
+            .map((f) => ({ path: `/docs/${f.replace(/\.md$/, "")}`, name: f.replace(/\.md$/, "") }))
         )
       : gatherDocs("docs")
   ).then((files) => ({
