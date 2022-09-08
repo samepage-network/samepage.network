@@ -25,12 +25,12 @@ const compile = ({
   const rootCss = rootDir.filter((f) => /\.css$/.test(f));
   const entryTs =
     rootTs.length === 1
-      ? `./src/${rootTs[0]}`
-      : `./src/${["index.ts", "main.ts"].find((f) => rootTs.includes(f))}`;
+      ? rootTs[0]
+      : ["index.ts", "main.ts"].find((f) => rootTs.includes(f));
   const entryCss =
     rootCss.length === 1
-      ? `./src/${rootCss[0]}`
-      : `./src/${["index.css", "main.css"].find((f) => rootCss.includes(f))}`;
+      ? rootCss[0]
+      : ["index.css", "main.css"].find((f) => rootCss.includes(f));
   if (!entryTs) {
     return Promise.reject(
       `Could not find a suitable entry file in ./src directory. Found: [${rootTs.join(
@@ -41,8 +41,11 @@ const compile = ({
   return esbuild
     .build({
       entryPoints: out
-        ? { [out]: entryTs, ...(entryCss ? { [out]: entryCss } : {}) }
-        : [entryTs, ...(entryCss ? [entryCss] : [])],
+        ? {
+            [out]: `./src/${entryTs}`,
+            ...(entryCss ? { [out]: `./src/${entryCss}` } : {}),
+          }
+        : [`./src/${entryTs}`, ...(entryCss ? [`./src/${entryCss}`] : [])],
       outdir: "dist",
       bundle: true,
       incremental: nodeEnv === "development",
