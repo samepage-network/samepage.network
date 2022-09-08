@@ -1,33 +1,43 @@
 import fs from "fs";
 import axios from "axios";
 
+export type DirectoryNode = { name: string; path: string; children?: DirectoryNode[] };
+
+const gatherDocs = (path: string): Promise<DirectoryNode[]> =>
+  axios
+    .get<[{ name: string; type: "file" | "dir"; path: string }]>(
+      `https://api.github.com/repos/vargasarts/samepage.network/contents/${path}`
+    )
+    .then((r) =>
+      Promise.all(
+        r.data.map((f) =>
+          f.type === "dir"
+            ? gatherDocs(f.path).then((children) => ({
+                name: f.name,
+                path: `/${f.path}`,
+                children,
+              }))
+            : { name: f.name.replace(/\.md$/, ""), path: `/${f.path}` }
+        )
+      )
+    );
+
 const listMarkdownFiles = () => {
   return (
-    process.env.NODE_ENV === "development"
-      ? Promise.resolve(fs.readdirSync("docs"))
-      : axios
-          .get<[{ name: string }]>(
-            "https://api.github.com/repos/dvargas92495/samepage.network/contents/docs"
-          )
-          .then((r) => r.data.map((f) => f.name))
+    process.env.NODE_ENV === "test"
+      ? Promise.resolve(
+          fs
+            .readdirSync("docs")
+            .map((f) => ({ path: `/docs/${f}`, name: f.replace(/\.md$/, "") }))
+        )
+      : gatherDocs("docs")
   ).then((files) => ({
     directory: [
       {
-        path: "",
+        path: "/docs",
         name: "Home",
       },
-    ].concat(
-      files.map((f) => ({
-        path: f.replace(/\.md$/, ""),
-        name: f
-          .replace(/\.md$/, "")
-          .split(/-/)
-          .map(
-            (p) => `${p.slice(0, 1).toUpperCase()}${p.slice(1).toLowerCase()}`
-          )
-          .join(" "),
-      }))
-    ),
+    ].concat(files),
   }));
 };
 

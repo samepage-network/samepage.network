@@ -11,6 +11,7 @@ const bundleMDX = async ({ source }: { source: string }) => {
 
 const loadMarkdownFile = async ({ path }: { path: string }) => {
   const fileName = path || "index";
+  console.log('filename', fileName)
   const source =
     process.env.NODE_ENV === "development"
       ? fs.existsSync(`./docs/${fileName}.md`)
