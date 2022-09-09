@@ -7,6 +7,7 @@ import {
   workspace,
   apps,
   renderOverlay,
+  appRoot,
 } from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
 import type { InitialSchema, Notebook, Schema } from "../types";
@@ -183,6 +184,7 @@ const setupSharePageWithNotebook = ({
         forcePushPage,
         getLocalHistory,
         listConnectedNotebooks,
+        portalContainer: appRoot,
       },
       path: sharedPageStatusProps?.getPath(el),
     });

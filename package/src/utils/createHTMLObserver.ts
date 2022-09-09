@@ -28,22 +28,29 @@ const createHTMLObserver = <T extends ChildNode>({
         ) as T[])
       : [];
   };
-  const isNode = (d: Node): d is T =>
-    d.nodeType === d.ELEMENT_NODE
-      ? (d as Element).matches(selector)
-      : d.nodeType === d.TEXT_NODE &&
-        !!d.parentElement &&
-        d.parentElement.matches(selector);
-  const getNodes = (nodes: NodeList) =>
+  const isNode = (d: Node, target: Node): d is T => {
+    if (d.nodeType === d.ELEMENT_NODE) return (d as Element).matches(selector);
+    if (d.nodeType === d.TEXT_NODE) {
+      const parent = d.parentElement;
+      if (parent) return parent.matches(selector);
+      if (target.nodeType === target.ELEMENT_NODE)
+        return (target as Element).matches(selector);
+      return false;
+    }
+    return false;
+  };
+  const getNodes = (nodes: NodeList, target: Node) =>
     Array.from(nodes)
-      .filter((d: Node) => isNode(d) || d.hasChildNodes())
-      .flatMap((d) => (isNode(d) ? [d] : getChildren(d)));
+      .filter((d: Node) => isNode(d, target) || d.hasChildNodes())
+      .flatMap((d) => (isNode(d, target) ? [d] : getChildren(d)));
 
   getChildren(appRoot).forEach(callback);
   const observer = new MutationObserver((records) => {
-    records.flatMap((m) => getNodes(m.addedNodes)).forEach(callback);
+    records.flatMap((m) => getNodes(m.addedNodes, m.target)).forEach(callback);
     if (onRemove)
-      records.flatMap((m) => getNodes(m.removedNodes)).forEach(onRemove);
+      records
+        .flatMap((m) => getNodes(m.removedNodes, m.target))
+        .forEach(onRemove);
   });
   observer.observe(appRoot, {
     childList: true,
