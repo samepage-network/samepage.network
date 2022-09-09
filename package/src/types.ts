@@ -8,7 +8,6 @@ type AnnotationBase = { start: number; end: number };
 type BlockAnnotation = {
   type: "block";
   attributes: {
-    identifier: string;
     level: number;
     viewType: "bullet" | "numbered" | "document";
   };
