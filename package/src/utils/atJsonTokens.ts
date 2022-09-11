@@ -30,9 +30,13 @@ const DEFAULT_TOKENS: moo.Rules = {
 };
 
 export const compileLexer = (tokens: moo.Rules = {}, remove: string[] = []) => {
-  const finalTokens = {
+  const defaultTokens = {
     ...DEFAULT_TOKENS,
+  };
+  Object.keys(tokens).forEach((k) => delete defaultTokens[k]);
+  const finalTokens = {
     ...tokens,
+    ...defaultTokens,
   };
   remove.forEach((k) => delete finalTokens[k]);
   return moo.compile(finalTokens);
@@ -105,6 +109,11 @@ export const createTextToken: Processor<InitialSchema> = (_data) => {
   const data = _data as [moo.Token];
   return { content: data[0].text, annotations: [] };
 };
+
+export const createEmpty: Processor<InitialSchema> = () => ({
+  content: "",
+  annotations: [],
+});
 
 export const reduceTokens: Processor<InitialSchema> = (data) => {
   const [tokens] = data as [InitialSchema[]];
