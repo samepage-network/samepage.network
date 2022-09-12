@@ -117,8 +117,10 @@ const AnnotationRendered = ({
 
 const HistoryContent = ({
   getHistory,
+  portalContainer,
 }: {
   getHistory: () => ReturnType<GetLocalHistory>;
+  portalContainer?: HTMLElement;
 }) => {
   const [history, setHistory] = useState<Awaited<ReturnType<GetLocalHistory>>>(
     []
@@ -177,6 +179,7 @@ const HistoryContent = ({
         onClose={() => setSelectedChange(undefined)}
         enforceFocus={false}
         autoFocus={false}
+        portalContainer={portalContainer}
       >
         <div className={Classes.DIALOG_BODY}>
           <p>
@@ -323,6 +326,7 @@ const SharedPageStatus = ({
                     Automerge.getHistory(doc)
                   )
                 }
+                portalContainer={portalContainer}
               />
             </div>
           </Drawer>

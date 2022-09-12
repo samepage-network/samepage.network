@@ -295,7 +295,15 @@ const setupSharePageWithNotebook = ({
                 });
             },
           });
-        });
+        })
+        .catch((e) =>
+          dispatchAppEvent({
+            type: "log",
+            id: "list-pages-failure",
+            content: `Failed to retrieve shared pages data: ${e.message}. Try reconnecting to SamePage.`,
+            intent: "error",
+          })
+        );
     } else if (e.status === "DISCONNECTED") {
       removeCommand({ label: VIEW_COMMAND_PALETTE_LABEL });
       removeCommand({ label: COMMAND_PALETTE_LABEL });

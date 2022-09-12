@@ -14,7 +14,7 @@
     "generate:css": "tailwindcss -o ./app/tailwind.css",
     "postinstall": "fuego postinstall",
     "lint": "eslint . --ext .ts,.tsx",
-    "start": "concurrently --inspect \"npm:api\" \"npm:dev\" \"npm:tailwind\" \"npm:ws\"",
+    "start": "concurrently \"npm:api\" \"npm:dev\" \"npm:tailwind\" \"npm:ws\"",
     "ssh": "ssh -i SamePage.pem ubuntu@35.173.242.123",
     "tailwind": "npm run generate:css -- --watch",
     "test": "jest",
