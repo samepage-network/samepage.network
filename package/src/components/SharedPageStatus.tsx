@@ -9,9 +9,15 @@ import {
   Tooltip,
 } from "@blueprintjs/core";
 import { appsById } from "../internal/apps";
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import SharePageDialog from "./SharePageDialog";
-import { OverlayProps, Schema } from "../types";
+import { Annotation, OverlayProps, Schema } from "../types";
 import Automerge from "automerge";
 import getActorId from "../internal/getActorId";
 import apiClient from "../internal/apiClient";
@@ -43,6 +49,72 @@ const parseActorId = (s: string) =>
 
 const parseTime = (s = 0) => new Date(s * 1000).toLocaleString();
 
+type AnnotationTree = (Annotation & { children: AnnotationTree })[];
+
+const AnnotationRendered = ({
+  annotation,
+  content,
+}: {
+  annotation: AnnotationTree[number];
+  content: string;
+}): React.ReactElement => {
+  const children = annotation.children
+    .reduce(
+      (p, c) => {
+        const splitIndex = p.findIndex(
+          (pp) => pp.start <= c.start && c.end <= pp.end
+        );
+        return [
+          ...p.slice(0, splitIndex),
+          ...[
+            {
+              el: content.slice(p[splitIndex].start, c.start),
+              start: p[splitIndex].start,
+              end: c.start,
+            },
+            {
+              el: <AnnotationRendered annotation={c} content={content} />,
+              start: c.start,
+              end: c.end,
+            },
+            {
+              el: content.slice(c.end, p[splitIndex].end),
+              end: p[splitIndex].end,
+              start: c.end,
+            },
+          ],
+          ...p.slice(splitIndex + 1),
+        ];
+      },
+      [
+        {
+          el: content.slice(annotation.start, annotation.end),
+          start: annotation.start,
+          end: annotation.end,
+        },
+      ] as { el: React.ReactNode; start: number; end: number }[]
+    )
+    .map((c) => c.el);
+  return annotation.type === "block" ? (
+    <div
+      style={{ marginLeft: annotation.attributes.level * 8 }}
+      className={"my-2"}
+    >
+      {children}
+    </div>
+  ) : annotation.type === "highlighting" ? (
+    <span className="bg-yellow-300">{children}</span>
+  ) : annotation.type === "bold" ? (
+    <b className="font-bold">{children}</b>
+  ) : annotation.type === "italics" ? (
+    <i className="italics">{children}</i>
+  ) : annotation.type === "link" ? (
+    <a href={annotation.attributes.href}>{children}</a>
+  ) : (
+    <>{children}</>
+  );
+};
+
 const HistoryContent = ({
   getHistory,
 }: {
@@ -56,6 +128,24 @@ const HistoryContent = ({
   useEffect(() => {
     getHistory().then(setHistory);
   }, [getHistory, setHistory]);
+  const selectedSnapshotTree = useMemo(() => {
+    if (!selectedChange) return [];
+    const tree: AnnotationTree = [];
+    selectedChange.snapshot.annotations.forEach((anno) => {
+      const insert = (annotations: AnnotationTree, a: Annotation) => {
+        const parent = annotations.find(
+          (an) => an.start <= a.start && an.end >= a.end
+        );
+        if (parent) {
+          insert(parent.children, a);
+        } else {
+          annotations.push({ ...a, children: [] });
+        }
+      };
+      insert(tree, anno);
+    });
+    return tree;
+  }, [selectedChange]);
   return (
     <div className="flex flex-col-reverse text-gray-800 w-full border border-gray-800 overflow-auto justify-end">
       {history.map((l, index) => (
@@ -91,11 +181,17 @@ const HistoryContent = ({
         <div className={Classes.DIALOG_BODY}>
           <p>
             There are {selectedChange?.change.ops.length} operations in this
-            change.
+            change. Snapshot at this version:
           </p>
-          {selectedChange?.change.ops.slice(0, 50).map((op) => {
+          {/* selectedChange?.change.ops.slice(0, 50).map((op) => {
             return <pre>{JSON.stringify(op)}</pre>;
-          })}
+          }) */}
+          {selectedSnapshotTree.map((annotation) => (
+            <AnnotationRendered
+              annotation={annotation}
+              content={selectedChange?.snapshot.content.toString() || ""}
+            />
+          ))}
         </div>
       </Dialog>
     </div>

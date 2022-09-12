@@ -32,7 +32,7 @@ const SharedPageStatusPage = () => {
         notebookPageId={notebookPageId}
         loadState={(notebookPageId) =>
           fetch(
-            `/admin/components/shared-page-status?uuid=${notebookPageId}&_data=routes%2F__private%2Fadmin%2Fcomponents%2Fshared-page-status`
+            `/admin/components/shared-page-status?uuid=${notebookPageId}&_data=routes%2Fadmin%2Fcomponents%2Fshared-page-status`
           )
             .then((r) => r.json())
             .then((r) => {
