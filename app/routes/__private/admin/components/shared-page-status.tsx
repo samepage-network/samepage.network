@@ -1,42 +1,19 @@
 import SharedPageStatus from "package/src/components/SharedPageStatus";
-import setupSharePageWithNotebook from "package/src/protocols/sharePageWithNotebook";
 import type { ActionFunction, LoaderFunction } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
-import { useState, useMemo } from "react";
+import { useLoaderData, useNavigate } from "@remix-run/react";
+import { useState } from "react";
 import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
 import Select from "@dvargas92495/app/components/Select";
 import listPageNotebookLinks from "~/data/listPageNotebookLinks.server";
 import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
 import type Automerge from "automerge";
+export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
+export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 
 const SharedPageStatusPage = () => {
   const { pages } = useLoaderData<{ pages: string[] }>();
-  const { unload } = useMemo(() => {
-    return setupSharePageWithNotebook({
-      loadState: (notebookPageId) =>
-        fetch(
-          `/admin/components/shared-page-status?uuid=${notebookPageId}&_data=routes%2F__private%2Fadmin%2Fcomponents%2Fshared-page-status`
-        )
-          .then((r) => r.json())
-          .then((r) => {
-            return new Uint8Array(
-              window
-                .atob(r.state)
-                .split("")
-                .map((c) => c.charCodeAt(0))
-            ) as Automerge.BinaryDocument;
-          }),
-      saveState: (notebookPageId, state) =>
-        fetch(
-          `/admin/components/shared-page-status?uuid=${notebookPageId}&_data=routes%2F__private%2Fadmin%2Fcomponents%2Fshared-page-status`,
-          {
-            method: "post",
-            body: String.fromCharCode.apply(null, Array.from(state)),
-          }
-        ),
-    });
-  }, []);
+  const navigate = useNavigate();
   const [notebookPageId, setNotebookPageId] = useState(pages[0]);
   return (
     <>
@@ -50,8 +27,23 @@ const SharedPageStatusPage = () => {
       </div>
       <SharedPageStatus
         key={notebookPageId}
+        onClose={() => navigate("/admin/components")}
+        isOpen={true}
         notebookPageId={notebookPageId}
-        onClose={unload}
+        loadState={(notebookPageId) =>
+          fetch(
+            `/admin/components/shared-page-status?uuid=${notebookPageId}&_data=routes%2F__private%2Fadmin%2Fcomponents%2Fshared-page-status`
+          )
+            .then((r) => r.json())
+            .then((r) => {
+              return new Uint8Array(
+                window
+                  .atob(r.state)
+                  .split("")
+                  .map((c) => c.charCodeAt(0))
+              ) as Automerge.BinaryDocument;
+            })
+        }
       />
     </>
   );
@@ -71,10 +63,12 @@ export const loader: LoaderFunction = (args) => {
 };
 
 export const action: ActionFunction = (args) => {
-  return remixAdminAction(args, async ({ searchParams }) => {
-    const uuid = searchParams["uuid"];
-    const state = await args.request.text();
-    return { uuid, state };
+  return remixAdminAction(args, {
+    POST: async ({ searchParams }) => {
+      const uuid = searchParams["uuid"];
+      const state = await args.request.text();
+      return { uuid, state };
+    },
   });
 };
 

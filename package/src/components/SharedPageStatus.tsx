@@ -1,6 +1,7 @@
 import {
   Button,
   Classes,
+  Dialog,
   Drawer,
   DrawerSize,
   IconName,
@@ -8,10 +9,15 @@ import {
   Tooltip,
 } from "@blueprintjs/core";
 import { appsById } from "../internal/apps";
-import React, { useState, useRef, useEffect } from "react";
-import SharePageDialog, { ListConnectedNotebooks } from "./SharePageDialog";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import SharePageDialog from "./SharePageDialog";
 import { OverlayProps, Schema } from "../types";
-import type Automerge from "automerge";
+import Automerge from "automerge";
+import getActorId from "../internal/getActorId";
+import apiClient from "../internal/apiClient";
+import { app, notebookPageIds, workspace } from "../internal/registry";
+import getLastLocalVersion from "../internal/getLastLocalVersion";
+import dispatchAppEvent from "../internal/dispatchAppEvent";
 
 type GetLocalHistory = (
   notebookPageId: string
@@ -22,10 +28,8 @@ export type Props = {
   portalContainer?: HTMLElement;
   defaultOpenInviteDialog?: boolean;
 
-  disconnectPage?: (notebookPageId: string) => Promise<void>;
-  forcePushPage?: (notebookPageId: string) => Promise<void>;
-  listConnectedNotebooks?: ListConnectedNotebooks;
-  getLocalHistory?: GetLocalHistory;
+  loadState?: (notebookPageId: string) => Promise<Uint8Array>;
+  removeState?: (notebookPageId: string) => Promise<unknown>;
 };
 
 const parseActorId = (s: string) =>
@@ -37,6 +41,8 @@ const parseActorId = (s: string) =>
     .join("")
     .replace(/^\d+\//, (val) => `${appsById[val.slice(0, -1)].name}/`);
 
+const parseTime = (s = 0) => new Date(s * 1000).toLocaleString();
+
 const HistoryContent = ({
   getHistory,
 }: {
@@ -45,13 +51,21 @@ const HistoryContent = ({
   const [history, setHistory] = useState<Awaited<ReturnType<GetLocalHistory>>>(
     []
   );
+  const [selectedChange, setSelectedChange] =
+    useState<Automerge.State<Schema>>();
   useEffect(() => {
     getHistory().then(setHistory);
   }, [getHistory, setHistory]);
   return (
     <div className="flex flex-col-reverse text-gray-800 w-full border border-gray-800 overflow-auto justify-end">
       {history.map((l, index) => (
-        <div key={index} className={"border-t border-t-gray-800 p-4 relative"}>
+        <div
+          key={index}
+          className={"border-t border-t-gray-800 p-4 relative cursor-pointer"}
+          onClick={() => {
+            setSelectedChange(l);
+          }}
+        >
           <div className={"text-sm absolute top-2 right-2"}>{index}</div>
           <div>
             <span className={"font-bold"}>Action: </span>
@@ -63,10 +77,27 @@ const HistoryContent = ({
           </div>
           <div>
             <span className={"font-bold"}>Date: </span>
-            <span>{new Date(l.change.time * 1000).toLocaleString()}</span>
+            <span>{parseTime(l.change.time)}</span>
           </div>
         </div>
       ))}
+      <Dialog
+        title={`Viewing Change: ${parseTime(selectedChange?.change.time)}`}
+        isOpen={!!selectedChange}
+        onClose={() => setSelectedChange(undefined)}
+        enforceFocus={false}
+        autoFocus={false}
+      >
+        <div className={Classes.DIALOG_BODY}>
+          <p>
+            There are {selectedChange?.change.ops.length} operations in this
+            change.
+          </p>
+          {selectedChange?.change.ops.slice(0, 50).map((op) => {
+            return <pre>{JSON.stringify(op)}</pre>;
+          })}
+        </div>
+      </Dialog>
     </div>
   );
 };
@@ -115,14 +146,20 @@ const SharedPageStatus = ({
   notebookPageId,
   portalContainer,
   defaultOpenInviteDialog,
-  disconnectPage = () => Promise.resolve(),
-  forcePushPage = () => Promise.resolve(),
-  listConnectedNotebooks = () =>
-    Promise.resolve({ networks: [], notebooks: [] }),
-  getLocalHistory = () => Promise.resolve([]),
+  loadState = () => Promise.resolve(new Uint8Array(0)),
+  removeState = Promise.resolve,
 }: OverlayProps<Props>) => {
   const [loading, setLoading] = useState(false);
   const containerRef = useRef<HTMLSpanElement>(null);
+  const loadAutomergeDoc = useCallback(
+    (notebookPageId: string) =>
+      loadState(notebookPageId).then((state) =>
+        Automerge.load<Schema>(state as Automerge.BinaryDocument, {
+          actorId: getActorId(),
+        })
+      ),
+    [loadState]
+  );
   return (
     <span
       className="samepage-shared-page-status flex gap-4 items-center text-lg mb-8 shadow-sm px-2 py-4"
@@ -138,7 +175,35 @@ const SharedPageStatus = ({
           <SharePageDialog
             {...props}
             notebookPageId={notebookPageId}
-            listConnectedNotebooks={listConnectedNotebooks}
+            listConnectedNotebooks={(notebookPageId: string) =>
+              Promise.all([
+                apiClient<{
+                  notebooks: {
+                    app: string;
+                    workspace: string;
+                    version: number;
+                  }[];
+                  networks: {
+                    app: string;
+                    workspace: string;
+                    version: number;
+                  }[];
+                }>({
+                  method: "list-page-notebooks",
+                  notebookPageId,
+                }),
+                loadAutomergeDoc(notebookPageId),
+              ]).then(([{ networks, notebooks }, doc]) => {
+                return {
+                  networks,
+                  notebooks: notebooks.map((n) =>
+                    n.workspace !== workspace || n.app !== appsById[app].name
+                      ? n
+                      : { ...n, version: getLastLocalVersion(doc) }
+                  ),
+                };
+              })
+            }
           />
         )}
       />
@@ -157,7 +222,11 @@ const SharedPageStatus = ({
           >
             <div className={Classes.DRAWER_BODY}>
               <HistoryContent
-                getHistory={() => getLocalHistory(notebookPageId)}
+                getHistory={() =>
+                  loadAutomergeDoc(notebookPageId).then((doc) =>
+                    Automerge.getHistory(doc)
+                  )
+                }
               />
             </div>
           </Drawer>
@@ -173,9 +242,31 @@ const SharedPageStatus = ({
           minimal
           onClick={() => {
             setLoading(true);
-            disconnectPage(notebookPageId)
-              .then(onClose)
-              .catch(() => setLoading(false));
+            return apiClient({
+              method: "disconnect-shared-page",
+              notebookPageId,
+            })
+              .then(() => {
+                removeState(notebookPageId);
+                notebookPageIds.delete(notebookPageId);
+                dispatchAppEvent({
+                  type: "log",
+                  content: `Successfully disconnected ${notebookPageId} from being shared.`,
+                  id: "disconnect-shared-page",
+                  intent: "success",
+                });
+                onClose();
+              })
+              .catch((e) => {
+                setLoading(false);
+                dispatchAppEvent({
+                  type: "log",
+                  content: `Failed to disconnect page ${notebookPageId}: ${e.message}`,
+                  id: "disconnect-shared-page",
+                  intent: "error",
+                });
+                return Promise.reject(e);
+              });
           }}
         />
       </Tooltip>
@@ -189,7 +280,33 @@ const SharedPageStatus = ({
           minimal
           onClick={() => {
             setLoading(true);
-            forcePushPage(notebookPageId).finally(() => setLoading(false));
+            loadState(notebookPageId)
+              .then((state) =>
+                apiClient({
+                  method: "force-push-page",
+                  notebookPageId,
+                  state: window.btoa(
+                    String.fromCharCode.apply(null, Array.from(state))
+                  ),
+                })
+              )
+              .then(() =>
+                dispatchAppEvent({
+                  type: "log",
+                  content: `Successfully pushed page state to other notebooks.`,
+                  id: "push-shared-page",
+                  intent: "success",
+                })
+              )
+              .catch((e) =>
+                dispatchAppEvent({
+                  type: "log",
+                  content: `Failed to pushed page state to other notebooks: ${e.message}`,
+                  id: "push-shared-page",
+                  intent: "error",
+                })
+              )
+              .finally(() => setLoading(false));
           }}
         />
       </Tooltip>

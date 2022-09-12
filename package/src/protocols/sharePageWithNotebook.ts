@@ -2,20 +2,15 @@ import apiClient from "../internal/apiClient";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import {
   addCommand,
-  app,
   removeCommand,
-  workspace,
   apps,
   renderOverlay,
   appRoot,
+  notebookPageIds,
 } from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
 import type { InitialSchema, Notebook, Schema } from "../types";
 import Automerge from "automerge";
-import {
-  addAuthenticationHandler,
-  removeAuthenticationHandler,
-} from "../internal/setupWsFeatures";
 import {
   addNotebookListener,
   removeNotebookListener,
@@ -29,29 +24,17 @@ import NotificationContainer, {
 } from "../components/NotificationContainer";
 import SharedPageStatus from "../components/SharedPageStatus";
 import createHTMLObserver from "../utils/createHTMLObserver";
+import { onAppEvent } from "../internal/registerAppEventListener";
+import getActorId from "../internal/getActorId";
+import getLastLocalVersion from "../internal/getLastLocalVersion";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
-const AUTHENTICATED_LABEL = "LIST_SHARED_PAGES";
 const SHARE_PAGE_OPERATION = "SHARE_PAGE";
 const SHARE_PAGE_RESPONSE_OPERATION = "SHARE_PAGE_RESPONSE";
 const SHARE_PAGE_UPDATE_OPERATION = "SHARE_PAGE_UPDATE";
 const SHARE_PAGE_FORCE_OPERATION = "SHARE_PAGE_FORCE";
 
-const getActorId = () =>
-  `${app}/${workspace}`
-    .split("")
-    .map((s) => s.charCodeAt(0).toString(16))
-    .join("");
-
-const getLastLocalVersion = (doc: Automerge.FreezeObject<Schema>) => {
-  const change = Automerge.getLastLocalChange(doc);
-  return change
-    ? Automerge.decodeChange(change).time
-    : Automerge.getHistory(doc).slice(-1)[0].change.time;
-};
-
-const notebookPageIds = new Set<string>();
 const setupSharePageWithNotebook = ({
   overlayProps = {},
   getCurrentNotebookPageId = () => Promise.resolve(v4()),
@@ -86,84 +69,6 @@ const setupSharePageWithNotebook = ({
     sharedPageStatusProps,
   } = overlayProps;
 
-  const disconnectPage = (notebookPageId: string) => {
-    return apiClient({
-      method: "disconnect-shared-page",
-      notebookPageId,
-    })
-      .then(() => {
-        removeState(notebookPageId);
-        notebookPageIds.delete(notebookPageId);
-        dispatchAppEvent({
-          type: "log",
-          content: `Successfully disconnected ${notebookPageId} from being shared.`,
-          id: "disconnect-shared-page",
-          intent: "success",
-        });
-      })
-      .catch((e) => {
-        dispatchAppEvent({
-          type: "log",
-          content: `Failed to disconnect page ${notebookPageId}: ${e.message}`,
-          id: "disconnect-shared-page",
-          intent: "error",
-        });
-        return Promise.reject(e);
-      });
-  };
-
-  const forcePushPage = (notebookPageId: string) =>
-    loadState(notebookPageId)
-      .then((state) =>
-        apiClient({
-          method: "force-push-page",
-          notebookPageId,
-          state: window.btoa(
-            String.fromCharCode.apply(null, Array.from(state))
-          ),
-        })
-      )
-      .then(() =>
-        dispatchAppEvent({
-          type: "log",
-          content: `Successfully pushed page state to other notebooks.`,
-          id: "push-shared-page",
-          intent: "success",
-        })
-      )
-      .catch((e) =>
-        dispatchAppEvent({
-          type: "log",
-          content: `Failed to pushed page state to other notebooks: ${e.message}`,
-          id: "push-shared-page",
-          intent: "error",
-        })
-      );
-
-  const getLocalHistory = (notebookPageId: string) =>
-    loadAutomergeDoc(notebookPageId).then((doc) => Automerge.getHistory(doc));
-
-  const listConnectedNotebooks = (notebookPageId: string) =>
-    Promise.all([
-      apiClient<{
-        notebooks: { app: string; workspace: string; version: number }[];
-        networks: { app: string; workspace: string; version: number }[];
-      }>({
-        method: "list-page-notebooks",
-        notebookPageId,
-      }),
-      loadAutomergeDoc(notebookPageId),
-    ]).then(([{ networks, notebooks }, doc]) => {
-      return {
-        networks,
-        notebooks: notebooks.map((n) =>
-          n.workspace !== workspace || n.app !== apps[app].name
-            ? n
-            : { ...n, version: getLastLocalVersion(doc) }
-        ),
-      };
-    });
-
   const sharedPageUnmounts: Record<string, () => void> = {};
   const renderSharedPageStatus = ({
     notebookPageId,
@@ -180,11 +85,9 @@ const setupSharePageWithNotebook = ({
       props: {
         notebookPageId,
         defaultOpenInviteDialog: created,
-        disconnectPage,
-        forcePushPage,
-        getLocalHistory,
-        listConnectedNotebooks,
         portalContainer: appRoot,
+        loadState,
+        removeState,
       },
       path: sharedPageStatusProps?.getPath(el),
     });
@@ -273,120 +176,130 @@ const setupSharePageWithNotebook = ({
         })
       );
 
-  if (viewSharedPageProps)
-    addCommand({
-      label: VIEW_COMMAND_PALETTE_LABEL,
-      callback: () => {
-        apiClient<{ notebookPageIds: string[] }>({
-          method: "list-shared-pages",
-        }).then((props) =>
-          renderOverlay({
-            id: "samepage-view-shared-pages",
-            Overlay: ViewSharedPages,
-            props: {
-              ...props,
-              ...viewSharedPageProps,
-              linkNewPage: (oldNotebookPageId, title) =>
-                (viewSharedPageProps.linkNewPage
-                  ? viewSharedPageProps.linkNewPage(oldNotebookPageId, title)
-                  : Promise.resolve(v4())
-                ).then((newNotebookPageId) => {
-                  if (!newNotebookPageId) {
-                    dispatchAppEvent({
-                      type: "log",
-                      id: "link-shared-page",
-                      content: `Unable to link page: ${title}`,
-                      intent: "error",
-                    });
-                    return "";
-                  }
-                  return linkNewPage({
-                    oldNotebookPageId,
-                    newNotebookPageId,
-                    title,
-                  }).then(() => newNotebookPageId);
-                }),
-            },
-          })
-        );
-      },
-    });
-
-  addCommand({
-    label: COMMAND_PALETTE_LABEL,
-    callback: () => {
-      return getCurrentNotebookPageId()
-        .then((notebookPageId) =>
-          calculateState(notebookPageId)
-            .then((docInit) => {
-              const doc = Automerge.from<Schema>(
-                {
-                  content: new Automerge.Text(docInit.content),
-                  annotations: docInit.annotations,
-                  contentType:
-                    "application/vnd.atjson+samepage; version=2022-08-17",
-                },
-                { actorId: getActorId() }
-              );
-              const state = Automerge.save(doc);
-              return Promise.all([
-                saveState(notebookPageId, state),
-                apiClient<{ id: string; created: boolean }>({
-                  method: "init-shared-page",
-                  notebookPageId: notebookPageId,
-                  state: window.btoa(
-                    String.fromCharCode.apply(null, Array.from(state))
-                  ),
-                }),
-              ]);
-            })
-            .then(async ([, r]) => {
-              if (r.created) {
-                initPage({
-                  notebookPageId,
-                  created: true,
-                });
-                dispatchAppEvent({
-                  type: "log",
-                  id: "share-page-success",
-                  content: `Successfully initialized shared page! Click on the invite button below to share the page with other notebooks!`,
-                  intent: "info",
-                });
-              } else {
-                dispatchAppEvent({
-                  type: "log",
-                  id: "samepage-warning",
-                  content: "This page is already shared from this notebook",
-                  intent: "warning",
-                });
-                return Promise.resolve();
-              }
-            })
-        )
-        .catch((e) => {
-          dispatchAppEvent({
-            type: "log",
-            intent: "error",
-            id: "share-page-failure",
-            content: `Failed to share page with notebooks: ${e.message}`,
-          });
-        });
-    },
-  });
-  addAuthenticationHandler({
-    label: AUTHENTICATED_LABEL,
-    handler: () =>
+  onAppEvent("connection", (e) => {
+    if (e.status === "CONNECTED") {
       apiClient<{ notebookPageIds: string[] }>({
         method: "list-shared-pages",
-      }).then(({ notebookPageIds }) => {
-        return Promise.all(
-          notebookPageIds.map((id) =>
-            initPage({
-              notebookPageId: id,
-            })
-          )
-        );
-      }),
+      })
+        .then(({ notebookPageIds }) => {
+          return Promise.all(
+            notebookPageIds.map((id) =>
+              initPage({
+                notebookPageId: id,
+              })
+            )
+          );
+        })
+        .then(() => {
+          if (viewSharedPageProps)
+            addCommand({
+              label: VIEW_COMMAND_PALETTE_LABEL,
+              callback: () => {
+                apiClient<{ notebookPageIds: string[] }>({
+                  method: "list-shared-pages",
+                }).then((props) =>
+                  renderOverlay({
+                    id: "samepage-view-shared-pages",
+                    Overlay: ViewSharedPages,
+                    props: {
+                      ...props,
+                      ...viewSharedPageProps,
+                      linkNewPage: (oldNotebookPageId, title) =>
+                        (viewSharedPageProps.linkNewPage
+                          ? viewSharedPageProps.linkNewPage(
+                              oldNotebookPageId,
+                              title
+                            )
+                          : Promise.resolve(v4())
+                        ).then((newNotebookPageId) => {
+                          if (!newNotebookPageId) {
+                            dispatchAppEvent({
+                              type: "log",
+                              id: "link-shared-page",
+                              content: `Unable to link page: ${title}`,
+                              intent: "error",
+                            });
+                            return "";
+                          }
+                          return linkNewPage({
+                            oldNotebookPageId,
+                            newNotebookPageId,
+                            title,
+                          }).then(() => newNotebookPageId);
+                        }),
+                    },
+                  })
+                );
+              },
+            });
+
+          addCommand({
+            label: COMMAND_PALETTE_LABEL,
+            callback: () => {
+              return getCurrentNotebookPageId()
+                .then((notebookPageId) =>
+                  calculateState(notebookPageId)
+                    .then((docInit) => {
+                      const doc = Automerge.from<Schema>(
+                        {
+                          content: new Automerge.Text(docInit.content),
+                          annotations: docInit.annotations,
+                          contentType:
+                            "application/vnd.atjson+samepage; version=2022-08-17",
+                        },
+                        { actorId: getActorId() }
+                      );
+                      const state = Automerge.save(doc);
+                      return Promise.all([
+                        saveState(notebookPageId, state),
+                        apiClient<{ id: string; created: boolean }>({
+                          method: "init-shared-page",
+                          notebookPageId: notebookPageId,
+                          state: window.btoa(
+                            String.fromCharCode.apply(null, Array.from(state))
+                          ),
+                        }),
+                      ]);
+                    })
+                    .then(async ([, r]) => {
+                      if (r.created) {
+                        initPage({
+                          notebookPageId,
+                          created: true,
+                        });
+                        dispatchAppEvent({
+                          type: "log",
+                          id: "share-page-success",
+                          content: `Successfully initialized shared page! Click on the invite button below to share the page with other notebooks!`,
+                          intent: "info",
+                        });
+                      } else {
+                        dispatchAppEvent({
+                          type: "log",
+                          id: "samepage-warning",
+                          content:
+                            "This page is already shared from this notebook",
+                          intent: "warning",
+                        });
+                        return Promise.resolve();
+                      }
+                    })
+                )
+                .catch((e) => {
+                  dispatchAppEvent({
+                    type: "log",
+                    intent: "error",
+                    id: "share-page-failure",
+                    content: `Failed to share page with notebooks: ${e.message}`,
+                  });
+                });
+            },
+          });
+        });
+    } else if (e.status === "DISCONNECTED") {
+      removeCommand({ label: VIEW_COMMAND_PALETTE_LABEL });
+      removeCommand({ label: COMMAND_PALETTE_LABEL });
+    }
   });
 
   const saveAndApply = (
@@ -616,7 +529,6 @@ const setupSharePageWithNotebook = ({
       removeNotebookListener({ operation: SHARE_PAGE_RESPONSE_OPERATION });
       removeNotebookListener({ operation: SHARE_PAGE_UPDATE_OPERATION });
       removeNotebookListener({ operation: SHARE_PAGE_OPERATION });
-      removeAuthenticationHandler(AUTHENTICATED_LABEL);
       removeCommand({
         label: COMMAND_PALETTE_LABEL,
       });

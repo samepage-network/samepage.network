@@ -78,6 +78,7 @@ export let addCommand = defaultAddCommand;
 export let removeCommand = defaultRemoveCommand;
 export let onAppEventHandler = defaultOnAppEventHandler;
 export let renderOverlay = defaultRenderOverlay;
+export let notebookPageIds = new Set<string>();
 export let appRoot: HTMLElement | undefined =
   typeof document === "undefined" ? undefined : document.body;
 export let apps: Apps = Object.fromEntries(

@@ -10,10 +10,9 @@ const tld = `(?:\\.(?:[a-z\\u00a1-\\uffff]{2,}))`;
 const port = "(?::\\d{2,5})?";
 const path = "(?:[/?#][^\\s\"\\)']*)?";
 const regex = `(?:${protocol}|www\\.)(?:${host}${domain}${tld})${port}${path}`;
-export const URL_REGEX = new RegExp(regex);
 
-const DEFAULT_TOKENS: moo.Rules = {
-  url: URL_REGEX,
+export const DEFAULT_TOKENS: moo.Rules = {
+  url: new RegExp(regex),
   highlight: "^^",
   strike: "~~",
   boldUnder: "__",
@@ -26,7 +25,7 @@ const DEFAULT_TOKENS: moo.Rules = {
   leftParen: "(",
   rightBracket: "]",
   rightParen: ")",
-  text: { match: /[^^~_*[\]]+/, lineBreaks: true },
+  text: { match: /[^^~_*[\]()]+/, lineBreaks: true },
 };
 
 export const compileLexer = (tokens: moo.Rules = {}, remove: string[] = []) => {

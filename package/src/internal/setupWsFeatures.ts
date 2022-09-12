@@ -22,21 +22,6 @@ import {
 
 const USAGE_LABEL = "View SamePage Usage";
 
-const authenticationHandlers: {
-  handler: () => Promise<unknown>;
-  label: string;
-}[] = [];
-
-export const addAuthenticationHandler = (
-  args: typeof authenticationHandlers[number]
-) => authenticationHandlers.push(args);
-
-export const removeAuthenticationHandler = (label: string) =>
-  authenticationHandlers.splice(
-    authenticationHandlers.findIndex((h) => h.label === label),
-    1
-  );
-
 const samePageBackend: {
   channel?: WebSocket;
   status: Status;
@@ -100,107 +85,103 @@ const getWsUrl = () => {
   }
 };
 
-const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
-  const connectToBackend = () => {
-    if (samePageBackend.status === "DISCONNECTED") {
-      dispatchAppEvent({
-        type: "connection",
-        status: "PENDING",
+const connectToBackend = () => {
+  if (samePageBackend.status === "DISCONNECTED") {
+    dispatchAppEvent({
+      type: "connection",
+      status: "PENDING",
+    });
+    samePageBackend.status = "PENDING";
+    samePageBackend.channel = new WebSocket(getWsUrl());
+    samePageBackend.channel.onopen = () => {
+      sendToBackend({
+        operation: "AUTHENTICATION",
+        data: {
+          app,
+          workspace,
+        },
+        unauthenticated: true,
       });
-      samePageBackend.status = "PENDING";
-      samePageBackend.channel = new WebSocket(getWsUrl());
-      samePageBackend.channel.onopen = () => {
-        sendToBackend({
-          operation: "AUTHENTICATION",
-          data: {
-            app,
-            workspace,
-          },
-          unauthenticated: true,
+    };
+
+    samePageBackend.channel.onclose = (args) => {
+      console.warn("Same page network disconnected:", args);
+      disconnectFromBackend("Network Disconnected");
+    };
+    samePageBackend.channel.onerror = (ev) => {
+      onError(ev);
+    };
+
+    samePageBackend.channel.onmessage = (data) => {
+      if (JSON.parse(data.data).message === "Internal server error")
+        dispatchAppEvent({
+          type: "log",
+          id: "network-error",
+          content: `Unknown Internal Server Error. Request ID: ${
+            JSON.parse(data.data).requestId
+          }`,
+          intent: "error",
         });
-      };
 
-      samePageBackend.channel.onclose = (args) => {
-        console.warn("Same page network disconnected:", args);
-        disconnectFromBackend("Network Disconnected");
-      };
-      samePageBackend.channel.onerror = (ev) => {
-        onError(ev);
-      };
-
-      samePageBackend.channel.onmessage = (data) => {
-        if (JSON.parse(data.data).message === "Internal server error")
-          dispatchAppEvent({
-            type: "log",
-            id: "network-error",
-            content: `Unknown Internal Server Error. Request ID: ${
-              JSON.parse(data.data).requestId
-            }`,
-            intent: "error",
-          });
-
-        receiveChunkedMessage(data.data);
-      };
-    }
-  };
-
-  const disconnectFromBackend = (reason: string) => {
-    if (samePageBackend.status !== "DISCONNECTED") {
-      samePageBackend.status = "DISCONNECTED";
-      dispatchAppEvent({
-        type: "connection",
-        status: "DISCONNECTED",
-      });
-      samePageBackend.channel = undefined;
-      dispatchAppEvent({
-        type: "log",
-        id: "samepage-disconnect",
-        content: `Disconnected from SamePage Network: ${reason}`,
-        intent: "warning",
-      });
-    }
-    addConnectCommand();
-  };
-
-  if (isAutoConnect) {
-    connectToBackend();
+      receiveChunkedMessage(data.data);
+    };
   }
+};
 
-  const addConnectCommand = () => {
-    removeDisconnectCommand();
-    addCommand({
-      label: "Connect to SamePage Network",
-      callback: () => connectToBackend(),
+const disconnectFromBackend = (reason: string) => {
+  if (samePageBackend.status !== "DISCONNECTED") {
+    samePageBackend.status = "DISCONNECTED";
+    dispatchAppEvent({
+      type: "connection",
+      status: "DISCONNECTED",
     });
-  };
-
-  const removeConnectCommand = () => {
-    addDisconnectCommand();
-    removeCommand({
-      label: "Connect to SamePage Network",
+    samePageBackend.channel = undefined;
+    dispatchAppEvent({
+      type: "log",
+      id: "samepage-disconnect",
+      content: `Disconnected from SamePage Network: ${reason}`,
+      intent: "warning",
     });
-  };
-
-  const addDisconnectCommand = () => {
-    addCommand({
-      label: "Disconnect from SamePage Network",
-      callback: () => {
-        // https://www.rfc-editor.org/rfc/rfc6455.html#section-7.4.1
-        // websocket closure codes
-        if (samePageBackend.channel)
-          samePageBackend.channel.close(1000, "User Command");
-        disconnectFromBackend("User Command");
-      },
-    });
-  };
-
-  const removeDisconnectCommand = () => {
-    removeCommand({
-      label: "Disconnect from SamePage Network",
-    });
-  };
-
+  }
   addConnectCommand();
+  removeCommand({ label: USAGE_LABEL });
+};
+
+const addConnectCommand = () => {
+  removeDisconnectCommand();
+  addCommand({
+    label: "Connect to SamePage Network",
+    callback: () => connectToBackend(),
+  });
+};
+
+const removeConnectCommand = () => {
+  addDisconnectCommand();
+  removeCommand({
+    label: "Connect to SamePage Network",
+  });
+};
+
+const addDisconnectCommand = () => {
+  addCommand({
+    label: "Disconnect from SamePage Network",
+    callback: () => {
+      // https://www.rfc-editor.org/rfc/rfc6455.html#section-7.4.1
+      // websocket closure codes
+      if (samePageBackend.channel)
+        samePageBackend.channel.close(1000, "User Command");
+      disconnectFromBackend("User Command");
+    },
+  });
+};
+
+const removeDisconnectCommand = () => {
+  removeCommand({
+    label: "Disconnect from SamePage Network",
+  });
+};
+
+const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
   addNotebookListener({
     operation: "ERROR",
     handler: (args) => {
@@ -224,7 +205,7 @@ const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
 
   addNotebookListener({
     operation: "AUTHENTICATION",
-    handler: (props) => {
+    handler: async (props) => {
       const { success, reason, messages } = props as {
         success: boolean;
         reason?: string;
@@ -238,72 +219,70 @@ const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
         });
         document.body.dispatchEvent(new Event(CONNECTED_EVENT));
         removeConnectCommand();
-        addAuthenticationHandler({
-          handler: () => {
-            if (messages.length) {
-              let progress = 0;
-              dispatchAppEvent({
-                type: "log",
-                intent: "info",
-                content: `Loaded ${progress} of ${messages.length} remote messages...`,
-                id: "load-remote-message",
-              });
-              return Promise.all(
-                messages.map((msg) =>
-                  apiClient<{
-                    data: string;
-                    source: Notebook;
-                  }>({
-                    method: "load-message",
-                    messageUuid: msg,
-                  }).then((r) => {
-                    progress = progress + 1;
-                    dispatchAppEvent({
-                      type: "log",
-                      intent: "info",
-                      content: `Loaded ${progress} of ${messages.length} remote messages...`,
-                      id: "load-remote-message",
-                    });
-                    handleMessage(r.data, r.source);
-                  })
-                )
-              ).finally(() => {
+        if (messages.length) {
+          let progress = 0;
+          dispatchAppEvent({
+            type: "log",
+            intent: "info",
+            content: `Loaded ${progress} of ${messages.length} remote messages...`,
+            id: "load-remote-message",
+          });
+          await Promise.all(
+            messages.map((msg) =>
+              apiClient<{
+                data: string;
+                source: Notebook;
+              }>({
+                method: "load-message",
+                messageUuid: msg,
+              }).then((r) => {
+                progress = progress + 1;
                 dispatchAppEvent({
                   type: "log",
                   intent: "info",
-                  content: `Finished loading remote messages`,
+                  content: `Loaded ${progress} of ${messages.length} remote messages...`,
                   id: "load-remote-message",
                 });
-              });
-            } else {
-              return Promise.resolve();
-            }
-          },
-          label: "LOAD_MESSAGES",
-        });
-        Promise.all(authenticationHandlers.map(({ handler }) => handler()))
-          .then(() => {
+                handleMessage(r.data, r.source);
+              })
+            )
+          ).finally(() => {
             dispatchAppEvent({
               type: "log",
-              id: "samepage-success",
-              content: "Successfully connected to SamePage Network!",
-              intent: "success",
-            });
-          })
-          .catch((e) => {
-            samePageBackend.status = "DISCONNECTED";
-            dispatchAppEvent({
-              type: "connection",
-              status: "DISCONNECTED",
-            });
-            if (samePageBackend.channel) samePageBackend.channel.close();
-            dispatchAppEvent({
-              type: "log",
-              id: "samepage-failure",
-              content: `Failed to connect to SamePage Network: ${e.message}`,
-              intent: "error",
+              intent: "info",
+              content: `Finished loading remote messages`,
+              id: "load-remote-message",
             });
           });
+        }
+        addCommand({
+          label: USAGE_LABEL,
+          callback: () =>
+            apiClient<Omit<UsageChartProps, "portalContainer">>({
+              method: "usage",
+            })
+              .then((props) =>
+                renderOverlay({
+                  id: "samepage-usage-chart",
+                  Overlay: UsageChart,
+                  props: { ...props, portalContainer: appRoot },
+                })
+              )
+              .catch((e) =>
+                dispatchAppEvent({
+                  type: "log",
+                  id: "samepage-failure",
+                  content: `Failed to load SamePage Usage: ${e.message}`,
+                  intent: "error",
+                })
+              ),
+        });
+        dispatchAppEvent({
+          type: "log",
+          id: "samepage-success",
+          content: "Successfully connected to SamePage Network!",
+          intent: "success",
+        });
       } else {
         samePageBackend.status = "DISCONNECTED";
         dispatchAppEvent({
@@ -321,28 +300,11 @@ const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
     },
   });
 
-  addCommand({
-    label: USAGE_LABEL,
-    callback: () =>
-      apiClient<Omit<UsageChartProps, "portalContainer">>({
-        method: "usage",
-      })
-        .then((props) =>
-          renderOverlay({
-            id: "samepage-usage-chart",
-            Overlay: UsageChart,
-            props: { ...props, portalContainer: appRoot },
-          })
-        )
-        .catch((e) =>
-          dispatchAppEvent({
-            type: "log",
-            id: "samepage-failure",
-            content: `Failed to load SamePage Usage: ${e.message}`,
-            intent: "error",
-          })
-        ),
-  });
+  if (isAutoConnect) {
+    connectToBackend();
+  } else {
+    addConnectCommand();
+  }
 
   return () => {
     removeCommand({ label: USAGE_LABEL });
