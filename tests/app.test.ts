@@ -1,7 +1,3 @@
-/**
- * @jest-environment node
- */
-
 import type {
   CloudFrontRequest,
   CloudFrontResponseEvent,
@@ -78,6 +74,10 @@ beforeAll((done) => {
     // uncomment if you wanna see build logs
     // console.log(_.toString());
   });
+  proc.stderr.on("data", (e) => {
+    console.error(e);
+    fail(e);
+  })
   proc.on("error", (e) => {
     console.error(e);
     fail(e);

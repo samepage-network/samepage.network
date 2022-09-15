@@ -19,7 +19,5 @@ jobs:
           npm install
           rm -Rf node_modules/react node_modules/react-dom
         working-directory: package
-      - name: Is mysql here?
-        run: mysql --version
       - name: tests
         run: npm t

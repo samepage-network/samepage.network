@@ -350,7 +350,7 @@ const setupSharePageWithNotebook = ({
         }).catch((e) =>
           dispatchAppEvent({
             type: "log",
-            id: "update-version",
+            id: "update-version-failure",
             content: `Failed to broadcast new version: ${e.message}`,
             intent: "warning",
           })
@@ -361,7 +361,7 @@ const setupSharePageWithNotebook = ({
           type: "log",
           id: "update-success",
           content: `Applied update`,
-          intent: "warning",
+          intent: "success",
         })
       )
       .catch((e) =>

@@ -48,6 +48,7 @@
     ],
     "moduleNameMapper": {
       "~/(.*)": "<rootDir>/app/$1"
-    }
+    },
+    "testEnvironment": "node"
   }
 }
