@@ -6,7 +6,7 @@ import {
   NotFoundError,
 } from "@dvargas92495/app/backend/errors.server";
 import catchError from "~/data/catchError.server";
-import getMysql from "@dvargas92495/app/backend/mysql.server";
+import getMysql from "fuegojs/utils/mysql";
 import { downloadFileContent } from "@dvargas92495/app/backend/downloadFile.server";
 import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
 import { v4 } from "uuid";

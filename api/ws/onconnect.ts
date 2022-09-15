@@ -1,6 +1,6 @@
 import type { WSHandler } from "./sendmessage";
 // import emailError from "@dvargas92495/app/backend/emailError.server";
-// import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
+// import getMysqlConnection from "fuegojs/utils/mysql";
 
 export const handler: WSHandler = (event) => {
   const id = event.requestContext?.connectionId || "";
@@ -17,7 +17,8 @@ export const handler: WSHandler = (event) => {
   //       [id, "", 0, new Date()]
   //     );
   //     cxn.destroy();
-    return Promise.resolve().then(() => {
+  return Promise.resolve()
+    .then(() => {
       console.log("connected new client", id);
       return { statusCode: 200, body: "Connected" };
     })

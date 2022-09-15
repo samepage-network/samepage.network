@@ -1,4 +1,4 @@
-import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
+import getMysqlConnection from "fuegojs/utils/mysql";
 import schema from "data/schema";
 import { z } from "zod";
 import { appsById } from "package/src/internal/apps";

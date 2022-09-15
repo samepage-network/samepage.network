@@ -1,4 +1,4 @@
-import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
+import getMysqlConnection from "fuegojs/utils/mysql";
 import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
 import Automerge from "automerge";
 import type { Schema } from "package/src/types";

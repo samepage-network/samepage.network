@@ -2,7 +2,7 @@ import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
 import endClient from "./endClient.server";
 import postToConnection from "./postToConnection.server";
 import { v4 } from "uuid";
-import getMysql from "@dvargas92495/app/backend/mysql.server";
+import getMysql from "fuegojs/utils/mysql";
 import type { Notebook } from "package/src/types";
 
 const messageNotebook = ({

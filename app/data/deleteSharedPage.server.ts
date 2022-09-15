@@ -1,4 +1,4 @@
-import getMysqlConnection from "@dvargas92495/app/backend/mysql.server";
+import getMysqlConnection from "fuegojs/utils/mysql";
 import { S3 } from "@aws-sdk/client-s3";
 
 const s3 = new S3({ region: "us-east-1" });
