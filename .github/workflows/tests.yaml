@@ -25,7 +25,7 @@ jobs:
       - name: setup mysql
         run: |
           sudo systemctl start mysql.service
-          mysql -u root -p root -e "CREATE DATABASE samepage_network"
+          mysql -e "CREATE DATABASE samepage_network" -uroot -proot
           npx fuego plan --sql
           npx fuego apply --sql
       - name: tests
