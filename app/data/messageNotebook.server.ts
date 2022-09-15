@@ -29,7 +29,6 @@ const messageNotebook = ({
       ...data,
       source,
     };
-    console.log("got clients");
     const online = await Promise.all(
       ids.map((ConnectionId) =>
         postToConnection({

@@ -20,7 +20,7 @@ const getSender = (ConnectionId: string) => {
   } else {
     return (Data: string): Promise<void> => {
       return axios
-        .post("http://localhost:3011/connection", {
+        .post("http://localhost:3003/ws", {
           ConnectionId,
           Data,
         });

@@ -24,6 +24,7 @@ import apiClient from "../internal/apiClient";
 import { app, notebookPageIds, workspace } from "../internal/registry";
 import getLastLocalVersion from "../internal/getLastLocalVersion";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
+import { parseAndFormatActorId } from "../internal/parseActorId";
 
 type GetLocalHistory = (
   notebookPageId: string
@@ -37,15 +38,6 @@ export type Props = {
   loadState?: (notebookPageId: string) => Promise<Uint8Array>;
   removeState?: (notebookPageId: string) => Promise<unknown>;
 };
-
-const parseActorId = (s: string) =>
-  s
-    .split("")
-    .map((c, i, a) =>
-      i % 2 === 0 ? String.fromCharCode(parseInt(c + a[i + 1], 16)) : ""
-    )
-    .join("")
-    .replace(/^\d+\//, (val) => `${appsById[val.slice(0, -1)].name}/`);
 
 const parseTime = (s = 0) => new Date(s * 1000).toLocaleString();
 
@@ -165,7 +157,7 @@ const HistoryContent = ({
           </div>
           <div>
             <span className={"font-bold"}>Actor: </span>
-            <span>{parseActorId(l.change.actor)}</span>
+            <span>{parseAndFormatActorId(l.change.actor)}</span>
           </div>
           <div>
             <span className={"font-bold"}>Date: </span>

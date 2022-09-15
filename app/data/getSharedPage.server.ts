@@ -18,31 +18,25 @@ const getSharedPage = <T extends SharedPageInput & { safe?: true }>({
   requestId,
 }: T): GetSharedPage<T> =>
   getMysql(requestId).then((cxn) =>
-    (app
-      ? cxn.execute(
-          `SELECT p.* 
+    cxn
+      .execute(
+        `SELECT p.* 
         FROM page_notebook_links l 
         INNER JOIN pages p ON p.uuid = l.page_uuid
         WHERE workspace = ? AND app = ? AND notebook_page_id = ?`,
-          [workspace, app, notebookPageId]
-        )
-      : cxn.execute(
-          `SELECT p.* 
-        FROM pages p
-        WHERE uuid = ?`,
-          [notebookPageId]
-        )
-    ).then(([results]) => {
-      const [link] = results as SharedPage[];
-      if (!link) {
-        if (safe) return undefined;
-        else
-          throw new NotFoundError(
-            `Could not find page from app ${app}, workspace ${workspace}, and notebookPageId ${notebookPageId}`
-          );
-      }
-      return link;
-    })
+        [workspace, app, notebookPageId]
+      )
+      .then(([results]) => {
+        const [link] = results as SharedPage[];
+        if (!link) {
+          if (safe) return undefined;
+          else
+            throw new NotFoundError(
+              `Could not find page from app ${app}, workspace ${workspace}, and notebookPageId ${notebookPageId}`
+            );
+        }
+        return link;
+      })
   ) as GetSharedPage<T>;
 
 export default getSharedPage;

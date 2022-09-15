@@ -7,3 +7,4 @@ out
 /app/tailwind.css
 SamePage.pem
 /public/data
+/tests/utils/*.js

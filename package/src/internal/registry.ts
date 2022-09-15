@@ -5,30 +5,15 @@ import type {
   AppEvent,
   RemoveCommand,
   AppId,
-  Apps,
   RenderOverlay,
 } from "../types";
-import APPS from "./apps";
 
-const documentBodyListeners: Record<string, (a: KeyboardEvent) => void> = {};
+const defaultCommands: Record<string, () => void> = {};
 const defaultAddCommand: AddCommand = ({ label, callback }) => {
-  const eventListener = (e: KeyboardEvent) => {
-    if (e.key === "p" && e.metaKey) {
-      callback();
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  };
-  documentBodyListeners[label] = eventListener;
-  if (typeof document !== "undefined")
-    document.body.addEventListener("keydown", eventListener);
+  defaultCommands[label] = callback;
 };
-const defaultRemoveCommand: RemoveCommand = (args) => {
-  if (typeof document !== "undefined")
-    document.body.removeEventListener(
-      "keydown",
-      documentBodyListeners[args.label]
-    );
+const defaultRemoveCommand: RemoveCommand = ({ label }) => {
+  delete defaultCommands[label];
 };
 
 const defaultOnAppEventHandler = (_: AppEvent): boolean => false;
@@ -81,9 +66,6 @@ export let renderOverlay = defaultRenderOverlay;
 export let notebookPageIds = new Set<string>();
 export let appRoot: HTMLElement | undefined =
   typeof document === "undefined" ? undefined : document.body;
-export let apps: Apps = Object.fromEntries(
-  APPS.map(({ id, ...app }) => [id, app])
-);
 export let app: AppId = 0;
 export let workspace = "Main";
 

@@ -85,7 +85,7 @@ beforeAll((done) => {
   proc.on("close", done);
 });
 
-test("GET `/` route", async (done) => {
+test("GET `/` route", async () => {
   const event = createCloudfrontRequest();
   const startTime = process.hrtime.bigint();
   const out = handler(event, mockContext, mockCallback);
@@ -98,6 +98,5 @@ test("GET `/` route", async (done) => {
     expect(res.status).toBe("200");
     const endTime = process.hrtime.bigint();
     expect(nsToMs(endTime - startTime)).toBeLessThan(10000);
-    done();
   });
 });

@@ -2,8 +2,8 @@ import UsageChart, { UsageChartProps } from "../components/UsageChart";
 import type { Status, SendToBackend, Notebook } from "../types";
 import apiClient from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
-import { CONNECTED_EVENT } from "./events";
 import getNodeEnv from "./getNodeEnv";
+import { onAppEvent } from "./registerAppEventListener";
 import {
   addCommand,
   app,
@@ -68,16 +68,22 @@ export const sendToBackend: SendToBackend = ({
         ),
     });
   if (unauthenticated || samePageBackend.status === "CONNECTED") send();
-  else
-    document.body.addEventListener(CONNECTED_EVENT, () => send(), {
-      once: true,
+  else {
+    const offAppEvent = onAppEvent("connection", (e) => {
+      if (e.status === "CONNECTED") {
+        offAppEvent();
+        send();
+      }
     });
+  }
 };
 
 const getWsUrl = () => {
   const env = getNodeEnv();
   const defaultUrl =
-    env === "development" ? "ws://127.0.0.1:3010" : "wss://ws.samepage.network";
+    env === "development" || env === "test"
+      ? "ws://127.0.0.1:3004"
+      : "wss://ws.samepage.network";
   try {
     return process.env.WEB_SOCKET_URL || defaultUrl;
   } catch {
@@ -105,7 +111,11 @@ const connectToBackend = () => {
     };
 
     samePageBackend.channel.onclose = (args) => {
-      console.warn("Same page network disconnected:", args);
+      console.warn(
+        "Same page network disconnected:",
+        args.reason || "Unknown reason",
+        `(${args.code})`
+      );
       disconnectFromBackend("Network Disconnected");
     };
     samePageBackend.channel.onerror = (ev) => {
@@ -217,7 +227,6 @@ const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
           type: "connection",
           status: "CONNECTED",
         });
-        document.body.dispatchEvent(new Event(CONNECTED_EVENT));
         removeConnectCommand();
         if (messages.length) {
           let progress = 0;
@@ -251,7 +260,7 @@ const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
               type: "log",
               intent: "info",
               content: `Finished loading remote messages`,
-              id: "load-remote-message",
+              id: "load-remote-messages",
             });
           });
         }

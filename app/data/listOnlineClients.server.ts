@@ -23,7 +23,7 @@ const listOnlineClients = async (requestId: string) => {
       .map((d) => ({
         id: d.id,
         workspace: d.instance || "Pending",
-        app: d.app ? appsById[d.app].name : "SamePage",
+        app: appsById[d.app].name,
         date: d.created_date.toLocaleString(),
       })),
   };

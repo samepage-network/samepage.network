@@ -10,15 +10,7 @@ export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCa
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 import { v4 } from "uuid";
 import { appsById } from "package/src/internal/apps";
-
-const parseActorId = (s: string) =>
-  s
-    .split("")
-    .map((c, i, a) =>
-      i % 2 === 0 ? String.fromCharCode(parseInt(c + a[i + 1], 16)) : ""
-    )
-    .join("")
-    .replace(/^\d+\//, (val) => `${appsById[val.slice(0, -1)].name}/`);
+import { parseAndFormatActorId } from "package/src/internal/parseActorId";
 
 const SinglePagePage = () => {
   const { data, notebooks, history } =
@@ -39,7 +31,7 @@ const SinglePagePage = () => {
               </div>
               <div>
                 <span className={"font-bold"}>Actor: </span>
-                <span>{parseActorId(l.change.actor)}</span>
+                <span>{parseAndFormatActorId(l.change.actor)}</span>
               </div>
               <div>
                 <span className={"font-bold"}>Date: </span>

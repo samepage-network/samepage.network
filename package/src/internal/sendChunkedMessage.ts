@@ -11,7 +11,10 @@ const sendChunkedMessage = ({
 }) => {
   const fullMessage = JSON.stringify(data);
   const uuid = v4();
-  const size = new Blob([fullMessage]).size;
+  const size =
+    typeof Blob !== "undefined"
+      ? new Blob([fullMessage]).size
+      : Buffer.from(fullMessage).length;
   const total = Math.ceil(size / MESSAGE_LIMIT);
   const chunkSize = Math.ceil(fullMessage.length / total);
   for (let chunk = 0; chunk < total; chunk++) {

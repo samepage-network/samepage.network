@@ -12,10 +12,8 @@ import {
   Tooltip,
 } from "@blueprintjs/core";
 import { Select } from "@blueprintjs/select";
-import { apps } from "../internal/registry";
-import apiClient from "../internal/apiClient";
-import sendToNotebook from "../internal/sendToNotebook";
-import dispatchAppEvent from "../internal/dispatchAppEvent";
+import inviteNotebookToPage from "../utils/inviteNotebookToPage";
+import APPS, { appsById } from "../internal/apps";
 
 export type ListConnectedNotebooks = (notebookPageId: string) => Promise<{
   networks: { app: string; workspace: string; version: number }[];
@@ -52,44 +50,16 @@ const SharePageDialog = ({
   const onInvite = () => {
     if (currentApp && currentworkspace) {
       setLoading(true);
-      apiClient<{ exists: boolean; uuid: string }>({
-        method: "get-shared-page",
+      inviteNotebookToPage({
         notebookPageId,
-        download: false,
-      })
-        .then((r) => {
-          sendToNotebook({
-            target: {
-              app: currentApp,
-              workspace: currentworkspace,
-            },
-            operation: "SHARE_PAGE",
-            data: {
-              notebookPageId,
-              pageUuid: r.uuid,
-            },
-          });
-          dispatchAppEvent({
-            type: "log",
-            intent: "success",
-            id: "share-page-success",
-            content: `Successfully shared page! We will now await for the other notebook(s) to accept`,
-          });
-        })
-        .catch((e) => {
-          dispatchAppEvent({
-            type: "log",
-            intent: "error",
-            id: "share-page-failure",
-            content: `Failed to share page with notebooks: ${e.message}`,
-          });
-        })
-        .finally(() => setLoading(false));
+        app: currentApp,
+        workspace: currentworkspace,
+      }).finally(() => setLoading(false));
       setNotebooks([
         ...notebooks,
         {
           workspace: currentworkspace,
-          app: apps[currentApp as AppId].name,
+          app: appsById[currentApp as AppId].name,
           version: 0,
         },
       ]);
@@ -160,12 +130,12 @@ const SharePageDialog = ({
           <Label style={{ maxWidth: "120px", width: "100%" }}>
             App
             <AppSelect
-              items={Object.keys(apps).map((a) => Number(a) as AppId)}
+              items={APPS.slice(1).map((a) => a.id)}
               onItemSelect={(e) => setCurrentApp(e)}
               itemRenderer={(item, { modifiers, handleClick }) => (
                 <MenuItem
                   key={item}
-                  text={apps[item].name}
+                  text={appsById[item].name}
                   active={modifiers.active}
                   onClick={handleClick}
                 />
@@ -180,7 +150,7 @@ const SharePageDialog = ({
               ref={appSelectRef}
             >
               <Button
-                text={apps[currentApp]?.name || "Unknown"}
+                text={appsById[currentApp].name || "Unknown"}
                 rightIcon="double-caret-vertical"
                 onBlur={(e) => {
                   if (

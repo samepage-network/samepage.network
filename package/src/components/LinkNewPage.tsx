@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import type { OverlayProps } from "../types";
 import { Button, Classes, Dialog, InputGroup, Label } from "@blueprintjs/core";
 import { v4 } from "uuid";
+import { appRoot } from "../internal/registry";
 
 const LinkNewPage = ({
   onClose,
@@ -20,7 +21,7 @@ const LinkNewPage = ({
       title={"Shared Pages"}
       autoFocus={false}
       enforceFocus={false}
-      portalContainer={window.parent.document.body}
+      portalContainer={appRoot}
     >
       <div className={Classes.DIALOG_BODY}>
         <p>Migrate linked page from {notebookPageId} to:</p>

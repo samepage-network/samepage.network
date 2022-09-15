@@ -14,7 +14,6 @@ const DirectoryLink = ({
 }: DirectoryNode & { level?: number }) => {
   const matches = useMatches();
   const pathSelected = matches.slice(-1)[0].pathname;
-  console.log('paths', pathSelected, d.path);
   return d.children ? (
     <div className="w-full py-1 px-4 flex-col flex">
       <span className={"font-semibold text-lg capitalize mb-2"}>{d.name}</span>

@@ -30,6 +30,7 @@ const SharedPageStatusPage = () => {
         onClose={() => navigate("/admin/components")}
         isOpen={true}
         notebookPageId={notebookPageId}
+        workspace={"Main"}
         loadState={(notebookPageId) =>
           fetch(
             `/admin/components/shared-page-status?uuid=${notebookPageId}&_data=routes%2Fadmin%2Fcomponents%2Fshared-page-status`

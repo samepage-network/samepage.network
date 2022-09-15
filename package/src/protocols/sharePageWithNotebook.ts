@@ -3,7 +3,6 @@ import dispatchAppEvent from "../internal/dispatchAppEvent";
 import {
   addCommand,
   removeCommand,
-  apps,
   renderOverlay,
   appRoot,
   notebookPageIds,
@@ -27,6 +26,8 @@ import createHTMLObserver from "../utils/createHTMLObserver";
 import { onAppEvent } from "../internal/registerAppEventListener";
 import getActorId from "../internal/getActorId";
 import getLastLocalVersion from "../internal/getLastLocalVersion";
+import { appsById } from "../internal/apps";
+import parseActorId from "../internal/parseActorId";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
@@ -34,15 +35,33 @@ const SHARE_PAGE_OPERATION = "SHARE_PAGE";
 const SHARE_PAGE_RESPONSE_OPERATION = "SHARE_PAGE_RESPONSE";
 const SHARE_PAGE_UPDATE_OPERATION = "SHARE_PAGE_UPDATE";
 const SHARE_PAGE_FORCE_OPERATION = "SHARE_PAGE_FORCE";
+const REQUEST_PAGE_UPDATE_OPERATION = "REQUEST_PAGE_UPDATE";
+
+const binaryToBase64 = (state: Uint8Array) => {
+  return typeof window === "undefined"
+    ? Buffer.from(state).toString("base64")
+    : window.btoa(new TextDecoder("utf8").decode(state));
+};
+
+const base64ToBinary = (state: string) => {
+  return typeof window === "undefined"
+    ? new Uint8Array(Buffer.from(state, "base64"))
+    : new Uint8Array(
+        window
+          .atob(state)
+          .split("")
+          .map((c) => c.charCodeAt(0))
+      );
+};
 
 const setupSharePageWithNotebook = ({
   overlayProps = {},
   getCurrentNotebookPageId = () => Promise.resolve(v4()),
-  applyState = Promise.resolve,
+  applyState = () => Promise.resolve(),
   calculateState = () => Promise.resolve({ annotations: [], content: "" }),
   loadState = () => Promise.resolve(new Uint8Array(0)),
-  saveState = Promise.resolve,
-  removeState = Promise.resolve,
+  saveState = () => Promise.resolve(),
+  removeState = () => Promise.resolve(),
 }: {
   overlayProps?: {
     viewSharedPageProps?: ViewSharedPagesProps;
@@ -255,9 +274,7 @@ const setupSharePageWithNotebook = ({
                         apiClient<{ id: string; created: boolean }>({
                           method: "init-shared-page",
                           notebookPageId: notebookPageId,
-                          state: window.btoa(
-                            String.fromCharCode.apply(null, Array.from(state))
-                          ),
+                          state: binaryToBase64(state),
                         }),
                       ]);
                     })
@@ -269,7 +286,7 @@ const setupSharePageWithNotebook = ({
                         });
                         dispatchAppEvent({
                           type: "log",
-                          id: "share-page-success",
+                          id: "init-page-success",
                           content: `Successfully initialized shared page! Click on the invite button below to share the page with other notebooks!`,
                           intent: "info",
                         });
@@ -289,11 +306,18 @@ const setupSharePageWithNotebook = ({
                   dispatchAppEvent({
                     type: "log",
                     intent: "error",
-                    id: "share-page-failure",
-                    content: `Failed to share page with notebooks: ${e.message}`,
+                    id: "init-page-failure",
+                    content: `Failed to share page on network: ${e.message}`,
                   });
                 });
             },
+          });
+
+          dispatchAppEvent({
+            type: "log",
+            id: "list-pages-success",
+            content: `Ready to share pages!`,
+            intent: "success",
           });
         })
         .catch((e) =>
@@ -317,20 +341,37 @@ const setupSharePageWithNotebook = ({
     Promise.all([
       applyState(notebookPageId, doc),
       saveState(notebookPageId, Automerge.save(doc)),
-    ]).then(() =>
-      apiClient({
-        method: "save-page-version",
-        notebookPageId,
-        version: getLastLocalVersion(doc),
-      }).catch((e) =>
+    ])
+      .then(() =>
+        apiClient({
+          method: "save-page-version",
+          notebookPageId,
+          version: getLastLocalVersion(doc),
+        }).catch((e) =>
+          dispatchAppEvent({
+            type: "log",
+            id: "update-version",
+            content: `Failed to broadcast new version: ${e.message}`,
+            intent: "warning",
+          })
+        )
+      )
+      .then(() =>
         dispatchAppEvent({
           type: "log",
-          id: "update-version",
-          content: `Failed to broadcast new version: ${e.message}`,
+          id: "update-success",
+          content: `Applied update`,
           intent: "warning",
         })
       )
-    );
+      .catch((e) =>
+        dispatchAppEvent({
+          type: "log",
+          id: "update-failure",
+          content: `Failed to apply new change: ${e.message}`,
+          intent: "warning",
+        })
+      );
 
   const loadAutomergeDoc = (notebookPageId: string) =>
     loadState(notebookPageId).then((state) =>
@@ -340,15 +381,9 @@ const setupSharePageWithNotebook = ({
     );
 
   const loadAutomergeFromBase64 = (state: string) =>
-    Automerge.load<Schema>(
-      new Uint8Array(
-        window
-          .atob(state)
-          .split("")
-          .map((c) => c.charCodeAt(0))
-      ) as Automerge.BinaryDocument,
-      { actorId: getActorId() }
-    );
+    Automerge.load<Schema>(base64ToBinary(state) as Automerge.BinaryDocument, {
+      actorId: getActorId(),
+    });
 
   addNotebookListener({
     operation: SHARE_PAGE_OPERATION,
@@ -360,6 +395,7 @@ const setupSharePageWithNotebook = ({
       });
     },
   });
+
   addNotebookListener({
     operation: SHARE_PAGE_RESPONSE_OPERATION,
     handler: (data, source) => {
@@ -372,7 +408,7 @@ const setupSharePageWithNotebook = ({
           type: "log",
           id: "share-page-accepted",
           content: `Successfully shared ${pageUuid} with ${
-            apps[source.app].name
+            appsById[source.app].name
           } / ${source.workspace}!`,
           intent: "success",
         });
@@ -380,13 +416,14 @@ const setupSharePageWithNotebook = ({
         dispatchAppEvent({
           type: "log",
           id: "share-page-rejected",
-          content: `Notebook ${apps[source.app].name} / ${
+          content: `Notebook ${appsById[source.app].name} / ${
             source.workspace
           } rejected ${pageUuid}`,
           intent: "info",
         });
     },
   });
+
   addNotebookListener({
     operation: SHARE_PAGE_UPDATE_OPERATION,
     handler: (data) => {
@@ -398,21 +435,28 @@ const setupSharePageWithNotebook = ({
       loadAutomergeDoc(notebookPageId).then((oldDoc) => {
         const [newDoc, patch] = Automerge.applyChanges(
           oldDoc,
-          changes.map(
-            (c) =>
-              new Uint8Array(
-                window
-                  .atob(c)
-                  .split("")
-                  .map((c) => c.charCodeAt(0))
-              ) as Automerge.BinaryChange
-          )
+          changes.map((c) => base64ToBinary(c) as Automerge.BinaryChange)
         );
-        console.log(patch);
+        if (patch.pendingChanges) {
+          const me = Automerge.getActorId(newDoc);
+          Object.keys(patch.clock)
+            .filter((actor) => me !== actor)
+            .forEach((actor) => {
+              sendToNotebook({
+                target: parseActorId(actor),
+                operation: REQUEST_PAGE_UPDATE_OPERATION,
+                data: {
+                  notebookPageId,
+                  seq: patch.clock[actor],
+                },
+              });
+            });
+        }
         saveAndApply(notebookPageId, newDoc);
       });
     },
   });
+
   addNotebookListener({
     operation: SHARE_PAGE_FORCE_OPERATION,
     handler: (data) => {
@@ -422,6 +466,32 @@ const setupSharePageWithNotebook = ({
       };
       const newDoc = loadAutomergeFromBase64(state);
       saveAndApply(notebookPageId, newDoc);
+    },
+  });
+
+  addNotebookListener({
+    operation: REQUEST_PAGE_UPDATE_OPERATION,
+    handler: (data, source) => {
+      const { seq, notebookPageId } = data as {
+        seq: number;
+        notebookPageId: string;
+      };
+      loadAutomergeDoc(notebookPageId).then((doc) => {
+        const me = Automerge.getActorId(doc);
+        const missingChanges = Automerge.getAllChanges(doc)
+          .map((c) => ({ encoded: c, decoded: Automerge.decodeChange(c) }))
+          .filter(({ decoded }) => decoded.actor === me && decoded.seq > seq);
+        if (missingChanges.length) {
+          sendToNotebook({
+            target: source,
+            operation: SHARE_PAGE_UPDATE_OPERATION,
+            data: {
+              notebookPageId,
+              changes: missingChanges.map((c) => binaryToBase64(c.encoded)),
+            },
+          });
+        }
+      });
     },
   });
 
@@ -495,14 +565,72 @@ const setupSharePageWithNotebook = ({
         saveState(notebookPageId, Automerge.save(doc)),
         apiClient({
           method: "update-shared-page",
-          changes: Automerge.getChanges(oldDoc, doc)
-            .map((c) => String.fromCharCode.apply(null, Array.from(c)))
-            .map((s) => window.btoa(s)),
+          changes: Automerge.getChanges(oldDoc, doc).map(binaryToBase64),
           notebookPageId,
         }),
       ]);
     });
   };
+
+  const insertContent = ({
+    notebookPageId,
+    content,
+    index,
+  }: {
+    notebookPageId: string;
+    content: string;
+    index: number;
+  }) =>
+    updatePage({
+      notebookPageId,
+      label: `Insert: ${content} as ${index}`,
+      callback: (schema) => {
+        schema.content.insertAt?.(index, ...content.split(""));
+        schema.annotations.forEach((annotation) => {
+          if (annotation.start > index) {
+            annotation.start += content.length;
+          }
+          if (annotation.end >= index) {
+            annotation.end += content.length;
+          }
+        });
+      },
+    });
+
+  const deleteContent = ({
+    notebookPageId,
+    count,
+    index,
+  }: {
+    notebookPageId: string;
+    count: number;
+    index: number;
+  }) =>
+    updatePage({
+      notebookPageId,
+      label: `Delete: ${count} at ${index}`,
+      callback: (schema) => {
+        schema.content.deleteAt?.(index, count);
+        const elementsToDelete = schema.annotations
+          .map((annotation, index) => ({ annotation, index }))
+          .filter((el) => {
+            if (el.annotation.start > index) {
+              el.annotation.start -= count;
+            }
+            if (el.annotation.end >= index) {
+              el.annotation.end -= count;
+              if (el.annotation.start > el.annotation.end) {
+                return true;
+              }
+            }
+            return false;
+          })
+          .reverse();
+        elementsToDelete.forEach((el) =>
+          schema.annotations.deleteAt?.(el.index)
+        );
+      },
+    });
 
   const rejectPage = ({
     source,
@@ -537,6 +665,7 @@ const setupSharePageWithNotebook = ({
       removeNotebookListener({ operation: SHARE_PAGE_RESPONSE_OPERATION });
       removeNotebookListener({ operation: SHARE_PAGE_UPDATE_OPERATION });
       removeNotebookListener({ operation: SHARE_PAGE_OPERATION });
+      removeNotebookListener({ operation: REQUEST_PAGE_UPDATE_OPERATION });
       removeCommand({
         label: COMMAND_PALETTE_LABEL,
       });
@@ -545,6 +674,8 @@ const setupSharePageWithNotebook = ({
       });
     },
     updatePage,
+    insertContent,
+    deleteContent,
     joinPage,
     rejectPage,
     isShared: (notebookPageId: string) => notebookPageIds.has(notebookPageId),

@@ -1,0 +1,20 @@
+name: Run Full Tests Suite
+on:
+  workflow_dispatch:
+  push:
+    branches: main
+    paths:
+      - "tests/**"
+      - ".github/workflows/tests.yaml"
+      
+jobs:
+  deploy:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: install
+        run: npm install
+      - name: Is mysql here?
+        run: mysql --version
+      - name: tests
+        run: npm t

@@ -3,8 +3,12 @@ import {
   removeNotebookListener,
 } from "../internal/setupMessageHandlers";
 import setupP2PFeatures from "../internal/setupP2PFeatures";
-import registerAppEventListener from "../internal/registerAppEventListener";
-import type { AddCommand, RemoveCommand, AppEvent, RenderOverlay } from "../types";
+import type {
+  AddCommand,
+  RemoveCommand,
+  AppEvent,
+  RenderOverlay,
+} from "../types";
 import APPS, { appIdByName } from "../internal/apps";
 import setupRegistry from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
@@ -38,21 +42,21 @@ const setupSamePageClient = ({
     workspace,
     appRoot,
   });
-  const unregisterAppEventListener = registerAppEventListener();
   const unloadWS = setupWsFeatures({ isAutoConnect });
   const unloadP2P = setupP2PFeatures();
 
-  window.samepage = {
-    addNotebookListener,
-    removeNotebookListener,
-    sendToNotebook,
-  };
+  if (typeof window !== "undefined") {
+    window.samepage = {
+      addNotebookListener,
+      removeNotebookListener,
+      sendToNotebook,
+    };
+  }
 
   return {
     unload: () => {
       unloadP2P();
       unloadWS();
-      unregisterAppEventListener();
     },
     addNotebookListener,
     removeNotebookListener,

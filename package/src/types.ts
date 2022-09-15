@@ -48,7 +48,7 @@ export type Annotation =
 export type Schema = {
   contentType: `application/vnd.atjson+samepage; version=${Version}`;
   content: Automerge.Text;
-  annotations: Annotation[];
+  annotations: Automerge.List<Annotation>;
 };
 export type InitialSchema = {
   content: string;
@@ -58,15 +58,8 @@ export type InitialSchema = {
 export type Notebook = { workspace: string; app: AppId };
 
 export type App = typeof APPS[number];
-export type Apps = Record<number, Omit<App, "id">>;
-// Playing around with the idea of the SamePage Network as App 0
-// In the future, we will want organizations to be able to self host networks
-// on whichever cloud or on-prem solution they want. These networks should have global
-// ids and labels just like apps, making it all addressable via the 0 app:
-// - SamePage/Main
-// - SamePage/Org
-// - etc.
-export type AppId = App["id"] | 0;
+export type AppId = App["id"];
+export type Apps = Record<AppId, Omit<App, "id">>;
 
 export type json =
   | string

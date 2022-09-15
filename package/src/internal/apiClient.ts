@@ -10,7 +10,7 @@ export type HandleFetchArgs = {
 const getApiUrl = () => {
   const env = getNodeEnv();
   const defaultUrl =
-    env === "development"
+    env === "development" || env === "test"
       ? "http://localhost:3003"
       : "https://api.samepage.network";
   try {

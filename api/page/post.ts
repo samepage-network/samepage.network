@@ -326,23 +326,24 @@ const logic = async (
               [pageUuid]
             )
             .then(([r]) => {
+              const clients = (
+                r as (Notebook & { notebook_page_id: string })[]
+              ).filter((item) => {
+                return item.workspace !== workspace || item.app !== app;
+              });
               return Promise.all(
-                (r as (Notebook & { notebook_page_id: string })[])
-                  .filter((item) => {
-                    return item.workspace !== workspace || item.app !== app;
+                clients.map(({ notebook_page_id, ...target }) =>
+                  messageNotebook({
+                    source: { app, workspace },
+                    target,
+                    data: {
+                      changes,
+                      notebookPageId: notebook_page_id,
+                      operation: "SHARE_PAGE_UPDATE",
+                    },
+                    requestId: requestId,
                   })
-                  .map(({ notebook_page_id, ...target }) =>
-                    messageNotebook({
-                      source: { app, workspace },
-                      target,
-                      data: {
-                        changes,
-                        notebookPageId: notebook_page_id,
-                        operation: "SHARE_PAGE_UPDATE",
-                      },
-                      requestId: requestId,
-                    })
-                  )
+                )
               );
             })
             .then(() => ({

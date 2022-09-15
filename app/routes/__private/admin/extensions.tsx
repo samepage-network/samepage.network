@@ -11,7 +11,7 @@ const AdminExtensionsPage = () => {
     useLoaderData<Awaited<ReturnType<typeof listExtensionsMetadata>>>();
   return (
     <div className="grid grid-cols-4 gap-4">
-      {APPS.map((app) => (
+      {APPS.slice(1).map((app) => (
         <div
           className="rounded-lg shadow-lg bg-slate-300 p-4 flex flex-col gap-12"
           key={app.id}

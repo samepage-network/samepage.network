@@ -22,7 +22,7 @@ base({
       owner: "dvargas92495",
       alias: "personal",
     });
-    APPS.forEach((args) => {
+    APPS.slice(1).forEach((args) => {
       const key = "key" in args ? args.key : args.name.toLowerCase();
       new ActionsSecret(this, `${key}_deploy_aws_access_key`, {
         repository: `${key}-samepage`,
