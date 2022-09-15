@@ -7,6 +7,9 @@ on:
       - "tests/**"
       - ".github/workflows/tests.yaml"
       
+env:
+  DATABASE_URL: mysql://samepage_network:samepage_network@localhost:3306/samepage_network
+
 jobs:
   deploy:
     runs-on: ubuntu-20.04
@@ -19,6 +22,8 @@ jobs:
           npm install
           rm -Rf node_modules/react node_modules/react-dom
         working-directory: package
+      - name: netstat
+        run: netstat -vanp tcp | grep 3306
       - name: tests
         run: npm t
         env:
