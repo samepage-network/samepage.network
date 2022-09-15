@@ -70,17 +70,20 @@ const nsToMs = (n: bigint) => Number(n) / 1000000;
 
 beforeAll((done) => {
   const proc = spawn("npm", ["run", "build", "--", "--readable"]);
-  proc.stdout.on("data", (_) => {
-    // uncomment if you wanna see build logs
-    // console.log(_.toString());
+  proc.stdout.on("data", (e) => {
+    if (process.env.DEBUG) {
+      console.log(e.toString());
+    }
   });
   proc.stderr.on("data", (e) => {
-    console.error(e);
-    fail(e);
-  })
+    const err = e.toString();
+    console.error(err);
+    throw new Error(err);
+  });
   proc.on("error", (e) => {
-    console.error(e);
-    fail(e);
+    const err = e.toString();
+    console.error(err);
+    throw new Error(err);
   });
   proc.on("close", done);
 });

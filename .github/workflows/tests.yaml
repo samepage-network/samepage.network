@@ -21,3 +21,5 @@ jobs:
         working-directory: package
       - name: tests
         run: npm t
+        env:
+          DEBUG: true
