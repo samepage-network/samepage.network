@@ -47,12 +47,12 @@ const ongoingMessage = z.object({
 });
 
 const schema = {
+  page,
   pageNotebookLink,
   onlineClient,
   clientSession,
   message,
   ongoingMessage,
-  page,
 };
 
 export default schema;
