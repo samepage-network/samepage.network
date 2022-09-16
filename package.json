@@ -22,7 +22,7 @@
     "ws": "ts-node --project tsconfig.json -r tsconfig-paths/register scripts/ws.ts"
   },
   "dependencies": {
-    "@dvargas92495/app": "^0.13.12",
+    "@dvargas92495/app": "^0.13.13",
     "@remix-run/react": "^1.6.7",
     "@remix-run/serve": "^1.6.7",
     "automerge": "^1.0.1-preview.7",
