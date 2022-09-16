@@ -86,7 +86,7 @@ beforeAll((done) => {
     console.error(`Error from proc: ${err}`);
   });
   proc.on("close", done);
-});
+}, 10000);
 
 test("GET `/` route", async () => {
   const event = createCloudfrontRequest();
