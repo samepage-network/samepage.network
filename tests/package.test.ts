@@ -1,14 +1,9 @@
 import { fork, spawn } from "child_process";
 import { z } from "zod";
 import { v4 } from "uuid";
-import fs from "fs";
 
 let cleanup: () => unknown;
 const logs: { data: string; time: string }[] = [];
-
-beforeAll(() => {
-  fs.writeFileSync("./tests/utils/log.txt", "");
-});
 
 test("Make sure two clients can come online and share updates, despite errors", async () => {
   const startTime = process.hrtime.bigint();
