@@ -77,13 +77,13 @@ beforeAll((done) => {
   });
   proc.stderr.on("data", (e) => {
     const err = e.toString();
-    console.error(err);
-    // throw new Error(err);
+    if (process.env.DEBUG) {
+      console.error(`Error from stderr: ${err}`);
+    }
   });
   proc.on("error", (e) => {
     const err = e.toString();
-    console.error(err);
-    // throw new Error(err);
+    console.error(`Error from proc: ${err}`);
   });
   proc.on("close", done);
 });
@@ -102,4 +102,4 @@ test("GET `/` route", async () => {
     const endTime = process.hrtime.bigint();
     expect(nsToMs(endTime - startTime)).toBeLessThan(10000);
   });
-});
+}, 10000);
