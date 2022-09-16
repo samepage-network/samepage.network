@@ -1,9 +1,18 @@
 import { fork, spawn } from "child_process";
 import { z } from "zod";
 import { v4 } from "uuid";
+import getMysqlConnection from "fuegojs/utils/mysql";
 
 let cleanup: () => unknown;
 const logs: { data: string; time: string }[] = [];
+
+beforeAll(async () => {
+  await getMysqlConnection().then((cxn) =>
+    cxn
+      .execute(`DELETE FROM online_clients WHERE app = ?`, [0])
+      .then(() => cxn.destroy())
+  );
+});
 
 test("Make sure two clients can come online and share updates, despite errors", async () => {
   const startTime = process.hrtime.bigint();
@@ -42,7 +51,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
   await Promise.all([wsReady, apiReady]);
 
   const notebookPageId = v4();
-  const client1 = fork("./tests/utils/createTestSamePageClient", ["one"]);
+  const client1 = fork("./package/src/testing/createTestSamePageClient", ["one"]);
   const client1Callbacks: Record<string, (data: unknown) => void> = {
     log: (log) => addToLog(`Client 1: ${log}`),
     error: (message) => {
@@ -58,7 +67,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
     (resolve) => (client1Callbacks["ready"] = resolve)
   );
 
-  const client2 = fork("./tests/utils/createTestSamePageClient", ["two"]);
+  const client2 = fork("./package/src/testing/createTestSamePageClient", ["two"]);
   const client2Callbacks: Record<string, (data: unknown) => void> = {
     log: (log) => addToLog(`Client 2: ${log}`),
     error: (message) => {

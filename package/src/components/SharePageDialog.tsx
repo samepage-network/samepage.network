@@ -14,6 +14,7 @@ import {
 import { Select } from "@blueprintjs/select";
 import inviteNotebookToPage from "../utils/inviteNotebookToPage";
 import APPS, { appsById } from "../internal/apps";
+import getNodeEnv from "../internal/getNodeEnv";
 
 export type ListConnectedNotebooks = (notebookPageId: string) => Promise<{
   networks: { app: string; workspace: string; version: number }[];
@@ -30,6 +31,8 @@ export type Props = {
   notebookPageId: string;
   listConnectedNotebooks: ListConnectedNotebooks;
 };
+
+const appOptions = getNodeEnv() === "test" ? APPS : APPS.slice(1);
 
 const AppSelect = Select.ofType<AppId>();
 
@@ -130,7 +133,7 @@ const SharePageDialog = ({
           <Label style={{ maxWidth: "120px", width: "100%" }}>
             App
             <AppSelect
-              items={APPS.slice(1).map((a) => a.id)}
+              items={appOptions.map((a) => a.id)}
               onItemSelect={(e) => setCurrentApp(e)}
               itemRenderer={(item, { modifiers, handleClick }) => (
                 <MenuItem
@@ -173,6 +176,7 @@ const SharePageDialog = ({
               onChange={(e) => setCurrentWorkspace(e.target.value)}
               autoFocus
               onKeyDown={(e) => e.key === "Enter" && onInvite()}
+              placeholder={`Enter ${appsById[currentApp].workspaceLabel}`}
             />
           </Label>
           <Button
