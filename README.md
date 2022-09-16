@@ -19,7 +19,8 @@ Description for samepage.network.
 ## Clients
 
 - [Roam](https://github.com/dvargas92495/roamjs-samepage)
-- [LogSeq](https://github.com/dvargas92495/s)
+- [LogSeq](https://github.com/dvargas92495/logseq-samepage)
+- [Obsidian](https://github.com/dvargas92495/obsidian-samepage)
 
 ## Contributing
 

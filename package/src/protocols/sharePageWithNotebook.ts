@@ -28,6 +28,7 @@ import getActorId from "../internal/getActorId";
 import getLastLocalVersion from "../internal/getLastLocalVersion";
 import { appsById } from "../internal/apps";
 import parseActorId from "../internal/parseActorId";
+import binaryToBase64 from "../internal/binaryToBase64";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
@@ -36,12 +37,6 @@ const SHARE_PAGE_RESPONSE_OPERATION = "SHARE_PAGE_RESPONSE";
 const SHARE_PAGE_UPDATE_OPERATION = "SHARE_PAGE_UPDATE";
 const SHARE_PAGE_FORCE_OPERATION = "SHARE_PAGE_FORCE";
 const REQUEST_PAGE_UPDATE_OPERATION = "REQUEST_PAGE_UPDATE";
-
-const binaryToBase64 = (state: Uint8Array) => {
-  return typeof window === "undefined"
-    ? Buffer.from(state).toString("base64")
-    : window.btoa(new TextDecoder("utf8").decode(state));
-};
 
 const base64ToBinary = (state: string) => {
   return typeof window === "undefined"

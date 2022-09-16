@@ -25,6 +25,7 @@ import { app, notebookPageIds, workspace } from "../internal/registry";
 import getLastLocalVersion from "../internal/getLastLocalVersion";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { parseAndFormatActorId } from "../internal/parseActorId";
+import binaryToBase64 from "../internal/binaryToBase64";
 
 type GetLocalHistory = (
   notebookPageId: string
@@ -377,9 +378,7 @@ const SharedPageStatus = ({
                 apiClient({
                   method: "force-push-page",
                   notebookPageId,
-                  state: window.btoa(
-                    String.fromCharCode.apply(null, Array.from(state))
-                  ),
+                  state: binaryToBase64(state),
                 })
               )
               .then(() =>
