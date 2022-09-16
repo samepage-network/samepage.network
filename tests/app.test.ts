@@ -69,6 +69,7 @@ const mockCallback = jest.fn();
 const nsToMs = (n: bigint) => Number(n) / 1000000;
 
 beforeAll((done) => {
+  // gonna want exec here instead I think
   const proc = spawn("npm", ["run", "build", "--", "--readable"]);
   proc.stdout.on("data", (e) => {
     if (process.env.DEBUG) {
@@ -86,7 +87,7 @@ beforeAll((done) => {
     console.error(`Error from proc: ${err}`);
   });
   proc.on("close", done);
-}, 10000);
+});
 
 test("GET `/` route", async () => {
   const event = createCloudfrontRequest();

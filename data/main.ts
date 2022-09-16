@@ -8,7 +8,11 @@ base({
   emailDomain: "samepage.network",
   clerkDnsId: "l7zkq208u6ys",
   schema,
-  variables: ["convertkit_api_key", "password_secret_key"],
+  variables: [
+    "convertkit_api_key",
+    "password_secret_key",
+    "staging_clerk_api_key",
+  ],
   callback() {
     const accessKey = this.node.children.find(
       (c) => c.node.id === "deploy_aws_access_key"

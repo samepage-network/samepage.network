@@ -8,6 +8,8 @@ on:
       - ".github/workflows/tests.yaml"
       
 env:
+  CLERK_API_KEY: ${{ secrets.STAGING_CLERK_API_KEY }} 
+  CLERK_FRONTEND_API: clerk.in.horse-0.lcl.dev
   DATABASE_URL: mysql://root:root@localhost:3306/samepage_network
 
 jobs:
