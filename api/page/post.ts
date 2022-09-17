@@ -194,13 +194,18 @@ const logic = async (
             });
         }),
       ])
-        .then(([Data, [source]]) => ({
-          data: Data,
-          source: {
-            workspace: source.source_instance,
-            app: source.source_app,
-          },
-        }))
+        .then(([Data, [source]]) => {
+          if (!source) {
+            throw new NotFoundError(`No message: ${messageUuid} exists`)
+          }
+          return {
+            data: Data,
+            source: {
+              workspace: source.source_instance,
+              app: source.source_app,
+            },
+          };
+        })
         .catch(catchError("Failed to load a message"));
     }
     case "init-shared-page": {

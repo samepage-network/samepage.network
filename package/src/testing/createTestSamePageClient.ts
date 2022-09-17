@@ -272,7 +272,11 @@ const createTestSamePageClient = ({
 };
 
 const forked = process.argv.indexOf("--forked");
-if (forked >= 0 && process.argv.length > forked + 1 && typeof process.send !== "undefined") {
+if (
+  forked >= 0 &&
+  process.argv.length > forked + 1 &&
+  typeof process.send !== "undefined"
+) {
   createTestSamePageClient({
     workspace: process.argv[forked + 1],
     onMessage: process.send.bind(process),

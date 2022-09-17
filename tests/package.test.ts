@@ -2,11 +2,12 @@ import { fork, spawn } from "child_process";
 import { z } from "zod";
 import { v4 } from "uuid";
 import getMysqlConnection from "fuegojs/utils/mysql";
+import { test, expect } from "@playwright/test";
 
 let cleanup: () => unknown;
 const logs: { data: string; time: string }[] = [];
 
-beforeAll(async () => {
+test.beforeAll(async () => {
   await getMysqlConnection().then((cxn) =>
     cxn
       .execute(`DELETE FROM online_clients WHERE app = ?`, [0])
@@ -51,7 +52,10 @@ test("Make sure two clients can come online and share updates, despite errors", 
   await Promise.all([wsReady, apiReady]);
 
   const notebookPageId = v4();
-  const client1 = fork("./package/src/testing/createTestSamePageClient", ["--forked", "one"]);
+  const client1 = fork("./package/src/testing/createTestSamePageClient", [
+    "--forked",
+    "one",
+  ]);
   const client1Callbacks: Record<string, (data: unknown) => void> = {
     log: (log) => addToLog(`Client 1: ${log}`),
     error: (message) => {
@@ -67,7 +71,10 @@ test("Make sure two clients can come online and share updates, despite errors", 
     (resolve) => (client1Callbacks["ready"] = resolve)
   );
 
-  const client2 = fork("./package/src/testing/createTestSamePageClient", ["--forked", "two"]);
+  const client2 = fork("./package/src/testing/createTestSamePageClient", [
+    "--forked",
+    "two",
+  ]);
   const client2Callbacks: Record<string, (data: unknown) => void> = {
     log: (log) => addToLog(`Client 2: ${log}`),
     error: (message) => {
@@ -149,11 +156,11 @@ test("Make sure two clients can come online and share updates, despite errors", 
   });
 
   addToLog("Jest: validate initial page data");
-  const receivedPageData = await new Promise<unknown>((resolve) => {
+  const client2Read = () => new Promise<unknown>((resolve) => {
     client2Callbacks["read"] = resolve;
     client2.send({ type: "read", notebookPageId });
   });
-  expect(receivedPageData).toEqual(initialPageData);
+  await expect.poll(client2Read).toEqual(initialPageData);
 
   addToLog("Jest: Client 2 sends an insert update");
   await new Promise<unknown>((resolve) => {
@@ -165,11 +172,11 @@ test("Make sure two clients can come online and share updates, despite errors", 
       index: 5,
     });
   });
-  const receivedPageData2 = await new Promise<unknown>((resolve) => {
+  const client1Read = () => new Promise<unknown>((resolve) => {
     client1Callbacks["read"] = resolve;
     client1.send({ type: "read", notebookPageId });
   });
-  expect(receivedPageData2).toEqual({
+  await expect.poll(client1Read).toEqual({
     content: "First super entry in page",
     annotations: [
       {
@@ -202,11 +209,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
     client2.send({ type: "connect" });
   });
   addToLog("Jest: Client 2 loads missed updates while offline");
-  const receivedPageData3 = await new Promise<unknown>((resolve) => {
-    client2Callbacks["read"] = resolve;
-    client2.send({ type: "read", notebookPageId });
-  });
-  expect(receivedPageData3).toEqual({
+  await expect.poll(client2Read).toEqual({
     content: "First super page",
     annotations: [
       {
@@ -306,7 +309,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
   addToLog("Jest: Finish Test");
 });
 
-afterAll(async () => {
+test.afterAll(async () => {
   cleanup?.();
   if (process.env.DEBUG) {
     console.log(

@@ -3,11 +3,12 @@ import type {
   CloudFrontResponseEvent,
   Context,
 } from "aws-lambda";
-import { handler } from "~/server";
 import { v4 } from "uuid";
 import differenceInMilliseconds from "date-fns/differenceInMilliseconds";
 import dotenv from "dotenv";
 import { execSync } from "child_process";
+import { test, expect } from "@playwright/test";
+import { handler } from "~/server";
 dotenv.config();
 
 const createCloudfrontRequest = ({
@@ -65,29 +66,29 @@ const mockContext: Context = {
   fail: () => ({}),
   succeed: () => ({}),
 };
-const mockCallback = jest.fn();
 const nsToMs = (n: bigint) => Number(n) / 1000000;
 
-beforeAll(() => {
-  // gonna want exec here instead I think
+test.beforeAll(() => {
   const proc = execSync("npx fuego build --readable");
   if (process.env.DEBUG) {
     console.error(`Output from build: ${proc.toString()}`);
   }
-}, 10000);
+});
 
 test("GET `/` route", async () => {
   const event = createCloudfrontRequest();
   const startTime = process.hrtime.bigint();
-  const out = handler(event, mockContext, mockCallback);
-  if (!out) fail(`Returned nothing from request handler`);
+  const out = handler(event, mockContext, () => {});
+  if (!out) throw new Error(`Returned nothing from request handler`);
   return out.then((res) => {
     if (!res)
-      fail(`Returned promise that resolved to nothing from request handler`);
+      throw new Error(
+        `Returned promise that resolved to nothing from request handler`
+      );
     if (!("status" in res))
-      fail(`No status code returned in resolved response`);
+      throw new Error(`No status code returned in resolved response`);
     expect(res.status).toBe("200");
     const endTime = process.hrtime.bigint();
     expect(nsToMs(endTime - startTime)).toBeLessThan(10000);
   });
-}, 10000);
+});
