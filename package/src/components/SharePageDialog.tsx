@@ -51,7 +51,7 @@ const SharePageDialog = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const onInvite = () => {
-    if (currentApp && currentworkspace) {
+    if (currentworkspace) {
       setLoading(true);
       inviteNotebookToPage({
         notebookPageId,
@@ -182,7 +182,7 @@ const SharePageDialog = ({
           <Button
             minimal
             icon={"plus"}
-            disabled={!currentApp || !currentworkspace}
+            disabled={!currentworkspace}
             onClick={onInvite}
           />
         </div>

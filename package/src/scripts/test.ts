@@ -1,4 +1,4 @@
-import jest from "jest-cli";
+import * as jest from "jest-cli";
 import compile, { CliArgs } from "./internal/compile";
 
 const test = (args: CliArgs) => {
@@ -11,7 +11,10 @@ const test = (args: CliArgs) => {
       ])
     )
     .then(() => 0)
-    .catch(() => 1);
+    .catch((e) => {
+      console.error("Failed to run tests:", e);
+      return 1;
+    });
 };
 
 export default test;

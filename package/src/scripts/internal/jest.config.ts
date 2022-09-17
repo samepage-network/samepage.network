@@ -1,6 +1,7 @@
 /** @type {import('@jest/types').Config.InitialOptions} */
 export default {
   preset: "jest-playwright-preset",
+  rootDir: process.cwd(),
   transform: {
     "^.+\\.(t|j)sx?$": "esbuild-jest",
   },
