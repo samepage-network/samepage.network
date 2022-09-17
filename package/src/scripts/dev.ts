@@ -1,34 +1,19 @@
 import chokidar from "chokidar";
-import fs from "fs";
 import compile, { CliArgs } from "./internal/compile";
-import appPath from "./internal/appPath";
-import path from "path";
+import type { BuildInvalidate } from "esbuild";
 
-const dev = ({
-  mirror,
-  ...cliArgs
-}: CliArgs & {
-  mirror?: string;
-} = {}) => {
-  let rebuilder: () => Promise<void>;
-  const finish = () => {
-    if (mirror) {
-      if (!fs.existsSync(mirror)) fs.mkdirSync(mirror, { recursive: true });
-      fs.readdirSync("dist").forEach((f) =>
-        fs.cpSync(appPath(path.join(`dist`, f)), path.join(mirror, f))
-      );
-    }
-  };
+const dev = (args: CliArgs) => {
+  let rebuilder: BuildInvalidate | undefined;
+  process.env.NODE_ENV = process.env.NODE_ENV || "development";
   return new Promise((resolve) => {
     chokidar
       .watch(["src"])
       .on("add", (file) => {
         if (/src\/[a-z]+.tsx?$/.test(file)) {
           console.log(`building ${file}...`);
-          compile({ ...cliArgs, nodeEnv: "development" }).then((r) => {
+          compile({ ...args, opts: { incremental: true } }).then((r) => {
             const { rebuild } = r;
-            rebuilder = async () => rebuild && rebuild().then(finish);
-            finish();
+            rebuilder = rebuild;
             console.log(`successfully built ${file}...`);
           });
         }

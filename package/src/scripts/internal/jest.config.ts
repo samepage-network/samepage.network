@@ -11,4 +11,5 @@ export default {
       // Options...
     },
   },
+  setupFiles: ["dotenv/config"],
 };

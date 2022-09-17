@@ -2,21 +2,39 @@ import nearleyCompile from "./nearley";
 import esbuild from "esbuild";
 import fs from "fs";
 import path from "path";
+import appPath from "./appPath";
+import dotenv from "dotenv";
+dotenv.config();
+
+// Why is this not picked up from Remix?
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      NODE_ENV: "development" | "production" | "test";
+    }
+  }
+}
 
 export type CliArgs = {
   out?: string;
   external?: string | string[];
   include?: string | string[];
   css?: string;
+  format?: esbuild.Format;
+  mirror?: string;
+  env?: string | string[];
 };
 
 const compile = ({
   out,
-  nodeEnv,
   external,
   include,
   css,
-}: CliArgs & { nodeEnv: "production" | "development" | "test" }) => {
+  format,
+  mirror,
+  env,
+  opts = {},
+}: CliArgs & { opts?: esbuild.BuildOptions }) => {
   const rootDir = fs
     .readdirSync("./src", { withFileTypes: true })
     .filter((f) => f.isFile())
@@ -48,12 +66,17 @@ const compile = ({
         : [`./src/${entryTs}`, ...(entryCss ? [`./src/${entryCss}`] : [])],
       outdir: "dist",
       bundle: true,
-      incremental: nodeEnv === "development",
       define: {
         "process.env.BLUEPRINT_NAMESPACE": '"bp4"',
-        "process.env.NODE_ENV": `"${nodeEnv}"`,
+        "process.env.NODE_ENV": `"${process.env.NODE_ENV}"`,
+        ...Object.fromEntries(
+          (typeof env === "string" ? [env] : env || []).map((s) => [
+            `process.env.${s}`,
+            `"${process.env[s]}"`,
+          ])
+        ),
       },
-      format: "cjs",
+      format,
       external: typeof external === "string" ? [external] : external,
       plugins: [
         {
@@ -73,6 +96,7 @@ const compile = ({
           },
         },
       ],
+      ...opts,
     })
     .then((r) => {
       const finish = () => {
@@ -106,13 +130,22 @@ const compile = ({
             });
           }
         }
+        if (mirror) {
+          if (!fs.existsSync(mirror)) fs.mkdirSync(mirror, { recursive: true });
+          fs.readdirSync("dist").forEach((f) =>
+            fs.cpSync(appPath(path.join(`dist`, f)), path.join(mirror, f))
+          );
+        }
       };
       finish();
       const { rebuild: rebuilder } = r;
       return rebuilder
         ? {
             ...r,
-            rebuild: (): Promise<void> => rebuilder().then(finish),
+            rebuild: (() =>
+              rebuilder()
+                .then(finish)
+                .then(() => rebuilder)) as esbuild.BuildInvalidate,
           }
         : r;
     });
