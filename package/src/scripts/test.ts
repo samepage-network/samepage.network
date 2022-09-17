@@ -1,13 +1,14 @@
-import * as jest from "jest-cli";
+import * as jestCli from "jest-cli";
 import compile, { CliArgs } from "./internal/compile";
 
-const test = (args: CliArgs) => {
+const test = ({ jest, ...args }: CliArgs & { jest?: string | string[] }) => {
   process.env.NODE_ENV = process.env.NODE_ENV || "test";
   return compile(args)
     .then(() =>
-      jest.run([
+      jestCli.run([
         "-c",
         "./node_modules/samepage/scripts/internal/jest.config.js",
+        ...(typeof jest === "string" ? [jest] : jest || []),
       ])
     )
     .then(() => 0)

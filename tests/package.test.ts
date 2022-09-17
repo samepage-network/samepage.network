@@ -51,7 +51,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
   await Promise.all([wsReady, apiReady]);
 
   const notebookPageId = v4();
-  const client1 = fork("./package/src/testing/createTestSamePageClient", ["one"]);
+  const client1 = fork("./package/src/testing/createTestSamePageClient", ["--forked", "one"]);
   const client1Callbacks: Record<string, (data: unknown) => void> = {
     log: (log) => addToLog(`Client 1: ${log}`),
     error: (message) => {
@@ -67,7 +67,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
     (resolve) => (client1Callbacks["ready"] = resolve)
   );
 
-  const client2 = fork("./package/src/testing/createTestSamePageClient", ["two"]);
+  const client2 = fork("./package/src/testing/createTestSamePageClient", ["--forked", "two"]);
   const client2Callbacks: Record<string, (data: unknown) => void> = {
     log: (log) => addToLog(`Client 2: ${log}`),
     error: (message) => {

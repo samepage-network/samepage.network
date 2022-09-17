@@ -271,9 +271,10 @@ const createTestSamePageClient = ({
   });
 };
 
-if (process.argv.length > 2 && typeof process.send !== "undefined") {
+const forked = process.argv.indexOf("--forked");
+if (forked >= 0 && process.argv.length > forked + 1 && typeof process.send !== "undefined") {
   createTestSamePageClient({
-    workspace: process.argv[2],
+    workspace: process.argv[forked + 1],
     onMessage: process.send.bind(process),
   }).then((client) => process.on("message", client.send));
 }
