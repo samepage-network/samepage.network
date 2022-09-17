@@ -7,7 +7,7 @@ import { handler } from "~/server";
 import { v4 } from "uuid";
 import differenceInMilliseconds from "date-fns/differenceInMilliseconds";
 import dotenv from "dotenv";
-import { spawn } from "child_process";
+import { execSync } from "child_process";
 dotenv.config();
 
 const createCloudfrontRequest = ({
@@ -68,26 +68,13 @@ const mockContext: Context = {
 const mockCallback = jest.fn();
 const nsToMs = (n: bigint) => Number(n) / 1000000;
 
-beforeAll((done) => {
+beforeAll(() => {
   // gonna want exec here instead I think
-  const proc = spawn("npm", ["run", "build", "--", "--readable"]);
-  proc.stdout.on("data", (e) => {
-    if (process.env.DEBUG) {
-      console.log(e.toString());
-    }
-  });
-  proc.stderr.on("data", (e) => {
-    const err = e.toString();
-    if (process.env.DEBUG) {
-      console.error(`Error from stderr: ${err}`);
-    }
-  });
-  proc.on("error", (e) => {
-    const err = e.toString();
-    console.error(`Error from proc: ${err}`);
-  });
-  proc.on("close", done);
-});
+  const proc = execSync("npx fuego build --readable");
+  if (process.env.DEBUG) {
+    console.error(`Output from build: ${proc.toString()}`);
+  }
+}, 10000);
 
 test("GET `/` route", async () => {
   const event = createCloudfrontRequest();

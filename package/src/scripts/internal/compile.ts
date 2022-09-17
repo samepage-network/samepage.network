@@ -25,6 +25,47 @@ export type CliArgs = {
   env?: string | string[];
 };
 
+// https://github.com/evanw/esbuild/issues/337#issuecomment-954633403
+const importAsGlobals = (
+  mapping: Record<string, string> = {}
+): esbuild.Plugin => {
+  const escRe = (s: string) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
+  const filter = new RegExp(
+    Object.keys(mapping)
+      .map((mod) => `^${escRe(mod)}$`)
+      .join("|")
+  );
+
+  return {
+    name: "global-imports",
+    setup(build) {
+      build.onResolve({ filter }, (args) => {
+        if (!mapping[args.path]) {
+          throw new Error("Unknown global: " + args.path);
+        }
+        return {
+          path: args.path,
+          namespace: "external-global",
+        };
+      });
+
+      build.onLoad(
+        {
+          filter,
+          namespace: "external-global",
+        },
+        async (args) => {
+          const global = mapping[args.path];
+          return {
+            contents: `module.exports = ${global};`,
+            loader: "js",
+          };
+        }
+      );
+    },
+  };
+};
+
 const compile = ({
   out,
   external,
@@ -56,6 +97,10 @@ const compile = ({
       )}]`
     );
   }
+  const externalModules = (
+    typeof external === "string" ? [external] : external || []
+  ).map((e) => e.split("="));
+
   return esbuild
     .build({
       entryPoints: out
@@ -77,7 +122,7 @@ const compile = ({
         ),
       },
       format,
-      external: typeof external === "string" ? [external] : external,
+      external: externalModules.map(([e]) => e),
       plugins: [
         {
           name: "nearley",
@@ -95,6 +140,9 @@ const compile = ({
             );
           },
         },
+        importAsGlobals(
+          Object.fromEntries(externalModules.filter((e) => e.length === 2))
+        ),
       ],
       ...opts,
     })

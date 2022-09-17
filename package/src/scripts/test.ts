@@ -3,6 +3,7 @@ import compile, { CliArgs } from "./internal/compile";
 
 const test = ({ jest, ...args }: CliArgs & { jest?: string | string[] }) => {
   process.env.NODE_ENV = process.env.NODE_ENV || "test";
+  process.env.DEBUG = process.env.DEBUG || process.env.PWDEBUG;
   return compile(args)
     .then(() =>
       jestCli.run([
