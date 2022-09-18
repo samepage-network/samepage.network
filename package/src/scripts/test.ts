@@ -14,6 +14,7 @@ const test = ({
         [
           "playwright",
           "test",
+          "--config=./node_modules/samepage/testing/playwright.config.js",
           ...(typeof forward === "string" ? [forward] : forward || []),
         ],
         { stdio: "inherit", env: process.env }
