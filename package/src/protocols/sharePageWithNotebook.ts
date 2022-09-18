@@ -627,6 +627,20 @@ const setupSharePageWithNotebook = ({
       },
     });
 
+  const refreshContent = ({ notebookPageId }: { notebookPageId: string }) =>
+    updatePage({
+      notebookPageId,
+      label: "Refresh",
+      callback: async (oldDoc) => {
+        const doc = await calculateState(notebookPageId);
+        oldDoc.content.deleteAt?.(0, oldDoc.content.length);
+        oldDoc.content.insertAt?.(0, ...new Automerge.Text(doc.content));
+        if (!oldDoc.annotations) oldDoc.annotations = [];
+        oldDoc.annotations.splice(0, oldDoc.annotations.length);
+        doc.annotations.forEach((a) => oldDoc.annotations.push(a));
+      },
+    });
+
   const rejectPage = ({
     source,
     pageUuid,
@@ -671,6 +685,7 @@ const setupSharePageWithNotebook = ({
     updatePage,
     insertContent,
     deleteContent,
+    refreshContent,
     joinPage,
     rejectPage,
     isShared: (notebookPageId: string) => notebookPageIds.has(notebookPageId),

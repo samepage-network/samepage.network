@@ -17,7 +17,7 @@
     "start": "concurrently \"npm:api\" \"npm:dev\" \"npm:tailwind\"",
     "ssh": "ssh -i SamePage.pem ubuntu@35.173.242.123",
     "tailwind": "npm run generate:css -- --watch",
-    "pretest": "esbuild ./package/src/testing/createTestSamePageClient.ts --outfile=./package/src/testing/createTestSamePageClient.js --bundle --platform=node",
+    "pretest": "esbuild ./package/src/testing/createTestSamePageClient.ts --outfile=./package/src/testing/createTestSamePageClient.js --bundle --platform=node \"--external:./node_modules/jsdom/*\"",
     "test": "playwright test --config=package/src/testing/playwright.config.ts"
   },
   "dependencies": {
@@ -25,5 +25,9 @@
     "automerge": "^1.0.1-preview.7",
     "markdown-to-jsx": "^7.1.7",
     "mdx-bundler": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^20.0.0",
+    "jsdom": "^20.0.0"
   }
 }

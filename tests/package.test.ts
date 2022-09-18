@@ -48,14 +48,15 @@ test("Make sure two clients can come online and share updates, despite errors", 
   cleanup = () => {
     api.kill();
   };
-  addToLog("Jest: Wait for local network to be ready");
+  addToLog("Test: Wait for local network to be ready");
   await Promise.all([wsReady, apiReady]);
 
   const notebookPageId = v4();
-  const client1 = fork("./package/src/testing/createTestSamePageClient", [
-    "--forked",
-    "one",
-  ]);
+  const client1 = fork(
+    "./package/src/testing/createTestSamePageClient",
+    ["--forked", "one"],
+    { stdio: "inherit" }
+  );
   const client1Callbacks: Record<string, (data: unknown) => void> = {
     log: (log) => addToLog(`Client 1: ${log}`),
     error: (message) => {
@@ -67,8 +68,11 @@ test("Make sure two clients can come online and share updates, despite errors", 
     const data = messageSchema.parse(_data);
     client1Callbacks[data.type]?.(data.data);
   });
+  client1.on("exit", (e) => {
+    addToLog(`Client 1: exited (${e})`);
+  });
   const client1Ready = new Promise<unknown>(
-    (resolve) => (client1Callbacks["ready"] = resolve)
+    (resolve) => (client1Callbacks["ready"] = () => resolve(true))
   );
 
   const client2 = fork("./package/src/testing/createTestSamePageClient", [
@@ -86,21 +90,24 @@ test("Make sure two clients can come online and share updates, despite errors", 
     const data = messageSchema.parse(_data);
     client2Callbacks[data.type]?.(data.data);
   });
+  client2.on("exit", (e) => {
+    addToLog(`Client 2: exited (${e})`);
+  });
   const client2Ready = new Promise<unknown>(
-    (resolve) => (client2Callbacks["ready"] = resolve)
+    (resolve) => (client2Callbacks["ready"] = () => resolve(true))
   );
   cleanup = () => {
     api.kill();
     client1.kill();
     client2.kill();
-    addToLog("Jest: cleaned up!");
+    addToLog("Test: cleaned up!");
   };
 
-  addToLog("Jest: Wait for SamePage clients to be ready");
-  await client1Ready;
-  await client2Ready;
+  addToLog("Test: Wait for SamePage clients to be ready");
+  await expect.poll(() => client1Ready).toEqual(true);
+  await expect.poll(() => client2Ready).toEqual(true);
 
-  addToLog("Jest: Navigate to Demo Page");
+  addToLog("Test: Navigate to Demo Page");
   await new Promise<unknown>((resolve) => {
     client1.send({
       type: "setCurrentNotebookPageId",
@@ -109,34 +116,35 @@ test("Make sure two clients can come online and share updates, despite errors", 
     client1Callbacks["setCurrentNotebookPageId"] = resolve;
   });
 
-  addToLog("Jest: Add some initial data");
-  const initialPageData = {
-    content: "First entry in page",
-    annotations: [
-      {
-        type: "block",
-        start: 0,
-        end: 19,
-        attributes: { level: 1, viewType: "document" },
-      },
-    ],
-  };
+  addToLog("Test: Add some initial data");
+  // will need this for `load` testing
+  // const initialPageData = {
+  //   content: "First entry in page",
+  //   annotations: [
+  //     {
+  //       type: "block",
+  //       start: 0,
+  //       end: 19,
+  //       attributes: { level: 1, viewType: "document" },
+  //     },
+  //   ],
+  // };
   await new Promise<unknown>((resolve) => {
     client1Callbacks["setAppClientState"] = resolve;
     client1.send({
       type: "setAppClientState",
       notebookPageId,
-      data: initialPageData,
+      data: '<div style="margin-left:8px" class="my-2">First entry in page</div>',
     });
   });
 
-  addToLog("Jest: Init Page");
+  addToLog("Test: Init Page");
   await new Promise<unknown>((resolve) => {
     client1Callbacks["init-page-success"] = resolve;
     client1.send({ type: "share" });
   });
 
-  addToLog("Jest: Share page");
+  addToLog("Test: Share page");
   await new Promise<unknown>((resolve) => {
     Promise.all([
       new Promise<unknown>(
@@ -149,20 +157,27 @@ test("Make sure two clients can come online and share updates, despite errors", 
     client1.send({ type: "invite", workspace: "two" });
   });
 
-  addToLog("Jest: Accept Shared Page");
+  addToLog("Test: Accept Shared Page");
   await new Promise<unknown>((resolve) => {
     client2Callbacks["accept"] = resolve;
     client2.send({ type: "accept", notebookPageId });
   });
 
-  addToLog("Jest: validate initial page data");
-  const client2Read = () => new Promise<unknown>((resolve) => {
-    client2Callbacks["read"] = resolve;
-    client2.send({ type: "read", notebookPageId });
-  });
-  await expect.poll(client2Read).toEqual(initialPageData);
+  addToLog("Test: validate initial page data");
+  const client2Read = () =>
+    new Promise<unknown>((resolve) => {
+      client2Callbacks["read"] = resolve;
+      client2.send({ type: "read", notebookPageId });
+    });
+  await expect
+    .poll(client2Read)
+    .toEqual(
+      '<div style="margin-left:8px" class="my-2">First entry in page</div>'
+    );
+  // TODO: test `load` here
+  // await expect.poll(client2Read).toEqual(initialPageData);
 
-  addToLog("Jest: Client 2 sends an insert update");
+  addToLog("Test: Client 2 sends an insert update");
   await new Promise<unknown>((resolve) => {
     client2Callbacks["insert"] = resolve;
     client2.send({
@@ -172,28 +187,35 @@ test("Make sure two clients can come online and share updates, despite errors", 
       index: 5,
     });
   });
-  const client1Read = () => new Promise<unknown>((resolve) => {
-    client1Callbacks["read"] = resolve;
-    client1.send({ type: "read", notebookPageId });
-  });
-  await expect.poll(client1Read).toEqual({
-    content: "First super entry in page",
-    annotations: [
-      {
-        type: "block",
-        start: 0,
-        end: 25,
-        attributes: { level: 1, viewType: "document" },
-      },
-    ],
-  });
+  const client1Read = () =>
+    new Promise<unknown>((resolve) => {
+      client1Callbacks["read"] = resolve;
+      client1.send({ type: "read", notebookPageId });
+    });
+  await expect
+    .poll(client1Read)
+    .toEqual(
+      '<div style="margin-left:8px" class="my-2">First super entry in page</div>'
+    );
+  // TODO: test `load` here
+  // await expect.poll(client1Read).toEqual({
+  //   content: "First super entry in page",
+  //   annotations: [
+  //     {
+  //       type: "block",
+  //       start: 0,
+  //       end: 25,
+  //       attributes: { level: 1, viewType: "document" },
+  //     },
+  //   ],
+  // });
 
-  addToLog("Jest: Client 2 disconnects");
+  addToLog("Test: Client 2 disconnects");
   await new Promise<unknown>((resolve) => {
     client2Callbacks["disconnect"] = resolve;
     client2.send({ type: "disconnect" });
   });
-  addToLog("Jest: Client 1 sends an update while client 2 is offline");
+  addToLog("Test: Client 1 sends an update while client 2 is offline");
   await new Promise<unknown>((resolve) => {
     client1Callbacks["delete"] = resolve;
     client1.send({
@@ -203,31 +225,37 @@ test("Make sure two clients can come online and share updates, despite errors", 
       index: 12,
     });
   });
-  addToLog("Jest: Client 2 reconnects");
+  addToLog("Test: Client 2 reconnects");
   await new Promise<unknown>((resolve) => {
     client2Callbacks["connect"] = resolve;
     client2.send({ type: "connect" });
   });
-  addToLog("Jest: Client 2 loads missed updates while offline");
-  await expect.poll(client2Read).toEqual({
-    content: "First super page",
-    annotations: [
-      {
-        type: "block",
-        start: 0,
-        end: 16,
-        attributes: { level: 1, viewType: "document" },
-      },
-    ],
-  });
+  addToLog("Test: Client 2 loads missed updates while offline");
+  await expect
+    .poll(client2Read)
+    .toEqual(
+      '<div style="margin-left:8px" class="my-2">First super page</div>'
+    );
+  // TODO: test `load` here
+  // await expect.poll(client2Read).toEqual({
+  //   content: "First super page",
+  //   annotations: [
+  //     {
+  //       type: "block",
+  //       start: 0,
+  //       end: 16,
+  //       attributes: { level: 1, viewType: "document" },
+  //     },
+  //   ],
+  // });
 
-  addToLog("Jest: Break client 2 save and apply");
+  addToLog("Test: Break client 2 save and apply");
   await new Promise<unknown>((resolve) => {
     client2Callbacks["break"] = resolve;
     client2.send({ type: "break" });
   });
 
-  addToLog("Jest: Client 1 sends an update while client 2 is broken");
+  addToLog("Test: Client 1 sends an update while client 2 is broken");
   await new Promise<unknown>((resolve) => {
     client1Callbacks["insert"] = resolve;
     client1.send({
@@ -238,30 +266,32 @@ test("Make sure two clients can come online and share updates, despite errors", 
     });
   });
 
-  addToLog("Jest: Client 2 loads missed updates while broken");
-  const receivedPageData4 = await new Promise<unknown>((resolve) => {
-    client2Callbacks["read"] = resolve;
-    client2.send({ type: "read", notebookPageId });
-  });
-  expect(receivedPageData4).toEqual({
-    content: "First super page",
-    annotations: [
-      {
-        type: "block",
-        start: 0,
-        end: 16,
-        attributes: { level: 1, viewType: "document" },
-      },
-    ],
-  });
+  addToLog("Test: Client 2 loads missed updates while broken");
+  await expect
+    .poll(client2Read)
+    .toEqual(
+      '<div style="margin-left:8px" class="my-2">First super page</div>'
+    );
+  // TODO: test `load` here
+  // await expect.poll(client2Read).toEqual({
+  //   content: "First super page",
+  //   annotations: [
+  //     {
+  //       type: "block",
+  //       start: 0,
+  //       end: 16,
+  //       attributes: { level: 1, viewType: "document" },
+  //     },
+  //   ],
+  // });
 
-  addToLog("Jest: Fix client 2 save and apply");
+  addToLog("Test: Fix client 2 save and apply");
   await new Promise<unknown>((resolve) => {
     client2Callbacks["fix"] = resolve;
     client2.send({ type: "fix" });
   });
 
-  addToLog("Jest: Client 1 sends another update now that client 2 is fixed");
+  addToLog("Test: Client 1 sends another update now that client 2 is fixed");
   await new Promise<unknown>((resolve) => {
     client1Callbacks["insert"] = resolve;
     client1.send({
@@ -272,41 +302,41 @@ test("Make sure two clients can come online and share updates, despite errors", 
     });
   });
 
-  addToLog("Jest: Client 2 waits for two updates");
+  addToLog("Test: Client 2 waits for two updates");
   await new Promise<unknown>((resolve) => {
     client2Callbacks["updates"] = resolve;
     client2.send({ type: "updates", count: 2 });
   });
 
-  addToLog("Jest: Client 2 loads correct state");
-  const receivedPageData5 = await new Promise<unknown>((resolve) => {
-    client2Callbacks["read"] = resolve;
-    client2.send({ type: "read", notebookPageId });
-  });
-  expect(receivedPageData5).toEqual({
-    content: "First super page alphabet",
-    annotations: [
-      {
-        type: "block",
-        start: 0,
-        end: 25,
-        attributes: { level: 1, viewType: "document" },
-      },
-    ],
-  });
+  addToLog("Test: Client 2 loads correct state");
+  await expect.poll(client2Read).toEqual(
+    '<div style="margin-left:8px" class="my-2">First super page alphabet</div>'
+  );
+  // TODO: test `load` here
+  // await expect.poll(client2Read).toEqual({
+  //   content: "First super page alphabet",
+  //   annotations: [
+  //     {
+  //       type: "block",
+  //       start: 0,
+  //       end: 25,
+  //       attributes: { level: 1, viewType: "document" },
+  //     },
+  //   ],
+  // });
 
-  addToLog("Jest: unload first client");
+  addToLog("Test: unload first client");
   await new Promise<unknown>((resolve) => {
     client1Callbacks["unload"] = resolve;
     client1.send({ type: "unload" });
   });
 
-  addToLog("Jest: unload second client");
+  addToLog("Test: unload second client");
   await new Promise<unknown>((resolve) => {
     client2Callbacks["unload"] = resolve;
     client2.send({ type: "unload" });
   });
-  addToLog("Jest: Finish Test");
+  addToLog("Test: Finish Test");
 });
 
 test.afterAll(async () => {

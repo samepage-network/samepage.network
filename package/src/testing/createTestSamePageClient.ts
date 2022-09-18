@@ -1,12 +1,30 @@
 import { onAppEvent } from "../internal/registerAppEventListener";
 import setupSharePageWithNotebook from "../protocols/sharePageWithNotebook";
-import type { InitialSchema, Notebook, Schema } from "../types";
+import type { Annotation, InitialSchema, Notebook, Schema } from "../types";
 import setupSamePageClient from "../protocols/setupSamePageClient";
 import { z } from "zod";
-import Automerge from "automerge";
 import WebSocket from "ws";
 import fetch from "node-fetch";
 import inviteNotebookToPage from "../utils/inviteNotebookToPage";
+import ReactDOMServer from "react-dom/server";
+import React from "react";
+import AtJsonRendered from "../components/AtJsonRendered";
+import { JSDOM } from "jsdom";
+
+const findEl = (dom: JSDOM, index: number) => {
+  let start = 0;
+  const el = Array.from(dom.window.document.body.children).find(
+    (el): el is HTMLElement => {
+      const len = (el.textContent || "")?.length;
+      if (index >= start && index < len + start) {
+        return true;
+      }
+      start += len;
+      return false;
+    }
+  );
+  return { start, el };
+};
 
 const createTestSamePageClient = ({
   workspace,
@@ -21,7 +39,7 @@ const createTestSamePageClient = ({
       | { type: "setAppClientState" }
       | { type: "init-page-success" }
       | { type: "accept" }
-      | { type: "read"; data: InitialSchema }
+      | { type: "read"; data: string }
       | { type: "unload" }
       | { type: "share-page-success" }
       | { type: "insert" }
@@ -59,7 +77,7 @@ const createTestSamePageClient = ({
     });
 
   let currentNotebookPageId = "";
-  const appClientState: Record<string, InitialSchema> = {};
+  const appClientState: Record<string, string> = {};
   const commands: Record<string, () => unknown> = {};
   const samePageState: Record<string, Uint8Array> = {};
   const sharedPages: Record<string, { source: Notebook; pageUuid: string }> =
@@ -70,11 +88,34 @@ const createTestSamePageClient = ({
   let saveState = defaultSaveState;
 
   const defaultApplyState = async (id: string, data: Schema) =>
-    (appClientState[id] = {
-      content: data.content.toString(),
-      annotations: data.annotations,
-    });
+    (appClientState[id] = ReactDOMServer.renderToString(
+      React.createElement(AtJsonRendered, data)
+    ));
   let applyState = defaultApplyState;
+  const calculateState = async (id: string): Promise<InitialSchema> => {
+    const html = appClientState[id];
+    const dom = new JSDOM(html);
+    const blocks = Array.from(dom.window.document.body.children).map(
+      (t) => t.textContent || ""
+    );
+    let start = 0;
+    return {
+      content: blocks.join(""),
+      annotations: blocks.map((b) => {
+        const annotation: Annotation = {
+          type: "block",
+          start,
+          end: start + b.length,
+          attributes: {
+            level: 1,
+            viewType: "document",
+          },
+        };
+        start += b.length;
+        return annotation;
+      }),
+    };
+  };
   const processMessageSchema = z.discriminatedUnion("type", [
     z.object({ type: z.literal("accept"), notebookPageId: z.string() }),
     z.object({
@@ -84,7 +125,7 @@ const createTestSamePageClient = ({
     z.object({
       type: z.literal("setAppClientState"),
       notebookPageId: z.string(),
-      data: z.any(),
+      data: z.string(),
     }),
     z.object({ type: z.literal("share") }),
     z.object({
@@ -130,7 +171,7 @@ const createTestSamePageClient = ({
   });
   const {
     unload: unloadSharePage,
-    updatePage,
+    refreshContent,
     insertContent,
     deleteContent,
     joinPage,
@@ -139,7 +180,7 @@ const createTestSamePageClient = ({
     getCurrentNotebookPageId: async () => currentNotebookPageId,
     loadState: async (id) => samePageState[id],
     saveState: async (id, data) => saveState(id, data),
-    calculateState: async (id) => appClientState[id],
+    calculateState,
     applyState: async (id: string, data: Schema) => applyState(id, data),
   });
 
@@ -164,21 +205,7 @@ const createTestSamePageClient = ({
           } else if (message.type === "setAppClientState") {
             appClientState[message.notebookPageId] = message.data;
             if (isShared(message.notebookPageId)) {
-              updatePage({
-                notebookPageId: message.notebookPageId,
-                label: "Refresh",
-                callback: (oldDoc) => {
-                  const doc = appClientState[message.notebookPageId];
-                  oldDoc.content.deleteAt?.(0, oldDoc.content.length);
-                  oldDoc.content.insertAt?.(
-                    0,
-                    ...new Automerge.Text(doc.content)
-                  );
-                  if (!oldDoc.annotations) oldDoc.annotations = [];
-                  oldDoc.annotations.splice(0, oldDoc.annotations.length);
-                  doc.annotations.forEach((a) => oldDoc.annotations.push(a));
-                },
-              });
+              refreshContent({ notebookPageId: message.notebookPageId });
             } else {
               onMessage({ type: "setAppClientState" });
             }
@@ -188,10 +215,7 @@ const createTestSamePageClient = ({
               onMessage({ type: "init-page-success" })
             );
           } else if (message.type === "accept") {
-            appClientState[message.notebookPageId] = {
-              content: "",
-              annotations: [],
-            };
+            appClientState[message.notebookPageId] = "";
             const notification = sharedPages[message.notebookPageId];
             joinPage({
               notebookPageId: message.notebookPageId,
@@ -216,31 +240,36 @@ const createTestSamePageClient = ({
               }),
             ]).then(() => onMessage({ type: "share-page-success" }));
           } else if (message.type === "insert") {
-            const old = appClientState[message.notebookPageId].content;
-            appClientState[message.notebookPageId].content = `${old.slice(
-              0,
-              message.index
-            )}${message.content}${old.slice(message.index)}`;
-            appClientState[message.notebookPageId].annotations[0].end +=
-              message.content.length;
-            insertContent({
-              notebookPageId: message.notebookPageId,
-              content: message.content,
-              index: message.index,
-            }).then(() => onMessage({ type: "insert" }));
+            const old = appClientState[message.notebookPageId];
+            const dom = new JSDOM(old);
+            const { el, start } = findEl(dom, message.index);
+            if (el) {
+              const oldContent = el.textContent || "";
+              el.textContent = `${oldContent.slice(
+                start,
+                message.index - start
+              )}${message.content}${oldContent.slice(message.index - start)}`;
+            } else {
+              const newEl = dom.window.document.createElement("div");
+              newEl.innerHTML = message.content;
+              dom.window.document.body.appendChild(newEl);
+            }
+            appClientState[message.notebookPageId] =
+              dom.window.document.body.innerHTML;
+            insertContent(message).then(() => onMessage({ type: "insert" }));
           } else if (message.type === "delete") {
-            const old = appClientState[message.notebookPageId].content;
-            appClientState[message.notebookPageId].content = `${old.slice(
-              0,
-              message.index
-            )}${old.slice(message.index + message.count)}`;
-            appClientState[message.notebookPageId].annotations[0].end -=
-              message.count;
-            deleteContent({
-              notebookPageId: message.notebookPageId,
-              count: message.count,
-              index: message.index,
-            }).then(() => onMessage({ type: "delete" }));
+            const old = appClientState[message.notebookPageId];
+            const dom = new JSDOM(old);
+            const { el, start } = findEl(dom, message.index);
+            if (el) {
+              const oldContent = el.textContent || "";
+              el.textContent = `${oldContent.slice(
+                start,
+                message.index - start
+              )}${oldContent.slice(message.index - start + message.count)}`;
+              if (!el.textContent) el.remove();
+            }
+            deleteContent(message).then(() => onMessage({ type: "delete" }));
           } else if (message.type === "disconnect") {
             const awaitDisconnect = awaitLog("samepage-disconnect");
             commands["Disconnect from SamePage Network"]();

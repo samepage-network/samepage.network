@@ -69,9 +69,11 @@ const mockContext: Context = {
 const nsToMs = (n: bigint) => Number(n) / 1000000;
 
 test.beforeAll(() => {
+  const tw = execSync("tailwindcss -o ./app/tailwind.css");
   const proc = execSync("npx fuego build --readable");
   if (process.env.DEBUG) {
-    console.error(`Output from build: ${proc.toString()}`);
+    console.log(`Output from tw: ${tw.toString()}`);
+    console.log(`Output from build: ${proc.toString()}`);
   }
 });
 
