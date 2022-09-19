@@ -18,7 +18,9 @@ jobs:
       - name: install
         run: npm install
       - name: package deps
-        run: npm install
+        run: | 
+          npm install
+          rm -Rf node_modules/react node_modules/react-dom node_modules/jsdom
         working-directory: package
       - name: authenticate
         run: echo '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}' > ~/.npmrc
