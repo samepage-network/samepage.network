@@ -43,9 +43,11 @@ const importAsGlobals = (
 ): esbuild.Plugin => {
   const escRe = (s: string) => s.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
   const filter = new RegExp(
-    Object.keys(mapping)
-      .map((mod) => `^${escRe(mod)}$`)
-      .join("|")
+    Object.keys(mapping).length
+      ? Object.keys(mapping)
+          .map((mod) => `^${escRe(mod)}$`)
+          .join("|")
+      : /$^/
   );
 
   return {
