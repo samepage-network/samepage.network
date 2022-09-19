@@ -12,7 +12,7 @@ const AnnotationRendered = ({
 }): React.ReactElement => {
   const children = annotation.children
     .reduce(
-      (p, c) => {
+      (p, c, index) => {
         const splitIndex = p.findIndex(
           (pp) => pp.start <= c.start && c.end <= pp.end
         );
@@ -25,7 +25,13 @@ const AnnotationRendered = ({
               end: c.start,
             },
             {
-              el: <AnnotationRendered annotation={c} content={content} />,
+              el: (
+                <AnnotationRendered
+                  annotation={c}
+                  content={content}
+                  key={index}
+                />
+              ),
               start: c.start,
               end: c.end,
             },

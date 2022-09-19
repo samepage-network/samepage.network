@@ -302,10 +302,10 @@ test("Make sure two clients can come online and share updates, despite errors", 
     });
   });
 
-  addToLog("Test: Client 2 waits for two updates");
+  addToLog("Test: Client 2 waits for an update");
   await new Promise<unknown>((resolve) => {
     client2Callbacks["updates"] = resolve;
-    client2.send({ type: "updates", count: 2 });
+    client2.send({ type: "updates" });
   });
 
   addToLog("Test: Client 2 loads correct state");

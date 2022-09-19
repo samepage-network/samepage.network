@@ -447,7 +447,11 @@ const setupSharePageWithNotebook = ({
               });
             });
         }
-        saveAndApply(notebookPageId, newDoc);
+        if (Object.keys(patch.diffs.props).length) {
+          saveAndApply(notebookPageId, newDoc);
+        } else {
+          saveState(notebookPageId, Automerge.save(newDoc));
+        }
       });
     },
   });

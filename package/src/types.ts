@@ -1,50 +1,67 @@
 import type APPS from "./internal/apps";
 import type Automerge from "automerge";
 import React from "react";
+import { z } from "zod";
 
 // Add future versions in this union
 type Version = "2022-08-17";
-type AnnotationBase = { start: number; end: number };
-type BlockAnnotation = {
-  type: "block";
-  attributes: {
-    level: number;
-    viewType: "bullet" | "numbered" | "document";
-  };
-} & AnnotationBase;
-type MetadataAnnotation = {
-  type: "metadata";
-  attributes: {
-    title: string;
-    parent: string;
-  };
-} & AnnotationBase;
-type BoldAnnotation = {
-  type: "bold";
-} & AnnotationBase;
-type ItalicsAnnotation = {
-  type: "italics";
-} & AnnotationBase;
-type StrikethroughAnnotation = {
-  type: "strikethrough";
-} & AnnotationBase;
-type HighlightingAnnotation = {
-  type: "highlighting";
-} & AnnotationBase;
-type ExternalLinkAnnotation = {
-  type: "link";
-  attributes: {
-    href: string;
-  };
-} & AnnotationBase;
-export type Annotation =
-  | BlockAnnotation
-  | MetadataAnnotation
-  | BoldAnnotation
-  | ItalicsAnnotation
-  | StrikethroughAnnotation
-  | HighlightingAnnotation
-  | ExternalLinkAnnotation;
+const annotationBase = z.object({ start: z.number(), end: z.number() });
+const blockAnnotation = z
+  .object({
+    type: z.literal("block"),
+    attributes: z.object({
+      level: z.number(),
+      viewType: z.enum(["bullet", "numbered", "document"]),
+    }),
+  })
+  .merge(annotationBase);
+const metadataAnnotation = z
+  .object({
+    type: z.literal("metadata"),
+    attributes: z.object({
+      title: z.string(),
+      parent: z.string(),
+    }),
+  })
+  .merge(annotationBase);
+const boldAnnotation = z
+  .object({
+    type: z.literal("bold"),
+  })
+  .merge(annotationBase);
+const italicsAnnotation = z
+  .object({
+    type: z.literal("italics"),
+  })
+  .merge(annotationBase);
+const strikethroughAnnotation = z
+  .object({
+    type: z.literal("strikethrough"),
+  })
+  .merge(annotationBase);
+const highlightingAnnotation = z
+  .object({
+    type: z.literal("highlighting"),
+  })
+  .merge(annotationBase);
+const externalLinkAnnotation = z
+  .object({
+    type: z.literal("link"),
+    attributes: z.object({
+      href: z.string(),
+    }),
+  })
+  .merge(annotationBase);
+export const annotationSchema = z.discriminatedUnion("type", [
+  blockAnnotation,
+  metadataAnnotation,
+  boldAnnotation,
+  italicsAnnotation,
+  strikethroughAnnotation,
+  highlightingAnnotation,
+  externalLinkAnnotation,
+]);
+export type Annotation = z.infer<typeof annotationSchema>;
 export type Schema = {
   contentType: `application/vnd.atjson+samepage; version=${Version}`;
   content: Automerge.Text;

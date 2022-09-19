@@ -32,5 +32,3 @@ jobs:
           npx fuego apply --sql
       - name: tests
         run: npm t
-        env:
-          DEBUG: true

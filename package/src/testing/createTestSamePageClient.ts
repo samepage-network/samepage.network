@@ -1,6 +1,12 @@
 import { onAppEvent } from "../internal/registerAppEventListener";
 import setupSharePageWithNotebook from "../protocols/sharePageWithNotebook";
-import type { Annotation, InitialSchema, Notebook, Schema } from "../types";
+import {
+  Annotation,
+  annotationSchema,
+  InitialSchema,
+  Notebook,
+  Schema,
+} from "../types";
 import setupSamePageClient from "../protocols/setupSamePageClient";
 import { z } from "zod";
 import WebSocket from "ws";
@@ -159,8 +165,11 @@ const createTestSamePageClient = ({
       type: z.literal("fix"),
     }),
     z.object({
-      type: z.literal("updates"),
-      count: z.number(),
+      type: z.literal("updates")
+    }),
+    z.object({
+      type: z.literal("annotate"),
+      annotation: annotationSchema,
     }),
   ]);
   const { unload } = setupSamePageClient({
@@ -288,7 +297,7 @@ const createTestSamePageClient = ({
             applyState = defaultApplyState;
             onMessage({ type: "fix" });
           } else if (message.type === "updates") {
-            awaitLog("update-success", message.count).then(() =>
+            awaitLog("update-success").then(() =>
               onMessage({ type: "updates" })
             );
           }

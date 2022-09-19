@@ -217,6 +217,8 @@ const SharedPageStatus = ({
             hasBackdrop={false}
             size={DrawerSize.SMALL}
             canOutsideClickClose={false}
+            portalClassName={"pointer-events-none"}
+            className={"pointer-events-auto"}
           >
             <div className={Classes.DRAWER_BODY}>
               <HistoryContent
