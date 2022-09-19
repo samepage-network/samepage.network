@@ -26,16 +26,15 @@ base({
       owner: "dvargas92495",
       alias: "personal",
     });
-    APPS.slice(1).forEach((args) => {
-      const key = "key" in args ? args.key : args.name.toLowerCase();
-      new ActionsSecret(this, `${key}_deploy_aws_access_key`, {
-        repository: `${key}-samepage`,
+    APPS.slice(1).forEach(({ repo }) => {
+      new ActionsSecret(this, `${repo}_deploy_aws_access_key`, {
+        repository: `${repo}-samepage`,
         secretName: "SAMEPAGE_AWS_ACCESS_KEY",
         plaintextValue: (accessKey as ActionsSecret).plaintextValue,
         provider,
       });
-      new ActionsSecret(this, `${key}_deploy_aws_access_secret`, {
-        repository: `${key}-samepage`,
+      new ActionsSecret(this, `${repo}_deploy_aws_access_secret`, {
+        repository: `${repo}-samepage`,
         secretName: "SAMEPAGE_AWS_ACCESS_SECRET",
         plaintextValue: (accessSecret as ActionsSecret).plaintextValue,
         provider,

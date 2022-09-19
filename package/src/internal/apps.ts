@@ -10,21 +10,24 @@ const APPS = [
     id: 0,
     name: "SamePage",
     workspaceLabel: "workspace",
+    repo: "samepage",
   },
   {
     id: 1,
     name: "Roam",
-    key: "roamjs",
+    repo: "roamjs",
     workspaceLabel: "graph",
   },
   {
     id: 2,
     name: "LogSeq",
+    repo: "logseq",
     workspaceLabel: "graph",
   },
   {
     id: 3,
     name: "Obsidian",
+    repo: "obsidian",
     workspaceLabel: "vault",
   },
 ] as const;
