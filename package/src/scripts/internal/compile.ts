@@ -15,6 +15,16 @@ declare global {
   }
 }
 
+// TODO - import from fuegojs/utils/readDir
+const readDir = (s: string): string[] =>
+  fs.existsSync(s)
+    ? fs
+        .readdirSync(s, { withFileTypes: true })
+        .flatMap((f) =>
+          f.isDirectory() ? readDir(`${s}/${f.name}`) : [`${s}/${f.name}`]
+        )
+    : [];
+
 export type CliArgs = {
   out?: string;
   external?: string | string[];
@@ -23,6 +33,8 @@ export type CliArgs = {
   format?: esbuild.Format;
   mirror?: string;
   env?: string | string[];
+  analyze?: boolean;
+  max?: string;
 };
 
 // https://github.com/evanw/esbuild/issues/337#issuecomment-954633403
@@ -74,6 +86,7 @@ const compile = ({
   format,
   mirror,
   env,
+  analyze,
   opts = {},
 }: CliArgs & { opts?: esbuild.BuildOptions }) => {
   const rootDir = fs
@@ -103,6 +116,7 @@ const compile = ({
 
   return esbuild
     .build({
+      absWorkingDir: process.cwd(),
       entryPoints: out
         ? {
             [out]: `./src/${entryTs}`,
@@ -144,6 +158,7 @@ const compile = ({
           Object.fromEntries(externalModules.filter((e) => e.length === 2))
         ),
       ],
+      metafile: analyze,
       ...opts,
     })
     .then((r) => {
@@ -180,8 +195,8 @@ const compile = ({
         }
         if (mirror) {
           if (!fs.existsSync(mirror)) fs.mkdirSync(mirror, { recursive: true });
-          fs.readdirSync("dist").forEach((f) =>
-            fs.cpSync(appPath(path.join(`dist`, f)), path.join(mirror, f))
+          readDir("dist").forEach((f) =>
+            fs.cpSync(appPath(f), path.join(mirror, f.replace(/^dist\//, "")))
           );
         }
       };

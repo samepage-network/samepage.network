@@ -1,12 +1,9 @@
 import fs from "fs";
 import nearley from "nearley";
 import nearleyc from "nearley/lib/compile";
-// @ts-ignore all imports in this file are valid - not sure how to type manually
 import nearleys from "nearley/lib/stream";
-// @ts-ignore all imports in this file are valid - not sure how to type manually
 import nearleylang from "nearley/lib/nearley-language-bootstrapped";
 import nearleyg from "nearley/lib/generate";
-// @ts-ignore all imports in this file are valid - not sure how to type manually
 import nearleyl from "nearley/lib/lint";
 
 const nearleyCompile = (f: string) => {
