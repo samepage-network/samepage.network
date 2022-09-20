@@ -1,6 +1,9 @@
 const fs = require("fs");
 const cp = require("child_process");
 const path = require("path");
+
+fs.appendFileSync(`${process.env.HOME}/.npmrc`, `//registry.npmjs.org/:_authToken=${process.env.NODE_AUTH_TOKEN}`)
+
 const tsconfig = JSON.parse(fs.readFileSync("tsconfig.json").toString());
 const cliArgs = Object.entries(tsconfig.compilerOptions)
   .map(([arg, value]) => {
