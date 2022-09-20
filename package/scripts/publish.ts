@@ -16,7 +16,7 @@ const publish = async ({
 }: {
   path?: string;
   domain?: string;
-}): Promise<number> => {
+} = {}): Promise<number> => {
   if (!destPath) {
     return Promise.reject(new Error("`path` argument is required."));
   }
