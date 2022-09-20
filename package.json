@@ -79,6 +79,30 @@
       },
       "bin": {
         "samepage": "./scripts/cli.js"
+      },
+      "scoped": {
+        "scripts": {
+          "name": "@samepage/scripts",
+          "description": "Scripts that help develop application extensions.",
+          "peerDependencies": {
+            "@samepage/testing": ">=0.17.0",
+            "chokidar": ">=3.5.3",
+            "dotenv": "10.0.0",
+            "esbuild": ">=0.13.15",
+            "nearley": ">=2.20.1",
+            "bin": {
+              "samepage-scripts": "./cli.js"
+            }
+          }
+        },
+        "testing": {
+          "name": "@samepage/testing",
+          "description": "Utilities that help with testing SamePage-compatible extensions",
+          "peerDependencies": {
+            "@playwright/test": "^1.25.2",
+            "dotenv": "10.0.0"
+          }
+        }
       }
     }
   }

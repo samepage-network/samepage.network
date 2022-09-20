@@ -2,7 +2,10 @@ const fs = require("fs");
 const cp = require("child_process");
 const path = require("path");
 
-fs.appendFileSync(`${process.env.HOME}/.npmrc`, `//registry.npmjs.org/:_authToken=${process.env.NODE_AUTH_TOKEN}`)
+fs.appendFileSync(
+  `${process.env.HOME}/.npmrc`,
+  `//registry.npmjs.org/:_authToken=${process.env.NODE_AUTH_TOKEN}`
+);
 
 const tsconfig = JSON.parse(fs.readFileSync("tsconfig.json").toString());
 const cliArgs = Object.entries(tsconfig.compilerOptions)
@@ -29,23 +32,31 @@ cp.execSync(
   }
 );
 
-const files = ["LICENSE", "package/README.md", "package/declare.d.ts"];
-files.forEach((f) => fs.cpSync(f, path.join(`dist`, path.basename(f))));
+["LICENSE", "package/README.md", "package/declare.d.ts"].forEach((f) =>
+  fs.cpSync(f, path.join(`dist`, path.basename(f)))
+);
 const rootPackageJson = JSON.parse(fs.readFileSync("package.json").toString());
 const fuegoPackageField = rootPackageJson.fuego?.package || {};
-const newPackageJson = {
-  name: fuegoPackageField.name || rootPackageJson.name,
-  version: rootPackageJson.version,
-  description: fuegoPackageField.description || rootPackageJson.description,
-  main: "index.js",
-  types: "index.d.ts",
-  sideEffects: false,
-  license: rootPackageJson.license,
-  keywords: rootPackageJson.keywords,
-  bugs: rootPackageJson.bugs,
-  homepage: rootPackageJson.homepage,
-  engines: rootPackageJson.engines,
-  peerDependencies: fuegoPackageField.peerDependencies,
-  bin: fuegoPackageField.bin,
+const generatePackageJson = (local, file) => {
+  const newPackageJson = {
+    name: local.name || rootPackageJson.name,
+    version: rootPackageJson.version,
+    description: local.description || rootPackageJson.description,
+    main: "index.js",
+    types: "index.d.ts",
+    sideEffects: false,
+    license: rootPackageJson.license,
+    keywords: rootPackageJson.keywords,
+    bugs: rootPackageJson.bugs,
+    homepage: rootPackageJson.homepage,
+    engines: rootPackageJson.engines,
+    peerDependencies: local.peerDependencies,
+    bin: local.bin,
+  };
+  fs.writeFileSync(file, JSON.stringify(newPackageJson, null, 4));
 };
-fs.writeFileSync("dist/package.json", JSON.stringify(newPackageJson, null, 4));
+generatePackageJson(fuegoPackageField, "dist/package.json");
+
+Object.entries(fuegoPackageField.scoped || {}).forEach(([dir, config]) => {
+  generatePackageJson(config, `dist/${dir}/package.json`);
+});

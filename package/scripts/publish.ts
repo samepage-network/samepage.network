@@ -33,8 +33,4 @@ const publish = async ({
   return 0;
 };
 
-export default () =>
-  publish({
-    path: getPackageName().replace(/-samepage$/, ""),
-    domain: "samepage.network/extensions",
-  });
+export default publish;
