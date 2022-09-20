@@ -89,10 +89,10 @@
             "chokidar": ">=3.5.3",
             "dotenv": "10.0.0",
             "esbuild": ">=0.13.15",
-            "nearley": ">=2.20.1",
-            "bin": {
-              "samepage-scripts": "./cli.js"
-            }
+            "nearley": ">=2.20.1"
+          },
+          "bin": {
+            "samepage-scripts": "./cli.js"
           }
         },
         "testing": {
