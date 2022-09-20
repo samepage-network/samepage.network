@@ -1,7 +1,7 @@
 {
   "name": "samepage.network",
   "version": "0.17.1",
-  "description": "Description for samepage.network",
+  "description": "The intra tool for thought network.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vargasarts/samepage.network.git"

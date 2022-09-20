@@ -22,6 +22,7 @@ const cliArgs = Object.entries(tsconfig.compilerOptions)
       return "";
     }
   })
+  .filter(a => !!a)
   .join(" ");
 
 // https://github.com/microsoft/TypeScript/issues/27379

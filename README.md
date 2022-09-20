@@ -2,7 +2,7 @@
 
 Accessible at [https://samepage.network](https://samepage.network). 
 
-Description for samepage.network.
+The intra tool for thought network.
 
 ## Setup
 
