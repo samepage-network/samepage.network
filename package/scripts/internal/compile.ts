@@ -165,11 +165,11 @@ const compile = ({
     })
     .then((r) => {
       const finish = () => {
-        (typeof include === "string" ? [include] : include || []).forEach(
-          (f) => {
+        (typeof include === "string" ? [include] : include || [])
+          .filter((f) => fs.existsSync(f))
+          .forEach((f) => {
             fs.cpSync(f, path.join("dist", path.basename(f)));
-          }
-        );
+          });
         if (css) {
           const outCssFilename = path.join(
             "dist",

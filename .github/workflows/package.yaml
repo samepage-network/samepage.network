@@ -17,19 +17,13 @@ jobs:
       - uses: actions/checkout@v2
       - name: install
         run: npm install
-      - name: package deps
-        run: | 
-          npm install
-          rm -Rf node_modules/react node_modules/react-dom node_modules/jsdom
-        working-directory: package
       - name: authenticate
         run: echo '//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}' > ~/.npmrc
       - name: build
-        run: npx tsc
-        working-directory: package
+      # https://github.com/microsoft/TypeScript/issues/27379
+        run: npx tsc package/**/*.ts package/**/*.tsx --jsx react-jsx --target es2019 --lib esnext,dom,dom.iterable --module commonjs --moduleResolution node --declaration --outDir dist --strict --esModuleInterop --noUnusedLocals --noUnusedParameters --noImplicitReturns --noImplicitThis --noImplicitAny --forceConsistentCasingInFileNames --allowSyntheticDefaultImports --skipLibCheck --isolatedModules --resolveJsonModule
       - name: prepare
-        run: cp ../LICENSE README.md package.json src/declare.d.ts dist
-        working-directory: package
+        run: cp LICENSE README.md package.json package/declare.d.ts dist
       - name: publish
         run: npm publish --access public
         working-directory: package/dist

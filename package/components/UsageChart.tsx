@@ -1,4 +1,3 @@
-import React from "react";
 import { Classes, Dialog } from "@blueprintjs/core";
 
 export type UsageChartProps = {

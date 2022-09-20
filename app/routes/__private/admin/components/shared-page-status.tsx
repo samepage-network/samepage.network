@@ -1,4 +1,4 @@
-import SharedPageStatus from "package/src/components/SharedPageStatus";
+import SharedPageStatus from "package/components/SharedPageStatus";
 import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { useLoaderData, useNavigate } from "@remix-run/react";
 import { useState } from "react";

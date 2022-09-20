@@ -1,7 +1,7 @@
 import Button from "@dvargas92495/app/components/Button";
 import TextInput from "@dvargas92495/app/components/TextInput";
-import NotificationContainer from "package/src/components/NotificationContainer";
-import dispatchAppEvent from "package/src/internal/dispatchAppEvent";
+import NotificationContainer from "package/components/NotificationContainer";
+import dispatchAppEvent from "package/internal/dispatchAppEvent";
 
 const NotificationContainerPage = () => {
   return (

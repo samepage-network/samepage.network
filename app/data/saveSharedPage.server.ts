@@ -1,7 +1,7 @@
 import getMysqlConnection from "fuegojs/utils/mysql";
 import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
 import Automerge from "automerge";
-import type { Schema } from "package/src/types";
+import type { Schema } from "package/types";
 
 const saveSharedPage = ({
   pageUuid,

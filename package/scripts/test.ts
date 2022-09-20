@@ -19,12 +19,11 @@ const test = ({
         ],
         { stdio: "inherit", env: process.env }
       );
-      return new Promise((resolve, reject) => {
+      return new Promise<number>((resolve, reject) => {
         proc.on("exit", resolve);
         proc.on("error", reject);
       });
     })
-    .then(() => 0)
     .catch((e) => {
       console.error("Failed to run tests:", e);
       return 1;

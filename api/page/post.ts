@@ -1,6 +1,6 @@
 import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
-import type { AppId, Notebook, Schema } from "package/src/types";
-import { appsById } from "package/src/internal/apps";
+import type { AppId, Notebook, Schema } from "package/types";
+import { appsById } from "package/internal/apps";
 import {
   BadRequestError,
   NotFoundError,
@@ -196,7 +196,7 @@ const logic = async (
       ])
         .then(([Data, [source]]) => {
           if (!source) {
-            throw new NotFoundError(`No message: ${messageUuid} exists`)
+            throw new NotFoundError(`No message: ${messageUuid} exists`);
           }
           return {
             data: Data,

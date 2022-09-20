@@ -1,5 +1,5 @@
 import { NotFoundError } from "@dvargas92495/app/backend/errors.server";
-import type { Notebook } from "package/src/types";
+import type { Notebook } from "package/types";
 import getMysql from "fuegojs/utils/mysql";
 
 type SharedPage = { uuid: string; version: number };

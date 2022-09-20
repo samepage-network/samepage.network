@@ -1,6 +1,6 @@
 import { S3 } from "@aws-sdk/client-s3";
 import { domain } from "@dvargas92495/app/backend/constants.server";
-import APPS from "package/src/internal/apps";
+import APPS from "package/internal/apps";
 
 const s3 = new S3({ region: "us-east-1" });
 

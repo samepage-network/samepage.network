@@ -1,5 +1,5 @@
 import base from "fuegojs/utils/base";
-import APPS from "../package/src/internal/apps";
+import APPS from "../package/internal/apps";
 import schema from "./schema";
 import { ActionsSecret, GithubProvider } from "@cdktf/provider-github";
 

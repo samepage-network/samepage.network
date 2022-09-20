@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import type { OverlayProps } from "../types";
 import { Button, Classes, Dialog, InputGroup, Label } from "@blueprintjs/core";
 import { v4 } from "uuid";

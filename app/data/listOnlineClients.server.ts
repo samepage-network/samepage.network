@@ -1,7 +1,7 @@
 import getMysqlConnection from "fuegojs/utils/mysql";
 import schema from "data/schema";
 import { z } from "zod";
-import { appsById } from "package/src/internal/apps";
+import { appsById } from "package/internal/apps";
 
 const listOnlineClients = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);

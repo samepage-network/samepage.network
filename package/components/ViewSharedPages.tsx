@@ -1,5 +1,5 @@
 import { Button, Classes, Dialog } from "@blueprintjs/core";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import LinkNewPage from "./LinkNewPage";
 import type { OverlayProps } from "../types";
 import { renderOverlay } from "../internal/registry";

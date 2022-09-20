@@ -1,5 +1,5 @@
 import { Button, Spinner } from "@blueprintjs/core";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { v4 } from "uuid";
 import { onAppEvent } from "../internal/registerAppEventListener";
