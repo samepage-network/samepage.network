@@ -25,7 +25,8 @@ const publish = async ({
   console.log(
     `Preparing to publish zip to destination ${destPath} as version ${version}`
   );
-  await execSync(`zip -qr ${destPath}.zip dist/*`);
+  process.chdir("dist");
+  await execSync(`zip -qr ${destPath}.zip .`);
   await execSync(
     `aws s3 cp ${destPath}.zip s3://${domain}/${destPath}/${version}.zip`
   );
