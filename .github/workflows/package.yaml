@@ -21,4 +21,4 @@ jobs:
         run: node scripts/package.js
       - name: publish
         run: npm publish --access public
-        working-directory: package/dist
+        working-directory: dist
