@@ -15,13 +15,16 @@ const listExtensionsMetadata = async () => {
         })
         .then((extensions) => {
           return {
-            versions: (extensions.Contents || []).map((c) => {
-              const [_, version] = (c.Key || "")
-                .replace(/^extensions\//, "")
-                .replace(/\.zip$/, "")
-                .split("/");
-              return version;
-            }),
+            versions: (extensions.Contents || [])
+              .map((c) => {
+                const [_, version] = (c.Key || "")
+                  .replace(/^extensions\//, "")
+                  .replace(/\.zip$/, "")
+                  .split("/");
+                return version;
+              })
+              .sort((a, b) => b.localeCompare(a))
+              .slice(0, 5),
             id: app.id,
           };
         })
