@@ -9,7 +9,7 @@ import {
   Tooltip,
 } from "@blueprintjs/core";
 import { appsById } from "../internal/apps";
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React from "react";
 import SharePageDialog from "./SharePageDialog";
 import { OverlayProps, Schema } from "../types";
 import Automerge from "automerge";
@@ -44,12 +44,12 @@ const HistoryContent = ({
   getHistory: () => ReturnType<GetLocalHistory>;
   portalContainer?: HTMLElement;
 }) => {
-  const [history, setHistory] = useState<Awaited<ReturnType<GetLocalHistory>>>(
+  const [history, setHistory] = React.useState<Awaited<ReturnType<GetLocalHistory>>>(
     []
   );
   const [selectedChange, setSelectedChange] =
-    useState<Automerge.State<Schema>>();
-  useEffect(() => {
+    React.useState<Automerge.State<Schema>>();
+  React.useEffect(() => {
     getHistory().then(setHistory);
   }, [getHistory, setHistory]);
   return (
@@ -117,7 +117,7 @@ const TooltipButtonOverlay = ({
   tooltipContent?: string | JSX.Element | undefined;
   defaultIsOpen?: boolean;
 }) => {
-  const [isOpen, setIsOpen] = useState(defaultIsOpen);
+  const [isOpen, setIsOpen] = React.useState(defaultIsOpen);
   return (
     <>
       <Tooltip content={tooltipContent} portalContainer={portalContainer}>
@@ -147,9 +147,9 @@ const SharedPageStatus = ({
   loadState = () => Promise.resolve(new Uint8Array(0)),
   removeState = Promise.resolve,
 }: OverlayProps<Props>) => {
-  const [loading, setLoading] = useState(false);
-  const containerRef = useRef<HTMLSpanElement>(null);
-  const loadAutomergeDoc = useCallback(
+  const [loading, setLoading] = React.useState(false);
+  const containerRef = React.useRef<HTMLSpanElement>(null);
+  const loadAutomergeDoc = React.useCallback(
     (notebookPageId: string) =>
       loadState(notebookPageId).then((state) =>
         Automerge.load<Schema>(state as Automerge.BinaryDocument, {

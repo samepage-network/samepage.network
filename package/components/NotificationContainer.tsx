@@ -1,5 +1,5 @@
 import { Button, Spinner } from "@blueprintjs/core";
-import { useCallback, useEffect, useRef, useState } from "react";
+import React from "react";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { v4 } from "uuid";
 import { onAppEvent } from "../internal/registerAppEventListener";
@@ -41,7 +41,7 @@ const ActionButtons = ({
   }[];
   onSuccess: () => void;
 }) => {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = React.useState(false);
 
   return (
     <>
@@ -82,9 +82,9 @@ const NotificationContainer = ({
   actions = {},
   api: { addNotification, deleteNotification, getNotifications } = defaults,
 }: NotificationContainerProps) => {
-  const [notifications, setNotificatons] = useState<Notification[]>([]);
-  const notificationsRef = useRef<Notification[]>(notifications);
-  const removeNotificaton = useCallback(
+  const [notifications, setNotificatons] = React.useState<Notification[]>([]);
+  const notificationsRef = React.useRef<Notification[]>(notifications);
+  const removeNotificaton = React.useCallback(
     (not: Notification) => {
       return deleteNotification(not.uuid).then(() => {
         notificationsRef.current = notificationsRef.current.filter(
@@ -95,9 +95,9 @@ const NotificationContainer = ({
     },
     [setNotificatons, notificationsRef]
   );
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = React.useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     getNotifications().then((nots) => {
       notificationsRef.current = nots;
       setNotificatons(nots);

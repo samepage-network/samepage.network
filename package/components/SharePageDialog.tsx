@@ -1,5 +1,5 @@
 import type { AppId } from "../types";
-import { useEffect, useRef, useState } from "react";
+import React from "react";
 import {
   Button,
   Classes,
@@ -43,13 +43,13 @@ const SharePageDialog = ({
   listConnectedNotebooks,
   notebookPageId,
 }: Props) => {
-  const [notebooks, setNotebooks] = useState<
+  const [notebooks, setNotebooks] = React.useState<
     Awaited<ReturnType<ListConnectedNotebooks>>["notebooks"]
   >([]);
-  const [currentApp, setCurrentApp] = useState<AppId>(1);
-  const [currentworkspace, setCurrentWorkspace] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [currentApp, setCurrentApp] = React.useState<AppId>(1);
+  const [currentworkspace, setCurrentWorkspace] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
   const onInvite = () => {
     if (currentworkspace) {
       setLoading(true);
@@ -69,9 +69,9 @@ const SharePageDialog = ({
       setCurrentWorkspace("");
     }
   };
-  const appSelectRef = useRef<Select<AppId>>(null);
+  const appSelectRef = React.useRef<Select<AppId>>(null);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (isOpen) {
       setLoading(true);
       listConnectedNotebooks(notebookPageId)

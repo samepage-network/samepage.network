@@ -1,5 +1,5 @@
 import { Button, Classes, Dialog } from "@blueprintjs/core";
-import { useEffect, useState } from "react";
+import React from "react";
 import LinkNewPage from "./LinkNewPage";
 import type { OverlayProps } from "../types";
 import { renderOverlay } from "../internal/registry";
@@ -27,8 +27,8 @@ const PageLink = ({
   linkNewPage,
   linkClassName,
 }: OverlayProps<{ notebookPageId: string } & LinkProps>) => {
-  const [title, setTitle] = useState<string | undefined>("");
-  useEffect(() => {
+  const [title, setTitle] = React.useState<string | undefined>("");
+  React.useEffect(() => {
     getLocalPageTitle(notebookPageId).then(setTitle);
   }, [notebookPageId]);
   return typeof title === "undefined" ? (

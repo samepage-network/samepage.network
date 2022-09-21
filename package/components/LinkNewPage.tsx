@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React from "react";
 import type { OverlayProps } from "../types";
 import { Button, Classes, Dialog, InputGroup, Label } from "@blueprintjs/core";
 import { v4 } from "uuid";
@@ -13,7 +13,7 @@ const LinkNewPage = ({
   notebookPageId: string;
   linkNewPage?: (notebookPageId: string, title: string) => Promise<string>;
 }>) => {
-  const [name, setName] = useState("");
+  const [name, setName] = React.useState("");
   return (
     <Dialog
       onClose={onClose}
