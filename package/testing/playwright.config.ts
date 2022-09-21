@@ -5,6 +5,10 @@ const config: PlaywrightTestConfig = {
   globalTeardown: require.resolve("./globalTeardown"),
   reporter: process.env.CI ? "github" : [["html", { open: "on-failure" }]],
   testDir: `${process.cwd()}/tests`,
+  use: {
+    screenshot: "only-on-failure",
+    video: process.env.DEBUG ? "on" : "off",
+  }
 };
 
 export default config;

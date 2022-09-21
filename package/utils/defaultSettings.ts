@@ -6,6 +6,13 @@ const defaultSettings = [
     default: false,
     description: "Automatically connect to the SamePage Network",
   },
+  {
+    id: "granular-changes",
+    name: "Granular Changes",
+    description: "Send changes granularly",
+    type: "boolean",
+    default: false,
+  },
 ] as const;
 
 export type DefaultSetting = typeof defaultSettings[number];

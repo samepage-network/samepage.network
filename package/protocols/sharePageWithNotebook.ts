@@ -394,15 +394,15 @@ const setupSharePageWithNotebook = ({
   addNotebookListener({
     operation: SHARE_PAGE_RESPONSE_OPERATION,
     handler: (data, source) => {
-      const { success, pageUuid } = data as {
+      const { success, title } = data as {
         success: boolean;
-        pageUuid: string;
+        title: string;
       };
       if (success)
         dispatchAppEvent({
           type: "log",
           id: "share-page-accepted",
-          content: `Successfully shared ${pageUuid} with ${
+          content: `Successfully shared ${title} with ${
             appsById[source.app].name
           } / ${source.workspace}!`,
           intent: "success",
@@ -413,7 +413,7 @@ const setupSharePageWithNotebook = ({
           id: "share-page-rejected",
           content: `Notebook ${appsById[source.app].name} / ${
             source.workspace
-          } rejected ${pageUuid}`,
+          } rejected ${title}`,
           intent: "info",
         });
     },
@@ -535,7 +535,7 @@ const setupSharePageWithNotebook = ({
           operation: SHARE_PAGE_RESPONSE_OPERATION,
           data: {
             success: true,
-            pageUuid,
+            title: notebookPageId,
           },
         });
         initPage({
@@ -582,7 +582,7 @@ const setupSharePageWithNotebook = ({
   }) =>
     updatePage({
       notebookPageId,
-      label: `Insert: ${content} as ${index}`,
+      label: `Insert: ${content} at ${index}`,
       callback: (schema) => {
         schema.content.insertAt?.(index, ...content.split(""));
         schema.annotations.forEach((annotation) => {
@@ -631,12 +631,16 @@ const setupSharePageWithNotebook = ({
       },
     });
 
-  const refreshContent = ({ notebookPageId }: { notebookPageId: string }) =>
-    updatePage({
+  const refreshContent = async ({
+    notebookPageId,
+  }: {
+    notebookPageId: string;
+  }) => {
+    const doc = await calculateState(notebookPageId);
+    return updatePage({
       notebookPageId,
       label: "Refresh",
       callback: async (oldDoc) => {
-        const doc = await calculateState(notebookPageId);
         oldDoc.content.deleteAt?.(0, oldDoc.content.length);
         oldDoc.content.insertAt?.(0, ...new Automerge.Text(doc.content));
         if (!oldDoc.annotations) oldDoc.annotations = [];
@@ -644,6 +648,7 @@ const setupSharePageWithNotebook = ({
         doc.annotations.forEach((a) => oldDoc.annotations.push(a));
       },
     });
+  };
 
   const rejectPage = ({
     source,

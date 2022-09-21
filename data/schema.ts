@@ -1,7 +1,15 @@
 import { z } from "zod";
 
+const uuid = z.string().uuid().describe("primary");
+
+const notebook = z.object({
+  uuid,
+  workspace: z.string(),
+  app: z.number().max(Math.pow(2, 8)).min(0),
+});
+
 const pageNotebookLink = z.object({
-  uuid: z.string().uuid().describe("primary"),
+  uuid,
   pageUuid: z.string().uuid().describe("foreign"),
   notebookPageId: z.string().describe("unique"),
   workspace: z.string().describe("unique"),
@@ -10,7 +18,7 @@ const pageNotebookLink = z.object({
 });
 
 const page = z.object({
-  uuid: z.string().uuid().describe("primary"),
+  uuid,
   version: z.number(),
 });
 
@@ -31,7 +39,7 @@ const clientSession = z.object({
 });
 
 const message = z.object({
-  uuid: z.string().uuid().describe("primary"),
+  uuid,
   sourceInstance: z.string(),
   sourceApp: z.number().max(Math.pow(2, 8)),
   targetInstance: z.string(),
@@ -41,12 +49,13 @@ const message = z.object({
 });
 
 const ongoingMessage = z.object({
-  uuid: z.string().uuid().describe("primary"),
+  uuid,
   chunk: z.number().describe("unique"),
   messageUuid: z.string().uuid().describe("unique"),
 });
 
 const schema = {
+  notebook,
   page,
   pageNotebookLink,
   onlineClient,

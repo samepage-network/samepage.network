@@ -7,7 +7,8 @@ const test = ({
   ...args
 }: CliArgs & { forward?: string | string[] }) => {
   process.env.NODE_ENV = process.env.NODE_ENV || "test";
-  process.env.DEBUG = process.env.DEBUG || process.env.PWDEBUG;
+  if (process.env.DEBUG || process.env.PWDEBUG)
+    process.env.DEBUG = process.env.DEBUG || process.env.PWDEBUG;
   return compile(args)
     .then(() => {
       const config = fs.existsSync(
