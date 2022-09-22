@@ -22,7 +22,7 @@ const cliArgs = Object.entries(tsconfig.compilerOptions)
       return "";
     }
   })
-  .filter(a => !!a)
+  .filter((a) => !!a)
   .join(" ");
 
 // https://github.com/microsoft/TypeScript/issues/27379
@@ -33,7 +33,17 @@ cp.execSync(
   }
 );
 
-["LICENSE", "package/README.md", "package/declare.d.ts"].forEach((f) =>
+cp.execSync(
+  `npx tailwindcss -c package/tailwind.config.js -o dist/samepage.css`,
+  { stdio: "inherit" }
+);
+fs.appendFileSync(
+  "dist/samepage.css",
+  `@import url("https://unpkg.com/normalize.css@^8.0.1");
+@import url("https://unpkg.com/@blueprintjs/core@^4.8.0/lib/css/blueprint.css");`
+)
+
+[("LICENSE", "package/README.md", "package/declare.d.ts")].forEach((f) =>
   fs.cpSync(f, path.join(`dist`, path.basename(f)))
 );
 const rootPackageJson = JSON.parse(fs.readFileSync("package.json").toString());

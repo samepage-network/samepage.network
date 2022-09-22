@@ -98,15 +98,9 @@ const SharePageDialog = ({
         {notebooks.map((g, i) => (
           <div
             key={`${g.app}/${g.workspace}`}
-            style={{
-              display: "flex",
-              gap: 16,
-              alignItems: "center",
-              marginBottom: 4,
-              justifyContent: "space-between",
-            }}
+            className={"flex gap-4 items-center mb-1 justify-between"}
           >
-            <span style={{ flexGrow: 1 }}>
+            <span className={"flex-grow"}>
               {g.app}/{g.workspace}
             </span>
             <span>
@@ -129,8 +123,8 @@ const SharePageDialog = ({
             </span>
           </div>
         ))}
-        <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
-          <Label style={{ maxWidth: "120px", width: "100%" }}>
+        <div className={"flex gap-4 items-center"}>
+          <Label className={"w-28"}>
             App
             <AppSelect
               items={appOptions.map((a) => a.id)}
@@ -169,7 +163,7 @@ const SharePageDialog = ({
               />
             </AppSelect>
           </Label>
-          <Label style={{ flexGrow: 1 }}>
+          <Label className={"flex-grow"}>
             Workspace
             <InputGroup
               value={currentworkspace}

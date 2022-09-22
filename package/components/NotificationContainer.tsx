@@ -50,7 +50,7 @@ const ActionButtons = ({
           <Button
             key={action.label}
             text={action.label}
-            className={"capitalize"}
+            className={"capitalize mr-2"}
             onClick={() => {
               setLoading(true);
               action
@@ -68,7 +68,6 @@ const ActionButtons = ({
                 })
                 .finally(() => setLoading(false));
             }}
-            style={{ marginRight: "8px" }}
             disabled={loading}
           />
         ))}
@@ -135,44 +134,24 @@ const NotificationContainer = ({
   }, [addNotification, setNotificatons, notificationsRef, getNotifications]);
   return notifications.length ? (
     <div
-      className="samepage-notification-container absolute bottom-2 right-2"
+      className="samepage-notification-container absolute top-16 right-16 shadow-xl"
       style={{
         zIndex: 1000,
-        boxShadow: "0px 0px 8px #00000080",
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          height: 8,
-          width: 8,
-          background: "red",
-          borderRadius: "50%",
-        }}
-      />
+      <div className="absolute top-0 left-0 h-2 w-2 bg-red-600 rounded-full" />
       {isOpen ? (
-        <div style={{ background: "white", width: 280 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: 8,
-              background: "#eeeeee80",
-              borderBottom: "1px solid black",
-            }}
-          >
+        <div className={"bg-white w-72"}>
+          <div className="flex items-center justify-between p-2 bg-slate-100 bg-opacity-50 border-b border-b-black">
             <h4>Notifications</h4>
             <Button onClick={() => setIsOpen(false)} icon={"cross"} minimal />
           </div>
           <div>
             {notifications.map((not) => (
-              <div key={not.uuid} style={{ padding: "0 16px 4px" }}>
+              <div key={not.uuid} className={"pb-1 px-4"}>
                 <h5>{not.title}</h5>
                 <p>{not.description}</p>
-                <div style={{ gap: 8 }} className={"flex"}>
+                <div className={"flex g-2"}>
                   <ActionButtons
                     actions={not.buttons.map((label) => ({
                       label,
@@ -199,12 +178,7 @@ const NotificationContainer = ({
         <img
           onClick={() => setIsOpen(true)}
           src={"https://samepage.network/images/logo.png"}
-          style={{
-            borderRadius: "50%",
-            height: 24,
-            width: 24,
-            cursor: "pointer",
-          }}
+          className={"rounded-full h-6 w-6 cursor-pointer"}
         />
       )}
     </div>

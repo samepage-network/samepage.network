@@ -29,21 +29,17 @@ const UsageChart = ({
         <div className={"flex justify-between items-center"}>
           <b>Description</b>
           <span>
-            <b style={{ minWidth: 80, display: "inline-block" }}>Price</b>
-            <b style={{ minWidth: 80, display: "inline-block" }}>Qty</b>
-            <b style={{ minWidth: 80, display: "inline-block" }}>Total</b>
+            <b className={"inline-block w-20"}>Price</b>
+            <b className={"inline-block w-20"}>Qty</b>
+            <b className={"inline-block w-20"}>Total</b>
           </span>
         </div>
         <div className={"flex justify-between items-center"}>
           <span>Mins Conn.</span>
           <span>
-            <span style={{ minWidth: 80, display: "inline-block" }}>
-              $0.002
-            </span>
-            <span style={{ minWidth: 80, display: "inline-block" }}>
-              {minsConnected}
-            </span>
-            <span style={{ minWidth: 80, display: "inline-block" }}>
+            <span className={"inline-block w-20"}>$0.002</span>
+            <span className={"inline-block w-20"}>{minsConnected}</span>
+            <span className={"inline-block w-20"}>
               ${(stats.minutes * 0.002).toFixed(2)}
             </span>
           </span>
@@ -51,11 +47,11 @@ const UsageChart = ({
         <div className={"flex justify-between items-center"}>
           <span>Messages</span>
           <span>
-            <span style={{ minWidth: 80, display: "inline-block" }}>$0.01</span>
-            <span style={{ minWidth: 80, display: "inline-block" }}>
+            <span className={"inline-block w-20"}>$0.01</span>
+            <span className={"inline-block w-20"}>
               {stats.messages.toFixed(2)}
             </span>
-            <span style={{ minWidth: 80, display: "inline-block" }}>
+            <span className={"inline-block w-20"}>
               ${(stats.messages * 0.01).toFixed(2)}
             </span>
           </span>
@@ -65,8 +61,8 @@ const UsageChart = ({
           <span>
             <b>Total</b> {stats.date && `(Billed: ${stats.date})`}
           </span>
-          <span style={{ display: "flex", alignItems: "center" }}>
-            <b style={{ minWidth: 80, display: "inline-block" }}>
+          <span className={"flex items-center"}>
+            <b className={"inline-block w-20"}>
               ${(stats.minutes * 0.002 + stats.messages * 0.01).toFixed(2)}
             </b>
           </span>

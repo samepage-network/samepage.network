@@ -32,10 +32,7 @@ const PageLink = ({
     getLocalPageTitle(notebookPageId).then(setTitle);
   }, [notebookPageId]);
   return typeof title === "undefined" ? (
-    <span
-      className="flex"
-      style={{ justifyContent: "space-between", alignItems: "center" }}
-    >
+    <span className="flex justify-between items-center">
       <i>Page {notebookPageId} was deleted locally. Link another page?</i>{" "}
       <Button
         icon={"link"}

@@ -55,7 +55,7 @@ const AnnotationRendered = ({
     .map((c) => c.el);
   return annotation.type === "block" ? (
     <div
-      style={{ marginLeft: annotation.attributes.level * 8 }}
+      style={{ marginLeft: annotation.attributes.level * 16 }}
       className={"my-2"}
     >
       {children}
