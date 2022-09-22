@@ -19,5 +19,6 @@ export const handler = getRemixHandler({
           }),
     },
     /^\/extensions\/[a-z0-9]+\/[\d-]+\.zip$/,
+    /^\/extensions\/tests\/[a-z0-9]+\/[\d-]+\.html$/
   ],
 });
