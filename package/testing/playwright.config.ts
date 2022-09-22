@@ -4,7 +4,7 @@ const config: PlaywrightTestConfig = {
   globalSetup: require.resolve("./globalSetup"),
   globalTeardown: require.resolve("./globalTeardown"),
   reporter: process.env.CI
-    ? [["github"], ["html"]]
+    ? [["github"], ["html", { outputFolder: "playwright-report" }]]
     : [["html", { open: "on-failure" }]],
   testDir: `${process.cwd()}/tests`,
   use: {

@@ -4,6 +4,7 @@ import { S3 } from "@aws-sdk/client-s3";
 import compile, { CliArgs } from "./internal/compile";
 import toVersion from "./internal/toVersion";
 import getPackageName from "./internal/getPackageName";
+import mime from "mime-types";
 
 const test = ({
   forward,
@@ -46,14 +47,30 @@ const test = ({
       if (process.env.CI) {
         const s3 = new S3({});
         const report = fs.createReadStream("playwright-report/index.html");
+        const reportData = fs.readdirSync("playwright-report/data");
 
-        const Key = `extensions/tests/${path}/${toVersion()}.html`;
-        return s3
-          .putObject({
-            Bucket: "samepage.network",
-            Key,
-            Body: report,
-          })
+        const version = toVersion();
+        const root = "extensions/tests";
+        const Key = `%${root}/${path}/${version}.html`;
+        return Promise.all(
+          [
+            s3.putObject({
+              Bucket: "samepage.network",
+              Key,
+              Body: report,
+              ContentType: "text/html",
+            }),
+          ].concat(
+            reportData.map((r) =>
+              s3.putObject({
+                Bucket: "samepage.network",
+                Key: `${root}/${path}/${version}/data/${r}`,
+                ContentType: mime.lookup(r) || undefined,
+                Body: fs.createReadStream(`playwright-report/data/${r}`),
+              })
+            )
+          )
+        )
           .then(() =>
             console.log(
               `Latest test report can be found on: https://samepage.network/${Key}`
