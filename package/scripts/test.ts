@@ -51,7 +51,7 @@ const test = ({
 
         const version = toVersion();
         const root = "extensions/tests";
-        const Key = `%${root}/${path}/${version}.html`;
+        const Key = `${root}/${path}/${version}.html`;
         return Promise.all(
           [
             s3.putObject({
