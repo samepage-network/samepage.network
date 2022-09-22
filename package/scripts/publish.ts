@@ -1,14 +1,7 @@
-import fs from "fs";
-import path from "path";
 import dotenv from "dotenv";
 import { execSync } from "child_process";
+import getPackageName from "./internal/getPackageName";
 dotenv.config();
-
-const getPackageName = (): string =>
-  (fs.existsSync("package.json")
-    ? JSON.parse(fs.readFileSync("package.json").toString())?.name
-    : path.basename(process.cwd())
-  )?.replace(/^roamjs-/, "");
 
 const publish = async ({
   path: destPath = getPackageName(),
