@@ -40,7 +40,7 @@
   "dependencies": {
     "@blueprintjs/core": "^4.10.1",
     "@blueprintjs/select": "^4.6.6",
-    "@dvargas92495/app": "^0.13.15",
+    "@dvargas92495/app": "^0.13.16",
     "@types/moo": "^0.5.5",
     "@types/nearley": "^2.11.2",
     "automerge": "^1.0.1-preview.7",
