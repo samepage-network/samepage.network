@@ -41,9 +41,9 @@ fs.appendFileSync(
   "dist/samepage.css",
   `@import url("https://unpkg.com/normalize.css@^8.0.1");
 @import url("https://unpkg.com/@blueprintjs/core@^4.8.0/lib/css/blueprint.css");`
-)
+);
 
-[("LICENSE", "package/README.md", "package/declare.d.ts")].forEach((f) =>
+["LICENSE", "package/README.md", "package/declare.d.ts"].forEach((f) =>
   fs.cpSync(f, path.join(`dist`, path.basename(f)))
 );
 const rootPackageJson = JSON.parse(fs.readFileSync("package.json").toString());
