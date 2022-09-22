@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import { Classes, Dialog } from "@blueprintjs/core";
 
 export type UsageChartProps = {
@@ -9,7 +9,13 @@ export type UsageChartProps = {
   onClose: () => void;
 };
 
-const UsageChart = ({ onClose, portalContainer, ...stats }: UsageChartProps) => {
+const UsageChart = ({
+  onClose,
+  portalContainer,
+  ...stats
+}: UsageChartProps) => {
+  // just doing this to skirt around the React unused import error/umd global catch 22 for now
+  const minsConnected = React.useMemo(() => stats.minutes.toFixed(2), []);
   return (
     <Dialog
       onClose={onClose}
@@ -35,7 +41,7 @@ const UsageChart = ({ onClose, portalContainer, ...stats }: UsageChartProps) => 
               $0.002
             </span>
             <span style={{ minWidth: 80, display: "inline-block" }}>
-              {stats.minutes.toFixed(2)}
+              {minsConnected}
             </span>
             <span style={{ minWidth: 80, display: "inline-block" }}>
               ${(stats.minutes * 0.002).toFixed(2)}
