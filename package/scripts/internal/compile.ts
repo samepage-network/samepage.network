@@ -184,14 +184,18 @@ const compile = ({
           } else if (inputCssFiles.length === 1) {
             fs.renameSync(path.join("dist", inputCssFiles[0]), outCssFilename);
           } else {
-            fs.writeFileSync(outCssFilename, "");
+            const baseOutput = path.basename(outCssFilename);
+            if (!inputCssFiles.includes(baseOutput))
+              fs.writeFileSync(outCssFilename, "");
             inputCssFiles.forEach((f) => {
-              const cssFileContent = fs
-                .readFileSync(path.join("dist", f))
-                .toString();
-              fs.rmSync(path.join("dist", f));
-              fs.appendFileSync(outCssFilename, cssFileContent);
-              fs.appendFileSync(outCssFilename, "\n");
+              if (baseOutput !== f) {
+                const cssFileContent = fs
+                  .readFileSync(path.join("dist", f))
+                  .toString();
+                fs.rmSync(path.join("dist", f));
+                fs.appendFileSync(outCssFilename, cssFileContent);
+                fs.appendFileSync(outCssFilename, "\n");
+              }
             });
           }
         }
