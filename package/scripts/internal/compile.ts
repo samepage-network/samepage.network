@@ -197,6 +197,14 @@ const compile = ({
                 fs.appendFileSync(outCssFilename, "\n");
               }
             });
+            // hoist all imports to the top
+            const outlines = fs
+              .readFileSync(outCssFilename)
+              .toString()
+              .split("\n");
+            const imports = outlines.filter((l) => l.startsWith("@import"));
+            const rest = outlines.filter((l) => !l.startsWith("@import"));
+            fs.writeFileSync(outCssFilename, imports.concat(rest).join("\n"));
           }
         }
         if (mirror) {
