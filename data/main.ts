@@ -15,7 +15,7 @@ base({
   ],
   backendProps: {
     sizes: {
-      page_post: "5120",
+      "page/post": "5120",
     },
   },
   callback() {
