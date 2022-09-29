@@ -2,7 +2,7 @@ import getMysqlConnection from "fuegojs/utils/mysql";
 import type { AppId } from "package/types";
 import { appsById } from "package/internal/apps";
 
-const listPageNotebookLinks = async (requestId: string) => {
+const listAllPageNotebookLinks = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
   const results = await cxn.execute("SELECT * FROM page_notebook_links").then(
     ([r]) =>
@@ -12,6 +12,7 @@ const listPageNotebookLinks = async (requestId: string) => {
         workspace: string;
         notebook_page_id: string;
         uuid: string;
+        open: boolean;
       }[]
   );
   cxn.destroy();
@@ -22,6 +23,7 @@ const listPageNotebookLinks = async (requestId: string) => {
         workspace: c.workspace,
         id: c.notebook_page_id,
         uuid: c.uuid,
+        inviteOpen: c.open,
       });
     } else {
       p[c.page_uuid] = [
@@ -30,14 +32,15 @@ const listPageNotebookLinks = async (requestId: string) => {
           workspace: c.workspace,
           id: c.notebook_page_id,
           uuid: c.uuid,
+          inviteOpen: c.open,
         },
       ];
     }
     return p;
-  }, {} as Record<string, { id: string; workspace: string; app: string; uuid: string }[]>);
+  }, {} as Record<string, { id: string; workspace: string; app: string; uuid: string; inviteOpen: boolean }[]>);
   return {
     pages,
   };
 };
 
-export default listPageNotebookLinks;
+export default listAllPageNotebookLinks;

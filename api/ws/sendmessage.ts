@@ -11,6 +11,7 @@ import type {
   APIGatewayProxyResult,
   Context,
 } from "aws-lambda";
+import getNotebookUuid from "~/data/getNotebookUuid.server";
 
 // postToConnection({
 //   ConnectionId,
@@ -42,13 +43,30 @@ const dataHandler = async (
   if (operation === "AUTHENTICATION") {
     const { app, workspace } = props as { app: AppId; workspace: string };
     const cxn = await getMysqlConnection(requestId);
+    const notebookUuid = await getNotebookUuid({
+      app,
+      workspace,
+      requestId,
+    }).then(
+      (uuid) =>
+        uuid ||
+        Promise.resolve(v4()).then((newUuid) =>
+          cxn
+            .execute(
+              `INSERT INTO notebooks (uuid, app, workspace) VALUES (?,?,?)`,
+              [newUuid, app, workspace]
+            )
+            .then(() => newUuid)
+        )
+    );
+
     const [_, messages] = await Promise.all([
       // one downside of inserting here instead of onconnect is the clock drift on created date
       // a client could theoretically connect without authenticate and would get free usage
       cxn.execute(
-        `INSERT INTO online_clients (app, instance, id, created_date) 
-        VALUES (?,?,?,?)`,
-        [app, workspace, clientId, new Date()]
+        `INSERT INTO online_clients (app, instance, id, created_date, notebook_uuid) 
+        VALUES (?,?,?,?,?)`,
+        [app, workspace, clientId, new Date(), notebookUuid]
       ),
       cxn
         .execute(

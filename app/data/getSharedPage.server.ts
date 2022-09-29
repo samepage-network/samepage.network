@@ -23,7 +23,7 @@ const getSharedPage = <T extends SharedPageInput & { safe?: true }>({
         `SELECT p.* 
         FROM page_notebook_links l 
         INNER JOIN pages p ON p.uuid = l.page_uuid
-        WHERE workspace = ? AND app = ? AND notebook_page_id = ?`,
+        WHERE workspace = ? AND app = ? AND notebook_page_id = ? AND open = 0`,
         [workspace, app, notebookPageId]
       )
       .then(([results]) => {

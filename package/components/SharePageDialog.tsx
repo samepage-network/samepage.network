@@ -17,9 +17,18 @@ import APPS, { appsById } from "../internal/apps";
 import getNodeEnv from "../internal/getNodeEnv";
 
 export type ListConnectedNotebooks = (notebookPageId: string) => Promise<{
-  networks: { app: string; workspace: string; version: number }[];
-  notebooks: { app: string; workspace: string; version: number }[];
+  notebooks: {
+    app: string;
+    workspace: string;
+    version: number;
+    openInvite: boolean;
+  }[];
 }>;
+
+export type RemoveOpenInvite = (
+  app: AppId,
+  workspace: string
+) => Promise<{ success: boolean }>;
 
 const formatVersion = (s: number) =>
   s ? new Date(s * 1000).toLocaleString() : "unknown";
@@ -30,6 +39,7 @@ export type Props = {
   isOpen?: boolean;
   notebookPageId: string;
   listConnectedNotebooks: ListConnectedNotebooks;
+  removeOpenInvite: RemoveOpenInvite;
 };
 
 const appOptions = getNodeEnv() === "test" ? APPS : APPS.slice(1);
@@ -41,6 +51,7 @@ const SharePageDialog = ({
   isOpen = true,
   portalContainer,
   listConnectedNotebooks,
+  removeOpenInvite,
   notebookPageId,
 }: Props) => {
   const [notebooks, setNotebooks] = React.useState<
@@ -64,6 +75,7 @@ const SharePageDialog = ({
           workspace: currentworkspace,
           app: appsById[currentApp as AppId].name,
           version: 0,
+          openInvite: true,
         },
       ]);
       setCurrentWorkspace("");
@@ -104,21 +116,25 @@ const SharePageDialog = ({
               {g.app}/{g.workspace}
             </span>
             <span>
-              {g.version ? (
+              {g.openInvite ? (
+                <Button
+                  minimal
+                  icon={"trash"}
+                  onClick={() => {
+                    setNotebooks(notebooks.filter((_, j) => j !== i));
+                    setLoading(true);
+                    removeOpenInvite(Number(g.app) as AppId, g.workspace).then(
+                      () => setLoading(false)
+                    );
+                  }}
+                />
+              ) : (
                 <Tooltip
                   content={`Version: ${formatVersion(g.version)}`}
                   portalContainer={portalContainer}
                 >
                   <Icon icon={"info-sign"} />
                 </Tooltip>
-              ) : (
-                <Button
-                  minimal
-                  icon={"trash"}
-                  onClick={() =>
-                    setNotebooks(notebooks.filter((_, j) => j !== i))
-                  }
-                />
               )}
             </span>
           </div>

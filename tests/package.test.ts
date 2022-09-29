@@ -60,8 +60,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
   const client1Callbacks: Record<string, (data: unknown) => void> = {
     log: (log) => addToLog(`Client 1: ${log}`),
     error: (message) => {
-      addToLog("Client 1: ERROR");
-      throw new Error(message as string);
+      addToLog(`Client 1: ERROR ${message}`);
     },
   };
   client1.on("message", (_data) => {
@@ -82,8 +81,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
   const client2Callbacks: Record<string, (data: unknown) => void> = {
     log: (log) => addToLog(`Client 2: ${log}`),
     error: (message) => {
-      addToLog("Client 2: ERROR");
-      throw new Error(message as string);
+      addToLog(`Client 2: ERROR ${message}`);
     },
   };
   client2.on("message", (_data) => {
@@ -135,7 +133,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
       client1.send({
         type: "setAppClientState",
         notebookPageId,
-        data: '<div style="margin-left:8px" class="my-2">First entry in page</div>',
+        data: '<div style="margin-left:16px" class="my-2">First entry in page</div>',
       });
     }));
 
@@ -174,7 +172,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
     expect
       .poll(client2Read)
       .toEqual(
-        '<div style="margin-left:8px" class="my-2">First entry in page</div>'
+        '<div style="margin-left:16px" class="my-2">First entry in page</div>'
       ));
   // TODO: test `load` here
   // await expect.poll(client2Read).toEqual(initialPageData);
@@ -199,7 +197,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
     expect
       .poll(client1Read)
       .toEqual(
-        '<div style="margin-left:8px" class="my-2">First super entry in page</div>'
+        '<div style="margin-left:16px" class="my-2">First super entry in page</div>'
       ));
   // TODO: test `load` here
   // await expect.poll(client1Read).toEqual({
@@ -241,7 +239,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
     expect
       .poll(client2Read)
       .toEqual(
-        '<div style="margin-left:8px" class="my-2">First super page</div>'
+        '<div style="margin-left:16px" class="my-2">First super page</div>'
       ));
   // TODO: test `load` here
   // await expect.poll(client2Read).toEqual({
@@ -277,7 +275,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
     expect
       .poll(client2Read)
       .toEqual(
-        '<div style="margin-left:8px" class="my-2">First super page</div>'
+        '<div style="margin-left:16px" class="my-2">First super page</div>'
       ));
   // TODO: test `load` here
   // await expect.poll(client2Read).toEqual({
@@ -319,7 +317,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
     expect
       .poll(client2Read)
       .toEqual(
-        '<div style="margin-left:8px" class="my-2">First super page alphabet</div>'
+        '<div style="margin-left:16px" class="my-2">First super page alphabet</div>'
       ));
   // TODO: test `load` here
   // await expect.poll(client2Read).toEqual({

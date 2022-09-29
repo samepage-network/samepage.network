@@ -10,6 +10,7 @@ const config: PlaywrightTestConfig = {
   use: {
     screenshot: "only-on-failure",
     video: process.env.DEBUG ? "on" : "off",
+    
   },
 };
 

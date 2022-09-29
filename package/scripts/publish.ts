@@ -4,8 +4,8 @@ import getPackageName from "./internal/getPackageName";
 dotenv.config();
 
 const publish = async ({
-  path: destPath = getPackageName(),
-  domain = "",
+  path: destPath = getPackageName().replace(/-samepage$/, ""),
+  domain = "samepage.network/extensions",
 }: {
   path?: string;
   domain?: string;

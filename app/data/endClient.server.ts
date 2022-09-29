@@ -13,8 +13,9 @@ const endClient = (
       .execute(`SELECT * FROM online_clients WHERE id = ?`, [id])
       .then(
         ([res]) =>
-          res as (Omit<z.infer<typeof schema.onlineClient>, "createdDate"> & {
+          res as (Omit<z.infer<typeof schema.onlineClient>, "createdDate" | "notebookUuid"> & {
             created_date: Date;
+            notebook_uuid: string;
           })[]
       );
     if (source) {
@@ -22,8 +23,8 @@ const endClient = (
       await Promise.all([
         cxn.execute(`DELETE FROM online_clients WHERE id = ?`, [source.id]),
         cxn.execute(
-          `INSERT INTO client_sessions (id, instance, app, created_date, end_date, disconnected_by)
-            VALUES (?,?,?,?,?,?)`,
+          `INSERT INTO client_sessions (id, instance, app, created_date, end_date, disconnected_by, notebook_uuid)
+            VALUES (?,?,?,?,?,?,?)`,
           [
             source.id,
             source.instance,
@@ -31,6 +32,7 @@ const endClient = (
             source.created_date,
             now,
             reason,
+            source.notebook_uuid,
           ]
         ),
       ]);

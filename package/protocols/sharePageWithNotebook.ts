@@ -503,32 +503,36 @@ const setupSharePageWithNotebook = ({
     notebookPageId: string;
     source: Notebook;
   }) =>
-    apiClient<{ state: string; notebookPageId: string; linkCreated: boolean }>({
+    apiClient<{
+      state: string;
+      notebookPageId: string;
+      // linkCreated is deprecated
+      linkCreated: boolean;
+      found: boolean;
+    }>({
       method: "join-shared-page",
       notebookPageId,
       pageUuid,
     })
-      .then(
-        ({ state, linkCreated, notebookPageId: responseNotebookPageId }) => {
-          const doc = loadAutomergeFromBase64(state);
-          if (linkCreated) {
-            return saveAndApply(notebookPageId, doc).catch((e) =>
-              apiClient({
-                method: "disconnect-shared-page",
-                notebookPageId,
-              }).then(() => Promise.reject(e))
-            );
-          } else {
-            dispatchAppEvent({
-              type: "log",
-              id: "shared-page-warning",
-              content: `Already joined this page via Notebook Page Id: ${responseNotebookPageId}`,
-              intent: "warning",
-            });
-            return saveAndApply(responseNotebookPageId, doc);
-          }
+      .then(({ state, found }) => {
+        const doc = loadAutomergeFromBase64(state);
+        if (found) {
+          return saveAndApply(notebookPageId, doc).catch((e) =>
+            apiClient({
+              method: "disconnect-shared-page",
+              notebookPageId,
+            }).then(() => Promise.reject(e))
+          );
+        } else {
+          dispatchAppEvent({
+            type: "log",
+            id: "shared-page-warning",
+            content: `Could not find open invite for Notebook Page: ${notebookPageId}`,
+            intent: "warning",
+          });
+          return Promise.resolve();
         }
-      )
+      })
       .then(() => {
         sendToNotebook({
           target: source,

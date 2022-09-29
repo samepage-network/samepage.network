@@ -44,9 +44,9 @@ const HistoryContent = ({
   getHistory: () => ReturnType<GetLocalHistory>;
   portalContainer?: HTMLElement;
 }) => {
-  const [history, setHistory] = React.useState<Awaited<ReturnType<GetLocalHistory>>>(
-    []
-  );
+  const [history, setHistory] = React.useState<
+    Awaited<ReturnType<GetLocalHistory>>
+  >([]);
   const [selectedChange, setSelectedChange] =
     React.useState<Automerge.State<Schema>>();
   React.useEffect(() => {
@@ -173,6 +173,14 @@ const SharedPageStatus = ({
           <SharePageDialog
             {...props}
             notebookPageId={notebookPageId}
+            removeOpenInvite={(app, workspace) =>
+              apiClient({
+                method: "remove-page-invite",
+                notebookPageId,
+                targetApp: app,
+                targetWorkspace: workspace,
+              })
+            }
             listConnectedNotebooks={(notebookPageId: string) =>
               Promise.all([
                 apiClient<{
@@ -180,20 +188,15 @@ const SharedPageStatus = ({
                     app: string;
                     workspace: string;
                     version: number;
-                  }[];
-                  networks: {
-                    app: string;
-                    workspace: string;
-                    version: number;
+                    openInvite: boolean;
                   }[];
                 }>({
                   method: "list-page-notebooks",
                   notebookPageId,
                 }),
                 loadAutomergeDoc(notebookPageId),
-              ]).then(([{ networks, notebooks }, doc]) => {
+              ]).then(([{ notebooks }, doc]) => {
                 return {
-                  networks,
                   notebooks: notebooks.map((n) =>
                     n.workspace !== workspace || n.app !== appsById[app].name
                       ? n

@@ -2,7 +2,7 @@ import { LoaderFunction, redirect, ActionFunction } from "@remix-run/node";
 import { Link, useLoaderData, Form } from "@remix-run/react";
 import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
 import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
-import listPageNotebookLinks from "~/data/listPageNotebookLinks.server";
+import listPageNotebookLinks from "~/data/listAllPageNotebookLinks.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 import Button from "@dvargas92495/app/components/Button";
