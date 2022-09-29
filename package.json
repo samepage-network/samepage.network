@@ -21,7 +21,8 @@
     "ssh": "ssh -i SamePage.pem ubuntu@35.173.242.123",
     "tailwind": "npm run generate:css -- --watch",
     "pretest": "esbuild ./package/testing/createTestSamePageClient.ts --outfile=./package/testing/createTestSamePageClient.js --bundle --platform=node \"--external:./node_modules/jsdom/*\"",
-    "test": "playwright test --config=package/testing/playwright.config.ts"
+    "test": "playwright test --config=package/testing/playwright.config.ts",
+    "db": "mysql --host vargas-arts.c2sjnb5f4d57.us-east-1.rds.amazonaws.com --port 5432 --database samepage_network --user dvargas92495 -p$RDS_MASTER_PASSWORD"
   },
   "keywords": [
     "SamePage",
@@ -40,7 +41,7 @@
   "dependencies": {
     "@blueprintjs/core": "^4.10.1",
     "@blueprintjs/select": "^4.6.6",
-    "@dvargas92495/app": "^0.13.16",
+    "@dvargas92495/app": "^0.13.17",
     "@types/moo": "^0.5.5",
     "@types/nearley": "^2.11.2",
     "automerge": "^1.0.1-preview.7",

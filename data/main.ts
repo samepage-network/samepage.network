@@ -13,6 +13,11 @@ base({
     "password_secret_key",
     "staging_clerk_api_key",
   ],
+  backendProps: {
+    sizes: {
+      page_post: "5120",
+    },
+  },
   callback() {
     const accessKey = this.node.children.find(
       (c) => c.node.id === "deploy_aws_access_key"
