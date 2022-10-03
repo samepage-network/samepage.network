@@ -69,7 +69,7 @@ const zMethod = z.intersection(
     z.object({
       method: z.literal("remove-page-invite"),
       notebookPageId: z.string(),
-      target: zNotebook,
+      target: zNotebook.optional(),
     }),
     z.object({
       method: z.literal("list-page-notebooks"),

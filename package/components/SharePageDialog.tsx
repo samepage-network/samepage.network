@@ -13,7 +13,7 @@ import {
 } from "@blueprintjs/core";
 import { Select } from "@blueprintjs/select";
 import inviteNotebookToPage from "../utils/inviteNotebookToPage";
-import APPS, { appsById } from "../internal/apps";
+import APPS, { appIdByName, appsById } from "../internal/apps";
 import getNodeEnv from "../internal/getNodeEnv";
 
 export type ListConnectedNotebooks = (notebookPageId: string) => Promise<{
@@ -121,11 +121,12 @@ const SharePageDialog = ({
                   minimal
                   icon={"trash"}
                   onClick={() => {
-                    setNotebooks(notebooks.filter((_, j) => j !== i));
                     setLoading(true);
-                    removeOpenInvite(Number(g.app) as AppId, g.workspace).then(
-                      () => setLoading(false)
-                    );
+                    removeOpenInvite(appIdByName[g.app], g.workspace)
+                      .then(() =>
+                        setNotebooks(notebooks.filter((_, j) => j !== i))
+                      )
+                      .finally(() => setLoading(false));
                   }}
                 />
               ) : (
