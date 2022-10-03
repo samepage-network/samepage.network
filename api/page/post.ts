@@ -67,6 +67,11 @@ const zMethod = z.intersection(
       target: zNotebook,
     }),
     z.object({
+      method: z.literal("remove-page-invite"),
+      notebookPageId: z.string(),
+      target: zNotebook,
+    }),
+    z.object({
       method: z.literal("list-page-notebooks"),
       notebookPageId: z.string(),
     }),
@@ -512,6 +517,61 @@ const logic = async (
           }).then(() => ({ success: true }));
         })
         .catch(catchError("Failed to invite notebook to a shared page"))
+        .finally(() => cxn.destroy());
+    }
+    case "remove-page-invite": {
+      const { notebookPageId, target } = args;
+      const cxn = await getMysql(requestId);
+      const notebookUuid = await getNotebookUuid({ requestId, app, workspace });
+      const { linkUuid, invitedBy } = await (target
+        ? cxn
+            .execute(
+              `SELECT uuid 
+      FROM page_notebook_links
+      WHERE workspace = ? AND app = ? AND notebook_page_id = ? AND open = 1 AND invited_by = ?`,
+              [target.workspace, target.app, notebookPageId, notebookUuid]
+            )
+            .then(([invitedByLink]) => ({
+              invitedBy: { app, workspace },
+              linkUuid: (invitedByLink as { uuid: string }[])[0]?.uuid,
+            }))
+        : cxn
+            .execute(
+              `SELECT uuid, invited_by 
+      FROM page_notebook_links
+      WHERE workspace = ? AND app = ? AND notebook_page_id = ? AND open = 1`,
+              [workspace, app, notebookPageId]
+            )
+            .then(async ([link]) => {
+              const { uuid, invited_by } =
+                (link as { uuid: string; invited_by: string }[])[0] || {};
+              const [invitedBy] = await cxn
+                .execute(
+                  `SELECT app, workspace FROM notebooks WHERE uuid = ?`,
+                  invited_by
+                )
+                .then(([a]) => a as { app: AppId; workspace: string }[]);
+              return { linkUuid: uuid, invitedBy };
+            }));
+      if (!linkUuid) {
+        throw new NotFoundError(`Could not find valid invite to remove.`);
+      }
+      return cxn
+        .execute(`DELETE FROM page_notebook_links WHERE uuid = ?`, [linkUuid])
+        .then(() =>
+          messageNotebook({
+            source: { app, workspace },
+            target: invitedBy,
+            data: {
+              notebookPageId,
+              success: false,
+              operation: "SHARE_PAGE_RESPONSE",
+            },
+            requestId,
+          })
+        )
+        .then(() => ({ success: true }))
+        .catch(catchError("Failed to remove a shared page"))
         .finally(() => cxn.destroy());
     }
     case "list-page-notebooks": {

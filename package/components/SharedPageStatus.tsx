@@ -177,8 +177,10 @@ const SharedPageStatus = ({
               apiClient({
                 method: "remove-page-invite",
                 notebookPageId,
-                targetApp: app,
-                targetWorkspace: workspace,
+                target: {
+                  app,
+                  workspace,
+                },
               })
             }
             listConnectedNotebooks={(notebookPageId: string) =>

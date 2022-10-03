@@ -12,6 +12,9 @@ const cliArgs = Object.entries(tsconfig.compilerOptions)
   .map(([arg, value]) => {
     if (arg === "noEmit" || arg === "paths" || arg === "baseUrl") {
       return "";
+    } else if (arg === "jsx") {
+      // Don't know how to handle this as react-jsx in Roam yet
+      return "react"; 
     } else if (value === true) {
       return `--${arg}`;
     } else if (typeof value === "string") {

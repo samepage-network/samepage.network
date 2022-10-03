@@ -654,20 +654,10 @@ const setupSharePageWithNotebook = ({
     });
   };
 
-  const rejectPage = ({
-    source,
-    pageUuid,
-  }: {
-    source: Notebook;
-    pageUuid: string;
-  }) => {
-    sendToNotebook({
-      target: source,
-      operation: SHARE_PAGE_RESPONSE_OPERATION,
-      data: {
-        success: false,
-        pageUuid,
-      },
+  const rejectPage = ({ notebookPageId }: { notebookPageId: string }) => {
+    apiClient({
+      method: "remove-page-invite",
+      notebookPageId,
     });
   };
 
