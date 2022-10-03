@@ -14,7 +14,7 @@ const cliArgs = Object.entries(tsconfig.compilerOptions)
       return "";
     } else if (arg === "jsx") {
       // Don't know how to handle this as react-jsx in Roam yet
-      return "react"; 
+      return "--jsx react"; 
     } else if (value === true) {
       return `--${arg}`;
     } else if (typeof value === "string") {
