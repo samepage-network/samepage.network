@@ -8,7 +8,7 @@ import {
   notebookPageIds,
 } from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
-import type { InitialSchema, Notebook, Schema } from "../types";
+import type { InitialSchema, Schema } from "../types";
 import Automerge from "automerge";
 import {
   addNotebookListener,
@@ -507,11 +507,9 @@ const setupSharePageWithNotebook = ({
   const joinPage = ({
     pageUuid,
     notebookPageId,
-    source,
   }: {
     pageUuid: string;
     notebookPageId: string;
-    source: Notebook;
   }) =>
     apiClient<{
       state: string;
@@ -523,45 +521,31 @@ const setupSharePageWithNotebook = ({
       method: "join-shared-page",
       notebookPageId,
       pageUuid,
-    })
-      .then(({ state, found }) => {
-        const doc = loadAutomergeFromBase64(state);
-        if (found) {
-          return saveAndApply(notebookPageId, doc).catch((e) =>
+    }).then(({ state, found }) => {
+      const doc = loadAutomergeFromBase64(state);
+      if (found) {
+        return saveAndApply(notebookPageId, doc)
+          .then(() => {
+            initPage({
+              notebookPageId,
+            });
+            dispatchAppEvent({
+              type: "log",
+              id: "share-page-success",
+              content: `Successfully connected to shared page ${notebookPageId}!`,
+              intent: "success",
+            });
+          })
+          .catch((e) =>
             apiClient({
               method: "disconnect-shared-page",
               notebookPageId,
             }).then(() => Promise.reject(e))
           );
-        } else {
-          dispatchAppEvent({
-            type: "log",
-            id: "shared-page-warning",
-            content: `Could not find open invite for Notebook Page: ${notebookPageId}`,
-            intent: "warning",
-          });
-          return Promise.resolve();
-        }
-      })
-      .then(() => {
-        sendToNotebook({
-          target: source,
-          operation: SHARE_PAGE_RESPONSE_OPERATION,
-          data: {
-            success: true,
-            title: notebookPageId,
-          },
-        });
-        initPage({
-          notebookPageId,
-        });
-        dispatchAppEvent({
-          type: "log",
-          id: "share-page-success",
-          content: `Successfully connected to shared page ${notebookPageId}!`,
-          intent: "success",
-        });
-      });
+      } else {
+        return Promise.reject(new Error(`Could not find open invite for Notebook Page: ${notebookPageId}`));
+      }
+    });
 
   const updatePage = ({
     notebookPageId,

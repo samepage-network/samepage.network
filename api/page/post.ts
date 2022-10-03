@@ -271,26 +271,50 @@ const logic = async (
         .catch(catchError("Failed to init a shared page"));
     }
     case "join-shared-page": {
-      const { pageUuid, notebookPageId } = args;
-      if (!notebookPageId) {
-        throw new BadRequestError("`notebookPageId` is required");
-      }
+      const {
+        pageUuid,
+        // TODO - use notebook page id in the future to join pages
+        notebookPageId,
+      } = args;
       return downloadSharedPage(pageUuid)
         .then((state) => {
           return getMysql(requestId).then(async (cxn) => {
             const results = await cxn
               .execute(
-                `SELECT uuid, notebook_page_id FROM page_notebook_links WHERE page_uuid = ? AND workspace = ? AND app = ? AND open = 1`,
+                `SELECT uuid, notebook_page_id, invited_by FROM page_notebook_links WHERE page_uuid = ? AND workspace = ? AND app = ? AND open = 1`,
                 [pageUuid, workspace, app]
               )
-              .then(([a]) => a as { uuid: string; notebook_page_id: string }[]);
+              .then(
+                ([a]) =>
+                  a as {
+                    uuid: string;
+                    notebook_page_id: string;
+                    invited_by: string;
+                  }[]
+              );
             const b64State = Buffer.from(state).toString("base64");
             if (results.length) {
-              const { uuid } = results[0];
+              const { uuid, invited_by } = results[0];
               await cxn.execute(
                 `UPDATE page_notebook_links SET open = 0 WHERE uuid = ?`,
                 [uuid]
               );
+              const [source] = await cxn
+                .execute(
+                  `SELECT app, workspace FROM notebooks WHERE uuid = ?`,
+                  [invited_by]
+                )
+                .then(([a]) => a as Notebook[]);
+              await messageNotebook({
+                target: source,
+                source: { app, workspace },
+                data: {
+                  operation: "SHARE_PAGE_RESPONSE",
+                  success: true,
+                  title: notebookPageId,
+                },
+                requestId,
+              });
               cxn.destroy();
               return {
                 state: b64State,
