@@ -548,7 +548,7 @@ const logic = async (
               const [invitedBy] = await cxn
                 .execute(
                   `SELECT app, workspace FROM notebooks WHERE uuid = ?`,
-                  invited_by
+                  [invited_by]
                 )
                 .then(([a]) => a as { app: AppId; workspace: string }[]);
               return { linkUuid: uuid, invitedBy };
@@ -563,7 +563,8 @@ const logic = async (
             source: { app, workspace },
             target: invitedBy,
             data: {
-              notebookPageId,
+              title: notebookPageId,
+              rejected: !target,
               success: false,
               operation: "SHARE_PAGE_RESPONSE",
             },

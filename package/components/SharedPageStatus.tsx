@@ -163,7 +163,10 @@ const SharedPageStatus = ({
       className="samepage-shared-page-status flex gap-4 items-center text-lg mb-8 shadow-sm px-2 py-4"
       ref={containerRef}
     >
-      <i>Shared</i>
+      <img
+        src={"https://samepage.network/images/logo.png"}
+        className={"h-8 w-8"}
+      />
       <TooltipButtonOverlay
         defaultIsOpen={defaultOpenInviteDialog}
         tooltipContent={"Invite Notebook"}

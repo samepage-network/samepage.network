@@ -394,9 +394,10 @@ const setupSharePageWithNotebook = ({
   addNotebookListener({
     operation: SHARE_PAGE_RESPONSE_OPERATION,
     handler: (data, source) => {
-      const { success, title } = data as {
+      const { success, title, rejected } = data as {
         success: boolean;
         title: string;
+        rejected: boolean;
       };
       if (success)
         dispatchAppEvent({
@@ -407,7 +408,7 @@ const setupSharePageWithNotebook = ({
           } / ${source.workspace}!`,
           intent: "success",
         });
-      else
+      else if (rejected)
         dispatchAppEvent({
           type: "log",
           id: "share-page-rejected",
@@ -415,6 +416,15 @@ const setupSharePageWithNotebook = ({
             source.workspace
           } rejected ${title}`,
           intent: "info",
+        });
+      else
+        dispatchAppEvent({
+          type: "log",
+          id: "share-page-removed",
+          content: `Notebook ${appsById[source.app].name} / ${
+            source.workspace
+          } invite was removed from ${title}`,
+          intent: "success",
         });
     },
   });
