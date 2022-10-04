@@ -17,7 +17,7 @@ const pageNotebookLink = z.object({
   workspace: z.string().describe("unique"),
   app: z.number().max(Math.pow(2, 8)).describe("unique"),
   version: z.number(),
-  open: z.boolean(),
+  open: z.boolean(), // .default(true), need to update fuego to handle defaults
   invitedBy: z.string().uuid().optional(),
   invitedDate: z.date().optional(),
   notebookUuid: z.string().uuid().optional().describe("foreign"),
