@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import appPath from "./appPath";
 import dotenv from "dotenv";
+import toVersion from "./toVersion";
 dotenv.config();
 
 // Why is this not picked up from Remix?
@@ -35,6 +36,7 @@ export type CliArgs = {
   env?: string | string[];
   analyze?: boolean;
   max?: string;
+  finish?: string;
 };
 
 // https://github.com/evanw/esbuild/issues/337#issuecomment-954633403
@@ -80,6 +82,8 @@ const importAsGlobals = (
   };
 };
 
+const DEFAULT_FILES_INCLUDED = ["package.json", "README.md"];
+
 const compile = ({
   out,
   external,
@@ -90,7 +94,9 @@ const compile = ({
   env,
   analyze,
   opts = {},
-}: CliArgs & { opts?: esbuild.BuildOptions }) => {
+  version,
+  finish: onFinishFile,
+}: CliArgs & { opts?: esbuild.BuildOptions; version?: string }) => {
   const rootDir = fs
     .readdirSync("./src", { withFileTypes: true })
     .filter((f) => f.isFile())
@@ -165,11 +171,24 @@ const compile = ({
     })
     .then((r) => {
       const finish = () => {
-        (typeof include === "string" ? [include] : include || [])
+        DEFAULT_FILES_INCLUDED.concat(
+          typeof include === "string" ? [include] : include || []
+        )
           .filter((f) => fs.existsSync(f))
           .forEach((f) => {
             fs.cpSync(f, path.join("dist", path.basename(f)));
           });
+        const distributedPackageJson = path.join("dist", "package.json");
+        fs.writeFileSync(
+          distributedPackageJson,
+          fs
+            .readFileSync(distributedPackageJson)
+            .toString()
+            .replace(
+              /"version": "[\d.-]+",/,
+              `"version": "${version || toVersion()}",`
+            )
+        );
         if (css) {
           const outCssFilename = path.join(
             "dist",
@@ -205,6 +224,12 @@ const compile = ({
             const imports = outlines.filter((l) => l.startsWith("@import"));
             const rest = outlines.filter((l) => !l.startsWith("@import"));
             fs.writeFileSync(outCssFilename, imports.concat(rest).join("\n"));
+          }
+        }
+        if (fs.existsSync(`${process.cwd()}/${onFinishFile}`)) {
+          const customOnFinish = require(`${process.cwd()}/${onFinishFile}`);
+          if (typeof customOnFinish === "function") {
+            customOnFinish();
           }
         }
         if (mirror) {

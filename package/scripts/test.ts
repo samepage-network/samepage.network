@@ -14,7 +14,7 @@ const test = ({
   process.env.NODE_ENV = process.env.NODE_ENV || "test";
   if (process.env.DEBUG || process.env.PWDEBUG)
     process.env.DEBUG = process.env.DEBUG || process.env.PWDEBUG;
-  return compile(args)
+  return compile({ ...args, version: "test" })
     .then(() => {
       const config = fs.existsSync(
         "node_modules/@samepage/testing/playwright.config.js"

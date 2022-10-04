@@ -10,12 +10,9 @@ const build = (args: CliArgs = {}) => {
     : "";
   fs.writeFileSync(
     ".env",
-    `${envExisting.replace(
-      /VERSION=[\d-]+\n/gs,
-      ""
-    )}VERSION=${version}\n`
+    `${envExisting.replace(/VERSION=[\d-]+\n/gs, "")}VERSION=${version}\n`
   );
-  return compile({ ...args, opts: { minify: true } }).then(() => {
+  return compile({ ...args, opts: { minify: true }, version }).then(() => {
     console.log("done");
     return 0;
   });
