@@ -136,7 +136,7 @@ const compile = ({
       define: {
         "process.env.BLUEPRINT_NAMESPACE": '"bp4"',
         "process.env.NODE_ENV": `"${process.env.NODE_ENV}"`,
-        "process.env.VERSION": `"${version}"`,
+        "process.env.VERSION": `"${version || toVersion()}"`,
         ...Object.fromEntries(
           (typeof env === "string" ? [env] : env || []).map((s) => [
             `process.env.${s}`,
