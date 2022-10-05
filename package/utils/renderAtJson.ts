@@ -1,4 +1,4 @@
-import type { Annotation, Schema } from "../types";
+import type { Annotation, InitialSchema } from "../types";
 
 type AppliedAnnotation = {
   prefix: string;
@@ -9,9 +9,9 @@ const renderAtJson = ({
   state,
   applyAnnotation,
 }: {
-  state: Schema;
+  state: InitialSchema;
   applyAnnotation: {
-    [t in Annotation as t["type"]]:
+    [t in Annotation as t["type"]]?:
       | AppliedAnnotation
       | ((attributes: t["attributes"]) => AppliedAnnotation);
   };

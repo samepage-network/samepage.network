@@ -25,7 +25,8 @@ export const DEFAULT_TOKENS: moo.Rules = {
   leftParen: "(",
   rightBracket: "]",
   rightParen: ")",
-  text: { match: /[^^~_*[\]()]+/, lineBreaks: true },
+  exclamationMark: "!",
+  text: { match: /[^^~_*[\]()!]+/, lineBreaks: true },
 };
 
 export const compileLexer = (tokens: moo.Rules = {}, remove: string[] = []) => {
@@ -88,7 +89,8 @@ export const createLinkToken: Processor<InitialSchema> = (_data) => {
     moo.Token,
     moo.Token
   ];
-  const { content, annotations } = data[1];
+  const { content: _content = "", annotations = [] } = data[1];
+  const content = _content || String.fromCharCode(0);
   return {
     content,
     annotations: [
@@ -104,9 +106,36 @@ export const createLinkToken: Processor<InitialSchema> = (_data) => {
   };
 };
 
+export const createImageToken: Processor<InitialSchema> = (_data) => {
+  const data = _data as [
+    moo.Token,
+    moo.Token,
+    InitialSchema,
+    moo.Token,
+    moo.Token,
+    moo.Token,
+    moo.Token
+  ];
+  const { content: _content, annotations } = data[2];
+  const content = _content || String.fromCharCode(0);
+  return {
+    content,
+    annotations: [
+      {
+        type: "image",
+        start: 0,
+        end: content.length,
+        attributes: {
+          src: data[5].text,
+        },
+      } as Annotation,
+    ].concat(annotations),
+  };
+};
+
 export const createTextToken: Processor<InitialSchema> = (_data) => {
-  const data = _data as [moo.Token];
-  return { content: data[0].text, annotations: [] };
+  const data = _data as moo.Token[];
+  return { content: data.map((d) => d.text).join(""), annotations: [] };
 };
 
 export const createEmpty: Processor<InitialSchema> = () => ({
@@ -149,6 +178,28 @@ export const disambiguateTokens: Processor<InitialSchema> = (
   if (
     tokens.filter((s) => s.annotations.length === 0 && s.content.includes("_"))
       .length > 1
+  ) {
+    return reject;
+  }
+  const exclamationMarkIndices = tokens
+    .map((token, index) => ({ token, index }))
+    .filter(
+      ({ token }) => token.content === "!" && token.annotations.length === 0
+    );
+  if (
+    exclamationMarkIndices.some(({ index }) => {
+      const link = tokens[index + 1];
+      if (!link) return false;
+      const { annotations } = link;
+      if (annotations.length === 0) {
+        // TODO regex match or investigate ordered rules in nearley
+        return link.content.startsWith("[](") && link.content.endsWith(")");
+      } else if (annotations.length === 1) {
+        const [{ type, end, start }] = annotations;
+        return type === "link" && start === 0 && end === link.content.length;
+      }
+      return false;
+    })
   ) {
     return reject;
   }
