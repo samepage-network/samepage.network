@@ -30,7 +30,7 @@ const messageNotebook = ({
       ...data,
       source,
     };
-    await Promise.all(
+    const online = await Promise.all(
       ids.map((ConnectionId) =>
         postToConnection({
           ConnectionId,
@@ -58,7 +58,7 @@ const messageNotebook = ({
         target.workspace,
         target.app,
         new Date(),
-        0,
+        online,
         await getNotebookUuid({ ...source, requestId }),
         await getNotebookUuid({ ...target, requestId }),
       ]

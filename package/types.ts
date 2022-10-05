@@ -1,57 +1,90 @@
-import type APPS from "./internal/apps";
+import APPS from "./internal/apps";
 import type Automerge from "automerge";
 import React from "react";
 import { z } from "zod";
 
+export type App = typeof APPS[number];
+export type AppId = App["id"];
+export type Apps = Record<AppId, Omit<App, "id">>;
+
+export const zNotebook = z.object({
+  workspace: z.string(),
+  app: z.union([
+    z.literal(APPS[0].id),
+    z.literal(APPS[1].id),
+    ...APPS.slice(2).map((a) => z.literal(a.id)),
+  ]),
+});
+export type Notebook = z.infer<typeof zNotebook>;
+
 // Add future versions in this union
 type Version = "2022-08-17";
-const annotationBase = z.object({ start: z.number(), end: z.number() });
-const blockAnnotation = z
-  .object({
+const annotationBase = z.object({
+  start: z.number(),
+  end: z.number(),
+  attributes: z.object({}).optional(),
+});
+const blockAnnotation = annotationBase.merge(
+  z.object({
     type: z.literal("block"),
     attributes: z.object({
       level: z.number(),
       viewType: z.enum(["bullet", "numbered", "document"]),
+      appAttributes: z.record(z.record(z.string())).optional(),
     }),
   })
-  .merge(annotationBase);
-const metadataAnnotation = z
-  .object({
+);
+const metadataAnnotation = annotationBase.merge(
+  z.object({
     type: z.literal("metadata"),
     attributes: z.object({
       title: z.string(),
       parent: z.string(),
     }),
   })
-  .merge(annotationBase);
-const boldAnnotation = z
-  .object({
+);
+const boldAnnotation = annotationBase.merge(
+  z.object({
     type: z.literal("bold"),
   })
-  .merge(annotationBase);
-const italicsAnnotation = z
-  .object({
+);
+const italicsAnnotation = annotationBase.merge(
+  z.object({
     type: z.literal("italics"),
   })
-  .merge(annotationBase);
-const strikethroughAnnotation = z
-  .object({
+);
+const strikethroughAnnotation = annotationBase.merge(
+  z.object({
     type: z.literal("strikethrough"),
   })
-  .merge(annotationBase);
-const highlightingAnnotation = z
-  .object({
+);
+const highlightingAnnotation = annotationBase.merge(
+  z.object({
     type: z.literal("highlighting"),
   })
-  .merge(annotationBase);
-const externalLinkAnnotation = z
-  .object({
+);
+const externalLinkAnnotation = annotationBase.merge(
+  z.object({
     type: z.literal("link"),
     attributes: z.object({
       href: z.string(),
     }),
   })
-  .merge(annotationBase);
+);
+const referenceAnnotation = annotationBase.merge(
+  z.object({
+    type: z.literal("reference"),
+    attributes: zNotebook.merge(z.object({ notebookPageId: z.string() })),
+  })
+);
+const imageAnnotation = annotationBase.merge(
+  z.object({
+    type: z.literal("image"),
+    attributes: z.object({
+      src: z.string(),
+    }),
+  })
+);
 export const annotationSchema = z.discriminatedUnion("type", [
   blockAnnotation,
   metadataAnnotation,
@@ -60,6 +93,8 @@ export const annotationSchema = z.discriminatedUnion("type", [
   strikethroughAnnotation,
   highlightingAnnotation,
   externalLinkAnnotation,
+  referenceAnnotation,
+  imageAnnotation,
 ]);
 export type Annotation = z.infer<typeof annotationSchema>;
 export type Schema = {
@@ -71,12 +106,6 @@ export type InitialSchema = {
   content: string;
   annotations: Annotation[];
 };
-
-export type Notebook = { workspace: string; app: AppId };
-
-export type App = typeof APPS[number];
-export type AppId = App["id"];
-export type Apps = Record<AppId, Omit<App, "id">>;
 
 export type json =
   | string

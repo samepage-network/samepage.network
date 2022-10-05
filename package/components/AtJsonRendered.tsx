@@ -1,3 +1,4 @@
+import { appsById } from "package/internal/apps";
 import React, { useMemo } from "react";
 import type { Annotation, Schema } from "../types";
 
@@ -68,6 +69,13 @@ const AnnotationRendered = ({
     <i className="italics">{children}</i>
   ) : annotation.type === "link" ? (
     <a href={annotation.attributes.href}>{children}</a>
+  ) : annotation.type === "image" ? (
+    <img src={annotation.attributes.src} />
+  ) : annotation.type === "reference" ? (
+    <span className="cursor underline">
+      (({appsById[annotation.attributes.app].name}:
+      {annotation.attributes.workspace}:{annotation.attributes.notebookPageId}))
+    </span>
   ) : (
     <>{children}</>
   );

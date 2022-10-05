@@ -1,5 +1,5 @@
 import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
-import type { AppId, Notebook, Schema } from "package/types";
+import { AppId, Notebook, Schema, zNotebook } from "package/types";
 import { appsById } from "package/internal/apps";
 import {
   BadRequestError,
@@ -21,11 +21,6 @@ import downloadSharedPage from "~/data/downloadSharedPage.server";
 import saveSharedPage from "~/data/saveSharedPage.server";
 import { z } from "zod";
 import getNotebookUuid from "~/data/getNotebookUuid.server";
-
-const zNotebook = z.object({
-  workspace: z.string(),
-  app: z.number().transform((n) => n as AppId),
-});
 
 const zMethod = z.intersection(
   zNotebook.merge(
