@@ -1,4 +1,4 @@
-import type { Annotation, Schema } from "package/types";
+import type { Annotation, Schema } from "../types";
 
 type AppliedAnnotation = {
   prefix: string;
@@ -30,8 +30,8 @@ const renderAtJson = ({
         typeof appliedAnnotationData === "object"
           ? appliedAnnotationData
           : typeof appliedAnnotationData === "function"
-          // @ts-ignore should be consistent with above
-          ? appliedAnnotationData(c.attributes || {})
+          ? // @ts-ignore should be consistent with above
+            appliedAnnotationData(c.attributes || {})
           : { prefix: "", suffix: "" };
       const annotatedContent = p.slice(c.start, c.end);
       const isEmptyAnnotation = annotatedContent === String.fromCharCode(0);

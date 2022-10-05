@@ -1,4 +1,4 @@
-import { appsById } from "package/internal/apps";
+import { appsById } from "../internal/apps";
 import React, { useMemo } from "react";
 import type { Annotation, Schema } from "../types";
 
