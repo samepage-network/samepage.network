@@ -116,7 +116,7 @@ export const createImageToken: Processor<InitialSchema> = (_data) => {
     moo.Token,
     moo.Token
   ];
-  const { content: _content, annotations } = data[2];
+  const { content: _content, annotations = [] } = data[2] || {};
   const content = _content || String.fromCharCode(0);
   return {
     content,
