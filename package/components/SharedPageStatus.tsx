@@ -280,7 +280,7 @@ const SharedPageStatus = ({
         />
       </Tooltip>
       <Tooltip
-        content={"Force Push Local Copy"}
+        content={"Manual Sync"}
         portalContainer={portalContainer}
       >
         <Button
@@ -300,7 +300,7 @@ const SharedPageStatus = ({
               .then(() =>
                 dispatchAppEvent({
                   type: "log",
-                  content: `Successfully pushed page state to other notebooks.`,
+                  content: `All notebooks are synced!`,
                   id: "push-shared-page",
                   intent: "success",
                 })

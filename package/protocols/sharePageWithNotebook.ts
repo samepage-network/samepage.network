@@ -432,9 +432,10 @@ const setupSharePageWithNotebook = ({
   addNotebookListener({
     operation: SHARE_PAGE_UPDATE_OPERATION,
     handler: (data) => {
-      const { changes, notebookPageId } = data as {
+      const { changes, notebookPageId, dependencies = {} } = data as {
         changes: string[];
         notebookPageId: string;
+        dependencies: { [a: string]: { seq: number; hash: string } };
       };
 
       loadAutomergeDoc(notebookPageId).then((oldDoc) => {
@@ -443,19 +444,39 @@ const setupSharePageWithNotebook = ({
           changes.map((c) => base64ToBinary(c) as Automerge.BinaryChange)
         );
         if (patch.pendingChanges) {
-          const me = Automerge.getActorId(newDoc);
-          Object.keys(patch.clock)
-            .filter((actor) => me !== actor)
-            .forEach((actor) => {
-              sendToNotebook({
-                target: parseActorId(actor),
-                operation: REQUEST_PAGE_UPDATE_OPERATION,
-                data: {
-                  notebookPageId,
-                  seq: patch.clock[actor],
-                },
-              });
+          const existingDependencies = Object.fromEntries(
+            Automerge.getAllChanges(newDoc)
+              .map((c) => Automerge.decodeChange(c))
+              .map((c) => [`${c.actor}~${c.seq}`, c.hash])
+          );
+          if (
+            Object.entries(dependencies).some(
+              ([actor, { seq, hash }]) =>
+                existingDependencies[`${actor}~${seq}`] &&
+                existingDependencies[`${actor}~${seq}`] !== hash
+            )
+          ) {
+            dispatchAppEvent({
+              type: "log",
+              id: "share-page-corrupted",
+              content: `It looks like your version of the shared page ${notebookPageId} is corrupted and will cease to apply updates from other notebooks in the future. To resolve this issue, ask one of the other connected notebooks to manually sync the page.`,
+              intent: "error",
             });
+          } else {
+            const me = Automerge.getActorId(newDoc);
+            Object.keys(patch.clock)
+              .filter((actor) => me !== actor)
+              .forEach((actor) => {
+                sendToNotebook({
+                  target: parseActorId(actor),
+                  operation: REQUEST_PAGE_UPDATE_OPERATION,
+                  data: {
+                    notebookPageId,
+                    seq: patch.clock[actor],
+                  },
+                });
+              });
+          }
         }
         if (Object.keys(patch.diffs.props).length) {
           saveAndApply(notebookPageId, newDoc);
@@ -487,9 +508,22 @@ const setupSharePageWithNotebook = ({
       };
       loadAutomergeDoc(notebookPageId).then((doc) => {
         const me = Automerge.getActorId(doc);
-        const missingChanges = Automerge.getAllChanges(doc)
-          .map((c) => ({ encoded: c, decoded: Automerge.decodeChange(c) }))
-          .filter(({ decoded }) => decoded.actor === me && decoded.seq > seq);
+        const allChangesDecoded = Automerge.getAllChanges(doc).map((c) => ({
+          encoded: c,
+          decoded: Automerge.decodeChange(c),
+        }));
+        const clockByHash = Object.fromEntries(
+          allChangesDecoded.map(
+            (c) =>
+              [
+                c.decoded.hash || "",
+                { actor: c.decoded.actor, seq: c.decoded.seq },
+              ] as const
+          )
+        );
+        const missingChanges = allChangesDecoded.filter(
+          ({ decoded }) => decoded.actor === me && decoded.seq > seq
+        );
         if (missingChanges.length) {
           sendToNotebook({
             target: source,
@@ -497,6 +531,12 @@ const setupSharePageWithNotebook = ({
             data: {
               notebookPageId,
               changes: missingChanges.map((c) => binaryToBase64(c.encoded)),
+              dependencies: Object.fromEntries(
+                missingChanges[0].decoded.deps.map((h) => [
+                  clockByHash[h].actor,
+                  { seq: clockByHash[h].seq, hash: h },
+                ])
+              ),
             },
           });
         }
@@ -543,7 +583,11 @@ const setupSharePageWithNotebook = ({
             }).then(() => Promise.reject(e))
           );
       } else {
-        return Promise.reject(new Error(`Could not find open invite for Notebook Page: ${notebookPageId}`));
+        return Promise.reject(
+          new Error(
+            `Could not find open invite for Notebook Page: ${notebookPageId}`
+          )
+        );
       }
     });
 

@@ -359,50 +359,63 @@ const logic = async (
                   .map((c) => c.charCodeAt(0))
               ) as Automerge.BinaryChange
           );
-          const [newDoc, patch] = Automerge.applyChanges(oldDoc, binaryChanges);
+          const apply = () => {
+            try {
+              return Automerge.applyChanges(oldDoc, binaryChanges);
+            } catch (e) {
+              console.error(`Failed to apply update from ${app} / ${workspace}`);
+              console.error(e);
+              return [] as const;
+            }
+          }
+          const result = apply();
+          if (!result.length) {
+            return {};
+          }
+          const [newDoc, patch] = result;
           return saveSharedPage({
             pageUuid,
             doc: newDoc,
             requestId: requestId,
-          }).then(({ version }) =>
-            cxn
-              .execute(
-                `UPDATE page_notebook_links SET version = ? WHERE app = ? AND workspace = ? AND notebook_page_id = ?`,
-                [version, app, workspace, notebookPageId]
-              )
-              .then(() => patch)
-          );
-        })
-        .then((patch) => {
-          return cxn
-            .execute(
-              `SELECT workspace, app, notebook_page_id FROM page_notebook_links WHERE page_uuid = ? AND open = 0`,
-              [pageUuid]
-            )
-            .then(([r]) => {
-              const clients = (
-                r as (Notebook & { notebook_page_id: string })[]
-              ).filter((item) => {
-                return item.workspace !== workspace || item.app !== app;
-              });
-              return Promise.all(
-                clients.map(({ notebook_page_id, ...target }) =>
-                  messageNotebook({
-                    source: { app, workspace },
-                    target,
-                    data: {
-                      changes,
-                      notebookPageId: notebook_page_id,
-                      operation: "SHARE_PAGE_UPDATE",
-                    },
-                    requestId: requestId,
-                  })
+          })
+            .then(({ version }) =>
+              cxn
+                .execute(
+                  `UPDATE page_notebook_links SET version = ? WHERE app = ? AND workspace = ? AND notebook_page_id = ?`,
+                  [version, app, workspace, notebookPageId]
                 )
-              );
-            })
-            .then(() => ({
-              patch,
-            }));
+            )
+            .then(() => {
+              return cxn
+                .execute(
+                  `SELECT workspace, app, notebook_page_id FROM page_notebook_links WHERE page_uuid = ? AND open = 0`,
+                  [pageUuid]
+                )
+                .then(([r]) => {
+                  const clients = (
+                    r as (Notebook & { notebook_page_id: string })[]
+                  ).filter((item) => {
+                    return item.workspace !== workspace || item.app !== app;
+                  });
+                  return Promise.all(
+                    clients.map(({ notebook_page_id, ...target }) =>
+                      messageNotebook({
+                        source: { app, workspace },
+                        target,
+                        data: {
+                          changes,
+                          notebookPageId: notebook_page_id,
+                          operation: "SHARE_PAGE_UPDATE",
+                        },
+                        requestId: requestId,
+                      })
+                    )
+                  );
+                })
+                .then(() => ({
+                  patch,
+                }));
+            });
         })
         .catch(catchError("Failed to update a shared page"))
         .finally(() => {

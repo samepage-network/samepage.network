@@ -4,6 +4,7 @@ import postToConnection from "./postToConnection.server";
 import { v4 } from "uuid";
 import getMysql from "fuegojs/utils/mysql";
 import type { Notebook } from "package/types";
+import getNotebookUuid from "./getNotebookUuid.server";
 
 const messageNotebook = ({
   source,
@@ -29,7 +30,7 @@ const messageNotebook = ({
       ...data,
       source,
     };
-    const online = await Promise.all(
+    await Promise.all(
       ids.map((ConnectionId) =>
         postToConnection({
           ConnectionId,
@@ -47,25 +48,25 @@ const messageNotebook = ({
           })
       )
     ).then((all) => !!all.length && all.every((i) => i));
-    if (!online) {
-      await cxn.execute(
-        `INSERT INTO messages (uuid, source_instance, source_app, target_instance, target_app, created_date, marked)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          messageUuid,
-          source.workspace,
-          source.app,
-          target.workspace,
-          target.app,
-          new Date(),
-          0,
-        ]
-      );
-      await uploadFile({
-        Key: `data/messages/${messageUuid}.json`,
-        Body: JSON.stringify(Data),
-      });
-    }
+    await cxn.execute(
+      `INSERT INTO messages (uuid, source_instance, source_app, target_instance, target_app, created_date, marked, source, target)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        messageUuid,
+        source.workspace,
+        source.app,
+        target.workspace,
+        target.app,
+        new Date(),
+        0,
+        await getNotebookUuid({ ...source, requestId }),
+        await getNotebookUuid({ ...target, requestId }),
+      ]
+    );
+    await uploadFile({
+      Key: `data/messages/${messageUuid}.json`,
+      Body: JSON.stringify(Data),
+    });
   });
 };
 
