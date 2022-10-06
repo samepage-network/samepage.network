@@ -12,6 +12,7 @@ base({
     "convertkit_api_key",
     "password_secret_key",
     "staging_clerk_api_key",
+    "web3_storage_api_key"
   ],
   backendProps: {
     sizes: {
