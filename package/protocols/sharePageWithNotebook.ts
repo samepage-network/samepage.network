@@ -27,7 +27,7 @@ import getActorId from "../internal/getActorId";
 import { appsById } from "../internal/apps";
 import parseActorId from "../internal/parseActorId";
 import binaryToBase64 from "../internal/binaryToBase64";
-import base64ToBinary from "package/internal/base64ToBinary";
+import base64ToBinary from "../internal/base64ToBinary";
 import { clear, has, deleteId, load, set } from "../utils/localAutomergeDb";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";

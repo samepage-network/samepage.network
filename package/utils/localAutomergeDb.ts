@@ -1,8 +1,8 @@
 import apiClient from "../internal/apiClient";
 import { Schema } from "../types";
 import Automerge from "automerge";
-import base64ToBinary from "package/internal/base64ToBinary";
-import getActorId from "package/internal/getActorId";
+import base64ToBinary from "../internal/base64ToBinary";
+import getActorId from "../internal/getActorId";
 
 const notebookPageIds: Record<string, Automerge.FreezeObject<Schema> | null> =
   {};

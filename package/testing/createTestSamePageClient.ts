@@ -17,8 +17,8 @@ import React from "react";
 import AtJsonRendered from "../components/AtJsonRendered";
 import { JSDOM } from "jsdom";
 import apiClient from "../internal/apiClient";
-import downloadSharedPage from "~/data/downloadSharedPage.server";
 import Automerge from "automerge";
+import base64ToBinary from "../internal/base64ToBinary";
 
 const findEl = (dom: JSDOM, index: number) => {
   let start = 0;
@@ -305,14 +305,17 @@ const createTestSamePageClient = ({
               onMessage({ type: "updates" })
             );
           } else if (message.type === "ipfs") {
-            await apiClient<{ cid: string }>({
-              method: "get-ipfs-cid",
+            await apiClient<{ state: string }>({
+              method: "get-shared-page",
               notebookPageId: message.notebookPageId,
-            })
-              .then(({ cid }) => downloadSharedPage({ cid }))
-              .then(({ body: bin }) =>
-                onMessage({ type: "ipfs", data: Automerge.load(bin) })
-              );
+            }).then(({ state }) =>
+              onMessage({
+                type: "ipfs",
+                data: Automerge.load(
+                  base64ToBinary(state) as Automerge.BinaryDocument
+                ),
+              })
+            );
           }
         } catch (e) {
           onMessage({
