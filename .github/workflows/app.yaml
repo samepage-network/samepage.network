@@ -24,6 +24,7 @@ env:
   STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
   STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
   WEB_SOCKET_URL: https://ws.samepage.network
+  WEB3_STORAGE_API_KEY: ${{ secrets.WEB3_STORAGE_API_KEY }}
 
 jobs:
   deploy:

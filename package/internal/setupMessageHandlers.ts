@@ -11,8 +11,18 @@ const messageHandlers: MessageHandlers = {};
 export const handleMessage = (content: string, source?: Notebook) => {
   const { operation, ...props } = JSON.parse(content);
   const handler = messageHandlers[operation];
-  if (handler) handler(props, source || props.source || "");
-  else if (!props.ephemeral)
+  if (handler) {
+    // try {
+    handler(props, source || props.source || "");
+    // } catch (e) {
+    //   dispatchAppEvent({
+    //     type: "log",
+    //     id: `handler-error-${operation}`,
+    //     content: `Failed to handle message: ${e}`,
+    //     intent: "error",
+    //   });
+    // }
+  } else if (!props.ephemeral)
     dispatchAppEvent({
       type: "log",
       id: `network-error-${operation}`,

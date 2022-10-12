@@ -43,7 +43,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
   const apiReady = new Promise<void>((resolve) =>
     spawnCallbacks.push({ test: /API server listening/, callback: resolve })
   );
-  api.stderr.on("data", (s) => addToLog(`API Error: ${s as string}`));
+  api.stderr.on("data", (s) => console.error(`API Error: ${s as string}`));
 
   cleanup = () => {
     api.kill();
@@ -52,6 +52,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
     Promise.all([wsReady, apiReady]));
 
   const notebookPageId = v4();
+  let client1ExpectedToClose = false;
   const client1 = fork(
     "./package/testing/createTestSamePageClient",
     ["--forked", "one"],
@@ -60,7 +61,8 @@ test("Make sure two clients can come online and share updates, despite errors", 
   const client1Callbacks: Record<string, (data: unknown) => void> = {
     log: (log) => addToLog(`Client 1: ${log}`),
     error: (message) => {
-      addToLog(`Client 1: ERROR ${message}`);
+      console.error(`Client 1: ERROR ${message}`);
+      throw new Error("Client 1 threw an unexpected error");
     },
   };
   client1.on("message", (_data) => {
@@ -69,11 +71,15 @@ test("Make sure two clients can come online and share updates, despite errors", 
   });
   client1.on("exit", (e) => {
     addToLog(`Client 1: exited (${e})`);
+    if (!client1ExpectedToClose) {
+      throw new Error(`Client 1 closed before we expected it to.`);
+    }
   });
   const client1Ready = new Promise<unknown>(
     (resolve) => (client1Callbacks["ready"] = () => resolve(true))
   );
 
+  let client2ExpectedToClose = false;
   const client2 = fork("./package/testing/createTestSamePageClient", [
     "--forked",
     "two",
@@ -81,7 +87,8 @@ test("Make sure two clients can come online and share updates, despite errors", 
   const client2Callbacks: Record<string, (data: unknown) => void> = {
     log: (log) => addToLog(`Client 2: ${log}`),
     error: (message) => {
-      addToLog(`Client 2: ERROR ${message}`);
+      console.error(`Client 2: ERROR ${message}`);
+      throw new Error("Client 2 threw an unexpected error");
     },
   };
   client2.on("message", (_data) => {
@@ -90,14 +97,17 @@ test("Make sure two clients can come online and share updates, despite errors", 
   });
   client2.on("exit", (e) => {
     addToLog(`Client 2: exited (${e})`);
+    if (!client2ExpectedToClose) {
+      throw new Error(`Client 2 closed before we expected it to.`);
+    }
   });
   const client2Ready = new Promise<unknown>(
     (resolve) => (client2Callbacks["ready"] = () => resolve(true))
   );
   cleanup = () => {
-    api.kill();
     client1.kill();
     client2.kill();
+    api.kill();
     addToLog("Test: cleaned up!");
   };
 
@@ -116,18 +126,6 @@ test("Make sure two clients can come online and share updates, despite errors", 
     }));
 
   await test.step("Add some initial data", () =>
-    // will need this for `load` testing
-    // const initialPageData = {
-    //   content: "First entry in page",
-    //   annotations: [
-    //     {
-    //       type: "block",
-    //       start: 0,
-    //       end: 19,
-    //       attributes: { level: 1, viewType: "document" },
-    //     },
-    //   ],
-    // };
     new Promise<unknown>((resolve) => {
       client1Callbacks["setAppClientState"] = resolve;
       client1.send({
@@ -141,6 +139,25 @@ test("Make sure two clients can come online and share updates, despite errors", 
     new Promise<unknown>((resolve) => {
       client1Callbacks["init-page-success"] = resolve;
       client1.send({ type: "share" });
+    }));
+
+  const client1Ipfs = () =>
+    new Promise<unknown>((resolve) => {
+      client1Callbacks["ipfs"] = resolve;
+      client1.send({ type: "ipfs", notebookPageId });
+    });
+  await test.step("Client 1 loads intial data correctly from IPFS", () =>
+    expect.poll(client1Ipfs).toEqual({
+      content: "First entry in page",
+      annotations: [
+        {
+          type: "block",
+          start: 0,
+          end: 19,
+          attributes: { level: 1, viewType: "document" },
+        },
+      ],
+      contentType: "application/vnd.atjson+samepage; version=2022-08-17",
     }));
 
   await test.step("Share page", () =>
@@ -199,18 +216,19 @@ test("Make sure two clients can come online and share updates, despite errors", 
       .toEqual(
         '<div style="margin-left:16px" class="my-2">First super entry in page</div>'
       ));
-  // TODO: test `load` here
-  // await expect.poll(client1Read).toEqual({
-  //   content: "First super entry in page",
-  //   annotations: [
-  //     {
-  //       type: "block",
-  //       start: 0,
-  //       end: 25,
-  //       attributes: { level: 1, viewType: "document" },
-  //     },
-  //   ],
-  // });
+  await test.step("Client 1 loads data post insert correctly from IPFS", () =>
+    expect.poll(client1Ipfs).toEqual({
+      content: "First super entry in page",
+      annotations: [
+        {
+          type: "block",
+          start: 0,
+          end: 25,
+          attributes: { level: 1, viewType: "document" },
+        },
+      ],
+      contentType: "application/vnd.atjson+samepage; version=2022-08-17",
+    }));
 
   await test.step("Client 2 disconnects", () =>
     new Promise<unknown>((resolve) => {
@@ -227,6 +245,19 @@ test("Make sure two clients can come online and share updates, despite errors", 
         count: 9,
         index: 12,
       });
+    }));
+  await test.step("Client 1 loads data post deletion correctly from IPFS", () =>
+    expect.poll(client1Ipfs).toEqual({
+      content: "First super page",
+      annotations: [
+        {
+          type: "block",
+          start: 0,
+          end: 16,
+          attributes: { level: 1, viewType: "document" },
+        },
+      ],
+      contentType: "application/vnd.atjson+samepage; version=2022-08-17",
     }));
 
   await test.step("Client 2 reconnects", () =>
@@ -270,6 +301,19 @@ test("Make sure two clients can come online and share updates, despite errors", 
         index: 16,
       });
     }));
+  await test.step("Client 1 loads data when other are broken correctly from IPFS", () =>
+    expect.poll(client1Ipfs).toEqual({
+      content: "First super page alpha",
+      annotations: [
+        {
+          type: "block",
+          start: 0,
+          end: 22,
+          attributes: { level: 1, viewType: "document" },
+        },
+      ],
+      contentType: "application/vnd.atjson+samepage; version=2022-08-17",
+    }));
 
   await test.step("Client 2 loads missed updates while broken", () =>
     expect
@@ -306,6 +350,19 @@ test("Make sure two clients can come online and share updates, despite errors", 
         index: 22,
       });
     }));
+  await test.step("Client 1 loads data post other fixed correctly from IPFS", () =>
+    expect.poll(client1Ipfs).toEqual({
+      content: "First super page alphabet",
+      annotations: [
+        {
+          type: "block",
+          start: 0,
+          end: 25,
+          attributes: { level: 1, viewType: "document" },
+        },
+      ],
+      contentType: "application/vnd.atjson+samepage; version=2022-08-17",
+    }));
 
   await test.step("Client 2 waits for an update", () =>
     new Promise<unknown>((resolve) => {
@@ -319,30 +376,20 @@ test("Make sure two clients can come online and share updates, despite errors", 
       .toEqual(
         '<div style="margin-left:16px" class="my-2">First super page alphabet</div>'
       ));
-  // TODO: test `load` here
-  // await expect.poll(client2Read).toEqual({
-  //   content: "First super page alphabet",
-  //   annotations: [
-  //     {
-  //       type: "block",
-  //       start: 0,
-  //       end: 25,
-  //       attributes: { level: 1, viewType: "document" },
-  //     },
-  //   ],
-  // });
 
   await test.step("Unload first client", () =>
     new Promise<unknown>((resolve) => {
       client1Callbacks["unload"] = resolve;
       client1.send({ type: "unload" });
     }));
+  client1ExpectedToClose = true;
 
   await test.step("Unload second client", () =>
     new Promise<unknown>((resolve) => {
       client2Callbacks["unload"] = resolve;
       client2.send({ type: "unload" });
     }));
+  client2ExpectedToClose = true;
 });
 
 test.afterAll(async () => {

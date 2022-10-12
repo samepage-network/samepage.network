@@ -7,6 +7,7 @@ import Select from "@dvargas92495/app/components/Select";
 import listPageNotebookLinks from "~/data/listAllPageNotebookLinks.server";
 import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
+import getMysql from "fuegojs/utils/mysql";
 import type Automerge from "automerge";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
@@ -32,7 +33,7 @@ const SharedPageStatusPage = () => {
         notebookPageId={notebookPageId}
         loadState={(notebookPageId) =>
           fetch(
-            `/admin/components/shared-page-status?uuid=${notebookPageId}&_data=routes%2Fadmin%2Fcomponents%2Fshared-page-status`
+            `/admin/components/shared-page-status?notebookPageId=${notebookPageId}&_data=routes%2Fadmin%2Fcomponents%2Fshared-page-status`
           )
             .then((r) => r.json())
             .then((r) => {
@@ -51,11 +52,24 @@ const SharedPageStatusPage = () => {
 
 export const loader: LoaderFunction = (args) => {
   return remixAdminLoader(args, ({ context: { requestId }, searchParams }) => {
-    const uuid = searchParams["uuid"];
-    return uuid
-      ? downloadSharedPage(uuid).then((r) => ({
-          state: Buffer.from(r).toString("base64"),
-        }))
+    const notebookPageId = searchParams["notebookPageId"];
+    return notebookPageId
+      ? getMysql()
+          .then((cxn) =>
+            cxn
+              .execute(
+                "SELECT cid FROM page_notebook_links WHERE notebook_page_id=? LIMIT 1",
+                [notebookPageId]
+              )
+              .then(([r]) => {
+                cxn.destroy();
+                return (r as { cid: string }[])[0]?.cid;
+              })
+          )
+          .then((cid) => downloadSharedPage({ cid }))
+          .then((r) => ({
+            state: Buffer.from(r.body).toString("base64"),
+          }))
       : listPageNotebookLinks(requestId).then(({ pages }) => ({
           pages: Object.keys(pages),
         }));

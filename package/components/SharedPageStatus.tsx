@@ -4,6 +4,7 @@ import {
   Dialog,
   Drawer,
   DrawerSize,
+  Icon,
   IconName,
   MaybeElement,
   Tooltip,
@@ -13,14 +14,13 @@ import React from "react";
 import SharePageDialog from "./SharePageDialog";
 import { OverlayProps, Schema } from "../types";
 import Automerge from "automerge";
-import getActorId from "../internal/getActorId";
 import apiClient from "../internal/apiClient";
-import { app, notebookPageIds, workspace } from "../internal/registry";
+import { app, workspace } from "../internal/registry";
 import getLastLocalVersion from "../internal/getLastLocalVersion";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { parseAndFormatActorId } from "../internal/parseActorId";
-import binaryToBase64 from "../internal/binaryToBase64";
 import AtJsonRendered from "./AtJsonRendered";
+import { load, deleteId } from "../utils/localAutomergeDb";
 
 type GetLocalHistory = (
   notebookPageId: string
@@ -30,9 +30,6 @@ export type Props = {
   notebookPageId: string;
   portalContainer?: HTMLElement;
   defaultOpenInviteDialog?: boolean;
-
-  loadState?: (notebookPageId: string) => Promise<Uint8Array>;
-  removeState?: (notebookPageId: string) => Promise<unknown>;
 };
 
 const parseTime = (s = 0) => new Date(s * 1000).toLocaleString();
@@ -144,20 +141,9 @@ const SharedPageStatus = ({
   notebookPageId,
   portalContainer,
   defaultOpenInviteDialog,
-  loadState = () => Promise.resolve(new Uint8Array(0)),
-  removeState = Promise.resolve,
 }: OverlayProps<Props>) => {
   const [loading, setLoading] = React.useState(false);
   const containerRef = React.useRef<HTMLSpanElement>(null);
-  const loadAutomergeDoc = React.useCallback(
-    (notebookPageId: string) =>
-      loadState(notebookPageId).then((state) =>
-        Automerge.load<Schema>(state as Automerge.BinaryDocument, {
-          actorId: getActorId(),
-        })
-      ),
-    [loadState]
-  );
   return (
     <span
       className="samepage-shared-page-status flex gap-4 items-center text-lg mb-8 shadow-sm px-2 py-4"
@@ -199,7 +185,7 @@ const SharedPageStatus = ({
                   method: "list-page-notebooks",
                   notebookPageId,
                 }),
-                loadAutomergeDoc(notebookPageId),
+                load(notebookPageId),
               ]).then(([{ notebooks }, doc]) => {
                 return {
                   notebooks: notebooks.map((n) =>
@@ -231,9 +217,7 @@ const SharedPageStatus = ({
             <div className={Classes.DRAWER_BODY}>
               <HistoryContent
                 getHistory={() =>
-                  loadAutomergeDoc(notebookPageId).then((doc) =>
-                    Automerge.getHistory(doc)
-                  )
+                  load(notebookPageId).then((doc) => Automerge.getHistory(doc))
                 }
                 portalContainer={portalContainer}
               />
@@ -256,8 +240,7 @@ const SharedPageStatus = ({
               notebookPageId,
             })
               .then(() => {
-                removeState(notebookPageId);
-                notebookPageIds.delete(notebookPageId);
+                deleteId(notebookPageId);
                 dispatchAppEvent({
                   type: "log",
                   content: `Successfully disconnected ${notebookPageId} from being shared.`,
@@ -279,24 +262,17 @@ const SharedPageStatus = ({
           }}
         />
       </Tooltip>
-      <Tooltip
-        content={"Manual Sync"}
-        portalContainer={portalContainer}
-      >
+      <Tooltip content={"Manual Sync"} portalContainer={portalContainer}>
         <Button
           disabled={loading}
           icon={"warning-sign"}
           minimal
           onClick={() => {
             setLoading(true);
-            loadState(notebookPageId)
-              .then((state) =>
-                apiClient({
-                  method: "force-push-page",
-                  notebookPageId,
-                  state: binaryToBase64(state),
-                })
-              )
+            apiClient({
+              method: "force-push-page",
+              notebookPageId,
+            })
               .then(() =>
                 dispatchAppEvent({
                   type: "log",
@@ -310,6 +286,54 @@ const SharedPageStatus = ({
                   type: "log",
                   content: `Failed to pushed page state to other notebooks: ${e.message}`,
                   id: "push-shared-page",
+                  intent: "error",
+                })
+              )
+              .finally(() => setLoading(false));
+          }}
+        />
+      </Tooltip>
+      <Tooltip content={"Copy IPFS Link"} portalContainer={portalContainer}>
+        <Button
+          disabled={loading}
+          icon={
+            <Icon
+              icon={
+                <svg
+                  width="24px"
+                  height="24px"
+                  viewBox="0 0 24 24"
+                  role="img"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path d="M12 0 1.608 6v12L12 24l10.392-6V6zm-1.073 1.445h.001a1.8 1.8 0 0 0 2.138 0l7.534 4.35a1.794 1.794 0 0 0 0 .403l-7.535 4.35a1.8 1.8 0 0 0-2.137 0l-7.536-4.35a1.795 1.795 0 0 0 0-.402zM21.324 7.4c.109.08.226.147.349.201v8.7a1.8 1.8 0 0 0-1.069 1.852l-7.535 4.35a1.8 1.8 0 0 0-.349-.2l-.009-8.653a1.8 1.8 0 0 0 1.07-1.851zm-18.648.048 7.535 4.35a1.8 1.8 0 0 0 1.069 1.852v8.7c-.124.054-.24.122-.349.202l-7.535-4.35a1.8 1.8 0 0 0-1.069-1.852v-8.7a1.85 1.85 0 0 0 .35-.202z" />
+                </svg>
+              }
+            />
+          }
+          minimal
+          onClick={() => {
+            setLoading(true);
+            apiClient<{ cid: string }>({
+              method: "get-ipfs-cid",
+              notebookPageId,
+            })
+              .then(({ cid }) => {
+                window.navigator.clipboard.writeText(
+                  `https://${cid}.ipfs.w3s.link`
+                );
+                dispatchAppEvent({
+                  type: "log",
+                  content: `Copied IPFS Link!`,
+                  id: "copied-ipfs-link",
+                  intent: "success",
+                });
+              })
+              .catch((e) =>
+                dispatchAppEvent({
+                  type: "log",
+                  content: `Failed to find IPFS link for page: ${e.message}`,
+                  id: "copied-ipfs-failed",
                   intent: "error",
                 })
               )

@@ -2,6 +2,7 @@ import APPS from "./internal/apps";
 import type Automerge from "automerge";
 import React from "react";
 import { z } from "zod";
+import type { CID } from "multiformats";
 
 export type App = typeof APPS[number];
 export type AppId = App["id"];
@@ -184,6 +185,11 @@ export type SendToBackend = (args: {
   data?: { [key: string]: json };
   unauthenticated?: boolean;
 }) => void;
+export type Memo = {
+  body: Automerge.BinaryDocument;
+  headers: Record<string, string>;
+  parent: CID | null;
+};
 
 declare global {
   interface Window {

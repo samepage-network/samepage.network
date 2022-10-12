@@ -11,10 +11,13 @@ export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultEr
 import { v4 } from "uuid";
 import { appsById } from "package/internal/apps";
 import { parseAndFormatActorId } from "package/internal/parseActorId";
+import { useState } from "react";
 
 const SinglePagePage = () => {
-  const { data, notebooks, history } =
+  const { notebooks, pages } =
     useLoaderData<Awaited<ReturnType<typeof getSharedPageByUuid>>>();
+  const [chosenCid, setChosenCid] = useState(notebooks[0].cid);
+  const { data, history } = pages[chosenCid];
   return (
     <div className={"flex flex-col gap-12 h-full"}>
       <div className={"flex gap-8 flex-grow-1"}>
@@ -53,7 +56,10 @@ const SinglePagePage = () => {
         {notebooks.map((l) => (
           <li key={l.uuid}>
             <div className={"flex items-center w-full justify-between mb-2"}>
-              <span>
+              <span
+                onClick={() => setChosenCid(l.cid)}
+                className={"cursor-pointer"}
+              >
                 {appsById[l.app].name} / {l.workspace} / {l.notebook_page_id}
               </span>
               <Form method={"delete"}>

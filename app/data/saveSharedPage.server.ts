@@ -1,38 +1,49 @@
-import getMysqlConnection from "fuegojs/utils/mysql";
-import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
 import Automerge from "automerge";
-import type { Schema } from "package/types";
+import type { Memo, Schema } from "package/types";
+import { Web3Storage, File } from "web3.storage";
+import { encode } from "@ipld/dag-cbor";
+import { CID } from "multiformats";
+import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
 
 const saveSharedPage = ({
-  pageUuid,
+  cid,
   doc,
-  requestId,
 }: {
-  pageUuid: string;
-  doc: Automerge.FreezeObject<Schema> | string;
-  requestId: string;
+  cid?: string;
+  doc: Automerge.FreezeObject<Schema> | string | Automerge.BinaryDocument;
 }) => {
-  const buffer =
-    typeof doc === "string" ? Buffer.from(doc, "base64") : Automerge.save(doc);
-  return uploadFile({
-    Key: `data/page/${pageUuid}.json`,
-    Body: buffer,
-  }).then(async () => {
-    const cxn = await getMysqlConnection(requestId);
-    const automergeDoc =
-      typeof doc === "string"
-        ? Automerge.load(new Uint8Array(buffer) as Automerge.BinaryDocument)
-        : doc;
-    const change = Automerge.getLastLocalChange(automergeDoc);
-    const version = change
-      ? Automerge.decodeChange(change).time
-      : Automerge.getHistory(automergeDoc).slice(-1)[0].change.time;
-    return cxn
-      .execute(`UPDATE pages SET version = ? WHERE uuid = ?`, [
-        version,
-        pageUuid,
-      ])
-      .then(() => ({ version }));
+  const body =
+    typeof doc === "string"
+      ? (new Uint8Array(Buffer.from(doc, "base64")) as Automerge.BinaryDocument)
+      : doc instanceof Uint8Array
+      ? doc
+      : Automerge.save(doc);
+  const client = new Web3Storage({
+    token: process.env.WEB3_STORAGE_API_KEY || "",
+  });
+
+  const encoded = encode<Memo>({
+    body,
+    headers: {},
+    parent: cid ? CID.parse(cid) : null,
+  });
+  let rootReadyResolve: () => void;
+  const s3upload = new Promise<void>((resolve) => (rootReadyResolve = resolve));
+  const start = performance.now();
+  return Promise.all([
+    client.put([new File([encoded], "data.json")], {
+      wrapWithDirectory: false,
+      onRootCidReady(cid) {
+        uploadFile({
+          Key: `data/ipfs/${cid}`,
+          Body: encoded,
+        }).then(rootReadyResolve);
+      },
+    }),
+    s3upload,
+  ]).then(async ([cid]) => {
+    console.log("File uploaded", cid, "in", performance.now() - start, "ms");
+    return { cid, body };
   });
 };
 

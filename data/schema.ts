@@ -2,7 +2,6 @@ import { z } from "zod";
 
 const uuid = z.string().uuid().describe("primary");
 const optionalUuid = z.string().uuid().optional();
-const notebookUuid = optionalUuid.describe("foreign");
 
 const notebook = z.object({
   uuid,
@@ -12,7 +11,7 @@ const notebook = z.object({
 
 const pageNotebookLink = z.object({
   uuid,
-  pageUuid: z.string().uuid().describe("foreign"),
+  pageUuid: z.string().uuid(),
   notebookPageId: z.string().describe("unique"),
   workspace: z.string().describe("unique"),
   app: z.number().max(Math.pow(2, 8)).describe("unique"),
@@ -20,7 +19,8 @@ const pageNotebookLink = z.object({
   open: z.boolean(), // .default(true), need to update fuego to handle defaults
   invitedBy: z.string().uuid().optional(),
   invitedDate: z.date().optional(),
-  notebookUuid: z.string().uuid().optional().describe("foreign"),
+  notebookUuid: optionalUuid,
+  cid: z.string(),
 });
 
 const page = z.object({
@@ -33,7 +33,7 @@ const onlineClient = z.object({
   instance: z.string(),
   app: z.number().max(Math.pow(2, 8)),
   createdDate: z.date(),
-  notebookUuid,
+  notebookUuid: optionalUuid,
 });
 
 const clientSession = z.object({
@@ -43,7 +43,7 @@ const clientSession = z.object({
   createdDate: z.date(),
   endDate: z.date(),
   disconnectedBy: z.string(),
-  notebookUuid,
+  notebookUuid: optionalUuid,
 });
 
 const message = z.object({

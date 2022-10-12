@@ -2,7 +2,7 @@ import { NotFoundError } from "@dvargas92495/app/backend/errors.server";
 import type { Notebook } from "package/types";
 import getMysql from "fuegojs/utils/mysql";
 
-type SharedPage = { uuid: string; version: number };
+type SharedPage = { uuid: string; version: number; cid: string };
 type SharedPageInput = {
   notebookPageId: string;
   requestId: string;
@@ -20,7 +20,7 @@ const getSharedPage = <T extends SharedPageInput & { safe?: true }>({
   getMysql(requestId).then((cxn) =>
     cxn
       .execute(
-        `SELECT p.* 
+        `SELECT p.uuid, l.cid
         FROM page_notebook_links l 
         INNER JOIN pages p ON p.uuid = l.page_uuid
         WHERE workspace = ? AND app = ? AND notebook_page_id = ? AND open = 0`,

@@ -80,7 +80,7 @@ export const createStrikethroughToken: Processor<InitialSchema> = (_data) => {
   return createInlineToken(_data, "strikethrough");
 };
 
-export const createLinkToken: Processor<InitialSchema> = (_data) => {
+export const createLinkToken: Processor<InitialSchema> = (_data, _, reject) => {
   const data = _data as [
     moo.Token,
     InitialSchema,
@@ -89,8 +89,8 @@ export const createLinkToken: Processor<InitialSchema> = (_data) => {
     moo.Token,
     moo.Token
   ];
-  const { content: _content = "", annotations = [] } = data[1];
-  const content = _content || String.fromCharCode(0);
+  const { content, annotations = [] } = data[1];
+  if (!content) return reject;
   return {
     content,
     annotations: [
