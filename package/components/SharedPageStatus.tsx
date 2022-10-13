@@ -26,7 +26,7 @@ type GetLocalHistory = (
   notebookPageId: string
 ) => Promise<Automerge.State<Schema>[]>;
 
-export type Props = {
+export type SharedPageStatusProps = {
   notebookPageId: string;
   portalContainer?: HTMLElement;
   defaultOpenInviteDialog?: boolean;

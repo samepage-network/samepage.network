@@ -20,7 +20,9 @@ import ViewSharedPages, {
 import NotificationContainer, {
   NotificationContainerProps,
 } from "../components/NotificationContainer";
-import SharedPageStatus from "../components/SharedPageStatus";
+import SharedPageStatus, {
+  SharedPageStatusProps,
+} from "../components/SharedPageStatus";
 import createHTMLObserver from "../utils/createHTMLObserver";
 import { onAppEvent } from "../internal/registerAppEventListener";
 import getActorId from "../internal/getActorId";
@@ -54,6 +56,7 @@ const setupSharePageWithNotebook = ({
       selector?: string;
       getNotebookPageId?: (element: Node) => Promise<string | null>;
       getPath: (el: Node) => HTMLElement | null;
+      onCopy?: SharedPageStatusProps["onCopy"];
     };
   };
   getCurrentNotebookPageId?: () => Promise<string>;
@@ -83,6 +86,7 @@ const setupSharePageWithNotebook = ({
         notebookPageId,
         defaultOpenInviteDialog: created,
         portalContainer: appRoot,
+        onCopy: sharedPageStatusProps?.onCopy,
       },
       path: sharedPageStatusProps?.getPath(el),
     });
