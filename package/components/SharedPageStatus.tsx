@@ -143,7 +143,7 @@ const SharedPageStatus = ({
   portalContainer,
   defaultOpenInviteDialog,
   onCopy = (s) => window.navigator.clipboard.writeText(s),
-}: OverlayProps<Props>) => {
+}: OverlayProps<SharedPageStatusProps>) => {
   const [loading, setLoading] = React.useState(false);
   const containerRef = React.useRef<HTMLSpanElement>(null);
   return (
