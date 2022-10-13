@@ -98,21 +98,6 @@ const zMethod = z.intersection(
   ])
 );
 
-const getActorId = () =>
-  `SamePage/mainnet`
-    .split("")
-    .map((s) => s.charCodeAt(0).toString(16))
-    .join("");
-
-const loadAutomerge = (binary: Automerge.BinaryDocument) => {
-  try {
-    return Automerge.load<Schema>(binary, { actorId: getActorId() });
-  } catch (e) {
-    console.error(`Corrupt automerge file. Returning an empty one instead.`);
-    return Automerge.init<Schema>({ actorId: getActorId() });
-  }
-};
-
 const logic = async (
   req: Record<string, unknown>
 ): Promise<string | Record<string, unknown>> => {
@@ -369,8 +354,59 @@ const logic = async (
           cxn.destroy();
           return {};
         }
+        const notebookUuid = await getNotebookUuid({
+          workspace,
+          app,
+          requestId,
+        });
+        await cxn
+          .execute(
+            `SELECT app, workspace, notebook_uuid, notebook_page_id FROM page_notebook_links WHERE page_uuid = ? AND open = 0`,
+            [pageUuid]
+          )
+          .then(([r]) => {
+            const clients = (
+              r as ({
+                notebook_page_id: string;
+                notebook_uuid: string;
+              } & Notebook)[]
+            ).filter((item) => {
+              return notebookUuid !== item.notebook_uuid;
+            });
+            return Promise.all(
+              clients.map(({ notebook_page_id, ...target }) =>
+                messageNotebook({
+                  source: { app, workspace },
+                  target,
+                  data: {
+                    changes,
+                    notebookPageId: notebook_page_id,
+                    operation: "SHARE_PAGE_UPDATE",
+                  },
+                  requestId,
+                })
+              )
+            );
+          });
         return downloadSharedPage({ cid })
           .then(async ({ body: binary }) => {
+            const loadAutomerge = (binary: Automerge.BinaryDocument) => {
+              const getActorId = () =>
+                `${app}/${workspace}`
+                  .split("")
+                  .map((s) => s.charCodeAt(0).toString(16))
+                  .join("");
+              try {
+                return Automerge.load<Schema>(binary, {
+                  actorId: getActorId(),
+                });
+              } catch (e) {
+                console.error(
+                  `Corrupt automerge file. Returning an empty one instead.`
+                );
+                return Automerge.init<Schema>({ actorId: getActorId() });
+              }
+            };
             const oldDoc = loadAutomerge(binary);
             const binaryChanges = changes.map(
               (c) =>
@@ -413,37 +449,9 @@ const logic = async (
                   ]
                 )
               )
-              .then(() => {
-                return cxn
-                  .execute(
-                    `SELECT workspace, app, notebook_page_id FROM page_notebook_links WHERE page_uuid = ? AND open = 0`,
-                    [pageUuid]
-                  )
-                  .then(([r]) => {
-                    const clients = (
-                      r as (Notebook & { notebook_page_id: string })[]
-                    ).filter((item) => {
-                      return item.workspace !== workspace || item.app !== app;
-                    });
-                    return Promise.all(
-                      clients.map(({ notebook_page_id, ...target }) =>
-                        messageNotebook({
-                          source: { app, workspace },
-                          target,
-                          data: {
-                            changes,
-                            notebookPageId: notebook_page_id,
-                            operation: "SHARE_PAGE_UPDATE",
-                          },
-                          requestId,
-                        })
-                      )
-                    );
-                  })
-                  .then(() => ({
-                    patch,
-                  }));
-              });
+              .then(() => ({
+                patch,
+              }));
           })
           .catch(catchError("Failed to update a shared page"))
           .finally(() => {

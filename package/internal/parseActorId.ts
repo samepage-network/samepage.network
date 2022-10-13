@@ -13,8 +13,8 @@ const parseActorId = (s: string): Notebook => {
 };
 
 export const parseAndFormatActorId = (s: string) => {
-  const {app, workspace} = parseActorId(s);
-  return `${appsById[app].name} / ${workspace}`;
-}
+  const { app, workspace } = parseActorId(s);
+  return `${appsById[app]?.name || "Unknown"} / ${workspace || "Unknown"}`;
+};
 
 export default parseActorId;
