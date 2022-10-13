@@ -16,8 +16,8 @@ import { useState } from "react";
 const SinglePagePage = () => {
   const { notebooks, pages } =
     useLoaderData<Awaited<ReturnType<typeof getSharedPageByUuid>>>();
-  const [chosenCid, setChosenCid] = useState(notebooks[0].cid);
-  const { data, history } = pages[chosenCid];
+  const [chosenNotebook, setChosenNotebook] = useState(0);
+  const { data, history } = pages[notebooks[chosenNotebook].cid];
   return (
     <div className={"flex flex-col gap-12 h-full"}>
       <div className={"flex gap-8 flex-grow-1"}>
@@ -45,7 +45,13 @@ const SinglePagePage = () => {
           <h1 className="text-3xl p-4">Log</h1>
         </div>
         <div className="flex-grow border-gray-800 flex flex-col h-full">
-          <h1 className={"text-3xl py-4"}>State</h1>
+          <h1 className={"text-3xl py-4 flex items-center justify-between"}>
+            <span>State</span>
+            <span className="opacity-75 text-xl italic">
+              Showing data from {notebooks[chosenNotebook].app} /{" "}
+              {notebooks[chosenNotebook].workspace}
+            </span>
+          </h1>
           <pre className={"overflow-auto whitespace-pre-wrap flex-grow h-full"}>
             {JSON.stringify(data, null, 4)}
           </pre>
@@ -53,11 +59,14 @@ const SinglePagePage = () => {
       </div>
       <h1 className={"py-4 text-3xl"}>Notebooks</h1>
       <ul className="ml-4 list-disc max-w-lg">
-        {notebooks.map((l) => (
-          <li key={l.uuid}>
+        {notebooks.map((l, index) => (
+          <li
+            key={l.uuid}
+            className={index === chosenNotebook ? "bg-gray-50" : ""}
+          >
             <div className={"flex items-center w-full justify-between mb-2"}>
               <span
-                onClick={() => setChosenCid(l.cid)}
+                onClick={() => setChosenNotebook(index)}
                 className={"cursor-pointer"}
               >
                 {appsById[l.app].name} / {l.workspace} / {l.notebook_page_id}

@@ -457,7 +457,7 @@ const logic = async (
           workspace,
           notebookPageId,
           app,
-          requestId: requestId,
+          requestId,
         });
         const { body: state } = await downloadSharedPage({ cid });
         const notebooks = await cxn
@@ -577,7 +577,7 @@ const logic = async (
               }))
           : cxn
               .execute(
-                `SELECT uuid, invited_by 
+                `SELECT uuid, invited_by
       FROM page_notebook_links
       WHERE workspace = ? AND app = ? AND notebook_page_id = ? AND open = 1`,
                 [workspace, app, notebookPageId]

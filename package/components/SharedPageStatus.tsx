@@ -30,6 +30,7 @@ export type Props = {
   notebookPageId: string;
   portalContainer?: HTMLElement;
   defaultOpenInviteDialog?: boolean;
+  onCopy?: (s: string) => void;
 };
 
 const parseTime = (s = 0) => new Date(s * 1000).toLocaleString();
@@ -141,6 +142,7 @@ const SharedPageStatus = ({
   notebookPageId,
   portalContainer,
   defaultOpenInviteDialog,
+  onCopy = (s) => window.navigator.clipboard.writeText(s),
 }: OverlayProps<Props>) => {
   const [loading, setLoading] = React.useState(false);
   const containerRef = React.useRef<HTMLSpanElement>(null);
@@ -319,9 +321,7 @@ const SharedPageStatus = ({
               notebookPageId,
             })
               .then(({ cid }) => {
-                window.navigator.clipboard.writeText(
-                  `https://${cid}.ipfs.w3s.link`
-                );
+                onCopy(`https://${cid}.ipfs.w3s.link`);
                 dispatchAppEvent({
                   type: "log",
                   content: `Copied IPFS Link!`,

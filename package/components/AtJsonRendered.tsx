@@ -1,6 +1,6 @@
 import { appsById } from "../internal/apps";
 import React, { useMemo } from "react";
-import type { Annotation, Schema } from "../types";
+import type { Annotation, InitialSchema, Schema } from "../types";
 
 type AnnotationTree = (Annotation & { children: AnnotationTree })[];
 
@@ -55,12 +55,28 @@ const AnnotationRendered = ({
     )
     .map((c) => c.el);
   return annotation.type === "block" ? (
-    <div
-      style={{ marginLeft: annotation.attributes.level * 16 }}
-      className={"my-2"}
-    >
-      {children}
-    </div>
+    annotation.attributes.viewType === "bullet" ? (
+      <li
+        style={{ marginLeft: annotation.attributes.level * 16 }}
+        className={"my-2"}
+      >
+        {children}
+      </li>
+    ) : annotation.attributes.viewType === "numbered" ? (
+      <li
+        style={{ marginLeft: annotation.attributes.level * 16 }}
+        className={"my-2 list-decimal"}
+      >
+        {children}
+      </li>
+    ) : (
+      <div
+        style={{ marginLeft: annotation.attributes.level * 16 }}
+        className={"my-2"}
+      >
+        {children}
+      </div>
+    )
   ) : annotation.type === "highlighting" ? (
     <span className="bg-yellow-300">{children}</span>
   ) : annotation.type === "bold" ? (
@@ -81,7 +97,7 @@ const AnnotationRendered = ({
   );
 };
 
-const AtJsonRendered = ({ content, annotations }: Schema) => {
+const AtJsonRendered = ({ content, annotations }: Schema | InitialSchema) => {
   const selectedSnapshotTree = useMemo(() => {
     const tree: AnnotationTree = [];
     annotations.forEach((anno) => {
@@ -101,10 +117,11 @@ const AtJsonRendered = ({ content, annotations }: Schema) => {
   }, [annotations]);
   return (
     <>
-      {selectedSnapshotTree.map((annotation) => (
+      {selectedSnapshotTree.map((annotation, key) => (
         <AnnotationRendered
           annotation={annotation}
           content={content.toString() || ""}
+          key={key}
         />
       ))}
     </>
