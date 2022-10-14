@@ -578,7 +578,7 @@ const setupSharePageWithNotebook = ({
         method: "update-shared-page",
         changes: Automerge.getChanges(oldDoc, doc).map(binaryToBase64),
         notebookPageId,
-        state: Automerge.save(doc),
+        state: binaryToBase64(Automerge.save(doc)),
         seq,
       });
     });
