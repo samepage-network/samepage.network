@@ -5,7 +5,7 @@ const getNotebookUuid = ({
   workspace,
   app,
   requestId,
-}: Notebook & { requestId: string }): Promise<string | null> =>
+}: Notebook & { requestId: string }): Promise<string> =>
   getMysql(requestId).then((cxn) =>
     cxn
       .execute(
@@ -17,7 +17,7 @@ const getNotebookUuid = ({
       .then(([results]) => {
         const [link] = results as { uuid: string }[];
         if (!link) {
-          return null;
+          throw new Error("Could not find notebook uuid");
         }
         return link.uuid;
       })

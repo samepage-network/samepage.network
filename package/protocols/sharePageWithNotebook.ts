@@ -573,10 +573,13 @@ const setupSharePageWithNotebook = ({
     return load(notebookPageId).then((oldDoc) => {
       const doc = Automerge.change(oldDoc, label, callback);
       set(notebookPageId, doc);
+      const { seq } = Automerge.decodeChange(Automerge.getLastLocalChange(doc));
       return apiClient({
         method: "update-shared-page",
         changes: Automerge.getChanges(oldDoc, doc).map(binaryToBase64),
         notebookPageId,
+        state: Automerge.save(doc),
+        seq,
       });
     });
   };

@@ -20,7 +20,7 @@ import getLastLocalVersion from "../internal/getLastLocalVersion";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { parseAndFormatActorId } from "../internal/parseActorId";
 import AtJsonRendered from "./AtJsonRendered";
-import { load, deleteId } from "../utils/localAutomergeDb";
+import { load, deleteId, get } from "../utils/localAutomergeDb";
 
 type GetLocalHistory = (
   notebookPageId: string
@@ -271,9 +271,11 @@ const SharedPageStatus = ({
           minimal
           onClick={() => {
             setLoading(true);
+            const doc = get(notebookPageId);
             apiClient({
               method: "force-push-page",
               notebookPageId,
+              state: doc ? Automerge.save(doc) : undefined,
             })
               .then(() =>
                 dispatchAppEvent({

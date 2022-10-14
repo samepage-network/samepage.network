@@ -9,6 +9,7 @@ const downloadSharedPage = ({ cid }: { cid: string }) => {
     token: process.env.WEB3_STORAGE_API_KEY || "",
   });
   const start = performance.now();
+  // a race between ipfs and s3 - who will win?
   return new Promise<{ encoded: Uint8Array; method: string }>(
     (resolve, reject) => {
       client
@@ -35,13 +36,30 @@ const downloadSharedPage = ({ cid }: { cid: string }) => {
             });
           else
             reject(new Error(`Could not find file on IPFS with CID: ${cid}`));
+        })
+        .catch((e) => {
+          console.error("FAILURE FROM DOWNLOADING FROM W3 STORAGE");
+          console.error(e);
+          const newError = new Error(
+            "FAILURE FROM DOWNLOADING FROM W3 STORAGE"
+          );
+          try {
+            throw newError;
+          } catch (e) {
+            console.error(newError.stack);
+          }
         });
       downloadFileBuffer({
         Key: `data/ipfs/${cid}`,
-      }).then((fil) => {
-        if (fil.length)
-          resolve({ encoded: new Uint8Array(fil), method: "AWS S3" });
-      });
+      })
+        .then((fil) => {
+          if (fil.length)
+            resolve({ encoded: new Uint8Array(fil), method: "AWS S3" });
+        })
+        .catch((e) => {
+          console.error("FAILURE FROM DOWNLOADING FROM W3 STORAGE");
+          console.error(e);
+        });
     }
   ).then(({ encoded, method }) => {
     console.log(

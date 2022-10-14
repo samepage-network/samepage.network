@@ -7,6 +7,8 @@ import getActorId from "../internal/getActorId";
 const notebookPageIds: Record<string, Automerge.FreezeObject<Schema> | null> =
   {};
 
+export const get = (id: string) => notebookPageIds[id];
+
 export const load = async (
   id: string
 ): Promise<Automerge.FreezeObject<Schema>> => {

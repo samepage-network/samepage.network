@@ -44,10 +44,13 @@ const zMethod = z.intersection(
       method: z.literal("update-shared-page"),
       notebookPageId: z.string(),
       changes: z.string().array(),
+      state: z.string().optional(),
+      seq: z.number().optional(),
     }),
     z.object({
       method: z.literal("force-push-page"),
       notebookPageId: z.string(),
+      state: z.string().optional(),
     }),
     z.object({
       method: z.literal("get-shared-page"),
@@ -342,7 +345,7 @@ const logic = async (
         };
       }
       case "update-shared-page": {
-        const { notebookPageId, changes } = args;
+        const { notebookPageId, changes, state, seq } = args;
         const cxn = await getMysql(requestId);
         const { uuid: pageUuid, cid } = await getSharedPage({
           workspace,
@@ -388,8 +391,10 @@ const logic = async (
               )
             );
           });
-        return downloadSharedPage({ cid })
-          .then(async ({ body: binary }) => {
+        console.log("Reading update for seq", seq);
+        const newDoc =
+          state ||
+          (await downloadSharedPage({ cid }).then(async ({ body: binary }) => {
             const loadAutomerge = (binary: Automerge.BinaryDocument) => {
               const getActorId = () =>
                 `${app}/${workspace}`
@@ -429,37 +434,32 @@ const logic = async (
               }
             };
             const result = apply();
-            if (!result.length) {
-              return {};
-            }
-            const [newDoc, patch] = result;
-            return saveSharedPage({
-              cid,
-              doc: newDoc,
-            })
-              .then((res) =>
-                cxn.execute(
-                  `UPDATE page_notebook_links SET version = ?, cid = ? WHERE app = ? AND workspace = ? AND notebook_page_id = ?`,
-                  [
-                    Automerge.getHistory(newDoc).slice(-1)[0]?.change?.time,
-                    res.cid,
-                    app,
-                    workspace,
-                    notebookPageId,
-                  ]
-                )
-              )
-              .then(() => ({
-                patch,
-              }));
-          })
-          .catch(catchError("Failed to update a shared page"))
-          .finally(() => {
-            cxn.destroy();
-          });
+            return result[0];
+          }));
+        if (!newDoc) return { success: false };
+        const res = await saveSharedPage({
+          cid,
+          doc: newDoc,
+        });
+        console.log("Applied update for seq", seq);
+        await cxn.execute(
+          `UPDATE page_notebook_links SET version = ?, cid = ? WHERE app = ? AND workspace = ? AND notebook_page_id = ?`,
+          [
+            Automerge.getHistory(Automerge.load(res.body)).slice(-1)[0]?.change
+              ?.time,
+            res.cid,
+            app,
+            workspace,
+            notebookPageId,
+          ]
+        );
+        cxn.destroy();
+        return {
+          success: true,
+        };
       }
       case "force-push-page": {
-        const { notebookPageId } = args;
+        const { notebookPageId, state: inputState } = args;
         const cxn = await getMysql(requestId);
         const { uuid: pageUuid, cid } = await getSharedPage({
           workspace,
@@ -467,28 +467,57 @@ const logic = async (
           app,
           requestId,
         });
-        const { body: state } = await downloadSharedPage({ cid });
+        const notebookUuid = await getNotebookUuid({
+          workspace,
+          app,
+          requestId,
+        });
+        const state = await (inputState
+          ? saveSharedPage({ doc: inputState, cid })
+              .then((res) =>
+                cxn.execute(
+                  `UPDATE page_notebook_links SET version = ?, cid = ? WHERE app = ? AND workspace = ? AND notebook_page_id = ?`,
+                  [
+                    Automerge.getHistory(Automerge.load(res.body)).slice(-1)[0]
+                      ?.change?.time,
+                    res.cid,
+                    app,
+                    workspace,
+                    notebookPageId,
+                  ]
+                )
+              )
+              .then(() => inputState)
+          : downloadSharedPage({ cid }).then((b) =>
+              Buffer.from(b.body).toString("base64")
+            ));
         const notebooks = await cxn
           .execute(
-            `SELECT workspace, app, notebook_page_id FROM page_notebook_links WHERE page_uuid = ? AND open = 0`,
+            `SELECT workspace, app, notebook_page_id, notebook_uuid FROM page_notebook_links WHERE page_uuid = ? AND open = 0`,
             [pageUuid]
           )
-          .then(([r]) => r as (Notebook & { notebook_page_id: string })[]);
+          .then(
+            ([r]) =>
+              r as (Notebook & {
+                notebook_page_id: string;
+                notebook_uuid: string;
+              })[]
+          );
         await Promise.all(
           notebooks
             .filter((item) => {
-              return item.workspace !== workspace || item.app !== app;
+              return item.notebook_uuid !== notebookUuid;
             })
             .map(({ notebook_page_id, ...target }) =>
               messageNotebook({
-                source: { app, workspace },
+                source: notebookUuid,
                 target,
                 data: {
-                  state: Buffer.from(state).toString("base64"),
+                  state,
                   notebookPageId: notebook_page_id,
                   operation: "SHARE_PAGE_FORCE",
                 },
-                requestId: requestId,
+                requestId,
               })
             )
         );

@@ -8,6 +8,9 @@ on:
       - ".github/workflows/tests.yaml"
       
 env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.DEPLOY_AWS_ACCESS_KEY }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.DEPLOY_AWS_ACCESS_SECRET }}
+  AWS_REGION: us-east-1
   CLERK_API_KEY: ${{ secrets.STAGING_CLERK_API_KEY }} 
   CLERK_FRONTEND_API: clerk.in.horse-0.lcl.dev
   DATABASE_URL: mysql://root:root@localhost:3306/samepage_network
