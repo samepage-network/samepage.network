@@ -12,7 +12,7 @@ export const handler: WSHandler = (event) => {
   // return getMysqlConnection()
   //   .then(async (cxn) => {
   //     await cxn.execute(
-  //       `INSERT INTO online_clients (id, instance, app, created_date)
+  //       `INSERT INTO online_clients (id, notebook_uuid, created_date)
   //   VALUES (?,?,?,?)`,
   //       [id, "", 0, new Date()]
   //     );

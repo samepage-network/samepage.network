@@ -12,6 +12,7 @@ import type {
   Context,
 } from "aws-lambda";
 import getNotebookUuid from "~/data/getNotebookUuid.server";
+import getNotebookByUuid from "~/data/getNotebookByUuid.server";
 
 // postToConnection({
 //   ConnectionId,
@@ -41,38 +42,35 @@ const dataHandler = async (
   const clientId = event.requestContext?.connectionId || "";
   console.log("received operation", operation, "from client", clientId);
   if (operation === "AUTHENTICATION") {
-    const { app, workspace } = props as { app: AppId; workspace: string };
+    const propArgs = props as
+      | { app: AppId; workspace: string }
+      | { notebook_uuid: string; token: string };
     const cxn = await getMysqlConnection(requestId);
-    const notebookUuid = await getNotebookUuid({
-      app,
-      workspace,
-      requestId,
-    }).then(
-      (uuid) =>
-        uuid ||
-        Promise.resolve(v4()).then((newUuid) =>
-          cxn
-            .execute(
-              `INSERT INTO notebooks (uuid, app, workspace) VALUES (?,?,?)`,
-              [newUuid, app, workspace]
-            )
-            .then(() => newUuid)
-        )
-    );
+    const notebookUuid =
+      "notebook_uuid" in propArgs
+        ? propArgs["notebook_uuid"]
+        : await getNotebookUuid({
+            app: propArgs.app,
+            workspace: propArgs.workspace,
+            requestId,
+          });
+    const { app, workspace } =
+      "notebook_uuid" in propArgs
+        ? await getNotebookByUuid({ uuid: propArgs.notebook_uuid, requestId })
+        : propArgs;
 
     const [_, messages] = await Promise.all([
       // one downside of inserting here instead of onconnect is the clock drift on created date
       // a client could theoretically connect without authenticate and would get free usage
       cxn.execute(
         `INSERT INTO online_clients (app, instance, id, created_date, notebook_uuid) 
-        VALUES (?,?,?,?,?)`,
+      VALUES (?,?,?,?,?)`,
         [app, workspace, clientId, new Date(), notebookUuid]
       ),
       cxn
-        .execute(
-          `SELECT uuid FROM messages WHERE marked = 0 AND target_app = ? AND target_instance = ?`,
-          [app, workspace]
-        )
+        .execute(`SELECT uuid FROM messages WHERE marked = 0 AND target = ?`, [
+          notebookUuid,
+        ])
         .then(([r]) => (r as { uuid: string }[]).map((s) => s.uuid)),
     ]);
     await postToConnection({
@@ -104,17 +102,19 @@ const dataHandler = async (
       },
     });
   } else if (operation === "PROXY") {
-    const { proxyOperation, app, workspace, ...proxyData } = props as {
-      proxyOperation: string;
-      workspace: string;
-      app: AppId;
-    };
+    const { proxyOperation, app, workspace, notebookUuid, ...proxyData } =
+      props as {
+        proxyOperation: string;
+        workspace: string;
+        app: AppId;
+        notebookUuid: string;
+      };
     const cxn = await getMysqlConnection(requestId);
     const [source] = await cxn
-      .execute(`SELECT app, instance FROM online_clients WHERE id = ?`, [
+      .execute(`SELECT notebook_uuid FROM online_clients WHERE id = ?`, [
         clientId,
       ])
-      .then(([a]) => a as { app: AppId; instance: string }[])
+      .then(([a]) => a as { notebook_uuid: string }[])
       .catch((e) => {
         console.error("Failed to find online client", e.message);
         return [];
@@ -122,8 +122,10 @@ const dataHandler = async (
     return (
       source
         ? messageNotebook({
-            source: { app: source.app, workspace: source.instance },
-            target: { app, workspace },
+            source: source.notebook_uuid,
+            target:
+              notebookUuid ||
+              (await getNotebookUuid({ app, workspace, requestId })),
             data: {
               operation: proxyOperation,
               ...proxyData,

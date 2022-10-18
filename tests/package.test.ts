@@ -10,7 +10,13 @@ const logs: { data: string; time: string }[] = [];
 test.beforeAll(async () => {
   await getMysqlConnection().then((cxn) =>
     cxn
-      .execute(`DELETE FROM online_clients WHERE app = ?`, [0])
+      .execute(
+        `DELETE c 
+        FROM online_clients c 
+        INNER JOIN notebooks n ON n.uuid = c.notebook_uuid 
+        WHERE n.app = ?`,
+        [0]
+      )
       .then(() => cxn.destroy())
   );
 });
@@ -55,8 +61,13 @@ test("Make sure two clients can come online and share updates, despite errors", 
   let client1ExpectedToClose = false;
   const client1 = fork(
     "./package/testing/createTestSamePageClient",
-    ["--forked", "one"],
-    { stdio: "inherit" }
+    [
+      "--forked",
+      "one",
+      "7ede3203-6946-4c8f-bf7e-9e0e44057b12",
+      "4ddbcfee-b1f8-4f01-8bcd-de4d252dd0e5",
+    ]
+    // { execArgv: ["--inspect-brk=127.0.0.1:9323"] }
   );
   const client1Callbacks: Record<string, (data: unknown) => void> = {
     log: (log) => addToLog(`Client 1: ${log}`),
@@ -80,10 +91,16 @@ test("Make sure two clients can come online and share updates, despite errors", 
   );
 
   let client2ExpectedToClose = false;
-  const client2 = fork("./package/testing/createTestSamePageClient", [
-    "--forked",
-    "two",
-  ]);
+  const client2 = fork(
+    "./package/testing/createTestSamePageClient",
+    [
+      "--forked",
+      "two",
+      "f104c333-8891-4e3b-aa07-5d3f23188fe6",
+      "845a3fe3-7236-47f6-b895-5fbc3fbf623d",
+    ]
+    // { execArgv: ["--inspect-brk=127.0.0.1:9324"] }
+  );
   const client2Callbacks: Record<string, (data: unknown) => void> = {
     log: (log) => addToLog(`Client 2: ${log}`),
     error: (message) => {
@@ -112,8 +129,8 @@ test("Make sure two clients can come online and share updates, despite errors", 
   };
 
   await test.step("Wait for SamePage clients to be ready", async () => {
-    await expect.poll(() => client1Ready).toEqual(true);
-    await expect.poll(() => client2Ready).toEqual(true);
+    await expect.poll(() => client1Ready, { timeout: 20000 }).toEqual(true);
+    await expect.poll(() => client2Ready, { timeout: 25000 }).toEqual(true);
   });
 
   await test.step("Navigate to Demo Page", () =>

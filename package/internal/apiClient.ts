@@ -1,5 +1,6 @@
+import type { RequestBody } from "../../api/page/post";
 import getNodeEnv from "./getNodeEnv";
-import { app, workspace } from "./registry";
+import { app, getSetting, workspace } from "./registry";
 
 export type HandleFetchArgs = {
   path?: string;
@@ -100,13 +101,15 @@ export const apiPost = handleBodyFetch("POST");
 
 export const apiGet = handleUrlFetch("GET");
 
-const apiClient = <T extends Record<string, unknown>>(
-  data: Record<string, unknown> = {}
-) =>
+const apiClient = <T extends Record<string, unknown>>(data: RequestBody) =>
   apiPost<T>({
     path: "page",
     data: {
+      notebookUuid: getSetting("uuid"),
+      token: getSetting("token"),
       ...data,
+
+      // @deprecated
       app,
       workspace,
     },

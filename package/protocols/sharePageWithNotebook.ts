@@ -514,13 +514,7 @@ const setupSharePageWithNotebook = ({
     },
   });
 
-  const joinPage = ({
-    pageUuid,
-    notebookPageId,
-  }: {
-    pageUuid: string;
-    notebookPageId: string;
-  }) =>
+  const joinPage = ({ notebookPageId }: { notebookPageId: string }) =>
     apiClient<
       | { found: false }
       | {
@@ -530,7 +524,6 @@ const setupSharePageWithNotebook = ({
     >({
       method: "join-shared-page",
       notebookPageId,
-      pageUuid,
     }).then((res) => {
       if (res.found) {
         const doc = loadAutomergeFromBase64(res.state);

@@ -1,16 +1,16 @@
 import getMysqlConnection from "fuegojs/utils/mysql";
-import schema from "data/schema";
-import { z } from "zod";
 import { appsById } from "package/internal/apps";
+import { Notebook } from "package/types";
 
 const listOnlineClients = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
-  const data = await cxn.execute("SELECT * FROM online_clients").then(
-    ([r]) =>
-      r as (Omit<z.infer<typeof schema.onlineClient>, "createdDate"> & {
-        created_date: Date;
-      })[]
-  );
+  const data = await cxn
+    .execute(
+      `SELECT n.app, n.workspace, c.created_date, c.id
+  FROM online_clients c 
+  INNER JOIN notebooks n ON n.uuid = c.notebook_uuid`
+    )
+    .then(([r]) => r as ({ created_date: Date; id: string } & Notebook)[]);
   cxn.destroy();
   return {
     columns: [
@@ -22,7 +22,7 @@ const listOnlineClients = async (requestId: string) => {
       .sort((a, b) => b.created_date.valueOf() - a.created_date.valueOf())
       .map((d) => ({
         id: d.id,
-        workspace: d.instance || "Pending",
+        workspace: d.workspace || "Pending",
         app: appsById[d.app].name,
         date: d.created_date.toLocaleString(),
       })),

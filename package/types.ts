@@ -3,6 +3,7 @@ import type Automerge from "automerge";
 import React from "react";
 import { z } from "zod";
 import type { CID } from "multiformats";
+import type defaultSettings from "./utils/defaultSettings";
 
 export type App = typeof APPS[number];
 export type AppId = App["id"];
@@ -123,7 +124,7 @@ export type AddCommand = (args: {
   callback: () => void;
 }) => void;
 export type RemoveCommand = (args: { label: string }) => void;
-export type OverlayProps<T extends Record<string, unknown>> = {
+export type OverlayProps<T extends Record<string, unknown> = {}> = {
   onClose: () => void;
   isOpen?: boolean;
 } & T;
@@ -132,7 +133,10 @@ export type RenderOverlay = <T extends Record<string, unknown>>(args: {
   Overlay?: (props: OverlayProps<T>) => React.ReactElement;
   props?: T;
   path?: string | HTMLElement | null;
-}) => (() => void) | void;
+}) => () => void;
+type SettingId = typeof defaultSettings[number]["id"];
+export type GetSetting = (s: SettingId) => string;
+export type SetSetting = (s: SettingId, v: string) => void;
 
 export type Status = "DISCONNECTED" | "PENDING" | "CONNECTED";
 
@@ -157,8 +161,9 @@ type ConnectionEvent = {
 
 export type AppEvent = LogEvent | SharePageEvent | ConnectionEvent;
 
+type MessageHandler = (data: json, source: Notebook & { uuid: string }) => void;
 export type MessageHandlers = {
-  [operation: string]: (data: json, source: Notebook) => void;
+  [operation: string]: MessageHandler;
 };
 
 export type SharedPages = {
@@ -172,7 +177,7 @@ export type NotificationHandler = (
 ) => Promise<void>;
 export type AddNotebookListener = (args: {
   operation: string;
-  handler: (e: json, source: Notebook) => void;
+  handler: MessageHandler;
 }) => void;
 export type RemoveNotebookListener = (args: { operation: string }) => void;
 export type SendToNotebook = (args: {

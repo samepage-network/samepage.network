@@ -35,11 +35,15 @@ const findEl = (dom: JSDOM, index: number) => {
   return { start, el };
 };
 
-const createTestSamePageClient = ({
+const createTestSamePageClient = async ({
   workspace,
+  uuid,
+  token,
   onMessage,
 }: {
   workspace: string;
+  uuid: string;
+  token: string;
   onMessage: (
     args:
       | { type: "log"; data: string }
@@ -175,8 +179,15 @@ const createTestSamePageClient = ({
       notebookPageId: z.string(),
     }),
   ]);
+  const settings = {
+    uuid,
+    token,
+    "auto-connect": "true",
+    "granular-changes": "",
+  };
   const { unload } = setupSamePageClient({
-    isAutoConnect: true,
+    getSetting: (s) => settings[s],
+    setSetting: (s, v) => (settings[s] = v),
     addCommand: ({ label, callback }) => (commands[label] = callback),
     removeCommand: ({ label }) => delete commands[label],
     workspace,
@@ -215,7 +226,9 @@ const createTestSamePageClient = ({
           } else if (message.type === "setAppClientState") {
             appClientState[message.notebookPageId] = message.data;
             if (isShared(message.notebookPageId)) {
-              await refreshContent({ notebookPageId: message.notebookPageId });
+              await refreshContent({
+                notebookPageId: message.notebookPageId,
+              });
             } else {
               onMessage({ type: "setAppClientState" });
             }
@@ -329,26 +342,39 @@ const createTestSamePageClient = ({
 };
 
 const forked = process.argv.indexOf("--forked");
-if (
-  forked >= 0 &&
-  process.argv.length > forked + 1 &&
-  typeof process.send !== "undefined"
-) {
-  createTestSamePageClient({
-    workspace: process.argv[forked + 1],
-    onMessage: process.send.bind(process),
-  }).then((client) => {
-    process.on("message", client.send);
-    process.on("unhandledRejection", (e) => {
-      process.send?.({
-        type: "error",
-        data: `UNHANDLED REJECTION: ${(e as Error)?.stack}`,
+if (forked >= 0 && typeof process.send !== "undefined") {
+  if (process.argv.length > forked + 3)
+    createTestSamePageClient({
+      workspace: process.argv[forked + 1],
+      uuid: process.argv[forked + 2],
+      token: process.argv[forked + 3],
+      onMessage: process.send.bind(process),
+    })
+      .then((client) => {
+        process.on("message", client.send);
+        process.on("unhandledRejection", (e) => {
+          process.send?.({
+            type: "error",
+            data: `UNHANDLED REJECTION: ${(e as Error)?.stack}`,
+          });
+        });
+        process.on("uncaughtException", (e) => {
+          process.send?.({ type: "error", data: `UNCAUGHT EXCEPTION: ${e}` });
+        });
+      })
+      .catch((e) => {
+        process.send?.({
+          type: "error",
+          data: (e as Error).stack || (e as Error).message,
+        });
       });
+  else {
+    process.send?.({
+      type: "error",
+      data: `Error: 3 arguments required for --forked (workspace, notebook id, token)\nFound: ${process.argv}`,
     });
-    process.on("uncaughtException", (e) => {
-      process.send?.({ type: "error", data: `UNCAUGHT EXCEPTION: ${e}` });
-    });
-  });
+    // process.exit(1);
+  }
 }
 
 export default createTestSamePageClient;

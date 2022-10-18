@@ -8,6 +8,8 @@ import type {
   RemoveCommand,
   AppEvent,
   RenderOverlay,
+  GetSetting,
+  SetSetting,
 } from "../types";
 import APPS, { appIdByName } from "../internal/apps";
 import setupRegistry from "../internal/registry";
@@ -15,34 +17,38 @@ import sendToNotebook from "../internal/sendToNotebook";
 import setupWsFeatures from "../internal/setupWsFeatures";
 
 const setupSamePageClient = ({
-  isAutoConnect = false,
   app,
   workspace,
   addCommand,
   removeCommand,
   onAppEventHandler,
   renderOverlay,
+  getSetting,
+  setSetting,
   appRoot,
 }: {
-  isAutoConnect?: boolean;
   addCommand?: AddCommand;
   removeCommand?: RemoveCommand;
   onAppEventHandler?: (evt: AppEvent) => boolean;
   renderOverlay?: RenderOverlay;
-  appRoot?: HTMLElement;
+  getSetting?: GetSetting;
+  setSetting?: SetSetting;
   workspace?: string;
   app?: typeof APPS[number]["name"];
+  appRoot?: HTMLElement;
 } = {}) => {
   setupRegistry({
     addCommand,
     removeCommand,
     onAppEventHandler,
     renderOverlay,
+    getSetting,
+    setSetting,
     app: app ? appIdByName[app] : undefined,
     workspace,
     appRoot,
   });
-  const unloadWS = setupWsFeatures({ isAutoConnect });
+  const unloadWS = setupWsFeatures();
   const unloadP2P = setupP2PFeatures();
 
   if (typeof window !== "undefined") {

@@ -8,7 +8,6 @@ import listPageNotebookLinks from "~/data/listAllPageNotebookLinks.server";
 import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
 import getMysql from "fuegojs/utils/mysql";
-import type Automerge from "automerge";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 
@@ -31,20 +30,6 @@ const SharedPageStatusPage = () => {
         onClose={() => navigate("/admin/components")}
         isOpen={true}
         notebookPageId={notebookPageId}
-        loadState={(notebookPageId) =>
-          fetch(
-            `/admin/components/shared-page-status?notebookPageId=${notebookPageId}&_data=routes%2Fadmin%2Fcomponents%2Fshared-page-status`
-          )
-            .then((r) => r.json())
-            .then((r) => {
-              return new Uint8Array(
-                window
-                  .atob(r.state)
-                  .split("")
-                  .map((c) => c.charCodeAt(0))
-              ) as Automerge.BinaryDocument;
-            })
-        }
       />
     </>
   );

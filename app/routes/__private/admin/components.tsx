@@ -49,6 +49,7 @@ const ComponentsPage = () => {
 export const loader: LoaderFunction = (args) => {
   return remixAdminLoader(args, () => [
     "NotificationContainer",
+    "Onboarding",
     "SharedPageStatus",
     "ViewSharedPages",
   ]);

@@ -1,3 +1,4 @@
+import defaultSettings from "package/utils/defaultSettings";
 import React from "react";
 import { v4 } from "uuid";
 import type {
@@ -6,6 +7,8 @@ import type {
   RemoveCommand,
   AppId,
   RenderOverlay,
+  GetSetting,
+  SetSetting,
 } from "../types";
 
 const defaultCommands: Record<string, () => void> = {};
@@ -59,6 +62,19 @@ const defaultRenderOverlay: RenderOverlay = ({
   };
 };
 
+const defaultGetSetting: GetSetting = (s: string) => {
+  const settings = localStorage.getItem("samepage:settings");
+  if (!settings) return "";
+  return JSON.parse(settings)?.[s];
+};
+const defaultSetSetting: SetSetting = (s: string, v: string) => {
+  const settings = localStorage.getItem("samepage:settings");
+  localStorage.setItem(
+    "samepage:settings",
+    JSON.stringify({ ...(settings ? JSON.parse(settings) : {}), [s]: v })
+  );
+};
+
 export let addCommand = defaultAddCommand;
 export let removeCommand = defaultRemoveCommand;
 export let onAppEventHandler = defaultOnAppEventHandler;
@@ -67,6 +83,8 @@ export let appRoot: HTMLElement | undefined =
   typeof document === "undefined" ? undefined : document.body;
 export let app: AppId = 0;
 export let workspace = "Main";
+export let getSetting = defaultGetSetting;
+export let setSetting = defaultSetSetting;
 
 const setupRegistry = ({
   app: _app,
@@ -76,6 +94,8 @@ const setupRegistry = ({
   onAppEventHandler: _onAppEventHandler,
   renderOverlay: _renderOverlay,
   appRoot: _appRoot,
+  getSetting: _getSetting,
+  setSetting: _setSetting,
 }: {
   app?: AppId;
   workspace?: string;
@@ -84,6 +104,8 @@ const setupRegistry = ({
   renderOverlay?: RenderOverlay;
   onAppEventHandler?: (event: AppEvent) => boolean;
   appRoot?: HTMLElement;
+  getSetting?: (s: typeof defaultSettings[number]["id"]) => string;
+  setSetting?: (s: typeof defaultSettings[number]["id"], v: string) => void;
 }) => {
   if (_app) app = _app;
   if (_workspace) workspace = _workspace;
@@ -91,6 +113,8 @@ const setupRegistry = ({
   if (_removeCommand) removeCommand = _removeCommand;
   if (_renderOverlay) renderOverlay = _renderOverlay;
   if (_onAppEventHandler) onAppEventHandler = _onAppEventHandler;
+  if (_getSetting) getSetting = _getSetting;
+  if (_setSetting) setSetting = _setSetting;
   if (_appRoot) appRoot = _appRoot;
 };
 

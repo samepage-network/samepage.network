@@ -1,9 +1,8 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import type { ActionFunction } from "@remix-run/node";
-import { useFetcher } from "@remix-run/react";
+import { Link, useFetcher } from "@remix-run/react";
 import Landing, {
   Showcase,
-  Splash,
   Subscribe,
 } from "@dvargas92495/app/components/Landing";
 import subscribeToConvertkitAction from "@dvargas92495/app/backend/subscribeToConvertkitAction.server";
@@ -270,22 +269,78 @@ const SplashLogo = ({ className }: { className?: string }) => (
 );
 
 const Home: React.FC = () => {
+  const [isLaunched, setIsLaunched] = useState(false);
+  const isLaunchedRef = useRef(false);
+  useEffect(() => {
+    const listener = (e: KeyboardEvent) => {
+      if (e.metaKey && e.shiftKey && /^m$/i.test(e.key)) {
+        const val = !isLaunchedRef.current;
+        setIsLaunched((isLaunchedRef.current = val));
+      }
+    };
+    document.addEventListener("keydown", listener);
+    return () => document.removeEventListener("keydown", listener);
+  }, [setIsLaunched, isLaunchedRef]);
+
+  const fetcher = useFetcher();
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (
+      fetcher.data?.success &&
+      formRef.current &&
+      fetcher.type === "actionReload"
+    ) {
+      formRef.current.reset();
+    }
+  }, [formRef, fetcher]);
   return (
     <Landing>
-      <Splash
-        title={
-          <span className="leading-tight">
-            Bring your <span className="text-green-700">own tool</span>. Own
-            your <span className="text-orange-500">own data</span>. Stay on the{" "}
-            <span className="text-sky-700">SamePage</span>
-          </span>
-        }
-        subtitle={
-          "Everyone has their own tool. SamePage brings them together. You use Roam while they use Obsidian, and SamePage syncs your changes without needing to leave your custom setup."
-        }
-        isWaitlist
-        Logo={SplashLogo}
-      />
+      <div className={"flex items-center gap-24"}>
+        <div className={"w-1/2"}>
+          <h1 className="mt-4 mb-12 text-5xl font-bold">
+            {
+              <span className="leading-tight">
+                Bring your <span className="text-green-700">own tool</span>. Own
+                your <span className="text-orange-500">own data</span>. Stay on
+                the <span className="text-sky-700">SamePage</span>
+              </span>
+            }
+          </h1>
+          <Subtitle>
+            <i className="font-normal">
+              {
+                "Everyone has their own tool. SamePage brings them together. You use Roam while they use Obsidian, and SamePage syncs your changes without needing to leave your custom setup."
+              }
+            </i>
+          </Subtitle>
+          {isLaunched ? (
+            <Link to={"install"}>
+              <Button>Install Now</Button>
+            </Link>
+          ) : (
+            <fetcher.Form
+              className="flex gap-8 items-center"
+              method="put"
+              ref={formRef}
+            >
+              <TextInput
+                placeholder="hello@example.com"
+                name={"email"}
+                label={"Email"}
+                className={"flex-grow"}
+              />
+              <Button>Join The Waitlist</Button>
+            </fetcher.Form>
+          )}
+        </div>
+        <div className="flex-grow text-center">
+          <SplashLogo className="h-full w-full" />
+        </div>
+        <SuccessfulActionToast
+          message="Click the confirmation link in your email to confirm!"
+          fetcher={fetcher}
+        />
+      </div>
       <Showcase
         header="Does your team use PKM or note-taking tools? We sync changes in shared documents across tools, so you can use your custom setup without leaving your custom setup."
         showCards={[

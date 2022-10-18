@@ -1,3 +1,4 @@
+import Onboarding from "package/components/Onboarding";
 import UsageChart, { UsageChartProps } from "../components/UsageChart";
 import type { Status, SendToBackend, Notebook } from "../types";
 import apiClient from "./apiClient";
@@ -8,8 +9,10 @@ import {
   addCommand,
   app,
   appRoot,
+  getSetting,
   removeCommand,
   renderOverlay,
+  setSetting,
   workspace,
 } from "./registry";
 import sendChunkedMessage from "./sendChunkedMessage";
@@ -191,7 +194,22 @@ const removeDisconnectCommand = () => {
   });
 };
 
-const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
+const setupWsFeatures = () => {
+  const notebookUuid = getSetting("uuid");
+  if (!notebookUuid) {
+    renderOverlay({
+      Overlay: Onboarding,
+      props: {
+        setNotebookUuid: (v) => {
+          setSetting("uuid", v);
+        },
+        setToken: (v) => {
+          setSetting("token", v);
+        },
+      },
+    });
+  }
+
   addNotebookListener({
     operation: "ERROR",
     handler: (args) => {
@@ -309,7 +327,7 @@ const setupWsFeatures = ({ isAutoConnect }: { isAutoConnect: boolean }) => {
     },
   });
 
-  if (isAutoConnect) {
+  if (!!getSetting("auto-connect") && !!notebookUuid) {
     connectToBackend();
   } else {
     addConnectCommand();

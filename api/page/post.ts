@@ -1,10 +1,12 @@
 import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
-import { AppId, Notebook, Schema, zNotebook } from "package/types";
+import { Notebook, Schema, zNotebook } from "package/types";
 import { appsById } from "package/internal/apps";
 import {
   BadRequestError,
+  ConflictError,
   MethodNotAllowedError,
   NotFoundError,
+  UnauthorizedError,
 } from "@dvargas92495/app/backend/errors.server";
 import catchError from "~/data/catchError.server";
 import getMysql from "fuegojs/utils/mysql";
@@ -22,88 +24,140 @@ import saveSharedPage from "~/data/saveSharedPage.server";
 import { z } from "zod";
 import getNotebookUuid from "~/data/getNotebookUuid.server";
 
-const zMethod = z.intersection(
-  zNotebook.merge(
-    z.object({
-      requestId: z.string(),
-    })
-  ),
-  z.discriminatedUnion("method", [
-    z.object({ method: z.literal("usage") }),
-    z.object({ method: z.literal("load-message"), messageUuid: z.string() }),
-    z.object({
-      method: z.literal("init-shared-page"),
-      notebookPageId: z.string(),
-      state: z.string(),
-    }),
-    z.object({
-      method: z.literal("join-shared-page"),
-      notebookPageId: z.string(),
-    }),
-    z.object({
-      method: z.literal("update-shared-page"),
-      notebookPageId: z.string(),
-      changes: z.string().array(),
-      state: z.string().optional(),
-      seq: z.number().optional(),
-    }),
-    z.object({
-      method: z.literal("force-push-page"),
-      notebookPageId: z.string(),
-      state: z.string().optional(),
-    }),
-    z.object({
-      method: z.literal("get-shared-page"),
-      notebookPageId: z.string(),
-    }),
-    z.object({
-      method: z.literal("invite-notebook-to-page"),
-      notebookPageId: z.string(),
-      target: zNotebook,
-    }),
-    z.object({
-      method: z.literal("remove-page-invite"),
-      notebookPageId: z.string(),
-      target: zNotebook.optional(),
-    }),
-    z.object({
-      method: z.literal("list-page-notebooks"),
-      notebookPageId: z.string(),
-    }),
-    z.object({
-      method: z.literal("list-shared-pages"),
-    }),
-    z.object({
-      method: z.literal("disconnect-shared-page"),
-      notebookPageId: z.string(),
-    }),
-    z.object({ method: z.literal("query"), request: z.string() }),
-    z.object({
-      method: z.literal("query-response"),
-      response: z.string(),
-      request: z.string(),
-      target: zNotebook,
-    }),
-    z.object({
-      oldNotebookPageId: z.string(),
-      newNotebookPageId: z.string(),
-      method: z.literal("link-different-page"),
-    }),
-    z.object({
-      method: z.literal("save-page-version"),
-      notebookPageId: z.string(),
-      state: z.string(),
-    }),
-    z.object({
-      method: z.literal("get-ipfs-cid"),
-      notebookPageId: z.string(),
-    }),
-  ])
-);
+const zMethodBody = z.discriminatedUnion("method", [
+  z.object({ method: z.literal("create-notebook"), inviteCode: z.string() }),
+  z.object({
+    method: z.literal("connect-notebook"),
+  }),
+  z.object({ method: z.literal("usage") }),
+  z.object({ method: z.literal("load-message"), messageUuid: z.string() }),
+  z.object({
+    method: z.literal("init-shared-page"),
+    notebookPageId: z.string(),
+    state: z.string(),
+  }),
+  z.object({
+    method: z.literal("join-shared-page"),
+    notebookPageId: z.string(),
+  }),
+  z.object({
+    method: z.literal("update-shared-page"),
+    notebookPageId: z.string(),
+    changes: z.string().array(),
+    state: z.string().optional(),
+    seq: z.number().optional(),
+  }),
+  z.object({
+    method: z.literal("force-push-page"),
+    notebookPageId: z.string(),
+    state: z.string().optional(),
+  }),
+  z.object({
+    method: z.literal("get-shared-page"),
+    notebookPageId: z.string(),
+  }),
+  z.object({
+    method: z.literal("invite-notebook-to-page"),
+    notebookPageId: z.string(),
+    target: zNotebook,
+  }),
+  z.object({
+    method: z.literal("remove-page-invite"),
+    notebookPageId: z.string(),
+    target: zNotebook.optional(),
+  }),
+  z.object({
+    method: z.literal("list-page-notebooks"),
+    notebookPageId: z.string(),
+  }),
+  z.object({
+    method: z.literal("list-shared-pages"),
+  }),
+  z.object({
+    method: z.literal("disconnect-shared-page"),
+    notebookPageId: z.string(),
+  }),
+  z.object({ method: z.literal("query"), request: z.string() }),
+  z.object({
+    method: z.literal("query-response"),
+    response: z.string(),
+    request: z.string(),
+    target: zNotebook,
+  }),
+  z.object({
+    oldNotebookPageId: z.string(),
+    newNotebookPageId: z.string(),
+    method: z.literal("link-different-page"),
+  }),
+  z.object({
+    method: z.literal("save-page-version"),
+    notebookPageId: z.string(),
+    state: z.string(),
+  }),
+  z.object({
+    method: z.literal("get-ipfs-cid"),
+    notebookPageId: z.string(),
+  }),
+]);
 
-const logic = async (
-  req: Record<string, unknown>
-): Promise<string | Record<string, unknown>> => {
+const zHeaders = z.object({
+  requestId: z.string(),
+  notebookUuid: z.string().optional(),
+  token: z.string().optional(),
+});
+
+const zMethod = z.intersection(zNotebook.merge(zHeaders), zMethodBody);
+
+export type RequestBody = z.infer<typeof zMethodBody> &
+  Partial<z.infer<typeof zHeaders>>;
+// look into trpc.io
+// export type RequestSignature = <T extends RequestBody>(
+//   args: T
+// ) => T["method"] extends "create-notebook"
+//   ? Promise<{ notebookUuid: string }>
+//   : Promise<{}>;
+
+const authenticate = async (args: {
+  notebookUuid: string;
+  token: string;
+  requestId: string;
+}) => {
+  const { notebookUuid, token, requestId } = args;
+  const cxn = await getMysql(requestId);
+  const [tokenLinks] = await cxn.execute(
+    `SELECT token_uuid FROM token_notebook_links
+    where notebook_uuid = ?`,
+    [notebookUuid]
+  );
+  const tokens = tokenLinks as { token_uuid: string }[];
+  if (!tokens.length) {
+    throw new NotFoundError(`Could not find notebook`);
+  }
+  const authenticated = tokens
+    .map(
+      (t) => () =>
+        cxn
+          .execute(
+            `SELECT value FROM tokens 
+  where uuid = ?`,
+            [t.token_uuid]
+          )
+          .then(([values]) => {
+            const storedValue = (values as { value: string }[])?.[0]?.value;
+            if (!storedValue) return false;
+            // should I just query by stored value?
+            if (token !== storedValue)
+              throw new UnauthorizedError(`Unauthorized notebook and token`);
+            return token === storedValue;
+          })
+    )
+    .reduce((p, c) => p.then((f) => f || c()), Promise.resolve(false));
+  if (!authenticated)
+    throw new UnauthorizedError(`Unauthorized notebook and token`);
+  return true;
+};
+
+const logic = async (req: Record<string, unknown>) => {
   const result = zMethod.safeParse(req);
   if (!result.success)
     throw new BadRequestError(
@@ -118,18 +172,71 @@ const logic = async (
         .map((s) => `- ${s}\n`)
         .join("")}`
     );
-  const { app, workspace, requestId, ...args } = result.data;
-  console.log(
-    "Received method:",
-    args.method,
-    "from",
-    app,
-    "/",
-    workspace,
-    requestId
-  );
+  const { app, workspace, requestId, notebookUuid, token, ...args } =
+    result.data;
+  console.log("Received method:", args.method, "from", notebookUuid);
+  const cxn = await getMysql(requestId);
   try {
+    if (args.method === "create-notebook") {
+      const { inviteCode } = args;
+      // TODO - Invite code and api token are currently the same.
+      // Invite code should be short lived, token long live and encrypted at rest
+      const [results] = await cxn.execute(
+        `SELECT uuid FROM tokens where value = ?`,
+        [inviteCode]
+      );
+      const [tokenUuid] = results as { uuid: string }[];
+      if (!tokenUuid) {
+        throw new NotFoundError("Could not find valid token");
+      }
+      const [tokenLinks] = await cxn.execute(
+        `SELECT l.uuid FROM token_notebook_links l
+      where l.token_uuid = ?`,
+        [tokenUuid.uuid]
+      );
+      if ((tokenLinks as { uuid: string }[]).length >= 5) {
+        throw new ConflictError(
+          `Maximum number of notebooks allowed to be connected to this token is 5.`
+        );
+      }
+      const [existingNotebooks] = await cxn.execute(
+        `SELECT n.uuid FROM notebooks n
+      LEFT JOIN token_notebook_links l ON l.notebook_uuid = n.uuid
+      where n.workspace = ? and n.app = ? and l.token_uuid is NULL`,
+        [workspace, app]
+      );
+      const [potentialNotebookUuid] = existingNotebooks as { uuid: string }[];
+      const notebookUuid =
+        potentialNotebookUuid?.uuid ||
+        (await Promise.resolve(v4()).then((uuid) =>
+          cxn
+            .execute(
+              `INSERT INTO notebooks (uuid, app, workspace)
+      VALUES (?, ?, ?)`,
+              [uuid, app, workspace]
+            )
+            .then(() => uuid)
+        ));
+      await cxn.execute(
+        `INSERT INTO token_notebook_links (uuid, token_uuid, notebook_uuid)
+        VALUES (UUID(), ?, ?)`,
+        [tokenUuid.uuid, notebookUuid]
+      );
+      cxn.destroy();
+      return { notebookUuid };
+    }
+    if (!notebookUuid)
+      throw new BadRequestError(
+        `Notebook Universal ID is required to use SamePage`
+      );
+    if (!token)
+      throw new BadRequestError(`Notebook Token is required to use SamePage`);
+    await authenticate({ requestId, notebookUuid, token });
     switch (args.method) {
+      case "connect-notebook": {
+        // all the work is done in authenticate...
+        return { success: true };
+      }
       case "usage": {
         const currentDate = new Date();
         const currentMonth = currentDate.getMonth();
@@ -146,8 +253,8 @@ const logic = async (
             const [sessions, messages] = await Promise.all([
               cxn
                 .execute(
-                  `SELECT id, created_date, end_date FROM client_sessions WHERE instance = ? AND app = ? AND created_date > ?`,
-                  [workspace, app, startDate]
+                  `SELECT id, created_date, end_date FROM client_sessions WHERE notebook_uuid ? AND created_date > ?`,
+                  [notebookUuid, startDate]
                 )
                 .then(
                   ([items]) =>
@@ -159,8 +266,8 @@ const logic = async (
                 ),
               cxn
                 .execute(
-                  `SELECT uuid FROM messages WHERE source_instance = ? AND source_app = ? AND created_date > ?`,
-                  [workspace, app, startDate]
+                  `SELECT uuid FROM messages WHERE source = ? AND created_date > ?`,
+                  [notebookUuid, startDate]
                 )
                 .then(([items]) => items as { uuid: string }[]),
             ]);
@@ -194,13 +301,13 @@ const logic = async (
               ])
               .then(() =>
                 cxn.execute(
-                  `SELECT source_instance, source_app FROM messages WHERE uuid = ?`,
+                  `SELECT n.* FROM messages m INNER JOIN notebooks n ON n.uuid = m.source WHERE m.uuid = ?`,
                   [messageUuid]
                 )
               )
               .then(([args]) => {
                 cxn.destroy();
-                return args as { source_instance: string; source_app: AppId }[];
+                return args as (Notebook & { uuid: string })[];
               });
           }),
         ])
@@ -210,10 +317,7 @@ const logic = async (
             }
             return {
               data: Data,
-              source: {
-                workspace: source.source_instance,
-                app: source.source_app,
-              },
+              source,
             };
           })
           .catch(catchError("Failed to load a message"));
@@ -228,17 +332,12 @@ const logic = async (
         return getMysql(requestId)
           .then(async (cxn) => {
             const [results] = await cxn.execute(
-              `SELECT page_uuid FROM page_notebook_links WHERE workspace = ? AND app = ? AND notebook_page_id = ?`,
-              [workspace, app, notebookPageId]
+              `SELECT page_uuid FROM page_notebook_links WHERE notebook_uuid = ? AND notebook_page_id = ?`,
+              [notebookUuid, notebookPageId]
             );
             const [link] = results as { page_uuid: string }[];
             if (link) return { id: link.page_uuid, created: false };
             const pageUuid = v4();
-            const notebookUuid = await getNotebookUuid({
-              workspace,
-              app,
-              requestId,
-            });
             const { cid, body } = await saveSharedPage({
               doc: state,
             });
@@ -271,11 +370,10 @@ const logic = async (
       }
       case "join-shared-page": {
         const { notebookPageId } = args;
-        const cxn = await getMysql(requestId);
         const results = await cxn
           .execute(
-            `SELECT uuid, page_uuid, invited_by FROM page_notebook_links WHERE notebook_page_id = ? AND workspace = ? AND app = ? AND open = 1`,
-            [notebookPageId, workspace, app]
+            `SELECT uuid, page_uuid, invited_by FROM page_notebook_links WHERE notebook_page_id = ? AND notebook_uuid = ? AND open = 1`,
+            [notebookPageId, notebookUuid]
           )
           .then(
             ([a]) =>
@@ -322,14 +420,9 @@ const logic = async (
             uuid,
           ]
         );
-        const [source] = await cxn
-          .execute(`SELECT app, workspace FROM notebooks WHERE uuid = ?`, [
-            invited_by,
-          ])
-          .then(([a]) => a as Notebook[]);
         await messageNotebook({
-          target: source,
-          source: { app, workspace },
+          target: invited_by,
+          source: notebookUuid,
           data: {
             operation: "SHARE_PAGE_RESPONSE",
             success: true,
@@ -346,40 +439,33 @@ const logic = async (
       }
       case "update-shared-page": {
         const { notebookPageId, changes, state, seq } = args;
-        const cxn = await getMysql(requestId);
         const { uuid: pageUuid, cid } = await getSharedPage({
-          workspace,
+          notebookUuid,
           notebookPageId,
-          app,
-          requestId: requestId,
+          requestId,
         });
         if (!changes.length) {
           cxn.destroy();
           return {};
         }
-        const notebookUuid = await getNotebookUuid({
-          workspace,
-          app,
-          requestId,
-        });
         await cxn
           .execute(
-            `SELECT app, workspace, notebook_uuid, notebook_page_id FROM page_notebook_links WHERE page_uuid = ? AND open = 0`,
+            `SELECT notebook_uuid, notebook_page_id FROM page_notebook_links WHERE page_uuid = ? AND open = 0`,
             [pageUuid]
           )
           .then(([r]) => {
             const clients = (
-              r as ({
+              r as {
                 notebook_page_id: string;
                 notebook_uuid: string;
-              } & Notebook)[]
+              }[]
             ).filter((item) => {
               return notebookUuid !== item.notebook_uuid;
             });
             return Promise.all(
-              clients.map(({ notebook_page_id, ...target }) =>
+              clients.map(({ notebook_page_id, notebook_uuid: target }) =>
                 messageNotebook({
-                  source: { app, workspace },
+                  source: notebookUuid,
                   target,
                   data: {
                     changes,
@@ -391,7 +477,6 @@ const logic = async (
               )
             );
           });
-        console.log("Reading update for seq", seq);
         const newDoc =
           state ||
           (await downloadSharedPage({ cid }).then(async ({ body: binary }) => {
@@ -443,13 +528,12 @@ const logic = async (
         });
         console.log("Applied update for seq", seq);
         await cxn.execute(
-          `UPDATE page_notebook_links SET version = ?, cid = ? WHERE app = ? AND workspace = ? AND notebook_page_id = ?`,
+          `UPDATE page_notebook_links SET version = ?, cid = ? WHERE notebook_uuid = ? AND notebook_page_id = ?`,
           [
             Automerge.getHistory(Automerge.load(res.body)).slice(-1)[0]?.change
               ?.time,
             res.cid,
-            app,
-            workspace,
+            notebookUuid,
             notebookPageId,
           ]
         );
@@ -460,29 +544,21 @@ const logic = async (
       }
       case "force-push-page": {
         const { notebookPageId, state: inputState } = args;
-        const cxn = await getMysql(requestId);
         const { uuid: pageUuid, cid } = await getSharedPage({
-          workspace,
+          notebookUuid,
           notebookPageId,
-          app,
-          requestId,
-        });
-        const notebookUuid = await getNotebookUuid({
-          workspace,
-          app,
           requestId,
         });
         const state = await (inputState
           ? saveSharedPage({ doc: inputState, cid })
               .then((res) =>
                 cxn.execute(
-                  `UPDATE page_notebook_links SET version = ?, cid = ? WHERE app = ? AND workspace = ? AND notebook_page_id = ?`,
+                  `UPDATE page_notebook_links SET version = ?, cid = ? WHERE notebook_uuid = ? AND notebook_page_id = ?`,
                   [
                     Automerge.getHistory(Automerge.load(res.body)).slice(-1)[0]
                       ?.change?.time,
                     res.cid,
-                    app,
-                    workspace,
+                    notebookUuid,
                     notebookPageId,
                   ]
                 )
@@ -493,22 +569,22 @@ const logic = async (
             ));
         const notebooks = await cxn
           .execute(
-            `SELECT workspace, app, notebook_page_id, notebook_uuid FROM page_notebook_links WHERE page_uuid = ? AND open = 0`,
+            `SELECT notebook_page_id, notebook_uuid FROM page_notebook_links WHERE page_uuid = ? AND open = 0`,
             [pageUuid]
           )
           .then(
             ([r]) =>
-              r as (Notebook & {
+              r as {
                 notebook_page_id: string;
                 notebook_uuid: string;
-              })[]
+              }[]
           );
         await Promise.all(
           notebooks
             .filter((item) => {
               return item.notebook_uuid !== notebookUuid;
             })
-            .map(({ notebook_page_id, ...target }) =>
+            .map(({ notebook_page_id, notebook_uuid: target }) =>
               messageNotebook({
                 source: notebookUuid,
                 target,
@@ -529,16 +605,14 @@ const logic = async (
       }
       case "invite-notebook-to-page": {
         const { notebookPageId, target } = args;
-        const cxn = await getMysql(requestId);
         return Promise.all([
           getSharedPage({
-            workspace,
+            notebookUuid,
             notebookPageId,
-            app,
             requestId,
           }),
           getSharedPage({
-            ...target,
+            notebookUuid: await getNotebookUuid({ ...target, requestId }),
             notebookPageId,
             safe: true,
             requestId,
@@ -561,7 +635,7 @@ const logic = async (
               workspace,
               app,
             });
-            const notebookUuid = await getNotebookUuid({
+            const targetNotebookUuid = await getNotebookUuid({
               ...target,
               requestId,
             });
@@ -575,12 +649,12 @@ const logic = async (
                 target.app,
                 invitedBy,
                 new Date(),
-                notebookUuid,
+                targetNotebookUuid,
               ]
             );
             return messageNotebook({
-              source: { app, workspace },
-              target,
+              source: notebookUuid,
+              target: targetNotebookUuid,
               data: {
                 notebookPageId,
                 pageUuid,
@@ -594,7 +668,6 @@ const logic = async (
       }
       case "remove-page-invite": {
         const { notebookPageId, target } = args;
-        const cxn = await getMysql(requestId);
         const notebookUuid = await getNotebookUuid({
           requestId,
           app,
@@ -604,31 +677,32 @@ const logic = async (
           ? cxn
               .execute(
                 `SELECT uuid 
-      FROM page_notebook_links
-      WHERE workspace = ? AND app = ? AND notebook_page_id = ? AND open = 1 AND invited_by = ?`,
+      FROM page_notebook_links l
+      INNER JOIN notebooks n ON n.uuid = l.notebook_uuid
+      WHERE n.workspace = ? AND n.app = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
                 [target.workspace, target.app, notebookPageId, notebookUuid]
               )
               .then(([invitedByLink]) => ({
-                invitedBy: { app, workspace },
+                invitedBy: notebookUuid,
                 linkUuid: (invitedByLink as { uuid: string }[])[0]?.uuid,
               }))
           : cxn
               .execute(
                 `SELECT uuid, invited_by
       FROM page_notebook_links
-      WHERE workspace = ? AND app = ? AND notebook_page_id = ? AND open = 1`,
-                [workspace, app, notebookPageId]
+      WHERE notebook_uuid = ? AND notebook_page_id = ? AND open = 1`,
+                [notebookUuid, notebookPageId]
               )
               .then(async ([link]) => {
                 const { uuid, invited_by } =
                   (link as { uuid: string; invited_by: string }[])[0] || {};
                 const [invitedBy] = await cxn
                   .execute(
-                    `SELECT app, workspace FROM notebooks WHERE uuid = ?`,
+                    `SELECT notebook_uuid FROM notebooks WHERE uuid = ?`,
                     [invited_by]
                   )
-                  .then(([a]) => a as { app: AppId; workspace: string }[]);
-                return { linkUuid: uuid, invitedBy };
+                  .then(([a]) => a as { notebook_uuid: string }[]);
+                return { linkUuid: uuid, invitedBy: invitedBy?.notebook_uuid };
               }));
         if (!linkUuid) {
           throw new NotFoundError(`Could not find valid invite to remove.`);
@@ -637,7 +711,7 @@ const logic = async (
           .execute(`DELETE FROM page_notebook_links WHERE uuid = ?`, [linkUuid])
           .then(() =>
             messageNotebook({
-              source: { app, workspace },
+              source: notebookUuid,
               target: invitedBy,
               data: {
                 title: notebookPageId,
@@ -657,14 +731,15 @@ const logic = async (
         return getMysql(requestId)
           .then(async (cxn) => {
             const { uuid: pageUuid } = await getSharedPage({
-              workspace,
+              notebookUuid,
               notebookPageId,
-              app,
               requestId: requestId,
             });
             const clients = await cxn
               .execute(
-                `SELECT app, workspace, version, open FROM page_notebook_links WHERE page_uuid = ?`,
+                `SELECT app, workspace, version, open FROM page_notebook_links l 
+                INNER JOIN notebooks n ON n.uuid = l.notebook_uuid 
+                WHERE page_uuid = ?`,
                 [pageUuid]
               )
               .then(
@@ -691,8 +766,8 @@ const logic = async (
                 `SELECT l.notebook_page_id 
               FROM page_notebook_links l
               INNER JOIN pages p ON l.page_uuid = p.uuid
-          WHERE l.workspace = ? AND l.app = ? AND l.open = 0`,
-                [workspace, app]
+          WHERE l.notebook_uuid = ? AND l.open = 0`,
+                [notebookUuid]
               )
               .then(([r]) => r as { notebook_page_id: string }[])
               .then((r) => r.map(({ notebook_page_id }) => notebook_page_id));
@@ -704,18 +779,16 @@ const logic = async (
       }
       case "disconnect-shared-page": {
         const { notebookPageId } = args;
-        const cxn = await getMysql(requestId);
         return (
           getSharedPage({
-            workspace,
+            notebookUuid,
             notebookPageId,
-            app,
-            requestId: requestId,
+            requestId,
           })
             .then(() =>
               cxn.execute(
-                `DELETE FROM page_notebook_links WHERE workspace = ? AND app = ? AND notebook_page_id = ?`,
-                [workspace, app, notebookPageId]
+                `DELETE FROM page_notebook_links WHERE notebook_uuid = ? AND notebook_page_id = ?`,
+                [notebookUuid, notebookPageId]
               )
             )
             // TODO: Let errbody know
@@ -739,10 +812,14 @@ const logic = async (
               };
             else return { found: false };
           })
-          .then((body) =>
+          .then(async (body) =>
             messageNotebook({
-              source: { workspace, app },
-              target: { workspace: targetWorkspace, app: 1 },
+              source: notebookUuid,
+              target: await getNotebookUuid({
+                workspace: targetWorkspace,
+                app: 1,
+                requestId,
+              }),
               data: {
                 request,
                 operation: "QUERY",
@@ -761,8 +838,8 @@ const logic = async (
           Key: `data/queries/${hash}.json`,
         });
         return messageNotebook({
-          target,
-          source: { workspace, app },
+          target: await getNotebookUuid({ ...target, requestId }),
+          source: notebookUuid,
           data: {
             operation: `QUERY_RESPONSE`,
             ephemeral: true,
@@ -776,11 +853,10 @@ const logic = async (
       }
       case "link-different-page": {
         const { oldNotebookPageId, newNotebookPageId } = args;
-        const cxn = await getMysql(requestId);
         const [result] = await cxn
           .execute(
-            `SELECT uuid FROM page_notebook_links WHERE app = ? AND workspace = ? AND notebook_page_id = ?`,
-            [app, workspace, oldNotebookPageId]
+            `SELECT uuid FROM page_notebook_links WHERE notebook_uuid = ? AND notebook_page_id = ?`,
+            [notebookUuid, oldNotebookPageId]
           )
           .then(([a]) => a as { uuid: string }[]);
         if (!result) {
@@ -797,22 +873,19 @@ const logic = async (
       }
       case "save-page-version": {
         const { state, notebookPageId } = args;
-        const cxn = await getMysql(requestId);
         const { cid } = await getSharedPage({
-          workspace,
+          notebookUuid,
           notebookPageId,
-          app,
           requestId,
         });
         const res = await saveSharedPage({ cid, doc: state });
         await cxn.execute(
-          `UPDATE page_notebook_links SET version = ?, cid = ? WHERE app = ? AND workspace = ? AND notebook_page_id = ?`,
+          `UPDATE page_notebook_links SET version = ?, cid = ? WHERE notebook_uuid = ? AND notebook_page_id = ?`,
           [
             Automerge.getHistory(Automerge.load(res.body)).slice(-1)[0]?.change
               ?.time,
             res.cid,
-            app,
-            workspace,
+            notebookUuid,
             notebookPageId,
           ]
         );
@@ -821,11 +894,9 @@ const logic = async (
       }
       case "get-ipfs-cid": {
         const { notebookPageId } = args;
-        const cxn = await getMysql(requestId);
         const { cid } = await getSharedPage({
-          workspace,
+          notebookUuid,
           notebookPageId,
-          app,
           requestId,
         });
         cxn.destroy();
@@ -833,10 +904,8 @@ const logic = async (
       }
       case "get-shared-page": {
         const { notebookPageId } = args;
-        const cxn = await getMysql(requestId);
         const { cid } = await getSharedPage({
-          app,
-          workspace,
+          notebookUuid,
           requestId,
           notebookPageId,
         });
@@ -848,7 +917,6 @@ const logic = async (
         throw new NotFoundError(`Unknown method: ${JSON.stringify(args)}`);
     }
   } catch (e) {
-    const cxn = await getMysql(requestId);
     cxn.destroy();
     return catchError(`Failed to process method: ${args.method}`)(e as Error);
   }

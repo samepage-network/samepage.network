@@ -1,7 +1,19 @@
 import { z } from "zod";
 
-const uuid = z.string().uuid().describe("primary");
-const optionalUuid = z.string().uuid().optional();
+const uuidField = z.string().uuid();
+const uuid = uuidField.describe("primary");
+const optionalUuid = uuidField.optional();
+
+const token = z.object({
+  uuid,
+  value: z.string().describe("unique"),
+});
+
+const tokenNotebookLink = z.object({
+  uuid,
+  notebookUuid: uuidField,
+  tokenUuid: uuidField,
+});
 
 const notebook = z.object({
   uuid,
@@ -65,6 +77,8 @@ const ongoingMessage = z.object({
 });
 
 const schema = {
+  token,
+  tokenNotebookLink,
   notebook,
   page,
   pageNotebookLink,

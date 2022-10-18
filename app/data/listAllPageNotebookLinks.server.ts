@@ -4,17 +4,21 @@ import { appsById } from "package/internal/apps";
 
 const listAllPageNotebookLinks = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
-  const results = await cxn.execute("SELECT * FROM page_notebook_links").then(
-    ([r]) =>
-      r as {
-        page_uuid: string;
-        app: AppId;
-        workspace: string;
-        notebook_page_id: string;
-        uuid: string;
-        open: boolean;
-      }[]
-  );
+  const results = await cxn
+    .execute(
+      "SELECT l.*, n.app, n.workspace FROM page_notebook_links l INNER JOIN notebooks n ON n.uuid = l.notebook_uuid"
+    )
+    .then(
+      ([r]) =>
+        r as {
+          page_uuid: string;
+          app: AppId;
+          workspace: string;
+          notebook_page_id: string;
+          uuid: string;
+          open: boolean;
+        }[]
+    );
   cxn.destroy();
   const pages = results.reduce((p, c) => {
     if (p[c.page_uuid]) {
