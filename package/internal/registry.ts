@@ -8,8 +8,8 @@ import type {
   AppId,
   RenderOverlay,
 } from "../types";
-import defaultGetSetting from "package/utils/defaultGetSetting";
-import defaultSetSetting from "package/utils/defaultSetSetting";
+import defaultGetSetting from "../utils/defaultGetSetting";
+import defaultSetSetting from "../utils/defaultSetSetting";
 
 const defaultCommands: Record<string, () => void> = {};
 const defaultAddCommand: AddCommand = ({ label, callback }) => {

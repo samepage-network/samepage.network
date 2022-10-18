@@ -1,4 +1,4 @@
-import type { GetSetting } from "package/types";
+import type { GetSetting } from "../types";
 
 const defaultGetSetting: GetSetting = (s: string) => {
   const settings = localStorage.getItem("samepage:settings");
