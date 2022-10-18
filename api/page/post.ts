@@ -12,7 +12,6 @@ import {
   ConflictError,
   MethodNotAllowedError,
   NotFoundError,
-  UnauthorizedError,
 } from "@dvargas92495/app/backend/errors.server";
 import catchError from "~/data/catchError.server";
 import getMysql from "fuegojs/utils/mysql";
@@ -29,48 +28,9 @@ import downloadSharedPage from "~/data/downloadSharedPage.server";
 import saveSharedPage from "~/data/saveSharedPage.server";
 import { z } from "zod";
 import getNotebookUuid from "~/data/getNotebookUuid.server";
+import authenticateNotebook from "~/data/authenticateNotebook.server";
 
-const zMethod = z.intersection(zNotebook.merge(zHeaders), zMethodBody);
-
-const authenticate = async (args: {
-  notebookUuid: string;
-  token: string;
-  requestId: string;
-}) => {
-  const { notebookUuid, token, requestId } = args;
-  const cxn = await getMysql(requestId);
-  const [tokenLinks] = await cxn.execute(
-    `SELECT token_uuid FROM token_notebook_links
-    where notebook_uuid = ?`,
-    [notebookUuid]
-  );
-  const tokens = tokenLinks as { token_uuid: string }[];
-  if (!tokens.length) {
-    throw new NotFoundError(`Could not find notebook`);
-  }
-  const authenticated = tokens
-    .map(
-      (t) => () =>
-        cxn
-          .execute(
-            `SELECT value FROM tokens 
-  where uuid = ?`,
-            [t.token_uuid]
-          )
-          .then(([values]) => {
-            const storedValue = (values as { value: string }[])?.[0]?.value;
-            if (!storedValue) return false;
-            // should I just query by stored value?
-            if (token !== storedValue)
-              throw new UnauthorizedError(`Unauthorized notebook and token`);
-            return token === storedValue;
-          })
-    )
-    .reduce((p, c) => p.then((f) => f || c()), Promise.resolve(false));
-  if (!authenticated)
-    throw new UnauthorizedError(`Unauthorized notebook and token`);
-  return true;
-};
+const zMethod = z.intersection(zNotebook.partial().merge(zHeaders), zMethodBody);
 
 const logic = async (req: Record<string, unknown>) => {
   const result = zMethod.safeParse(req);
@@ -87,7 +47,10 @@ const logic = async (req: Record<string, unknown>) => {
         .map((s) => `- ${s}\n`)
         .join("")}`
     );
-  const { app, workspace, requestId, notebookUuid, token, ...args } =
+  const { 
+    app, 
+    workspace, 
+    requestId, notebookUuid, token, ...args } =
     result.data;
   console.log("Received method:", args.method, "from", notebookUuid);
   const cxn = await getMysql(requestId);
@@ -146,7 +109,7 @@ const logic = async (req: Record<string, unknown>) => {
       );
     if (!token)
       throw new BadRequestError(`Notebook Token is required to use SamePage`);
-    await authenticate({ requestId, notebookUuid, token });
+    await authenticateNotebook({ requestId, notebookUuid, token });
     switch (args.method) {
       case "connect-notebook": {
         // all the work is done in authenticate...
@@ -545,11 +508,6 @@ const logic = async (req: Record<string, unknown>) => {
               );
             }
             const { uuid: pageUuid } = page;
-            const invitedBy = await getNotebookUuid({
-              requestId,
-              workspace,
-              app,
-            });
             const targetNotebookUuid = await getNotebookUuid({
               ...target,
               requestId,
@@ -562,7 +520,7 @@ const logic = async (req: Record<string, unknown>) => {
                 notebookPageId,
                 target.workspace,
                 target.app,
-                invitedBy,
+                notebookUuid,
                 new Date(),
                 targetNotebookUuid,
               ]
@@ -583,11 +541,6 @@ const logic = async (req: Record<string, unknown>) => {
       }
       case "remove-page-invite": {
         const { notebookPageId, target } = args;
-        const notebookUuid = await getNotebookUuid({
-          requestId,
-          app,
-          workspace,
-        });
         const { linkUuid, invitedBy } = await (target
           ? cxn
               .execute(

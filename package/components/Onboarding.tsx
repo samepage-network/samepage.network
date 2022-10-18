@@ -145,7 +145,7 @@ const CreateNotebookPage = ({
   }, [setError, setLoading, setPage, setNotebookUuid, token, rootSetToken]);
   return (
     <div
-      className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center relative`}
+      className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center relative h-full`}
     >
       {loading && (
         <div className="flex flex-col items-center absolute inset-0 bg-opacity-25 z-50">
@@ -201,8 +201,12 @@ const CompletePage = ({ onClose }: { onClose: () => void }) => {
       <h1 className="text-lg font-normal">Congratulations! 🎉</h1>
       <p className="flex-grow">
         Each time you log onto your notebook, you can connect to the SamePage
-        network by entering the `Connect to SamePage Network` command. Close
-        this model by clicking the button below and give it a try!
+        network by entering the{" "}
+        <code className="font-mono font-normal bg-gray-200 rounded-sm">
+          Connect to SamePage Network
+        </code>{" "}
+        command. Close this model by clicking the button below and give it a
+        try!
       </p>
       <Button text={"All Done"} intent={"primary"} onClick={onClose} />
     </div>
@@ -267,7 +271,7 @@ const Onboarding = ({
                 Connect your existing notebook using your Notebook token
               </p>
               <Button
-                text={"Connect notebook"}
+                text={"Connect Notebook"}
                 onClick={() => setPage("CONNECT")}
                 intent={"primary"}
                 className={"mt-4"}

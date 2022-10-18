@@ -7,13 +7,11 @@ import getNodeEnv from "./getNodeEnv";
 import { onAppEvent } from "./registerAppEventListener";
 import {
   addCommand,
-  app,
   appRoot,
   getSetting,
   removeCommand,
   renderOverlay,
   setSetting,
-  workspace,
 } from "./registry";
 import sendChunkedMessage from "./sendChunkedMessage";
 import {
@@ -106,8 +104,8 @@ const connectToBackend = () => {
       sendToBackend({
         operation: "AUTHENTICATION",
         data: {
-          app,
-          workspace,
+          notebookUuid: getSetting("uuid"),
+          token: getSetting("token"),
         },
         unauthenticated: true,
       });

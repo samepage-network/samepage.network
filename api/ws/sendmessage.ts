@@ -13,6 +13,7 @@ import type {
 } from "aws-lambda";
 import getNotebookUuid from "~/data/getNotebookUuid.server";
 import getNotebookByUuid from "~/data/getNotebookByUuid.server";
+import authenticateNotebook from "~/data/authenticateNotebook.server";
 
 // postToConnection({
 //   ConnectionId,
@@ -44,19 +45,22 @@ const dataHandler = async (
   if (operation === "AUTHENTICATION") {
     const propArgs = props as
       | { app: AppId; workspace: string }
-      | { notebook_uuid: string; token: string };
+      | { notebookUuid: string; token: string };
     const cxn = await getMysqlConnection(requestId);
+    "notebookUuid" in propArgs
+      ? await authenticateNotebook({ ...propArgs, requestId })
+      : await Promise.resolve();
     const notebookUuid =
-      "notebook_uuid" in propArgs
-        ? propArgs["notebook_uuid"]
+      "notebookUuid" in propArgs
+        ? propArgs["notebookUuid"]
         : await getNotebookUuid({
             app: propArgs.app,
             workspace: propArgs.workspace,
             requestId,
           });
     const { app, workspace } =
-      "notebook_uuid" in propArgs
-        ? await getNotebookByUuid({ uuid: propArgs.notebook_uuid, requestId })
+      "notebookUuid" in propArgs
+        ? await getNotebookByUuid({ uuid: propArgs.notebookUuid, requestId })
         : propArgs;
 
     const [_, messages] = await Promise.all([
