@@ -1,4 +1,4 @@
-import defaultSettings from "package/utils/defaultSettings";
+import type defaultSettings from "../utils/defaultSettings";
 import React from "react";
 import { v4 } from "uuid";
 import type {

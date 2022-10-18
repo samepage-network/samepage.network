@@ -1,4 +1,4 @@
-import Onboarding from "package/components/Onboarding";
+import Onboarding from "../components/Onboarding";
 import UsageChart, { UsageChartProps } from "../components/UsageChart";
 import type { Status, SendToBackend, Notebook } from "../types";
 import apiClient from "./apiClient";

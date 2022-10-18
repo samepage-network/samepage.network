@@ -21,6 +21,7 @@ import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { parseAndFormatActorId } from "../internal/parseActorId";
 import AtJsonRendered from "./AtJsonRendered";
 import { load, deleteId, get } from "../utils/localAutomergeDb";
+import binaryToBase64 from "../internal/binaryToBase64";
 
 type GetLocalHistory = (
   notebookPageId: string
@@ -275,7 +276,7 @@ const SharedPageStatus = ({
             apiClient({
               method: "force-push-page",
               notebookPageId,
-              state: doc ? Automerge.save(doc) : undefined,
+              state: doc ? binaryToBase64(Automerge.save(doc)) : undefined,
             })
               .then(() =>
                 dispatchAppEvent({
