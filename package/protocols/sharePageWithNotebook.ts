@@ -293,7 +293,7 @@ const setupSharePageWithNotebook = ({
           dispatchAppEvent({
             type: "log",
             id: "list-pages-failure",
-            content: `Failed to retrieve shared pages data: ${e.message}. Try reconnecting to SamePage.`,
+            content: `Failed to retrieve shared pages data: ${e.message}.`,
             intent: "error",
           })
         );

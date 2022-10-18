@@ -7,9 +7,9 @@ import type {
   RemoveCommand,
   AppId,
   RenderOverlay,
-  GetSetting,
-  SetSetting,
 } from "../types";
+import defaultGetSetting from "package/utils/defaultGetSetting";
+import defaultSetSetting from "package/utils/defaultSetSetting";
 
 const defaultCommands: Record<string, () => void> = {};
 const defaultAddCommand: AddCommand = ({ label, callback }) => {
@@ -60,19 +60,6 @@ const defaultRenderOverlay: RenderOverlay = ({
   return () => {
     onClose?.();
   };
-};
-
-const defaultGetSetting: GetSetting = (s: string) => {
-  const settings = localStorage.getItem("samepage:settings");
-  if (!settings) return "";
-  return JSON.parse(settings)?.[s];
-};
-const defaultSetSetting: SetSetting = (s: string, v: string) => {
-  const settings = localStorage.getItem("samepage:settings");
-  localStorage.setItem(
-    "samepage:settings",
-    JSON.stringify({ ...(settings ? JSON.parse(settings) : {}), [s]: v })
-  );
 };
 
 export let addCommand = defaultAddCommand;

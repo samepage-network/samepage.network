@@ -1,4 +1,7 @@
-import { NotFoundError, UnauthorizedError } from "@dvargas92495/app/backend/errors.server";
+import {
+  NotFoundError,
+  UnauthorizedError,
+} from "@dvargas92495/app/backend/errors.server";
 import getMysql from "fuegojs/utils/mysql";
 
 const authenticateNotebook = async (args: {
@@ -15,7 +18,11 @@ const authenticateNotebook = async (args: {
   );
   const tokens = tokenLinks as { token_uuid: string }[];
   if (!tokens.length) {
-    throw new NotFoundError(`Could not find notebook`);
+    throw new NotFoundError(
+      notebookUuid
+        ? `Could not find Notebook with the Universal Id: ${notebookUuid}`
+        : "There is no Notebook Universal Id assigned to this notebook. Make sure to go through the onboarding flow in order to be properly assigned a Universal Id."
+    );
   }
   const authenticated = tokens
     .map(

@@ -141,18 +141,21 @@ const connectToBackend = () => {
 
 const disconnectFromBackend = (reason: string) => {
   if (samePageBackend.status !== "DISCONNECTED") {
+    const wasPending = samePageBackend.status === "PENDING";
     samePageBackend.status = "DISCONNECTED";
     dispatchAppEvent({
       type: "connection",
       status: "DISCONNECTED",
     });
     samePageBackend.channel = undefined;
-    dispatchAppEvent({
-      type: "log",
-      id: "samepage-disconnect",
-      content: `Disconnected from SamePage Network: ${reason}`,
-      intent: "warning",
-    });
+    if (!wasPending) {
+      dispatchAppEvent({
+        type: "log",
+        id: "samepage-disconnect",
+        content: `Disconnected from SamePage Network: ${reason}`,
+        intent: "warning",
+      });
+    }
   }
   addConnectCommand();
   removeCommand({ label: USAGE_LABEL });
@@ -192,20 +195,27 @@ const removeDisconnectCommand = () => {
   });
 };
 
+const onboard = () =>
+  renderOverlay({
+    Overlay: Onboarding,
+    props: {
+      // switch to onSuccess(notebookUuid, token), onCancel
+      setNotebookUuid: (v) => {
+        setSetting("uuid", v);
+        removeCommand({ label: "Onboard to SamePage" });
+      },
+      setToken: (v) => {
+        setSetting("token", v);
+      },
+    },
+  });
+
 const setupWsFeatures = () => {
   const notebookUuid = getSetting("uuid");
   if (!notebookUuid) {
-    renderOverlay({
-      Overlay: Onboarding,
-      props: {
-        setNotebookUuid: (v) => {
-          setSetting("uuid", v);
-        },
-        setToken: (v) => {
-          setSetting("token", v);
-        },
-      },
-    });
+    // TODO - move this to onCancel
+    addCommand({ label: "Onboard to SamePage", callback: onboard });
+    onboard();
   }
 
   addNotebookListener({
