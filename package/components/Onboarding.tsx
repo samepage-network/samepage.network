@@ -8,9 +8,9 @@ import {
   Label,
   Spinner,
 } from "@blueprintjs/core";
-import apiClient from "package/internal/apiClient";
-import { OverlayProps } from "package/types";
-import { useState, useCallback } from "react";
+import apiClient from "../internal/apiClient";
+import { OverlayProps } from "../types";
+import React from "react";
 
 // Initial reference - https://www.youtube.com/watch?v=83Yrd3ekWKA
 // TODO - Help us improve SamePage panel?
@@ -28,12 +28,12 @@ const ConnectNotebookPage = ({
   setNotebookUuid: (s: string) => void;
   setToken: (s: string) => void;
 }) => {
-  const [notebookUuid, setNotebookUuid] = useState("");
-  const [token, setToken] = useState("");
-  const [termsOfUse, setTermsOfUse] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const onConnect = useCallback(() => {
+  const [notebookUuid, setNotebookUuid] = React.useState("");
+  const [token, setToken] = React.useState("");
+  const [termsOfUse, setTermsOfUse] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const onConnect = React.useCallback(() => {
     setLoading(true);
     apiClient({
       method: "connect-notebook",
@@ -123,11 +123,11 @@ const CreateNotebookPage = ({
   setNotebookUuid: (s: string) => void;
   setToken: (s: string) => void;
 }) => {
-  const [token, setToken] = useState("");
-  const [termsOfUse, setTermsOfUse] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const onCreate = useCallback(() => {
+  const [token, setToken] = React.useState("");
+  const [termsOfUse, setTermsOfUse] = React.useState(false);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const onCreate = React.useCallback(() => {
     setLoading(true);
     apiClient<{ notebookUuid: string }>({
       method: "create-notebook",
@@ -218,7 +218,7 @@ const Onboarding = ({
   setNotebookUuid: (s: string) => void;
   setToken: (s: string) => void;
 }>) => {
-  const [page, setPage] = useState<Page>(PAGES[0]);
+  const [page, setPage] = React.useState<Page>(PAGES[0]);
   return (
     <Dialog
       title={"Welcome to SamePage"}

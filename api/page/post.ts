@@ -1,5 +1,11 @@
 import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
-import { Notebook, Schema, zNotebook } from "package/types";
+import {
+  Notebook,
+  Schema,
+  zHeaders,
+  zMethodBody,
+  zNotebook,
+} from "package/types";
 import { appsById } from "package/internal/apps";
 import {
   BadRequestError,
@@ -24,98 +30,7 @@ import saveSharedPage from "~/data/saveSharedPage.server";
 import { z } from "zod";
 import getNotebookUuid from "~/data/getNotebookUuid.server";
 
-const zMethodBody = z.discriminatedUnion("method", [
-  z.object({ method: z.literal("create-notebook"), inviteCode: z.string() }),
-  z.object({
-    method: z.literal("connect-notebook"),
-  }),
-  z.object({ method: z.literal("usage") }),
-  z.object({ method: z.literal("load-message"), messageUuid: z.string() }),
-  z.object({
-    method: z.literal("init-shared-page"),
-    notebookPageId: z.string(),
-    state: z.string(),
-  }),
-  z.object({
-    method: z.literal("join-shared-page"),
-    notebookPageId: z.string(),
-  }),
-  z.object({
-    method: z.literal("update-shared-page"),
-    notebookPageId: z.string(),
-    changes: z.string().array(),
-    state: z.string().optional(),
-    seq: z.number().optional(),
-  }),
-  z.object({
-    method: z.literal("force-push-page"),
-    notebookPageId: z.string(),
-    state: z.string().optional(),
-  }),
-  z.object({
-    method: z.literal("get-shared-page"),
-    notebookPageId: z.string(),
-  }),
-  z.object({
-    method: z.literal("invite-notebook-to-page"),
-    notebookPageId: z.string(),
-    target: zNotebook,
-  }),
-  z.object({
-    method: z.literal("remove-page-invite"),
-    notebookPageId: z.string(),
-    target: zNotebook.optional(),
-  }),
-  z.object({
-    method: z.literal("list-page-notebooks"),
-    notebookPageId: z.string(),
-  }),
-  z.object({
-    method: z.literal("list-shared-pages"),
-  }),
-  z.object({
-    method: z.literal("disconnect-shared-page"),
-    notebookPageId: z.string(),
-  }),
-  z.object({ method: z.literal("query"), request: z.string() }),
-  z.object({
-    method: z.literal("query-response"),
-    response: z.string(),
-    request: z.string(),
-    target: zNotebook,
-  }),
-  z.object({
-    oldNotebookPageId: z.string(),
-    newNotebookPageId: z.string(),
-    method: z.literal("link-different-page"),
-  }),
-  z.object({
-    method: z.literal("save-page-version"),
-    notebookPageId: z.string(),
-    state: z.string(),
-  }),
-  z.object({
-    method: z.literal("get-ipfs-cid"),
-    notebookPageId: z.string(),
-  }),
-]);
-
-const zHeaders = z.object({
-  requestId: z.string(),
-  notebookUuid: z.string().optional(),
-  token: z.string().optional(),
-});
-
 const zMethod = z.intersection(zNotebook.merge(zHeaders), zMethodBody);
-
-export type RequestBody = z.infer<typeof zMethodBody> &
-  Partial<z.infer<typeof zHeaders>>;
-// look into trpc.io
-// export type RequestSignature = <T extends RequestBody>(
-//   args: T
-// ) => T["method"] extends "create-notebook"
-//   ? Promise<{ notebookUuid: string }>
-//   : Promise<{}>;
 
 const authenticate = async (args: {
   notebookUuid: string;

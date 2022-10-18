@@ -1,4 +1,4 @@
-import type { RequestBody } from "../../api/page/post";
+import type { RequestBody } from "../types";
 import getNodeEnv from "./getNodeEnv";
 import { app, getSetting, workspace } from "./registry";
 
