@@ -207,7 +207,7 @@ declare global {
 }
 
 export const zMethodBody = z.discriminatedUnion("method", [
-  z.object({ method: z.literal("create-notebook"), inviteCode: z.string() }),
+  z.object({ method: z.literal("create-notebook"), inviteCode: z.string() }).merge(zNotebook),
   z.object({
     method: z.literal("connect-notebook"),
   }),
@@ -226,7 +226,7 @@ export const zMethodBody = z.discriminatedUnion("method", [
     method: z.literal("update-shared-page"),
     notebookPageId: z.string(),
     changes: z.string().array(),
-    state: z.string().optional(),
+    state: z.string(),
     seq: z.number().optional(),
   }),
   z.object({

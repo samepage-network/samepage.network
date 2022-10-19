@@ -1,10 +1,8 @@
 import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
 import {
   Notebook,
-  Schema,
   zHeaders,
   zMethodBody,
-  zNotebook,
 } from "package/types";
 import { appsById } from "package/internal/apps";
 import {
@@ -30,7 +28,7 @@ import { z } from "zod";
 import getNotebookUuid from "~/data/getNotebookUuid.server";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
 
-const zMethod = z.intersection(zNotebook.partial().merge(zHeaders), zMethodBody);
+const zMethod = z.intersection(zHeaders, zMethodBody);
 
 const logic = async (req: Record<string, unknown>) => {
   const result = zMethod.safeParse(req);
@@ -47,16 +45,12 @@ const logic = async (req: Record<string, unknown>) => {
         .map((s) => `- ${s}\n`)
         .join("")}`
     );
-  const { 
-    app, 
-    workspace, 
-    requestId, notebookUuid, token, ...args } =
-    result.data;
+  const { requestId, notebookUuid, token, ...args } = result.data;
   console.log("Received method:", args.method, "from", notebookUuid);
   const cxn = await getMysql(requestId);
   try {
     if (args.method === "create-notebook") {
-      const { inviteCode } = args;
+      const { inviteCode, app, workspace } = args;
       // TODO - Invite code and api token are currently the same.
       // Invite code should be short lived, token long live and encrypted at rest
       const [results] = await cxn.execute(
@@ -131,7 +125,7 @@ const logic = async (req: Record<string, unknown>) => {
             const [sessions, messages] = await Promise.all([
               cxn
                 .execute(
-                  `SELECT id, created_date, end_date FROM client_sessions WHERE notebook_uuid ? AND created_date > ?`,
+                  `SELECT id, created_date, end_date FROM client_sessions WHERE notebook_uuid = ? AND created_date > ?`,
                   [notebookUuid, startDate]
                 )
                 .then(
@@ -202,11 +196,6 @@ const logic = async (req: Record<string, unknown>) => {
       }
       case "init-shared-page": {
         const { notebookPageId, state } = args;
-        if (!notebookPageId) {
-          throw new BadRequestError(
-            `Missing notebookPageId for notebook: ${app} / ${workspace}`
-          );
-        }
         return getMysql(requestId)
           .then(async (cxn) => {
             const [results] = await cxn.execute(
@@ -226,13 +215,11 @@ const logic = async (req: Record<string, unknown>) => {
               [pageUuid]
             );
             await cxn.execute(
-              `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, workspace, app, version, open, invited_by, invited_date, notebook_uuid, cid)
-            VALUES (UUID(), ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
+              `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, version, open, invited_by, invited_date, notebook_uuid, cid)
+            VALUES (UUID(), ?, ?, ?, 0, ?, ?, ?, ?)`,
               [
                 pageUuid,
                 notebookPageId,
-                workspace,
-                app,
                 Automerge.getHistory(Automerge.load(body)).slice(-1)?.[0]
                   ?.change?.time,
                 notebookUuid,
@@ -316,7 +303,7 @@ const logic = async (req: Record<string, unknown>) => {
         };
       }
       case "update-shared-page": {
-        const { notebookPageId, changes, state, seq } = args;
+        const { notebookPageId, changes, state } = args;
         const { uuid: pageUuid, cid } = await getSharedPage({
           notebookUuid,
           notebookPageId,
@@ -355,56 +342,10 @@ const logic = async (req: Record<string, unknown>) => {
               )
             );
           });
-        const newDoc =
-          state ||
-          (await downloadSharedPage({ cid }).then(async ({ body: binary }) => {
-            const loadAutomerge = (binary: Automerge.BinaryDocument) => {
-              const getActorId = () =>
-                `${app}/${workspace}`
-                  .split("")
-                  .map((s) => s.charCodeAt(0).toString(16))
-                  .join("");
-              try {
-                return Automerge.load<Schema>(binary, {
-                  actorId: getActorId(),
-                });
-              } catch (e) {
-                console.error(
-                  `Corrupt automerge file. Returning an empty one instead.`
-                );
-                return Automerge.init<Schema>({ actorId: getActorId() });
-              }
-            };
-            const oldDoc = loadAutomerge(binary);
-            const binaryChanges = changes.map(
-              (c) =>
-                new Uint8Array(
-                  Buffer.from(c, "base64")
-                    .toString("binary")
-                    .split("")
-                    .map((c) => c.charCodeAt(0))
-                ) as Automerge.BinaryChange
-            );
-            const apply = () => {
-              try {
-                return Automerge.applyChanges(oldDoc, binaryChanges);
-              } catch (e) {
-                console.error(
-                  `Failed to apply update from ${app} / ${workspace}`
-                );
-                console.error(e);
-                return [] as const;
-              }
-            };
-            const result = apply();
-            return result[0];
-          }));
-        if (!newDoc) return { success: false };
         const res = await saveSharedPage({
           cid,
-          doc: newDoc,
+          doc: state,
         });
-        console.log("Applied update for seq", seq);
         await cxn.execute(
           `UPDATE page_notebook_links SET version = ?, cid = ? WHERE notebook_uuid = ? AND notebook_page_id = ?`,
           [
@@ -513,13 +454,11 @@ const logic = async (req: Record<string, unknown>) => {
               requestId,
             });
             await cxn.execute(
-              `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, workspace, app, version, open, invited_by, invited_date, notebook_uuid)
+              `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, version, open, invited_by, invited_date, notebook_uuid)
             VALUES (UUID(), ?, ?, ?, ?, 0, 1, ?, ?, ?)`,
               [
                 pageUuid,
                 notebookPageId,
-                target.workspace,
-                target.app,
                 notebookUuid,
                 new Date(),
                 targetNotebookUuid,
@@ -605,9 +544,9 @@ const logic = async (req: Record<string, unknown>) => {
             });
             const clients = await cxn
               .execute(
-                `SELECT app, workspace, version, open FROM page_notebook_links l 
+                `SELECT n.app, n.workspace, l.version, l.open FROM page_notebook_links l 
                 INNER JOIN notebooks n ON n.uuid = l.notebook_uuid 
-                WHERE page_uuid = ?`,
+                WHERE l.page_uuid = ?`,
                 [pageUuid]
               )
               .then(

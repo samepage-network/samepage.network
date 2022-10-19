@@ -50,16 +50,11 @@ const messageNotebook = ({
           })
       )
     ).then((all) => !!all.length && all.every((i) => i));
-    const targetNotebook = await getNotebookByUuid({ uuid: target, requestId });
     await cxn.execute(
-      `INSERT INTO messages (uuid, source_instance, source_app, target_instance, target_app, created_date, marked, source, target)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO messages (uuid, created_date, marked, source, target)
+          VALUES (?, ?, ?, ?, ?)`,
       [
         messageUuid,
-        sourceNotebook.workspace,
-        sourceNotebook.app,
-        targetNotebook.workspace,
-        targetNotebook.app,
         new Date(),
         online,
         source,

@@ -6,12 +6,12 @@ on:
     paths:
       - "tests/**"
       - ".github/workflows/tests.yaml"
-      
+
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.DEPLOY_AWS_ACCESS_KEY }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.DEPLOY_AWS_ACCESS_SECRET }}
   AWS_REGION: us-east-1
-  CLERK_API_KEY: ${{ secrets.STAGING_CLERK_API_KEY }} 
+  CLERK_API_KEY: ${{ secrets.STAGING_CLERK_API_KEY }}
   CLERK_FRONTEND_API: clerk.in.horse-0.lcl.dev
   DATABASE_URL: mysql://root:root@localhost:3306/samepage_network
   WEB3_STORAGE_API_KEY: ${{ secrets.WEB3_STORAGE_API_KEY }}
@@ -20,11 +20,11 @@ jobs:
   deploy:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: install
         run: npm install
       - name: package deps
-        run: | 
+        run: |
           npm install
           rm -Rf node_modules/react node_modules/react-dom node_modules/jsdom
         working-directory: package

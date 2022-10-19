@@ -12,7 +12,6 @@ import type {
   Context,
 } from "aws-lambda";
 import getNotebookUuid from "~/data/getNotebookUuid.server";
-import getNotebookByUuid from "~/data/getNotebookByUuid.server";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
 
 // postToConnection({
@@ -58,18 +57,14 @@ const dataHandler = async (
             workspace: propArgs.workspace,
             requestId,
           });
-    const { app, workspace } =
-      "notebookUuid" in propArgs
-        ? await getNotebookByUuid({ uuid: propArgs.notebookUuid, requestId })
-        : propArgs;
 
     const [_, messages] = await Promise.all([
       // one downside of inserting here instead of onconnect is the clock drift on created date
       // a client could theoretically connect without authenticate and would get free usage
       cxn.execute(
-        `INSERT INTO online_clients (app, instance, id, created_date, notebook_uuid) 
-      VALUES (?,?,?,?,?)`,
-        [app, workspace, clientId, new Date(), notebookUuid]
+        `INSERT INTO online_clients (id, created_date, notebook_uuid) 
+      VALUES (?,?,?)`,
+        [clientId, new Date(), notebookUuid]
       ),
       cxn
         .execute(`SELECT uuid FROM messages WHERE marked = 0 AND target = ?`, [
