@@ -11,6 +11,7 @@ import {
 import apiClient from "../internal/apiClient";
 import { OverlayProps } from "../types";
 import React from "react";
+import { appRoot } from "package/internal/registry";
 
 // Initial reference - https://www.youtube.com/watch?v=83Yrd3ekWKA
 // TODO - Help us improve SamePage panel?
@@ -230,6 +231,7 @@ const Onboarding = ({
       onClose={onClose}
       style={{ width: "100%", maxWidth: 800, height: "100%", maxHeight: 600 }}
       portalClassName={"samepage-onboarding-portal"}
+      portalContainer={appRoot}
     >
       <style>{`.samepage-onboarding-portal .bp4-dialog-container,
 .samepage-onboarding-portal .bp3-dialog-container {
