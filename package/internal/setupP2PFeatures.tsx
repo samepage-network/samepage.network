@@ -18,8 +18,10 @@ const connectedGraphs: {
   };
 } = {};
 
-export const getP2PConnection = (target: Notebook) => {
-  return connectedGraphs[`${target.app}/${target.workspace}`];
+export const getP2PConnection = (target: Notebook | string) => {
+  return connectedGraphs[
+    typeof target === "string" ? target : `${target.app}/${target.workspace}`
+  ];
 };
 
 // These RTC objects are not JSON serializable -.-

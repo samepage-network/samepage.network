@@ -16,7 +16,11 @@ const sendToNotebook: SendToNotebook = ({ target, operation, data = {} }) => {
 
   sendToBackend({
     operation: "PROXY",
-    data: { ...data, ...target, proxyOperation: operation },
+    data: {
+      ...data,
+      ...(typeof target === "string" ? { notebookUuid: target } : target),
+      proxyOperation: operation,
+    },
   });
 };
 

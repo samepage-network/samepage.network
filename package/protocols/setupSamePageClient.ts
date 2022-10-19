@@ -57,6 +57,7 @@ const setupSamePageClient = ({
       removeNotebookListener,
       sendToNotebook,
     };
+    document.body.dispatchEvent(new CustomEvent("samepage:loaded"));
   }
 
   return {

@@ -106,13 +106,9 @@ const dataHandler = async (
       },
     });
   } else if (operation === "PROXY") {
-    const { proxyOperation, app, workspace, notebookUuid, ...proxyData } =
-      props as {
-        proxyOperation: string;
-        workspace: string;
-        app: AppId;
-        notebookUuid: string;
-      };
+    const { proxyOperation, ...data } = props as {
+      proxyOperation: string;
+    } & ({ workspace: string; app: AppId } | { notebookUuid: string });
     const cxn = await getMysqlConnection(requestId);
     const [source] = await cxn
       .execute(`SELECT notebook_uuid FROM online_clients WHERE id = ?`, [
@@ -123,13 +119,21 @@ const dataHandler = async (
         console.error("Failed to find online client", e.message);
         return [];
       });
+    const target =
+      "notebookUuid" in data
+        ? data.notebookUuid
+        : await getNotebookUuid({
+            app: data.app,
+            workspace: data.workspace,
+            requestId,
+          });
+    //@ts-ignore
+    const { app, workspace, notebookUuid, ...proxyData } = data;
     return (
       source
         ? messageNotebook({
             source: source.notebook_uuid,
-            target:
-              notebookUuid ||
-              (await getNotebookUuid({ app, workspace, requestId })),
+            target,
             data: {
               operation: proxyOperation,
               ...proxyData,

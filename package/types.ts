@@ -181,7 +181,7 @@ export type AddNotebookListener = (args: {
 }) => void;
 export type RemoveNotebookListener = (args: { operation: string }) => void;
 export type SendToNotebook = (args: {
-  target: Notebook;
+  target: Notebook | string;
   operation: string;
   data?: { [k: string]: json };
 }) => void;

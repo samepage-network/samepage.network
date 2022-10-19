@@ -87,6 +87,10 @@
         "samepage": "./scripts/cli.js"
       },
       "scoped": {
+        "external": {
+          "name": "@samepage/external",
+          "description": "Utilities that help develop SamePage compatible external extensions"
+        },
         "scripts": {
           "name": "@samepage/scripts",
           "description": "Scripts that help develop application extensions.",
