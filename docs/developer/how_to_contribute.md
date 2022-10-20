@@ -44,7 +44,7 @@ The following directories also exist but are expected to be temporary:
 1. When ready, create a pull request that targets the `main` branch of the original repository
 1. When ready, tag `@dvargas92495` for review
 
-### `[tool]`
+## `[tool]`
 
 For each tool for thought that we support, we have a separate repository hosting the code for its extension. We currently support the following clients:
 - [Roam](https://github.com/dvargas92495/roamjs-samepage)

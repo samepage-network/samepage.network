@@ -1,9 +1,9 @@
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 import type { LoaderFunction, LinksFunction } from "@remix-run/node";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, Link } from "@remix-run/react";
 import loadMarkdownFile from "~/data/loadMarkdownFile.server";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 // import { getMDXComponent } from "mdx-bundler/client";
 import Markdown from "markdown-to-jsx";
 import React from "react";
@@ -46,6 +46,43 @@ const CodeBlock: React.FC<React.HTMLAttributes<HTMLPreElement>> = ({
   );
 };
 
+// why is this not the actual type for React Children?
+type ReactChildren = React.ReactNode[] | React.ReactNode;
+
+const getInnerText = (children: ReactChildren): string => {
+  const childrenArray = React.Children.toArray(children);
+  return childrenArray
+    .flatMap((c) =>
+      Array.isArray(c)
+        ? getInnerText(c)
+        : typeof c === "object"
+        ? "props" in c
+          ? getInnerText(c.props.children)
+          : getInnerText(c)
+        : c.toString()
+    )
+    .join("");
+};
+
+const Header = ({
+  h,
+  children,
+  ...props
+}: React.HTMLAttributes<HTMLHeadingElement> & {
+  h: 1 | 2 | 3 | 4 | 5 | 6;
+}) => {
+  const text = getInnerText(children);
+  const hprops = {
+    id: text
+      .toLowerCase()
+      .replace(/ /g, "-")
+      .replace(/[^a-z0-9]/g, ""),
+    children,
+    ...props,
+  };
+  return React.createElement(`h${h}`, hprops);
+};
+
 const DocsPage = (): React.ReactElement => {
   const { code, frontmatter } =
     useLoaderData<Awaited<ReturnType<typeof loadMarkdownFile>>>();
@@ -56,7 +93,18 @@ const DocsPage = (): React.ReactElement => {
         <Markdown
           options={{
             overrides: {
-              h2: { props: { className: "text-3xl my-6 font-semibold" } },
+              h1: (props) => <Header h={1} {...props} />,
+              h2: (props) => (
+                <Header
+                  h={2}
+                  {...props}
+                  className={"text-3xl my-6 font-semibold"}
+                />
+              ),
+              h3: (props) => <Header h={3} {...props} />,
+              h4: (props) => <Header h={4} {...props} />,
+              h5: (props) => <Header h={5} {...props} />,
+              h6: (props) => <Header h={6} {...props} />,
               p: { props: { className: "mb-2" } },
               pre: CodeBlock,
               li: { props: { className: "list-disc ml-4" } },
@@ -74,9 +122,28 @@ const DocsPage = (): React.ReactElement => {
       ),
     [code]
   );
+  const [toc, setToc] = useState<
+    { id: string; text: string; heading: number }[]
+  >([]);
+  const componentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (componentRef.current) {
+      setToc(
+        Array.from(
+          componentRef.current.querySelectorAll<HTMLHeadingElement>(
+            `h1, h2, h3, h4, h5, h6`
+          )
+        ).map((heading) => ({
+          text: heading.innerText,
+          id: heading.id,
+          heading: Number(heading.tagName[1]),
+        }))
+      );
+    }
+  }, [setToc, componentRef]);
   return (
-    <div className="flex gap-8">
-      <div>
+    <div className="flex gap-8 h-min items-start relative">
+      <div ref={componentRef} key={frontmatter.title}>
         <div>
           <h1 className="font-bold text-5xl mb-8">{frontmatter.title}</h1>
           <p className="font-semibold text-lg mb-4">
@@ -87,8 +154,30 @@ const DocsPage = (): React.ReactElement => {
           <Component />
         </div>
       </div>
-      <div className="pl-6 pr-8 py-4 max-w-sm h-full w-full border rounded-lg flex-shrink-0">
-        <h2 className="font-bold text-xl">{frontmatter.title}</h2>
+      <div className="pl-6 pr-8 max-w-sm w-full border rounded-lg flex-shrink-0 sticky top-4">
+        {toc.map((t, i) => (
+          <Link
+            to={`#${t.id}`}
+            key={i}
+            className={`hover:text-sky-800 hover:underline active:no-underline active:text-sky-600`}
+          >
+            <h3
+              className={`my-2 ${
+                [
+                  undefined,
+                  `font-bold text-2xl`,
+                  `font-semibold text-xl`,
+                  `font-medium text-lg pl-2`,
+                  `font-normal text-base pl-4`,
+                  `font-light text-sm pl-6`,
+                  `font-extralight text-xs pl-8`,
+                ][t.heading] || ""
+              }`}
+            >
+              {t.text}
+            </h3>
+          </Link>
+        ))}
       </div>
     </div>
   );
