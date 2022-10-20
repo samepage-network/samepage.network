@@ -1,3 +1,4 @@
 {
-  "order": ["roam", "logseq", "obsidian", "developer"]
+  "order": ["roam", "logseq", "obsidian", "developer"],
+  "names": { "logseq": "LogSeq" }
 }

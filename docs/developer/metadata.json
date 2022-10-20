@@ -1,6 +1,6 @@
 {
-  "order": [
-    "getting-started.md",
-    "global-api.md"
-  ]
+  "order": ["getting_started.md", "global_api.md"],
+  "names": {
+    "global_api.md": "Global API"
+  }
 }
