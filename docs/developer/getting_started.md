@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: How to contribute towards, build on top of, or integrate your own tool for thought into the SamePage ecosystem.
+description: How to contribute towards, integrate your own TFT into, or build on top of the SamePage ecosystem.
 ---
 
 The SamePage protocol was designed to be open and extensible. 

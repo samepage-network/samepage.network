@@ -72,9 +72,12 @@ Both of the methods above have to do with what to do when the notebook your exte
 const { sendToNotebook } = api;
 
 sendToNotebook({
-    operation: "EXAMPLE_PING",                       // operation to send to another notebook
-    target: "abcd1234-abcd-1234-abcd-1234abcd1234",  // Notebook Universal ID for the target notebook
-    data: {},                                        // JSON to send
+    // operation to send to another notebook
+    operation: "EXAMPLE_PING",                       
+    // Notebook Universal ID for the target notebook
+    target: "abcd1234-abcd-1234-abcd-1234abcd1234",  
+    // JSON to send
+    data: {},                                        
 })
 ```
 

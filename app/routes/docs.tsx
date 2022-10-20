@@ -35,8 +35,8 @@ const DirectoryLink = ({
 const DocsPage = () => {
   const { directory } = useLoaderData<ListMarkdownFiles>();
   return (
-    <div className="flex h-full">
-      <div className="w-full max-w-xs border-r border-r-gray-200 flex flex-col h-full overflow-auto">
+    <div className="flex h-full w-full">
+      <div className="w-64 border-r border-r-gray-200 flex flex-col h-full overflow-auto flex-shrink-0">
         <Link to={"/"} className={"w-full p-4 pr-24 cursor-pointer"}>
           <img className={"w-full"} src={"/images/full_logo.png"} />
         </Link>
@@ -44,7 +44,7 @@ const DocsPage = () => {
           <DirectoryLink {...d} key={d.path} />
         ))}
       </div>
-      <div className="flex-grow py-12 px-6">
+      <div className="py-12 px-6 overflow-auto">
         <Outlet />
       </div>
     </div>

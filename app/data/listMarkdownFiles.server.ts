@@ -53,7 +53,6 @@ const gatherDocs = (path: string): Promise<DirectoryNode[]> => {
       r
         .filter((f) => f.name !== "metadata.json")
         .map((f) => {
-          console.log(f.name);
           const name =
             meta.names[f.name] ||
             f.name.replace(/\.[a-z]+$/, "").replace(/_/g, " ");
