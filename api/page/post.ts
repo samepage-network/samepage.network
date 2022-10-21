@@ -1,9 +1,5 @@
 import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
-import {
-  Notebook,
-  zHeaders,
-  zMethodBody,
-} from "package/types";
+import { Notebook, zHeaders, zMethodBody } from "package/types";
 import { appsById } from "package/internal/apps";
 import {
   BadRequestError,
@@ -95,7 +91,7 @@ const logic = async (req: Record<string, unknown>) => {
         [tokenUuid.uuid, notebookUuid]
       );
       cxn.destroy();
-      return { notebookUuid };
+      return { notebookUuid, token: inviteCode };
     }
     if (!notebookUuid)
       throw new BadRequestError(
@@ -455,7 +451,7 @@ const logic = async (req: Record<string, unknown>) => {
             });
             await cxn.execute(
               `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, version, open, invited_by, invited_date, notebook_uuid)
-            VALUES (UUID(), ?, ?, ?, ?, 0, 1, ?, ?, ?)`,
+            VALUES (UUID(), ?, ?, 0, 1, ?, ?, ?)`,
               [
                 pageUuid,
                 notebookPageId,
@@ -464,6 +460,7 @@ const logic = async (req: Record<string, unknown>) => {
                 targetNotebookUuid,
               ]
             );
+            console.log("sending from", notebookUuid, "to", targetNotebookUuid)
             return messageNotebook({
               source: notebookUuid,
               target: targetNotebookUuid,

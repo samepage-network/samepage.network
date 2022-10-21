@@ -159,7 +159,12 @@ type ConnectionEvent = {
   status: Status;
 };
 
-export type AppEvent = LogEvent | SharePageEvent | ConnectionEvent;
+type PromptInviteCodeEvent = {
+  type: "prompt-invite-code";
+  respond: (s: string) => Promise<void>;
+};
+
+export type AppEvent = LogEvent | SharePageEvent | ConnectionEvent | PromptInviteCodeEvent;
 
 type MessageHandler = (data: json, source: Notebook & { uuid: string }) => void;
 export type MessageHandlers = {

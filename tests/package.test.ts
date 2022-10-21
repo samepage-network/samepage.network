@@ -3,21 +3,32 @@ import { z } from "zod";
 import { v4 } from "uuid";
 import getMysqlConnection from "fuegojs/utils/mysql";
 import { test, expect } from "@playwright/test";
+import deleteToken from "~/data/deleteToken.server";
 
 let cleanup: () => unknown;
 const logs: { data: string; time: string }[] = [];
+const inviteCodes: { uuid: string; token: string }[] = [];
+const testId = v4();
+let client1ExpectedToClose = false;
+let client2ExpectedToClose = false;
 
 test.beforeAll(async () => {
-  await getMysqlConnection().then((cxn) =>
-    cxn
-      .execute(
-        `DELETE c 
-        FROM online_clients c 
-        INNER JOIN notebooks n ON n.uuid = c.notebook_uuid 
-        WHERE n.app = ?`,
-        [0]
-      )
-      .then(() => cxn.destroy())
+  await getMysqlConnection(testId).then((cxn) =>
+    cxn.execute(`DELETE FROM notebooks n WHERE n.app = ?`, [0]).then(() => {
+      const generateInviteCode = () =>
+        Promise.resolve({ uuid: v4(), token: v4() }).then((val) =>
+          cxn
+            .execute(
+              `INSERT INTO tokens (uuid, value)
+          VALUES (?, ?)`,
+              [val.uuid, val.token]
+            )
+            .then(() => val)
+        );
+      return Promise.all([generateInviteCode(), generateInviteCode()]).then(
+        (codes) => inviteCodes.push(...codes)
+      );
+    })
   );
 });
 
@@ -58,15 +69,9 @@ test("Make sure two clients can come online and share updates, despite errors", 
     Promise.all([wsReady, apiReady]));
 
   const notebookPageId = v4();
-  let client1ExpectedToClose = false;
   const client1 = fork(
     "./package/testing/createTestSamePageClient",
-    [
-      "--forked",
-      "one",
-      "7ede3203-6946-4c8f-bf7e-9e0e44057b12",
-      "4ddbcfee-b1f8-4f01-8bcd-de4d252dd0e5",
-    ]
+    ["--forked", "one", inviteCodes[0].token]
     // { execArgv: ["--inspect-brk=127.0.0.1:9323"] }
   );
   const client1Callbacks: Record<string, (data: unknown) => void> = {
@@ -90,15 +95,9 @@ test("Make sure two clients can come online and share updates, despite errors", 
     (resolve) => (client1Callbacks["ready"] = () => resolve(true))
   );
 
-  let client2ExpectedToClose = false;
   const client2 = fork(
     "./package/testing/createTestSamePageClient",
-    [
-      "--forked",
-      "two",
-      "f104c333-8891-4e3b-aa07-5d3f23188fe6",
-      "845a3fe3-7236-47f6-b895-5fbc3fbf623d",
-    ]
+    ["--forked", "two", inviteCodes[0].token]
     // { execArgv: ["--inspect-brk=127.0.0.1:9324"] }
   );
   const client2Callbacks: Record<string, (data: unknown) => void> = {
@@ -132,6 +131,18 @@ test("Make sure two clients can come online and share updates, despite errors", 
     await expect.poll(() => client1Ready, { timeout: 20000 }).toEqual(true);
     await expect.poll(() => client2Ready, { timeout: 25000 }).toEqual(true);
   });
+
+  await test.step("Client 1 connects", () =>
+    new Promise<unknown>((resolve) => {
+      client1Callbacks["connect"] = resolve;
+      client1.send({ type: "connect" });
+    }));
+
+  await test.step("Client 2 connects", () =>
+    new Promise<unknown>((resolve) => {
+      client2Callbacks["connect"] = resolve;
+      client2.send({ type: "connect" });
+    }));
 
   await test.step("Navigate to Demo Page", () =>
     new Promise<unknown>((resolve) => {
@@ -357,35 +368,36 @@ test("Make sure two clients can come online and share updates, despite errors", 
       client2.send({ type: "fix" });
     }));
 
-  await test.step("Client 1 sends another update now that client 2 is fixed", () =>
-    new Promise<unknown>((resolve) => {
-      client1Callbacks["insert"] = resolve;
-      client1.send({
-        type: "insert",
-        notebookPageId,
-        content: "bet",
-        index: 22,
-      });
-    }));
-  await test.step("Client 1 loads data post other fixed correctly from IPFS", () =>
-    expect.poll(client1Ipfs).toEqual({
-      content: "First super page alphabet",
-      annotations: [
-        {
-          type: "block",
-          start: 0,
-          end: 25,
-          attributes: { level: 1, viewType: "document" },
-        },
-      ],
-      contentType: "application/vnd.atjson+samepage; version=2022-08-17",
-    }));
-
-  await test.step("Client 2 waits for an update", () =>
-    new Promise<unknown>((resolve) => {
-      client2Callbacks["updates"] = resolve;
-      client2.send({ type: "updates" });
-    }));
+  await Promise.all([
+    test.step("Client 1 sends another update now that client 2 is fixed", () =>
+      new Promise<unknown>((resolve) => {
+        client1Callbacks["insert"] = resolve;
+        client1.send({
+          type: "insert",
+          notebookPageId,
+          content: "bet",
+          index: 22,
+        });
+      })),
+    test.step("Client 1 loads data post other fixed correctly from IPFS", () =>
+      expect.poll(client1Ipfs).toEqual({
+        content: "First super page alphabet",
+        annotations: [
+          {
+            type: "block",
+            start: 0,
+            end: 25,
+            attributes: { level: 1, viewType: "document" },
+          },
+        ],
+        contentType: "application/vnd.atjson+samepage; version=2022-08-17",
+      })),
+    test.step("Client 2 waits for an update", () =>
+      new Promise<unknown>((resolve) => {
+        client2Callbacks["updates"] = resolve;
+        client2.send({ type: "updates" });
+      })),
+  ]);
 
   await test.step("Client 2 loads correct state", () =>
     expect
@@ -410,7 +422,18 @@ test("Make sure two clients can come online and share updates, despite errors", 
 });
 
 test.afterAll(async () => {
+  client1ExpectedToClose = client2ExpectedToClose = true;
   cleanup?.();
+  await Promise.all(
+    inviteCodes.map((code) =>
+      deleteToken({
+        context: { requestId: testId },
+        data: { uuid: [code.uuid] },
+      })
+    )
+  )
+    .then(() => getMysqlConnection(testId))
+    .then((cxn) => cxn.destroy());
   if (process.env.DEBUG) {
     console.log(
       logs.map((l) => `${l.data.replace(/\n/g, "\\n")} (${l.time}s)`).join("\n")

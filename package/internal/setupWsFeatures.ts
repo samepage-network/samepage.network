@@ -7,11 +7,13 @@ import getNodeEnv from "./getNodeEnv";
 import { onAppEvent } from "./registerAppEventListener";
 import {
   addCommand,
+  app,
   appRoot,
   getSetting,
   removeCommand,
   renderOverlay,
   setSetting,
+  workspace,
 } from "./registry";
 import sendChunkedMessage from "./sendChunkedMessage";
 import {
@@ -196,19 +198,33 @@ const removeDisconnectCommand = () => {
 };
 
 const onboard = () =>
-  renderOverlay({
-    Overlay: Onboarding,
-    props: {
-      // switch to onSuccess(notebookUuid, token), onCancel
-      setNotebookUuid: (v) => {
-        setSetting("uuid", v);
-        removeCommand({ label: "Onboard to SamePage" });
-      },
-      setToken: (v) => {
-        setSetting("token", v);
-      },
-    },
-  });
+  typeof window !== "undefined"
+    ? renderOverlay({
+        Overlay: Onboarding,
+        props: {
+          // switch to onSuccess(notebookUuid, token), onCancel
+          setNotebookUuid: (v) => {
+            setSetting("uuid", v);
+            removeCommand({ label: "Onboard to SamePage" });
+          },
+          setToken: (v) => {
+            setSetting("token", v);
+          },
+        },
+      })
+    : dispatchAppEvent({
+        type: "prompt-invite-code",
+        respond: (inviteCode) =>
+          apiClient<{ notebookUuid: string; token: string }>({
+            method: "create-notebook",
+            inviteCode,
+            app,
+            workspace,
+          }).then(({ notebookUuid, token }) => {
+            setSetting("token", token);
+            setSetting("uuid", notebookUuid);
+          }),
+      });
 
 const setupWsFeatures = () => {
   const notebookUuid = getSetting("uuid");

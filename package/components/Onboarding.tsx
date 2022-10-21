@@ -11,11 +11,11 @@ import {
 import apiClient from "../internal/apiClient";
 import { OverlayProps } from "../types";
 import React from "react";
-import { appRoot } from "../internal/registry";
+import { app, appRoot, workspace } from "../internal/registry";
 
 // Initial reference - https://www.youtube.com/watch?v=83Yrd3ekWKA
 // TODO - Help us improve SamePage panel?
-// TODO - Tutorial Video?
+// TODO - Tutorial Video/Panel?
 
 const PAGES = ["WELCOME", "SETUP", "CONNECT", "START", "COMPLETE"] as const;
 type Page = typeof PAGES[number];
@@ -69,7 +69,7 @@ const ConnectNotebookPage = ({
       <h1 className="text-lg font-normal">
         Connect a Notebook with a Universal Id and Token
       </h1>
-      <Label>
+      <Label className={"w-1/2"}>
         Notebook Universal ID
         <InputGroup
           value={notebookUuid}
@@ -124,17 +124,19 @@ const CreateNotebookPage = ({
   setNotebookUuid: (s: string) => void;
   setToken: (s: string) => void;
 }) => {
-  const [token, setToken] = React.useState("");
+  const [inviteCode, setInviteCode] = React.useState("");
   const [termsOfUse, setTermsOfUse] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
   const onCreate = React.useCallback(() => {
     setLoading(true);
-    apiClient<{ notebookUuid: string }>({
+    apiClient<{ notebookUuid: string; token: string }>({
       method: "create-notebook",
-      inviteCode: token,
+      inviteCode,
+      app,
+      workspace,
     })
-      .then(({ notebookUuid }) => {
+      .then(({ notebookUuid, token }) => {
         rootSetToken(token);
         setNotebookUuid(notebookUuid);
         setPage("COMPLETE");
@@ -143,7 +145,14 @@ const CreateNotebookPage = ({
       .finally(() => {
         setLoading(false);
       });
-  }, [setError, setLoading, setPage, setNotebookUuid, token, rootSetToken]);
+  }, [
+    setError,
+    setLoading,
+    setPage,
+    setNotebookUuid,
+    inviteCode,
+    rootSetToken,
+  ]);
   return (
     <div
       className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center relative h-full`}
@@ -157,8 +166,11 @@ const CreateNotebookPage = ({
         Create a Notebook by generating a Universal Id
       </h1>
       <Label className={"w-1/2"}>
-        Token
-        <InputGroup value={token} onChange={(e) => setToken(e.target.value)} />
+        Invite Code
+        <InputGroup
+          value={inviteCode}
+          onChange={(e) => setInviteCode(e.target.value)}
+        />
       </Label>
       <Checkbox
         checked={termsOfUse}
@@ -179,7 +191,7 @@ const CreateNotebookPage = ({
       />
       <div className="flex items-center gap-8">
         <Button
-          disabled={!termsOfUse || !token || loading}
+          disabled={!termsOfUse || !inviteCode || loading}
           text={"Create"}
           intent={"primary"}
           onClick={onCreate}

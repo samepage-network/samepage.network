@@ -142,7 +142,7 @@ const DocsPage = (): React.ReactElement => {
     }
   }, [setToc, componentRef]);
   return (
-    <div className="flex gap-8 h-min items-start relative">
+    <div className="flex gap-32 h-min items-start relative">
       <div ref={componentRef} key={frontmatter.title}>
         <div>
           <h1 className="font-bold text-5xl mb-8">{frontmatter.title}</h1>

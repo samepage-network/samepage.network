@@ -19,6 +19,7 @@ import { JSDOM } from "jsdom";
 import apiClient from "../internal/apiClient";
 import Automerge from "automerge";
 import base64ToBinary from "../internal/base64ToBinary";
+import defaultSettings from "package/utils/defaultSettings";
 
 const findEl = (dom: JSDOM, index: number) => {
   let start = 0;
@@ -37,13 +38,13 @@ const findEl = (dom: JSDOM, index: number) => {
 
 const createTestSamePageClient = async ({
   workspace,
-  uuid,
-  token,
+  initOptions,
   onMessage,
 }: {
+  initOptions:
+    | { inviteCode: string }
+    | Record<typeof defaultSettings[number]["id"], string>;
   workspace: string;
-  uuid: string;
-  token: string;
   onMessage: (
     args:
       | { type: "log"; data: string }
@@ -179,12 +180,23 @@ const createTestSamePageClient = async ({
       notebookPageId: z.string(),
     }),
   ]);
-  const settings = {
-    uuid,
-    token,
-    "auto-connect": "true",
-    "granular-changes": "",
-  };
+  const settings =
+    "inviteCode" in initOptions
+      ? {
+          uuid: "",
+          token: "",
+          "auto-connect": "",
+          "granular-changes": "",
+        }
+      : initOptions;
+  const initializingPromise =
+    "inviteCode" in initOptions
+      ? new Promise<void>((resolve) =>
+          onAppEvent("prompt-invite-code", (e) => {
+            e.respond(initOptions.inviteCode).then(resolve);
+          })
+        )
+      : Promise.resolve();
   const { unload } = setupSamePageClient({
     getSetting: (s) => settings[s],
     setSetting: (s, v) => (settings[s] = v),
@@ -213,141 +225,141 @@ const createTestSamePageClient = async ({
     onMessage({ type: "notification" });
   });
   console.log = (...args) => onMessage({ type: "log", data: args.join(" ") });
-
-  return awaitLog("list-pages-success").then(() => {
-    onMessage({ type: "ready" });
-    return {
-      send: async (m: z.infer<typeof processMessageSchema>) => {
-        try {
-          const message = processMessageSchema.parse(m);
-          if (message.type === "setCurrentNotebookPageId") {
-            currentNotebookPageId = message.notebookPageId;
-            onMessage({ type: "setCurrentNotebookPageId" });
-          } else if (message.type === "setAppClientState") {
-            appClientState[message.notebookPageId] = message.data;
-            if (isShared(message.notebookPageId)) {
-              await refreshContent({
-                notebookPageId: message.notebookPageId,
-              });
-            } else {
-              onMessage({ type: "setAppClientState" });
-            }
-          } else if (message.type === "share") {
-            commands["Share Page on SamePage"]();
-            awaitLog("init-page-success").then(() =>
-              onMessage({ type: "init-page-success" })
-            );
-          } else if (message.type === "accept") {
-            appClientState[message.notebookPageId] = "";
-            const notification = sharedPages[message.notebookPageId];
-            await joinPage({
+  await initializingPromise;
+  onMessage({ type: "ready" });
+  console.log("ready kids", workspace, settings.uuid);
+  return {
+    send: async (m: z.infer<typeof processMessageSchema>) => {
+      try {
+        const message = processMessageSchema.parse(m);
+        if (message.type === "setCurrentNotebookPageId") {
+          currentNotebookPageId = message.notebookPageId;
+          onMessage({ type: "setCurrentNotebookPageId" });
+        } else if (message.type === "setAppClientState") {
+          appClientState[message.notebookPageId] = message.data;
+          if (isShared(message.notebookPageId)) {
+            await refreshContent({
               notebookPageId: message.notebookPageId,
-              ...notification,
-            }).then(() => onMessage({ type: "accept" }));
-          } else if (message.type === "read") {
-            onMessage({
-              type: "read",
-              data: appClientState[message.notebookPageId],
             });
-          } else if (message.type === "unload") {
-            unloadSharePage();
-            unload();
-            onMessage({ type: "unload" });
-          } else if (message.type === "invite") {
-            await Promise.all([
-              awaitLog("share-page-success"),
-              inviteNotebookToPage({
-                notebookPageId: currentNotebookPageId,
-                app: 0,
-                workspace: message.workspace,
-              }),
-            ]).then(() => onMessage({ type: "share-page-success" }));
-          } else if (message.type === "insert") {
-            const old = appClientState[message.notebookPageId];
-            const dom = new JSDOM(old);
-            const { el, start } = findEl(dom, message.index);
-            if (el) {
-              const oldContent = el.textContent || "";
-              el.textContent = `${oldContent.slice(
-                start,
-                message.index - start
-              )}${message.content}${oldContent.slice(message.index - start)}`;
-            } else {
-              const newEl = dom.window.document.createElement("div");
-              newEl.innerHTML = message.content;
-              dom.window.document.body.appendChild(newEl);
-            }
-            appClientState[message.notebookPageId] =
-              dom.window.document.body.innerHTML;
-            await insertContent(message).then(() =>
-              onMessage({ type: "insert" })
-            );
-          } else if (message.type === "delete") {
-            const old = appClientState[message.notebookPageId];
-            const dom = new JSDOM(old);
-            const { el, start } = findEl(dom, message.index);
-            if (el) {
-              const oldContent = el.textContent || "";
-              el.textContent = `${oldContent.slice(
-                start,
-                message.index - start
-              )}${oldContent.slice(message.index - start + message.count)}`;
-              if (!el.textContent) el.remove();
-            }
-            await deleteContent(message).then(() =>
-              onMessage({ type: "delete" })
-            );
-          } else if (message.type === "disconnect") {
-            const awaitDisconnect = awaitLog("samepage-disconnect");
-            commands["Disconnect from SamePage Network"]();
-            awaitDisconnect.then(() => onMessage({ type: "disconnect" }));
-          } else if (message.type === "connect") {
-            commands["Connect to SamePage Network"]();
-            awaitLog("samepage-success").then(() =>
-              onMessage({ type: "connect" })
-            );
-          } else if (message.type === "break") {
-            applyState = () =>
-              Promise.reject(new Error("Something went wrong..."));
-            onMessage({ type: "break" });
-          } else if (message.type === "fix") {
-            applyState = defaultApplyState;
-            onMessage({ type: "fix" });
-          } else if (message.type === "updates") {
-            await awaitLog("update-success").then(() =>
-              onMessage({ type: "updates" })
-            );
-          } else if (message.type === "ipfs") {
-            await apiClient<{ state: string }>({
-              method: "get-shared-page",
-              notebookPageId: message.notebookPageId,
-            }).then(({ state }) =>
-              onMessage({
-                type: "ipfs",
-                data: Automerge.load(
-                  base64ToBinary(state) as Automerge.BinaryDocument
-                ),
-              })
-            );
+          } else {
+            onMessage({ type: "setAppClientState" });
           }
-        } catch (e) {
+        } else if (message.type === "share") {
+          commands["Share Page on SamePage"]();
+          awaitLog("init-page-success").then(() =>
+            onMessage({ type: "init-page-success" })
+          );
+        } else if (message.type === "accept") {
+          appClientState[message.notebookPageId] = "";
+          const notification = sharedPages[message.notebookPageId];
+          await joinPage({
+            notebookPageId: message.notebookPageId,
+            ...notification,
+          }).then(() => onMessage({ type: "accept" }));
+        } else if (message.type === "read") {
           onMessage({
-            type: "error",
-            data: (e as Error).stack || (e as Error).message,
+            type: "read",
+            data: appClientState[message.notebookPageId],
           });
+        } else if (message.type === "unload") {
+          unloadSharePage();
+          unload();
+          onMessage({ type: "unload" });
+        } else if (message.type === "invite") {
+          await Promise.all([
+            awaitLog("share-page-success"),
+            inviteNotebookToPage({
+              notebookPageId: currentNotebookPageId,
+              app: 0,
+              workspace: message.workspace,
+            }),
+          ]).then(() => onMessage({ type: "share-page-success" }));
+        } else if (message.type === "insert") {
+          const old = appClientState[message.notebookPageId];
+          const dom = new JSDOM(old);
+          const { el, start } = findEl(dom, message.index);
+          if (el) {
+            const oldContent = el.textContent || "";
+            el.textContent = `${oldContent.slice(
+              start,
+              message.index - start
+            )}${message.content}${oldContent.slice(message.index - start)}`;
+          } else {
+            const newEl = dom.window.document.createElement("div");
+            newEl.innerHTML = message.content;
+            dom.window.document.body.appendChild(newEl);
+          }
+          appClientState[message.notebookPageId] =
+            dom.window.document.body.innerHTML;
+          await insertContent(message).then(() =>
+            onMessage({ type: "insert" })
+          );
+        } else if (message.type === "delete") {
+          const old = appClientState[message.notebookPageId];
+          const dom = new JSDOM(old);
+          const { el, start } = findEl(dom, message.index);
+          if (el) {
+            const oldContent = el.textContent || "";
+            el.textContent = `${oldContent.slice(
+              start,
+              message.index - start
+            )}${oldContent.slice(message.index - start + message.count)}`;
+            if (!el.textContent) el.remove();
+          }
+          await deleteContent(message).then(() =>
+            onMessage({ type: "delete" })
+          );
+        } else if (message.type === "disconnect") {
+          const awaitDisconnect = awaitLog("samepage-disconnect");
+          commands["Disconnect from SamePage Network"]();
+          awaitDisconnect.then(() => onMessage({ type: "disconnect" }));
+        } else if (message.type === "connect") {
+          commands["Connect to SamePage Network"]();
+          awaitLog("samepage-success").then(() =>
+            onMessage({ type: "connect" })
+          );
+        } else if (message.type === "break") {
+          applyState = () =>
+            Promise.reject(new Error("Something went wrong..."));
+          onMessage({ type: "break" });
+        } else if (message.type === "fix") {
+          applyState = defaultApplyState;
+          onMessage({ type: "fix" });
+        } else if (message.type === "updates") {
+          await awaitLog("update-success").then(() =>
+            onMessage({ type: "updates" })
+          );
+        } else if (message.type === "ipfs") {
+          await apiClient<{ state: string }>({
+            method: "get-shared-page",
+            notebookPageId: message.notebookPageId,
+          }).then(({ state }) =>
+            onMessage({
+              type: "ipfs",
+              data: Automerge.load(
+                base64ToBinary(state) as Automerge.BinaryDocument
+              ),
+            })
+          );
         }
-      },
-    };
-  });
+      } catch (e) {
+        onMessage({
+          type: "error",
+          data: (e as Error).stack || (e as Error).message,
+        });
+      }
+    },
+  };
 };
 
 const forked = process.argv.indexOf("--forked");
 if (forked >= 0 && typeof process.send !== "undefined") {
-  if (process.argv.length > forked + 3)
+  if (process.argv.length > forked + 2)
     createTestSamePageClient({
       workspace: process.argv[forked + 1],
-      uuid: process.argv[forked + 2],
-      token: process.argv[forked + 3],
+      initOptions: {
+        inviteCode: process.argv[forked + 2],
+      },
       onMessage: process.send.bind(process),
     })
       .then((client) => {
