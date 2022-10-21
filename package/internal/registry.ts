@@ -3,7 +3,6 @@ import React from "react";
 import { v4 } from "uuid";
 import type {
   AddCommand,
-  AppEvent,
   RemoveCommand,
   AppId,
   RenderOverlay,
@@ -18,8 +17,6 @@ const defaultAddCommand: AddCommand = ({ label, callback }) => {
 const defaultRemoveCommand: RemoveCommand = ({ label }) => {
   delete defaultCommands[label];
 };
-
-const defaultOnAppEventHandler = (_: AppEvent): boolean => false;
 
 const defaultRenderOverlay: RenderOverlay = ({
   id = v4(),
@@ -64,7 +61,6 @@ const defaultRenderOverlay: RenderOverlay = ({
 
 export let addCommand = defaultAddCommand;
 export let removeCommand = defaultRemoveCommand;
-export let onAppEventHandler = defaultOnAppEventHandler;
 export let renderOverlay = defaultRenderOverlay;
 export let appRoot: HTMLElement | undefined =
   typeof document === "undefined" ? undefined : document.body;
@@ -78,7 +74,6 @@ const setupRegistry = ({
   workspace: _workspace,
   addCommand: _addCommand,
   removeCommand: _removeCommand,
-  onAppEventHandler: _onAppEventHandler,
   renderOverlay: _renderOverlay,
   appRoot: _appRoot,
   getSetting: _getSetting,
@@ -89,7 +84,6 @@ const setupRegistry = ({
   addCommand?: AddCommand;
   removeCommand?: RemoveCommand;
   renderOverlay?: RenderOverlay;
-  onAppEventHandler?: (event: AppEvent) => boolean;
   appRoot?: HTMLElement;
   getSetting?: (s: typeof defaultSettings[number]["id"]) => string;
   setSetting?: (s: typeof defaultSettings[number]["id"], v: string) => void;
@@ -99,7 +93,6 @@ const setupRegistry = ({
   if (_addCommand) addCommand = _addCommand;
   if (_removeCommand) removeCommand = _removeCommand;
   if (_renderOverlay) renderOverlay = _renderOverlay;
-  if (_onAppEventHandler) onAppEventHandler = _onAppEventHandler;
   if (_getSetting) getSetting = _getSetting;
   if (_setSetting) setSetting = _setSetting;
   if (_appRoot) appRoot = _appRoot;

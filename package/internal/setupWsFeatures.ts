@@ -1,3 +1,5 @@
+import { Spinner, SpinnerSize } from "@blueprintjs/core";
+import React from "react";
 import Onboarding from "../components/Onboarding";
 import UsageChart, { UsageChartProps } from "../components/UsageChart";
 import type { Status, SendToBackend, Notebook } from "../types";
@@ -226,6 +228,7 @@ const onboard = () =>
           }),
       });
 
+let removeLoadingCallback: (() => void) | undefined;
 const setupWsFeatures = () => {
   const notebookUuid = getSetting("uuid");
   if (!notebookUuid) {
@@ -274,7 +277,7 @@ const setupWsFeatures = () => {
           let progress = 0;
           dispatchAppEvent({
             type: "log",
-            intent: "info",
+            intent: "debug",
             content: `Loaded ${progress} of ${messages.length} remote messages...`,
             id: "load-remote-message",
           });
@@ -349,6 +352,19 @@ const setupWsFeatures = () => {
         });
       }
     },
+  });
+
+  onAppEvent("connection", (evt) => {
+    if (evt.status === "PENDING")
+      removeLoadingCallback =
+        renderOverlay({
+          Overlay: () =>
+            React.createElement(Spinner, {
+              size: SpinnerSize.SMALL,
+              className: "top-4 right-4 z-50 absolute",
+            }),
+        }) || undefined;
+    else removeLoadingCallback?.();
   });
 
   if (!!getSetting("auto-connect") && !!notebookUuid) {

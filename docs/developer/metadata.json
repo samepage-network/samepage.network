@@ -1,6 +1,13 @@
 {
-  "order": ["getting_started.md", "how_to_contribute.md", "global_api.md"],
+  "order": [
+    "getting_started.md",
+    "how_to_contribute.md",
+    "extension_development.md",
+    "global_api.md",
+    "npm_api.md"
+  ],
   "names": {
-    "global_api.md": "Global API"
+    "global_api.md": "Global API",
+    "npm_api.md": "NPM API"
   }
 }

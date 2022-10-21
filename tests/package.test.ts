@@ -349,18 +349,6 @@ test("Make sure two clients can come online and share updates, despite errors", 
       .toEqual(
         '<div style="margin-left:16px" class="my-2">First super page</div>'
       ));
-  // TODO: test `load` here
-  // await expect.poll(client2Read).toEqual({
-  //   content: "First super page",
-  //   annotations: [
-  //     {
-  //       type: "block",
-  //       start: 0,
-  //       end: 16,
-  //       attributes: { level: 1, viewType: "document" },
-  //     },
-  //   ],
-  // });
 
   await test.step("Fix client 2 save and apply", () =>
     new Promise<unknown>((resolve) => {

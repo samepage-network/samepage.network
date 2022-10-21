@@ -140,11 +140,11 @@ export type SetSetting = (s: SettingId, v: string) => void;
 
 export type Status = "DISCONNECTED" | "PENDING" | "CONNECTED";
 
-type LogEvent = {
+export type LogEvent = {
   type: "log";
   id: string;
   content: string;
-  intent: "info" | "warning" | "error" | "success";
+  intent: "info" | "warning" | "error" | "success" | "debug";
 };
 
 type SharePageEvent = {
@@ -164,7 +164,11 @@ type PromptInviteCodeEvent = {
   respond: (s: string) => Promise<void>;
 };
 
-export type AppEvent = LogEvent | SharePageEvent | ConnectionEvent | PromptInviteCodeEvent;
+export type AppEvent =
+  | LogEvent
+  | SharePageEvent
+  | ConnectionEvent
+  | PromptInviteCodeEvent;
 
 type MessageHandler = (data: json, source: Notebook & { uuid: string }) => void;
 export type MessageHandlers = {
@@ -212,7 +216,9 @@ declare global {
 }
 
 export const zMethodBody = z.discriminatedUnion("method", [
-  z.object({ method: z.literal("create-notebook"), inviteCode: z.string() }).merge(zNotebook),
+  z
+    .object({ method: z.literal("create-notebook"), inviteCode: z.string() })
+    .merge(zNotebook),
   z.object({
     method: z.literal("connect-notebook"),
   }),

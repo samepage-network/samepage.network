@@ -286,7 +286,7 @@ const setupSharePageWithNotebook = ({
             type: "log",
             id: "list-pages-success",
             content: `Ready to share pages!`,
-            intent: "success",
+            intent: "debug",
           });
         })
         .catch((e) =>
@@ -328,7 +328,7 @@ const setupSharePageWithNotebook = ({
           type: "log",
           id: "update-success",
           content: `Applied update`,
-          intent: "success",
+          intent: "debug",
         });
       })
       .catch((e) => {

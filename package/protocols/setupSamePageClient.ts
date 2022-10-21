@@ -6,41 +6,41 @@ import setupP2PFeatures from "../internal/setupP2PFeatures";
 import type {
   AddCommand,
   RemoveCommand,
-  AppEvent,
   RenderOverlay,
   GetSetting,
   SetSetting,
+  LogEvent,
 } from "../types";
 import APPS, { appIdByName } from "../internal/apps";
 import setupRegistry from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
 import setupWsFeatures from "../internal/setupWsFeatures";
+import { onAppEvent } from "package/internal/registerAppEventListener";
 
 const setupSamePageClient = ({
   app,
   workspace,
   addCommand,
   removeCommand,
-  onAppEventHandler,
   renderOverlay,
   getSetting,
   setSetting,
   appRoot,
+  onAppLog = (e) => console.log(`(${e.id}) ${e.content}`),
 }: {
   addCommand?: AddCommand;
   removeCommand?: RemoveCommand;
-  onAppEventHandler?: (evt: AppEvent) => boolean;
   renderOverlay?: RenderOverlay;
   getSetting?: GetSetting;
   setSetting?: SetSetting;
   workspace?: string;
   app?: typeof APPS[number]["name"];
   appRoot?: HTMLElement;
+  onAppLog?: (e: LogEvent) => void;
 } = {}) => {
   setupRegistry({
     addCommand,
     removeCommand,
-    onAppEventHandler,
     renderOverlay,
     getSetting,
     setSetting,
@@ -50,6 +50,7 @@ const setupSamePageClient = ({
   });
   const unloadWS = setupWsFeatures();
   const unloadP2P = setupP2PFeatures();
+  onAppEvent("log", onAppLog);
 
   if (typeof window !== "undefined") {
     window.samepage = {
