@@ -19,7 +19,7 @@ import { JSDOM } from "jsdom";
 import apiClient from "../internal/apiClient";
 import Automerge from "automerge";
 import base64ToBinary from "../internal/base64ToBinary";
-import defaultSettings from "package/utils/defaultSettings";
+import type defaultSettings from "../utils/defaultSettings";
 
 const findEl = (dom: JSDOM, index: number) => {
   let start = 0;
