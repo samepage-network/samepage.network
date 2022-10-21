@@ -357,13 +357,15 @@ const setupWsFeatures = () => {
   onAppEvent("connection", (evt) => {
     if (evt.status === "PENDING")
       removeLoadingCallback =
-        renderOverlay({
-          Overlay: () =>
-            React.createElement(Spinner, {
-              size: SpinnerSize.SMALL,
-              className: "top-4 right-4 z-50 absolute",
-            }),
-        }) || undefined;
+        typeof window !== "undefined"
+          ? renderOverlay({
+              Overlay: () =>
+                React.createElement(Spinner, {
+                  size: SpinnerSize.SMALL,
+                  className: "top-4 right-4 z-50 absolute",
+                }),
+            }) || undefined
+          : undefined;
     else removeLoadingCallback?.();
   });
 

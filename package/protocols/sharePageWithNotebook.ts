@@ -55,7 +55,7 @@ const setupSharePageWithNotebook = ({
       ) => Promise<HTMLElement | undefined>;
       selector?: string;
       getNotebookPageId?: (element: Node) => Promise<string | null>;
-      getPath: (el: Node) => HTMLElement | null;
+      getPath: (el: Node) => string | null;
       onCopy?: SharedPageStatusProps["onCopy"];
     };
   };

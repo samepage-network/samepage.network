@@ -15,7 +15,7 @@ import APPS, { appIdByName } from "../internal/apps";
 import setupRegistry from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
 import setupWsFeatures from "../internal/setupWsFeatures";
-import { onAppEvent } from "package/internal/registerAppEventListener";
+import { onAppEvent } from "../internal/registerAppEventListener";
 
 const setupSamePageClient = ({
   app,
