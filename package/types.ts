@@ -133,7 +133,7 @@ export type RenderOverlay = <T extends Record<string, unknown>>(args: {
   Overlay?: (props: OverlayProps<T>) => React.ReactElement;
   props?: T;
   path?: string | HTMLElement | null;
-}) => (() => void) | void;
+}) => (() => void) | undefined;
 type SettingId = typeof defaultSettings[number]["id"];
 export type GetSetting = (s: SettingId) => string;
 export type SetSetting = (s: SettingId, v: string) => void;

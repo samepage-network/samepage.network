@@ -101,7 +101,13 @@ const DocsPage = (): React.ReactElement => {
                   className={"text-3xl my-6 font-semibold"}
                 />
               ),
-              h3: (props) => <Header h={3} {...props} />,
+              h3: (props) => (
+                <Header
+                  h={3}
+                  {...props}
+                  className={"text-2xl my-4 font-medium"}
+                />
+              ),
               h4: (props) => <Header h={4} {...props} />,
               h5: (props) => <Header h={5} {...props} />,
               h6: (props) => <Header h={6} {...props} />,

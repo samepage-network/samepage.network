@@ -52,6 +52,7 @@ Extensions are expected to run on the browser or anything that supports browser 
 ## Implementing the protocol
 
 A SamePage-compatible extension needs to handle four parts:
+
 - Decide where to store and display user settings
 - Setting up the SamePage client
 - Setting up all of the _protocols_ the extension wants to support
@@ -62,6 +63,7 @@ These four pieces usually take place at the entry point file of the extension. W
 ### User Settings
 
 Tools for thought typically will designate an area for users to configure their extension's settings. We expose the default list of settings that SamePage extensions are expected to implement:
+
 - `uuid` - The Notebook Universal ID that represents the user's notebook.
 - `token` - The Notebook Token that authenticates the notebook to the network.
 - `auto-connect` - A flag that automatically connects the user to the SamePage network when they are logged in.
@@ -106,28 +108,80 @@ const { unload, ...globalAPI } = setupSamePageClient({
 The setup method returns an `unload` prop, and a set of methods that make up the [Global API](./global_api.md). It also accepts a few other properties aimed at smoothing out differences between apps. For those, please consult the full [NPM API](./npm_api.md). This method will also attach some WebSocket listeners so that it's ready to accept data.
 
 ### Setup Protocols
-Coming soon...
+
+Once the client is setup, we could start adding bundles of functionality we refer to as _protocols_. A protocol in this context means the series of both notebook listeners and DOM listeners that work towards a common goal. You will want to setup all of your protocols after setting up the client and return the unload methods for the final phase below.
+
+SamePage comes out of the box with one protocol implemented: the _Share Page_ protocol. This is what allows users to live sync pages across applications. You can feel free to add additional protocols that are either unique to your host application or could be great additions to SamePage broadly in the future. Typically you should call each individual protocol's unload in the reverse order as they were set up.
+
+```typescript
+const setupProtocols = () => {
+  const unloadSharePageWithNotebook = setupSharePageWithNotebook();
+  const unloadToolSpecificProtocol = setupToolSpecificProtocol();
+  // add more here
+  return () => {
+    unloadToolSpecificProtocol();
+    unloadSharePageWithNotebook();
+  };
+};
+```
+
+To help implement the native _Share Page_ protocol, the `samepage` package exports a method called `setupSharePageWithNotebook` from the `protocols` module.
+
+```typescript
+const setupSharePageWithNotebook = () => {
+  const { unload } = loadSharePageWithNotebook({
+    getCurrentNotebookPageId,
+    applyState,
+    calculateState,
+    overlayProps,
+  });
+
+  return unload;
+};
+```
+
+To learn more about how to implement each of these properties of the protocol, checkout out our guide on the [Share Page Protocol](./share_page_protocol.md).
 
 ### Cleanup on Unload
-Coming soon...
+
+Towards the end of the extension entry file, you should register the cleanup functions returned by the protocols outlined above (including the client's setup) to the host application's unload handler. This not only speeds up development by not requiring an entire refesh of the host application, but it also will mostly be required for review as to not leave hanging state for other extensions to discover.
+
+No helper function from `samepage`. Simply call the exit-related functions in the same onunload callback. In an ideal world, your entry file should then look like this:
+
+```typescript
+setupUserSettings();
+const unloadClient = setupClient();
+const unloadProtocols = setupProtocols();
+return () => {
+  unloadProtocols();
+  unloadClient();
+};
+```
 
 ## Dev Environment
+
 Coming soon...
 
 ### TypeScript
+
 Coming soon...
 
 ### Styling
+
 Coming soon...
 
 ### Dev
+
 Coming soon...
 
 ### Test
+
 Coming soon...
 
 ### Build
+
 Coming soon...
 
 ### Publish
+
 Coming soon...
