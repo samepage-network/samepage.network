@@ -298,12 +298,14 @@ export type RequestBody = z.infer<typeof zMethodBody> &
 //   ? Promise<{ notebookUuid: string }>
 //   : Promise<{}>;
 
+export type SamePageAPI = {
+  addNotebookListener: AddNotebookListener;
+  removeNotebookListener: RemoveNotebookListener;
+  sendToNotebook: SendToNotebook;
+};
+
 declare global {
   interface Window {
-    samepage: {
-      addNotebookListener: AddNotebookListener;
-      removeNotebookListener: RemoveNotebookListener;
-      sendToNotebook: SendToNotebook;
-    };
+    samepage: SamePageAPI;
   }
 }

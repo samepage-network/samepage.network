@@ -1,11 +1,11 @@
-import "../internal/types";
+import type { SamePageAPI } from "../internal/types";
 
 const getSamePageAPI = async () => {
   if (typeof window !== "undefined") {
     if (typeof window.samepage !== "undefined") {
       return window.samepage;
     } else {
-      return new Promise((resolve) => {
+      return new Promise<SamePageAPI>((resolve) => {
         document.addEventListener(
           "samepage:loaded",
           () => {
