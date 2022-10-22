@@ -64,20 +64,20 @@ const SharePageDialog = ({
   const onInvite = () => {
     if (currentworkspace) {
       setLoading(true);
+      const notebook = {
+        workspace: currentworkspace,
+        app: appsById[currentApp as AppId].name,
+        version: 0,
+        openInvite: true,
+      };
       inviteNotebookToPage({
         notebookPageId,
         app: currentApp,
         workspace: currentworkspace,
-      }).finally(() => setLoading(false));
-      setNotebooks([
-        ...notebooks,
-        {
-          workspace: currentworkspace,
-          app: appsById[currentApp as AppId].name,
-          version: 0,
-          openInvite: true,
-        },
-      ]);
+      })
+        .catch(() => setNotebooks(notebooks.filter((n) => n !== notebook)))
+        .finally(() => setLoading(false));
+      setNotebooks([...notebooks, notebook]);
       setCurrentWorkspace("");
     }
   };
@@ -112,7 +112,7 @@ const SharePageDialog = ({
             key={`${g.app}/${g.workspace}`}
             className={"flex gap-4 items-center mb-1 justify-between"}
           >
-            <span className={"flex-grow"}>
+            <span className={`flex-grow ${loading ? "text-opacity-50" : ""}`}>
               {g.app}/{g.workspace}
             </span>
             <span>

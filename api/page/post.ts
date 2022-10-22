@@ -114,6 +114,10 @@ const logic = async (req: Record<string, unknown>) => {
       VALUES (?, ?)`,
         [tokenUuid, token]
       );
+      await cxn.execute(
+        `UPDATE invitations SET token_uuid = ? where code = ?`,
+        [tokenUuid, inviteCode]
+      );
       const notebookUuid = await getOrGenerateNotebookUuid({
         requestId,
         app,
@@ -546,7 +550,7 @@ const logic = async (req: Record<string, unknown>) => {
         const { linkUuid, invitedBy } = await (target
           ? cxn
               .execute(
-                `SELECT uuid 
+                `SELECT l.uuid 
       FROM page_notebook_links l
       INNER JOIN notebooks n ON n.uuid = l.notebook_uuid
       WHERE n.workspace = ? AND n.app = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,

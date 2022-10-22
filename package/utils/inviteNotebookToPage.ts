@@ -26,6 +26,7 @@ const inviteNotebookToPage = ({
         id: "share-page-failure",
         content: `Failed to share page with notebooks: ${e.message}`,
       });
+      return Promise.reject(e);
     });
 
 export default inviteNotebookToPage;

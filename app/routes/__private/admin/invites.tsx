@@ -19,7 +19,7 @@ const InvitesPage = () => {
         <Table
           className="max-w-3xl w-full mt-8"
           onRowClick={(r) =>
-            window.navigator.clipboard.writeText(r.token as string)
+            window.navigator.clipboard.writeText(r.code as string)
           }
         />
       </div>

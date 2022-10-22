@@ -5,7 +5,7 @@ const listIssuedTokens = async (requestId: string) => {
   const data = await cxn
     .execute(
       `SELECT i.*
-    FROM invites i`
+    FROM invitations i`
     )
     .then(
       ([r]) =>
@@ -20,7 +20,7 @@ const listIssuedTokens = async (requestId: string) => {
   return {
     columns: [
       { Header: "Invite Code", accessor: "code" },
-      { Header: "Notebooks Connected", accessor: "status" },
+      { Header: "Status", accessor: "status" },
     ],
     data: data.map((d) => ({
       code: d.code,
