@@ -1,6 +1,6 @@
 import { appsById } from "../internal/apps";
 import React, { useMemo } from "react";
-import type { Annotation, InitialSchema, Schema } from "../types";
+import type { Annotation, InitialSchema, Schema } from "../internal/types";
 
 type AnnotationTree = (Annotation & { children: AnnotationTree })[];
 

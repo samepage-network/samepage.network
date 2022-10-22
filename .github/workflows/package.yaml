@@ -21,6 +21,9 @@ jobs:
         run: node scripts/package.js
       - name: publish
         run: npm publish --access public
+        working-directory: dist/internal
+      - name: publish
+        run: npm publish --access public
         working-directory: dist/external
       - name: publish
         run: npm publish --access public

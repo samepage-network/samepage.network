@@ -1,4 +1,4 @@
-import { AppEvent } from "../types";
+import { AppEvent } from "./types";
 
 type AppEventMap = {
   [k in AppEvent as k["type"]]: k;

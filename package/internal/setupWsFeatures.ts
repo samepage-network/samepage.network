@@ -2,7 +2,7 @@ import { Spinner, SpinnerSize } from "@blueprintjs/core";
 import React from "react";
 import Onboarding from "../components/Onboarding";
 import UsageChart, { UsageChartProps } from "../components/UsageChart";
-import type { Status, SendToBackend, Notebook } from "../types";
+import type { Status, SendToBackend, Notebook } from "./types";
 import apiClient from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
 import getNodeEnv from "./getNodeEnv";

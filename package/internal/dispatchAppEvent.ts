@@ -1,4 +1,4 @@
-import { AppEvent } from "../types";
+import { AppEvent } from "./types";
 import { listeners } from "./registerAppEventListener";
 
 const dispatchAppEvent = (event: AppEvent) => {

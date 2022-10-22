@@ -1,7 +1,7 @@
 import { Button, Classes, Dialog } from "@blueprintjs/core";
 import React from "react";
 import LinkNewPage from "./LinkNewPage";
-import type { OverlayProps } from "../types";
+import type { OverlayProps } from "../internal/types";
 import { renderOverlay } from "../internal/registry";
 
 type LinkProps = {

@@ -4,7 +4,7 @@ import type {
   MessageHandlers,
   RemoveNotebookListener,
   Notebook,
-} from "../types";
+} from "./types";
 
 const messageHandlers: MessageHandlers = {};
 

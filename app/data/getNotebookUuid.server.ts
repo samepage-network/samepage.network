@@ -1,4 +1,4 @@
-import type { Notebook } from "package/types";
+import type { Notebook } from "package/internal/types";
 import getMysql from "fuegojs/utils/mysql";
 
 const getNotebookUuid = ({

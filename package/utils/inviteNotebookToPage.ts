@@ -1,6 +1,6 @@
 import apiClient from "../internal/apiClient";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
-import { Notebook } from "../types";
+import { Notebook } from "../internal/types";
 
 const inviteNotebookToPage = ({
   notebookPageId,

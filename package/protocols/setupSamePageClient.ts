@@ -10,7 +10,7 @@ import type {
   GetSetting,
   SetSetting,
   LogEvent,
-} from "../types";
+} from "../internal/types";
 import APPS, { appIdByName } from "../internal/apps";
 import setupRegistry from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";

@@ -1,5 +1,5 @@
 import Automerge from "automerge";
-import type { Memo, Schema } from "package/types";
+import type { Memo, Schema } from "package/internal/types";
 import { Web3Storage, File } from "web3.storage";
 import { encode } from "@ipld/dag-cbor";
 import { CID } from "multiformats";

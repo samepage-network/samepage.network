@@ -7,7 +7,7 @@ import {
   appRoot,
 } from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
-import type { InitialSchema, Schema } from "../types";
+import type { InitialSchema, Schema } from "../internal/types";
 import Automerge from "automerge";
 import {
   addNotebookListener,

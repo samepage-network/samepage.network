@@ -9,7 +9,7 @@ import {
   Spinner,
 } from "@blueprintjs/core";
 import apiClient from "../internal/apiClient";
-import { OverlayProps } from "../types";
+import { OverlayProps } from "../internal/types";
 import React from "react";
 import { app, appRoot, workspace } from "../internal/registry";
 

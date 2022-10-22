@@ -1,4 +1,4 @@
-import type { Annotation, InitialSchema } from "../types";
+import type { Annotation, InitialSchema } from "../internal/types";
 
 type AppliedAnnotation = {
   prefix: string;

@@ -1,5 +1,5 @@
 import apiClient from "../internal/apiClient";
-import { Schema } from "../types";
+import { Schema } from "../internal/types";
 import Automerge from "automerge";
 import base64ToBinary from "../internal/base64ToBinary";
 import getActorId from "../internal/getActorId";

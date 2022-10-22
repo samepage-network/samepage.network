@@ -1,9 +1,9 @@
-import APPS from "./internal/apps";
+import APPS from "./apps";
 import type Automerge from "automerge";
-import React from "react";
+import type React from "react";
 import { z } from "zod";
 import type { CID } from "multiformats";
-import type defaultSettings from "./utils/defaultSettings";
+import type defaultSettings from "../utils/defaultSettings";
 
 export type App = typeof APPS[number];
 export type AppId = App["id"];
@@ -205,16 +205,6 @@ export type Memo = {
   parent: CID | null;
 };
 
-declare global {
-  interface Window {
-    samepage: {
-      addNotebookListener: AddNotebookListener;
-      removeNotebookListener: RemoveNotebookListener;
-      sendToNotebook: SendToNotebook;
-    };
-  }
-}
-
 export const zMethodBody = z.discriminatedUnion("method", [
   z
     .object({ method: z.literal("create-notebook"), inviteCode: z.string() })
@@ -307,3 +297,13 @@ export type RequestBody = z.infer<typeof zMethodBody> &
 // ) => T["method"] extends "create-notebook"
 //   ? Promise<{ notebookUuid: string }>
 //   : Promise<{}>;
+
+declare global {
+  interface Window {
+    samepage: {
+      addNotebookListener: AddNotebookListener;
+      removeNotebookListener: RemoveNotebookListener;
+      sendToNotebook: SendToNotebook;
+    };
+  }
+}

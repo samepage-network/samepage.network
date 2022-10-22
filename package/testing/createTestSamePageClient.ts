@@ -6,7 +6,7 @@ import {
   InitialSchema,
   Notebook,
   Schema,
-} from "../types";
+} from "../internal/types";
 import setupSamePageClient from "../protocols/setupSamePageClient";
 import { z } from "zod";
 import WebSocket from "ws";

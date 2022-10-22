@@ -1,4 +1,4 @@
-import { json } from "../types";
+import { json } from "./types";
 import { v4 } from "uuid";
 
 const MESSAGE_LIMIT = 15750; // 16KB minus 250b buffer for metadata

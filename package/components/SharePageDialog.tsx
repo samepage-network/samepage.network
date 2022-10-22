@@ -1,4 +1,4 @@
-import type { AppId } from "../types";
+import type { AppId } from "../internal/types";
 import React from "react";
 import {
   Button,

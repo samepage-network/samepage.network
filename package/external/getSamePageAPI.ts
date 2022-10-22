@@ -1,3 +1,5 @@
+import "../internal/types";
+
 const getSamePageAPI = async () => {
   if (typeof window !== "undefined") {
     if (typeof window.samepage !== "undefined") {

@@ -1,7 +1,7 @@
 import { Web3Storage } from "web3.storage";
 import { decode } from "@ipld/dag-cbor";
 import { NotFoundError } from "@dvargas92495/app/backend/errors.server";
-import { Memo } from "package/types";
+import { Memo } from "package/internal/types";
 import { downloadFileBuffer } from "@dvargas92495/app/backend/downloadFile.server";
 
 const downloadSharedPage = ({ cid }: { cid: string }) => {

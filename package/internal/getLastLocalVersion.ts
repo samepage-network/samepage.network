@@ -1,4 +1,4 @@
-import { Schema } from "../types";
+import { Schema } from "./types";
 import Automerge from "automerge";
 
 const getLastLocalVersion = (doc: Automerge.FreezeObject<Schema>) => {

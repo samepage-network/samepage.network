@@ -1,5 +1,5 @@
 import APPS, { appsById } from "package/internal/apps";
-import type { AppId } from "package/types";
+import type { AppId } from "package/internal/types";
 import { useState } from "react";
 
 const userApps = APPS.slice(1);

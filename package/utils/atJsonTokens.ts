@@ -1,4 +1,4 @@
-import { InitialSchema, Annotation } from "../types";
+import { InitialSchema, Annotation } from "../internal/types";
 import moo from "moo";
 import nearley from "nearley";
 

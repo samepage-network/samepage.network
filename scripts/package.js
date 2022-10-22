@@ -14,7 +14,7 @@ const cliArgs = Object.entries(tsconfig.compilerOptions)
       return "";
     } else if (arg === "jsx") {
       // Don't know how to handle this as react-jsx in Roam yet
-      return "--jsx react"; 
+      return "--jsx react";
     } else if (value === true) {
       return `--${arg}`;
     } else if (typeof value === "string") {
@@ -67,7 +67,12 @@ const generatePackageJson = (local, file) => {
     bugs: rootPackageJson.bugs,
     homepage: rootPackageJson.homepage,
     engines: rootPackageJson.engines,
-    peerDependencies: local.peerDependencies,
+    peerDependencies: Object.fromEntries(
+      Object.entries(local.peerDependencies).map(([k, v]) => [
+        k,
+        v === "*" ? rootPackageJson.version : v,
+      ])
+    ),
     bin: local.bin,
   };
   fs.writeFileSync(file, JSON.stringify(newPackageJson, null, 4));

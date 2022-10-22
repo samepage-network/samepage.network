@@ -1,5 +1,5 @@
 import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
-import { Notebook, zHeaders, zMethodBody } from "package/types";
+import { Notebook, zHeaders, zMethodBody } from "package/internal/types";
 import { appsById } from "package/internal/apps";
 import {
   BadRequestError,

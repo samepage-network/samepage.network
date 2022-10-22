@@ -1,4 +1,4 @@
-import type { Status, Notebook } from "../types";
+import type { Status, Notebook } from "./types";
 import { v4 } from "uuid";
 import {
   addNotebookListener,

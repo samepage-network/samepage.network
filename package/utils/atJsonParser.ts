@@ -1,4 +1,4 @@
-import { InitialSchema } from "../types";
+import { InitialSchema } from "../internal/types";
 import { Parser, Grammar, CompiledRules } from "nearley";
 
 const atJsonParser = (grammar: CompiledRules, text: string): InitialSchema => {

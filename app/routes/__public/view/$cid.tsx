@@ -3,7 +3,7 @@ import type { LoaderFunction } from "@remix-run/node";
 import { useLoaderData, Link } from "@remix-run/react";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
 import Automerge from "automerge";
-import { Schema, InitialSchema } from "package/types";
+import { Schema, InitialSchema } from "package/internal/types";
 import Button from "@dvargas92495/app/components/Button";
 import binaryToBase64 from "package/internal/binaryToBase64";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";

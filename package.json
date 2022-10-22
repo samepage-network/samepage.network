@@ -90,14 +90,24 @@
       "scoped": {
         "external": {
           "name": "@samepage/external",
-          "description": "Utilities that help develop SamePage compatible external extensions"
+          "description": "Utilities that help develop SamePage compatible external extensions",
+          "peerDependencies": {
+            "@samepage/internal": "*"
+          }
+        },
+        "internal": {
+          "name": "@samepage/internal",
+          "description": "Utilities used across modules - not meant for use by users directly",
+          "peerDependencies": {
+            "zod": "^3.19.1"
+          }
         },
         "scripts": {
           "name": "@samepage/scripts",
           "description": "Scripts that help develop application extensions.",
           "peerDependencies": {
             "@aws-sdk/client-s3": "^3.100.0",
-            "@samepage/testing": ">=0.17.0",
+            "@samepage/testing": "*",
             "chokidar": ">=3.5.3",
             "dotenv": "10.0.0",
             "esbuild": ">=0.13.15",

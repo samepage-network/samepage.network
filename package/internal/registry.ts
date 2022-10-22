@@ -6,7 +6,7 @@ import type {
   RemoveCommand,
   AppId,
   RenderOverlay,
-} from "../types";
+} from "./types";
 import defaultGetSetting from "../utils/defaultGetSetting";
 import defaultSetSetting from "../utils/defaultSetSetting";
 

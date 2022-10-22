@@ -1,4 +1,4 @@
-import { AppId, Notebook } from "../types";
+import { AppId, Notebook } from "./types";
 import { appsById } from "./apps";
 
 const parseActorId = (s: string): Notebook => {

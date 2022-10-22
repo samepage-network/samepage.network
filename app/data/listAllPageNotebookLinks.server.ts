@@ -1,5 +1,5 @@
 import getMysqlConnection from "fuegojs/utils/mysql";
-import type { AppId } from "package/types";
+import type { AppId } from "package/internal/types";
 import { appsById } from "package/internal/apps";
 
 const listAllPageNotebookLinks = async (requestId: string) => {

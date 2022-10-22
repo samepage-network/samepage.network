@@ -12,7 +12,7 @@ import {
 import { appsById } from "../internal/apps";
 import React from "react";
 import SharePageDialog from "./SharePageDialog";
-import { OverlayProps, Schema } from "../types";
+import { OverlayProps, Schema } from "../internal/types";
 import Automerge from "automerge";
 import apiClient from "../internal/apiClient";
 import { app, workspace } from "../internal/registry";

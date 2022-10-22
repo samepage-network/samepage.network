@@ -1,5 +1,5 @@
 import getMysqlConnection from "fuegojs/utils/mysql";
-import type { AppId, Schema } from "package/types";
+import type { AppId, Schema } from "package/internal/types";
 import Automerge from "automerge";
 import downloadSharedPage from "./downloadSharedPage.server";
 
