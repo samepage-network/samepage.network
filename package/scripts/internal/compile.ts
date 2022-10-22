@@ -125,12 +125,10 @@ const compile = ({
   return esbuild
     .build({
       absWorkingDir: process.cwd(),
-      entryPoints: out
-        ? {
-            [out]: `./src/${entryTs}`,
-            ...(entryCss ? { [out]: `./src/${entryCss}` } : {}),
-          }
-        : [`./src/${entryTs}`, ...(entryCss ? [`./src/${entryCss}`] : [])],
+      entryPoints: [
+        `./src/${entryTs}`,
+        ...(entryCss ? [`./src/${entryCss}`] : []),
+      ],
       outdir: "dist",
       bundle: true,
       define: {
@@ -145,6 +143,7 @@ const compile = ({
         ),
       },
       format,
+      entryNames: out,
       external: externalModules.map(([e]) => e),
       plugins: [
         {

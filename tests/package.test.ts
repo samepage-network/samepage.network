@@ -3,11 +3,11 @@ import { z } from "zod";
 import { v4 } from "uuid";
 import getMysqlConnection from "fuegojs/utils/mysql";
 import { test, expect } from "@playwright/test";
-import deleteToken from "~/data/deleteToken.server";
+import issueNewInvite from "~/data/issueNewInvite.server";
 
 let cleanup: () => unknown;
 const logs: { data: string; time: string }[] = [];
-const inviteCodes: { uuid: string; token: string }[] = [];
+const inviteCodes: string[] = [];
 const testId = v4();
 let client1ExpectedToClose = false;
 let client2ExpectedToClose = false;
@@ -15,24 +15,15 @@ let client2ExpectedToClose = false;
 test.beforeAll(async () => {
   await getMysqlConnection(testId).then((cxn) =>
     cxn.execute(`DELETE FROM notebooks n WHERE n.app = ?`, [0]).then(() => {
-      const generateInviteCode = () =>
-        Promise.resolve({ uuid: v4(), token: v4() }).then((val) =>
-          cxn
-            .execute(
-              `INSERT INTO tokens (uuid, value)
-          VALUES (?, ?)`,
-              [val.uuid, val.token]
-            )
-            .then(() => val)
-        );
-      return Promise.all([generateInviteCode(), generateInviteCode()]).then(
-        (codes) => inviteCodes.push(...codes)
-      );
+      return Promise.all([
+        issueNewInvite({ context: { requestId: testId } }),
+        issueNewInvite({ context: { requestId: testId } }),
+      ]).then((codes) => inviteCodes.push(...codes.map((c) => c.code)));
     })
   );
 });
 
-test("Make sure two clients can come online and share updates, despite errors", async () => {
+test("Full integration test of sharing pages", async () => {
   const startTime = process.hrtime.bigint();
   const addToLog = (data: string) => {
     logs.push({
@@ -71,7 +62,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
   const notebookPageId = v4();
   const client1 = fork(
     "./package/testing/createTestSamePageClient",
-    ["--forked", "one", inviteCodes[0].token]
+    ["--forked", "one", inviteCodes[0]]
     // { execArgv: ["--inspect-brk=127.0.0.1:9323"] }
   );
   const client1Callbacks: Record<string, (data: unknown) => void> = {
@@ -97,7 +88,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
 
   const client2 = fork(
     "./package/testing/createTestSamePageClient",
-    ["--forked", "two", inviteCodes[0].token]
+    ["--forked", "two", inviteCodes[0]]
     // { execArgv: ["--inspect-brk=127.0.0.1:9324"] }
   );
   const client2Callbacks: Record<string, (data: unknown) => void> = {
@@ -412,16 +403,7 @@ test("Make sure two clients can come online and share updates, despite errors", 
 test.afterAll(async () => {
   client1ExpectedToClose = client2ExpectedToClose = true;
   cleanup?.();
-  await Promise.all(
-    inviteCodes.map((code) =>
-      deleteToken({
-        context: { requestId: testId },
-        data: { uuid: [code.uuid] },
-      })
-    )
-  )
-    .then(() => getMysqlConnection(testId))
-    .then((cxn) => cxn.destroy());
+  await getMysqlConnection(testId).then((cxn) => cxn.destroy());
   if (process.env.DEBUG) {
     console.log(
       logs.map((l) => `${l.data.replace(/\n/g, "\\n")} (${l.time}s)`).join("\n")

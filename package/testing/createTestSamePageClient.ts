@@ -225,7 +225,12 @@ const createTestSamePageClient = async ({
     onMessage({ type: "notification" });
   });
   console.log = (...args) => onMessage({ type: "log", data: args.join(" ") });
-  await initializingPromise;
+  await initializingPromise.catch(() =>
+    onMessage({
+      type: "error",
+      data: `Error: 3 arguments required for --forked (workspace, notebook id, token)\nFound: ${process.argv}`,
+    })
+  );
   onMessage({ type: "ready" });
   console.log("ready kids", workspace, settings.uuid);
   return {

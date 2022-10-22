@@ -15,6 +15,13 @@ const tokenNotebookLink = z.object({
   tokenUuid: uuidField,
 });
 
+const invitation = z.object({
+  code: z.string().describe("primary"),
+  createdDate: z.date(),
+  expirationDate: z.date(),
+  tokenUuid: z.string().optional().describe("unique"),
+});
+
 const notebook = z.object({
   uuid,
   workspace: z.string(),
@@ -69,6 +76,7 @@ const ongoingMessage = z.object({
 const schema = {
   token,
   tokenNotebookLink,
+  invitation,
   notebook,
   page,
   pageNotebookLink,

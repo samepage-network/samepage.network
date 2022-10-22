@@ -64,7 +64,7 @@ const PublicPage: React.FC = () => {
         </div>
       </header>
       <main
-        className={`my-16 mx-auto flex justify-center max-w-3xl w-full p-0 flex-grow ${mainClassName}`}
+        className={`my-16 flex justify-center items-start w-full p-0 flex-grow ${mainClassName}`}
       >
         <Outlet />
       </main>

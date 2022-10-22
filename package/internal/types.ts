@@ -205,13 +205,20 @@ export type Memo = {
   parent: CID | null;
 };
 
-export const zMethodBody = z.discriminatedUnion("method", [
+export const zUnauthenticatedBody = z.discriminatedUnion("method", [
   z
     .object({ method: z.literal("create-notebook"), inviteCode: z.string() })
     .merge(zNotebook),
-  z.object({
-    method: z.literal("connect-notebook"),
-  }),
+  z.object({ method: z.literal("ping"), inviteCode: z.string() }),
+]);
+
+export const zAuthenticatedBody = z.discriminatedUnion("method", [
+  z
+    .object({
+      method: z.literal("connect-notebook"),
+      token: z.string(),
+    })
+    .merge(zNotebook),
   z.object({ method: z.literal("usage") }),
   z.object({ method: z.literal("load-message"), messageUuid: z.string() }),
   z.object({
@@ -283,14 +290,21 @@ export const zMethodBody = z.discriminatedUnion("method", [
   }),
 ]);
 
-export const zHeaders = z.object({
+export const zBaseHeaders = z.object({
   requestId: z.string(),
-  notebookUuid: z.string().optional(),
-  token: z.string().optional(),
 });
 
-export type RequestBody = z.infer<typeof zMethodBody> &
-  Partial<z.infer<typeof zHeaders>>;
+export const zAuthHeaders = z.object({
+  notebookUuid: z.string(),
+  token: z.string(),
+});
+
+const zMethodBody = zUnauthenticatedBody.or(
+  zAuthenticatedBody.and(zAuthHeaders.partial())
+);
+
+export type RequestBody = z.infer<typeof zMethodBody>;
+
 // look into trpc.io
 // export type RequestSignature = <T extends RequestBody>(
 //   args: T

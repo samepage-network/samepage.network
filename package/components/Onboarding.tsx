@@ -36,12 +36,14 @@ const ConnectNotebookPage = ({
   const [error, setError] = React.useState("");
   const onConnect = React.useCallback(() => {
     setLoading(true);
-    apiClient({
+    apiClient<{ notebookUuid: string }>({
       method: "connect-notebook",
+      notebookUuid, 
       token,
-      notebookUuid,
+      app,
+      workspace,
     })
-      .then(() => {
+      .then(({ notebookUuid }) => {
         rootSetToken(token);
         rootSetNotebookUuid(notebookUuid);
         setPage("COMPLETE");
@@ -279,10 +281,11 @@ const Onboarding = ({
             <div className="border-gray-400 rounded-lg border p-8 flex flex-col gap-2 items-center h-full flex-1">
               <Icon icon={"import"} size={32} />
               <p className="font-bold text-lg">
-                No, I already have a Notebook Universal Id
+                No, I already have a connected Notebook
               </p>
               <p className="text-gray-700 flex-grow">
-                Connect your existing notebook using your Notebook token
+                Use your existing notebook to generate a new Notebook Universal
+                Id for this notebook.
               </p>
               <Button
                 text={"Connect Notebook"}

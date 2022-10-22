@@ -1,5 +1,11 @@
 import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
-import { Notebook, zHeaders, zMethodBody } from "package/internal/types";
+import {
+  Notebook,
+  zAuthHeaders,
+  zAuthenticatedBody,
+  zUnauthenticatedBody,
+  zBaseHeaders,
+} from "package/internal/types";
 import { appsById } from "package/internal/apps";
 import {
   BadRequestError,
@@ -20,11 +26,40 @@ import getSharedPage from "~/data/getSharedPage.server";
 import Automerge from "automerge";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
 import saveSharedPage from "~/data/saveSharedPage.server";
-import { z } from "zod";
 import getNotebookUuid from "~/data/getNotebookUuid.server";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
+import { randomBytes } from "crypto";
 
-const zMethod = z.intersection(zHeaders, zMethodBody);
+const zMethod = zUnauthenticatedBody
+  .and(zBaseHeaders)
+  .or(zAuthenticatedBody.and(zAuthHeaders).and(zBaseHeaders));
+
+const getOrGenerateNotebookUuid = async ({
+  requestId,
+  workspace,
+  app,
+}: { requestId: string } & Notebook) => {
+  const cxn = await getMysql(requestId);
+  const [existingNotebooks] = await cxn.execute(
+    `SELECT n.uuid FROM notebooks n
+  LEFT JOIN token_notebook_links l ON l.notebook_uuid = n.uuid
+  where n.workspace = ? and n.app = ? and l.token_uuid is NULL`,
+    [workspace, app]
+  );
+  const [potentialNotebookUuid] = existingNotebooks as { uuid: string }[];
+  return (
+    potentialNotebookUuid?.uuid ||
+    (await Promise.resolve(v4()).then((uuid) =>
+      cxn
+        .execute(
+          `INSERT INTO notebooks (uuid, app, workspace)
+  VALUES (?, ?, ?)`,
+          [uuid, app, workspace]
+        )
+        .then(() => uuid)
+    ))
+  );
+};
 
 const logic = async (req: Record<string, unknown>) => {
   const result = zMethod.safeParse(req);
@@ -41,69 +76,100 @@ const logic = async (req: Record<string, unknown>) => {
         .map((s) => `- ${s}\n`)
         .join("")}`
     );
-  const { requestId, notebookUuid, token, ...args } = result.data;
-  console.log("Received method:", args.method, "from", notebookUuid);
+  const { requestId, ...args } = result.data;
+  console.log("Received method:", args.method);
   const cxn = await getMysql(requestId);
   try {
     if (args.method === "create-notebook") {
       const { inviteCode, app, workspace } = args;
-      // TODO - Invite code and api token are currently the same.
-      // Invite code should be short lived, token long live and encrypted at rest
       const [results] = await cxn.execute(
-        `SELECT uuid FROM tokens where value = ?`,
+        `SELECT token_uuid, expiration_date FROM invitations where code = ?`,
         [inviteCode]
       );
-      const [tokenUuid] = results as { uuid: string }[];
-      if (!tokenUuid) {
-        throw new NotFoundError("Could not find valid token");
+      const [invite] = results as {
+        token_uuid: string;
+        expiration_date: Date;
+      }[];
+      if (!invite) {
+        throw new NotFoundError("Could not find invite");
       }
-      const [tokenLinks] = await cxn.execute(
-        `SELECT l.uuid FROM token_notebook_links l
-      where l.token_uuid = ?`,
-        [tokenUuid.uuid]
-      );
-      if ((tokenLinks as { uuid: string }[]).length >= 5) {
+      if (invite.token_uuid) {
         throw new ConflictError(
-          `Maximum number of notebooks allowed to be connected to this token is 5.`
+          "Invite has already been claimed by a notebook."
         );
       }
-      const [existingNotebooks] = await cxn.execute(
-        `SELECT n.uuid FROM notebooks n
-      LEFT JOIN token_notebook_links l ON l.notebook_uuid = n.uuid
-      where n.workspace = ? and n.app = ? and l.token_uuid is NULL`,
-        [workspace, app]
+      if (new Date().valueOf() >= invite.expiration_date.valueOf()) {
+        throw new ConflictError(
+          "Invite has expired. Please request a new one from the team."
+        );
+      }
+      const token = await new Promise<string>((resolve) =>
+        randomBytes(12, function (_, buffer) {
+          resolve(buffer.toString("base64"));
+        })
       );
-      const [potentialNotebookUuid] = existingNotebooks as { uuid: string }[];
-      const notebookUuid =
-        potentialNotebookUuid?.uuid ||
-        (await Promise.resolve(v4()).then((uuid) =>
-          cxn
-            .execute(
-              `INSERT INTO notebooks (uuid, app, workspace)
-      VALUES (?, ?, ?)`,
-              [uuid, app, workspace]
-            )
-            .then(() => uuid)
-        ));
+      const tokenUuid = v4();
+      await cxn.execute(
+        `INSERT INTO tokens (uuid, value)
+      VALUES (?, ?)`,
+        [tokenUuid, token]
+      );
+      const notebookUuid = await getOrGenerateNotebookUuid({
+        requestId,
+        app,
+        workspace,
+      });
       await cxn.execute(
         `INSERT INTO token_notebook_links (uuid, token_uuid, notebook_uuid)
         VALUES (UUID(), ?, ?)`,
-        [tokenUuid.uuid, notebookUuid]
+        [tokenUuid, notebookUuid]
       );
       cxn.destroy();
-      return { notebookUuid, token: inviteCode };
+      return { notebookUuid, token };
+    } else if (args.method === "ping") {
+      // uptime checker
+      console.log("ping");
+      return { success: true };
     }
+    const { notebookUuid, token } = args;
     if (!notebookUuid)
       throw new BadRequestError(
         `Notebook Universal ID is required to use SamePage`
       );
     if (!token)
       throw new BadRequestError(`Notebook Token is required to use SamePage`);
-    await authenticateNotebook({ requestId, notebookUuid, token });
+    const tokenUuid = await authenticateNotebook({
+      requestId,
+      notebookUuid,
+      token,
+    });
+    console.log("authenticated notebook as", notebookUuid);
+
     switch (args.method) {
       case "connect-notebook": {
-        // all the work is done in authenticate...
-        return { success: true };
+        const { app, workspace } = args;
+        const [tokenLinks] = await cxn.execute(
+          `SELECT l.uuid FROM token_notebook_links l
+          where l.token_uuid = ?`,
+          [tokenUuid]
+        );
+        if ((tokenLinks as { uuid: string }[]).length >= 5) {
+          throw new ConflictError(
+            `Maximum number of notebooks allowed to be connected to this token is 5.`
+          );
+        }
+        const newNotebookUuid = await getOrGenerateNotebookUuid({
+          requestId,
+          app,
+          workspace,
+        });
+        await cxn.execute(
+          `INSERT INTO token_notebook_links (uuid, token_uuid, notebook_uuid)
+          VALUES (UUID(), ?, ?)`,
+          [tokenUuid, notebookUuid]
+        );
+        cxn.destroy();
+        return { notebookUuid: newNotebookUuid };
       }
       case "usage": {
         const currentDate = new Date();
@@ -460,7 +526,7 @@ const logic = async (req: Record<string, unknown>) => {
                 targetNotebookUuid,
               ]
             );
-            console.log("sending from", notebookUuid, "to", targetNotebookUuid)
+            console.log("sending from", notebookUuid, "to", targetNotebookUuid);
             return messageNotebook({
               source: notebookUuid,
               target: targetNotebookUuid,

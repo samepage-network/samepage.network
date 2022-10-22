@@ -24,7 +24,7 @@ const authenticateNotebook = async (args: {
         : "There is no Notebook Universal Id assigned to this notebook. Make sure to go through the onboarding flow in order to be properly assigned a Universal Id."
     );
   }
-  const authenticated = tokens
+  const authenticated = await tokens
     .map(
       (t) => () =>
         cxn
@@ -35,17 +35,20 @@ const authenticateNotebook = async (args: {
           )
           .then(([values]) => {
             const storedValue = (values as { value: string }[])?.[0]?.value;
-            if (!storedValue) return false;
+            if (!storedValue) return undefined;
             // should I just query by stored value?
             if (token !== storedValue)
               throw new UnauthorizedError(`Unauthorized notebook and token`);
-            return token === storedValue;
+            return token === storedValue ? t.token_uuid : undefined;
           })
     )
-    .reduce((p, c) => p.then((f) => f || c()), Promise.resolve(false));
+    .reduce(
+      (p, c) => p.then((f) => f || c()),
+      Promise.resolve<string | undefined>(undefined)
+    );
   if (!authenticated)
     throw new UnauthorizedError(`Unauthorized notebook and token`);
-  return true;
+  return authenticated;
 };
 
 export default authenticateNotebook;
