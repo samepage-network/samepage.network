@@ -172,6 +172,27 @@ Coming soon...
 
 ### Standard Arguments
 
+There are four commands that make up the development environment:
+- `dev`
+- `test`
+- `build`
+- `publish`
+
+The first three of these commands all support the same set of base arguments, which get forwarded to the SamePage extension compiler. They are all optional and have default values.
+
+- `external` - List of modules that should **not** be bundled into the output, in the case the host application is already exposing it. Use `module=window.module` to specify what the replacement could be. **Default:** None.
+- `include` - List of files to include in the output package. **Default:** None.
+- `css` - string;
+- `format` - esbuild.Format;
+- `mirror` - string;
+- `env` - string | string[];
+- `analyze` - boolean;
+- `max` - string;
+- `finish` - string;
+- `out` - The filename the extension's entrypoint JavaScript file and CSS file are out as. **Default:** Same as input.
+
+On the command line, all flags are specified with a `--` prefix. A flag with no value after it is treated as a boolean. A flag repeated multiple times is treated as a string array. A flag specified once is streated as a string.
+
 ### Dev
 
 Coming soon...

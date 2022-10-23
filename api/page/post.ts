@@ -170,7 +170,7 @@ const logic = async (req: Record<string, unknown>) => {
         await cxn.execute(
           `INSERT INTO token_notebook_links (uuid, token_uuid, notebook_uuid)
           VALUES (UUID(), ?, ?)`,
-          [tokenUuid, notebookUuid]
+          [tokenUuid, newNotebookUuid]
         );
         cxn.destroy();
         return { notebookUuid: newNotebookUuid };
