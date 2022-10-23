@@ -160,11 +160,11 @@ return () => {
 
 ## Dev Environment
 
-Coming soon...
+The `samepage` NPM package also comes with it a suite of tools that help developers create, maintain, test, and publish their extensions. These tools are available as a binary to be executed as `samepage [method]` from a `package.json` script or `npx samepage [method]` from the command line. They could also be invoked from a script and are located within the `scripts` module.
 
 ### TypeScript
 
-Coming soon...
+All the build tools assume the extensions are written in [TypeScript](https://www.typescriptlang.org/) by default. The entry point should be top level within the `src` directory and is typically named `index.ts`, though this could differ depending on the host application's conventions for loading extensions.
 
 ### Styling
 

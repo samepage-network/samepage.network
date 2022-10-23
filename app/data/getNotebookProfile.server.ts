@@ -16,7 +16,6 @@ const getNotebookProfile = async ({
   WHERE n.uuid = ?`,
     [uuid]
   );
-  cxn.destroy();
   const [notebook] = results as {
     app: AppId;
     workspace: string;
@@ -54,6 +53,7 @@ const getNotebookProfile = async ({
         })
       )
     );
+  cxn.destroy();
   return {
     notebook: {
       ...notebook,
