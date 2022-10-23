@@ -1,11 +1,11 @@
 import type { Notebook } from "package/internal/types";
 import getMysql from "fuegojs/utils/mysql";
 
-const getNotebookUuid = ({
+const getNotebookUuids = ({
   workspace,
   app,
   requestId,
-}: Notebook & { requestId: string }): Promise<string> =>
+}: Notebook & { requestId: string }): Promise<string[]> =>
   getMysql(requestId).then((cxn) =>
     cxn
       .execute(
@@ -15,12 +15,12 @@ const getNotebookUuid = ({
         [workspace, app]
       )
       .then(([results]) => {
-        const [link] = results as { uuid: string }[];
-        if (!link) {
+        const links = results as { uuid: string }[];
+        if (!links.length) {
           throw new Error("Could not find notebook uuid");
         }
-        return link.uuid;
+        return links.map((l) => l.uuid);
       })
   );
 
-export default getNotebookUuid;
+export default getNotebookUuids;

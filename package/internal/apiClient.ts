@@ -1,6 +1,6 @@
 import type { RequestBody } from "./types";
 import getNodeEnv from "./getNodeEnv";
-import { app, getSetting, workspace } from "./registry";
+import { getSetting } from "./registry";
 
 export type HandleFetchArgs = {
   path?: string;
@@ -108,10 +108,6 @@ const apiClient = <T extends Record<string, unknown>>(data: RequestBody) =>
       notebookUuid: getSetting("uuid"),
       token: getSetting("token"),
       ...data,
-
-      // @deprecated
-      app,
-      workspace,
     },
   });
 

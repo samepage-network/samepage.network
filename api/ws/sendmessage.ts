@@ -11,7 +11,7 @@ import type {
   APIGatewayProxyResult,
   Context,
 } from "aws-lambda";
-import getNotebookUuid from "~/data/getNotebookUuid.server";
+import getNotebookUuids from "~/data/getNotebookUuids.server";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
 
 // postToConnection({
@@ -52,11 +52,11 @@ const dataHandler = async (
     const notebookUuid =
       "notebookUuid" in propArgs
         ? propArgs["notebookUuid"]
-        : await getNotebookUuid({
+        : await getNotebookUuids({
             app: propArgs.app,
             workspace: propArgs.workspace,
             requestId,
-          });
+          }).then((n) => n[0]);
 
     const [_, messages] = await Promise.all([
       // one downside of inserting here instead of onconnect is the clock drift on created date
@@ -117,11 +117,11 @@ const dataHandler = async (
     const target =
       "notebookUuid" in data
         ? data.notebookUuid
-        : await getNotebookUuid({
+        : await getNotebookUuids({
             app: data.app,
             workspace: data.workspace,
             requestId,
-          });
+          }).then((t) => t[0]);
     //@ts-ignore
     const { app, workspace, notebookUuid, ...proxyData } = data;
     return (

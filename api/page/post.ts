@@ -26,7 +26,7 @@ import getSharedPage from "~/data/getSharedPage.server";
 import Automerge from "automerge";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
 import saveSharedPage from "~/data/saveSharedPage.server";
-import getNotebookUuid from "~/data/getNotebookUuid.server";
+import getNotebookUuids from "~/data/getNotebookUuids.server";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
 import { randomBytes } from "crypto";
 
@@ -490,6 +490,16 @@ const logic = async (req: Record<string, unknown>) => {
       }
       case "invite-notebook-to-page": {
         const { notebookPageId, target } = args;
+        const targetNotebookUuids = await getNotebookUuids({
+          ...target,
+          requestId,
+        });
+        if (targetNotebookUuids.length > 1) {
+          throw new ConflictError(
+            `Attempted to invite an ambiguous notebook - multiple notebooks within this app have the workspace name: ${target.workspace}`
+          );
+        }
+        const [targetNotebookUuid] = targetNotebookUuids;
         return Promise.all([
           getSharedPage({
             notebookUuid,
@@ -497,7 +507,7 @@ const logic = async (req: Record<string, unknown>) => {
             requestId,
           }),
           getSharedPage({
-            notebookUuid: await getNotebookUuid({ ...target, requestId }),
+            notebookUuid: targetNotebookUuid,
             notebookPageId,
             safe: true,
             requestId,
@@ -515,10 +525,6 @@ const logic = async (req: Record<string, unknown>) => {
               );
             }
             const { uuid: pageUuid } = page;
-            const targetNotebookUuid = await getNotebookUuid({
-              ...target,
-              requestId,
-            });
             await cxn.execute(
               `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, version, open, invited_by, invited_date, notebook_uuid)
             VALUES (UUID(), ?, ?, 0, 1, ?, ?, ?)`,
@@ -673,7 +679,7 @@ const logic = async (req: Record<string, unknown>) => {
       }
       case "query": {
         const { request } = args;
-        const [targetWorkspace] = request.split(":");
+        const [target] = request.split(":");
         const hash = crypto.createHash("md5").update(request).digest("hex");
         return downloadFileContent({ Key: `data/queries/${hash}.json` })
           .then((r) => {
@@ -689,11 +695,7 @@ const logic = async (req: Record<string, unknown>) => {
           .then(async (body) =>
             messageNotebook({
               source: notebookUuid,
-              target: await getNotebookUuid({
-                workspace: targetWorkspace,
-                app: 1,
-                requestId,
-              }),
+              target,
               data: {
                 request,
                 operation: "QUERY",
@@ -712,7 +714,7 @@ const logic = async (req: Record<string, unknown>) => {
           Key: `data/queries/${hash}.json`,
         });
         return messageNotebook({
-          target: await getNotebookUuid({ ...target, requestId }),
+          target,
           source: notebookUuid,
           data: {
             operation: `QUERY_RESPONSE`,

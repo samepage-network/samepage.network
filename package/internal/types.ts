@@ -272,7 +272,7 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     method: z.literal("query-response"),
     response: z.string(),
     request: z.string(),
-    target: zNotebook,
+    target: z.string(),
   }),
   z.object({
     oldNotebookPageId: z.string(),

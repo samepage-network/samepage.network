@@ -6,7 +6,7 @@ const optionalUuid = uuidField.optional();
 
 const token = z.object({
   uuid,
-  value: z.string().describe("unique"),
+  value: z.string(),
 });
 
 const tokenNotebookLink = z.object({
