@@ -2,7 +2,7 @@ import { LoaderFunction } from "@remix-run/node";
 import { Outlet, useNavigate } from "@remix-run/react";
 import Table from "@dvargas92495/app/components/Table";
 import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
-import listOnlineClients from "~/data/listNotebooks.server";
+import listNotebooks from "~/data/listNotebooks.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 
@@ -23,7 +23,7 @@ const ConnectionsPage = () => {
 
 export const loader: LoaderFunction = (args) => {
   return remixAdminLoader(args, ({ context: { requestId } }) =>
-    listOnlineClients(requestId)
+    listNotebooks(requestId)
   );
 };
 

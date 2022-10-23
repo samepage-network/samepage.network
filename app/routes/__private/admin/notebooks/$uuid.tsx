@@ -62,7 +62,7 @@ export const action: ActionFunction = (args) => {
       deleteNotebook({
         uuid: params["uuid"] || "",
         requestId,
-      }).then(() => redirect("/admin/connections")),
+      }).then(() => redirect("/admin/notebooks")),
   });
 };
 

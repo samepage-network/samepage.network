@@ -170,6 +170,8 @@ All the build tools assume the extensions are written in [TypeScript](https://ww
 
 Coming soon...
 
+### Standard Arguments
+
 ### Dev
 
 Coming soon...

@@ -6,19 +6,27 @@ const listOnlineClients = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
   const data = await cxn
     .execute(
-      `SELECT n.uuid, n.app, n.workspace, c.created_date
+      `SELECT n.uuid, n.app, n.workspace, c.created_date, i.created_date as invited_date
   FROM notebooks n 
-  LEFT JOIN online_clients c ON n.uuid = c.notebook_uuid`
+  LEFT JOIN online_clients c ON n.uuid = c.notebook_uuid
+  LEFT JOIN token_notebook_links l ON n.uuid = l.notebook_uuid
+  LEFT JOIN invitations i ON i.token_uuid = l.token_uuid`
     )
     .then(
-      ([r]) => r as ({ created_date: Date | null; uuid: string } & Notebook)[]
+      ([r]) =>
+        r as ({
+          created_date: Date | null;
+          uuid: string;
+          invited_date: Date | null;
+        } & Notebook)[]
     );
   cxn.destroy();
   return {
     columns: [
       { Header: "App", accessor: "app" },
       { Header: "Workspace", accessor: "workspace" },
-      { Header: "Date", accessor: "connected" },
+      { Header: "Connected", accessor: "connected" },
+      { Header: "Invited On", accessor: "invited" },
     ],
     data: data
       .sort((a, b) => {
@@ -35,7 +43,8 @@ const listOnlineClients = async (requestId: string) => {
         uuid: d.uuid,
         workspace: d.workspace || "Pending",
         app: appsById[d.app].name,
-        connected: d.created_date ? d.created_date.toLocaleString() : "OFFLINE",
+        connected: d.created_date ? d.created_date.valueOf() : "OFFLINE",
+        invited: d.invited_date ? d.invited_date.valueOf() : "UNINVITED",
       })),
   };
 };
