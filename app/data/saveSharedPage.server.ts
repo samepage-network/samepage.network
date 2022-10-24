@@ -33,7 +33,7 @@ const saveSharedPage = ({
   return Promise.all([
     client.put([new File([encoded], "data.json")], {
       wrapWithDirectory: false,
-      onRootCidReady(cid) {
+      onRootCidReady(cid) { 
         uploadFile({
           Key: `data/ipfs/${cid}`,
           Body: encoded,

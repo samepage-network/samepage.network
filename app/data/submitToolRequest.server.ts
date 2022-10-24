@@ -1,4 +1,4 @@
-import sendEmail from "@dvargas92495/app/backend/sendEmail.server";
+import invokeAsync from "./invokeAsync.server";
 
 const submitToolRequest = ({
   email,
@@ -9,12 +9,18 @@ const submitToolRequest = ({
   tool: string;
   message: string;
 }): Promise<{ success: boolean }> => {
-  return sendEmail({
-    to: "support@samepage.network",
-    from: "support@samepage.network",
-    body: `User has requested ${tool} be added to the SamePage Network.\n\n${message}`,
-    subject: "New tool request for SamePage",
-    replyTo: email,
+  return invokeAsync({
+    path: "send-email",
+    data: {
+      to: "support@samepage.network",
+      replyTo: email,
+      subject: "New tool request for SamePage",
+      bodyComponent: "tool-request",
+      bodyProps: {
+        tool,
+        message,
+      },
+    },
   }).then(() => ({
     success: true,
     message: "Successfully submitted tool request!",
