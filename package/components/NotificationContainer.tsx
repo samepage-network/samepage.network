@@ -1,17 +1,9 @@
 import { Button, Spinner } from "@blueprintjs/core";
 import React from "react";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
-import { v4 } from "uuid";
 import { onAppEvent } from "../internal/registerAppEventListener";
-import { appsById } from "../internal/apps";
-
-export type Notification = {
-  uuid: string;
-  title: string;
-  description: string;
-  data: Record<string, string>;
-  buttons: string[];
-};
+import apiClient from "../internal/apiClient";
+import { Notification } from "../internal/types";
 
 const defaults: {
   state: Record<string, Notification>;
@@ -79,74 +71,63 @@ const ActionButtons = ({
 
 const NotificationContainer = ({
   actions = {},
-  api: { addNotification, deleteNotification, getNotifications } = defaults,
 }: NotificationContainerProps) => {
-  const [notifications, setNotificatons] = React.useState<Notification[]>([]);
+  const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const notificationsRef = React.useRef<Notification[]>(notifications);
+  const [isOpen, setIsOpen] = React.useState(false);
   const removeNotificaton = React.useCallback(
     (not: Notification) => {
-      return deleteNotification(not.uuid).then(() => {
+      return apiClient({
+        method: "mark-message-read",
+        messageUuid: not.uuid,
+      }).then(() => {
         notificationsRef.current = notificationsRef.current.filter(
           (n) => n.uuid !== not.uuid
         );
-        setNotificatons(notificationsRef.current);
+        setNotifications(notificationsRef.current);
+        setIsOpen(!!notificationsRef.current.length);
       });
     },
-    [setNotificatons, notificationsRef]
+    [setNotifications, notificationsRef, setIsOpen]
   );
-  const [isOpen, setIsOpen] = React.useState(false);
 
   React.useEffect(() => {
-    getNotifications().then((nots) => {
-      notificationsRef.current = nots;
-      setNotificatons(nots);
+    apiClient<{ messages: Notification[] }>({
+      method: "get-unmarked-messages",
+    }).then((r) => {
+      setNotifications((notificationsRef.current = r.messages));
     });
-    onAppEvent("share-page", (evt) => {
-      const app = appsById[evt.source.app]?.name;
-      const args = {
-        workspace: evt.source.workspace,
-        app: `${evt.source.app}`,
-        pageUuid: evt.pageUuid,
-        title: evt.notebookPageId,
-      };
+    onAppEvent("notification", (evt) => {
       if (
-        notificationsRef.current.every(
-          (n) =>
-            n.data.workspace !== args.workspace ||
-            n.data.app !== args.app ||
-            n.data.pageUuid !== args.pageUuid ||
-            n.data.title !== args.title
-        )
+        notificationsRef.current.every((n) => n.uuid !== evt.notification.uuid)
       ) {
-        const notif = {
-          uuid: v4(),
-          title: "Share Page",
-          description: `Notebook ${app}/${evt.source.workspace} is attempting to share page ${evt.notebookPageId}. Would you like to accept?`,
-          buttons: ["accept", "reject"],
-          data: args,
-        };
-        addNotification(notif).then(() => {
-          notificationsRef.current.push(notif);
-          setNotificatons([...notificationsRef.current]);
-        });
+        notificationsRef.current.push(evt.notification);
+        setNotifications([...notificationsRef.current]);
       }
     });
-  }, [addNotification, setNotificatons, notificationsRef, getNotifications]);
-  return notifications.length ? (
+  }, [setNotifications, notificationsRef]);
+  return (
     <div
-      className="samepage-notification-container absolute top-16 right-16 shadow-xl"
+      className="samepage-notification-container shadow-xl"
       style={{
         zIndex: 1000,
       }}
     >
-      <div className="absolute top-0 left-0 h-2 w-2 bg-red-600 rounded-full" />
+      {notifications.length ? (
+        <div className="absolute top-0 left-0 h-2 w-2 bg-red-600 rounded-full" />
+      ) : (
+        <></>
+      )}
       {isOpen ? (
         <div className={"bg-white w-72"}>
-          <div className="flex items-center justify-between p-2 bg-slate-100 bg-opacity-50 border-b border-b-black">
+          <div className="flex items-center justify-between py-2 px-4 bg-slate-100 bg-opacity-50 border-b border-b-black">
             <h4>Notifications</h4>
             <Button onClick={() => setIsOpen(false)} icon={"cross"} minimal />
           </div>
           <div>
+            {!notifications.length && (
+              <div className="px-4 py-2">All caught up on notifications!</div>
+            )}
             {notifications.map((not) => (
               <div key={not.uuid} className={"pb-1 px-4"}>
                 <h5>{not.title}</h5>
@@ -182,8 +163,6 @@ const NotificationContainer = ({
         />
       )}
     </div>
-  ) : (
-    <></>
   );
 };
 

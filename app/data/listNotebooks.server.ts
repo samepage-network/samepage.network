@@ -2,15 +2,16 @@ import getMysqlConnection from "fuegojs/utils/mysql";
 import { appsById } from "package/internal/apps";
 import { Notebook } from "package/internal/types";
 
-const listOnlineClients = async (requestId: string) => {
+const listNotebooks = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
   const data = await cxn
     .execute(
-      `SELECT n.uuid, n.app, n.workspace, c.created_date, i.created_date as invited_date
+      `SELECT n.uuid, n.app, n.workspace, MAX(c.created_date) as created_date, MAX(i.created_date) as invited_date
   FROM notebooks n 
   LEFT JOIN online_clients c ON n.uuid = c.notebook_uuid
   LEFT JOIN token_notebook_links l ON n.uuid = l.notebook_uuid
-  LEFT JOIN invitations i ON i.token_uuid = l.token_uuid`
+  LEFT JOIN invitations i ON i.token_uuid = l.token_uuid
+  GROUP BY n.uuid`
     )
     .then(
       ([r]) =>
@@ -49,4 +50,4 @@ const listOnlineClients = async (requestId: string) => {
   };
 };
 
-export default listOnlineClients;
+export default listNotebooks;

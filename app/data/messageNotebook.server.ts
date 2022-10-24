@@ -4,19 +4,24 @@ import postToConnection from "./postToConnection.server";
 import { v4 } from "uuid";
 import getMysql from "fuegojs/utils/mysql";
 import getNotebookByUuid from "./getNotebookByUuid.server";
+import MESSAGES, { Operation } from "package/internal/messages";
 
 const messageNotebook = ({
   source,
   target,
   data,
   messageUuid = v4(),
+  operation,
   requestId,
+  metadata = [],
 }: {
   source: string;
   target: string;
   messageUuid?: string;
+  operation: Operation;
   data: Record<string, unknown>;
   requestId: string;
+  metadata?: string[];
 }) => {
   return getMysql(requestId).then(async (cxn) => {
     const ids = await cxn
@@ -31,6 +36,7 @@ const messageNotebook = ({
         uuid: source,
         ...sourceNotebook,
       },
+      operation,
     };
     const online = await Promise.all(
       ids.map((ConnectionId) =>
@@ -51,14 +57,18 @@ const messageNotebook = ({
       )
     ).then((all) => !!all.length && all.every((i) => i));
     await cxn.execute(
-      `INSERT INTO messages (uuid, created_date, marked, source, target)
-          VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO messages (uuid, created_date, marked, source, target, operation, metadata)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
         messageUuid,
         new Date(),
-        online,
+        online && !MESSAGES[operation].buttons.length,
         source,
         target,
+        operation,
+        metadata.length
+          ? Object.fromEntries(metadata.map((k) => [k, data[k]]))
+          : null,
       ]
     );
     await uploadFile({

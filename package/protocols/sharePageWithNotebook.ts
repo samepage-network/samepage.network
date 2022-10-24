@@ -31,14 +31,10 @@ import parseActorId from "../internal/parseActorId";
 import binaryToBase64 from "../internal/binaryToBase64";
 import base64ToBinary from "../internal/base64ToBinary";
 import { clear, has, deleteId, load, set } from "../utils/localAutomergeDb";
+import messageToNotification from "package/internal/messageToNotification";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
-const SHARE_PAGE_OPERATION = "SHARE_PAGE";
-const SHARE_PAGE_RESPONSE_OPERATION = "SHARE_PAGE_RESPONSE";
-const SHARE_PAGE_UPDATE_OPERATION = "SHARE_PAGE_UPDATE";
-const SHARE_PAGE_FORCE_OPERATION = "SHARE_PAGE_FORCE";
-const REQUEST_PAGE_UPDATE_OPERATION = "REQUEST_PAGE_UPDATE";
 
 const setupSharePageWithNotebook = ({
   overlayProps = {},
@@ -347,18 +343,22 @@ const setupSharePageWithNotebook = ({
     });
 
   addNotebookListener({
-    operation: SHARE_PAGE_OPERATION,
-    handler: (e, source) => {
+    operation: "SHARE_PAGE",
+    handler: (e, source, uuid) => {
       dispatchAppEvent({
-        type: "share-page",
-        source,
-        ...(e as { notebookPageId: string; pageUuid: string }),
+        type: "notification",
+        notification: messageToNotification({
+          uuid,
+          source,
+          data: e as Record<string, string>,
+          operation: "SHARE_PAGE",
+        }),
       });
     },
   });
 
   addNotebookListener({
-    operation: SHARE_PAGE_RESPONSE_OPERATION,
+    operation: "SHARE_PAGE_RESPONSE",
     handler: (data, source) => {
       const { success, title, rejected } = data as {
         success: boolean;
@@ -396,7 +396,7 @@ const setupSharePageWithNotebook = ({
   });
 
   addNotebookListener({
-    operation: SHARE_PAGE_UPDATE_OPERATION,
+    operation: "SHARE_PAGE_UPDATE",
     handler: (data) => {
       const {
         changes,
@@ -439,7 +439,7 @@ const setupSharePageWithNotebook = ({
               .forEach((actor) => {
                 sendToNotebook({
                   target: parseActorId(actor),
-                  operation: REQUEST_PAGE_UPDATE_OPERATION,
+                  operation: "REQUEST_PAGE_UPDATE",
                   data: {
                     notebookPageId,
                     seq: patch.clock[actor],
@@ -458,7 +458,7 @@ const setupSharePageWithNotebook = ({
   });
 
   addNotebookListener({
-    operation: SHARE_PAGE_FORCE_OPERATION,
+    operation: "SHARE_PAGE_FORCE",
     handler: (data) => {
       const { state, notebookPageId } = data as {
         state: string;
@@ -470,7 +470,7 @@ const setupSharePageWithNotebook = ({
   });
 
   addNotebookListener({
-    operation: REQUEST_PAGE_UPDATE_OPERATION,
+    operation: "REQUEST_PAGE_UPDATE",
     handler: (data, source) => {
       const { seq, notebookPageId } = data as {
         seq: number;
@@ -497,7 +497,7 @@ const setupSharePageWithNotebook = ({
         if (missingChanges.length) {
           sendToNotebook({
             target: source,
-            operation: SHARE_PAGE_UPDATE_OPERATION,
+            operation: "SHARE_PAGE_UPDATE",
             data: {
               notebookPageId,
               changes: missingChanges.map((c) => binaryToBase64(c.encoded)),
@@ -682,10 +682,10 @@ const setupSharePageWithNotebook = ({
       clear();
       sharedPageObserver?.disconnect();
       Object.values(sharedPageUnmounts).forEach((u) => u());
-      removeNotebookListener({ operation: SHARE_PAGE_RESPONSE_OPERATION });
-      removeNotebookListener({ operation: SHARE_PAGE_UPDATE_OPERATION });
-      removeNotebookListener({ operation: SHARE_PAGE_OPERATION });
-      removeNotebookListener({ operation: REQUEST_PAGE_UPDATE_OPERATION });
+      removeNotebookListener({ operation: "SHARE_PAGE_RESPONSE" });
+      removeNotebookListener({ operation: "SHARE_PAGE_UPDATE" });
+      removeNotebookListener({ operation: "SHARE_PAGE" });
+      removeNotebookListener({ operation: "REQUEST_PAGE_UPDATE" });
       removeCommand({
         label: COMMAND_PALETTE_LABEL,
       });

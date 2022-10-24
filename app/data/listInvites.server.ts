@@ -21,15 +21,29 @@ const listIssuedTokens = async (requestId: string) => {
     columns: [
       { Header: "Invite Code", accessor: "code" },
       { Header: "Status", accessor: "status" },
+      { Header: "Created On", accessor: "date" },
     ],
-    data: data.map((d) => ({
-      code: d.code,
-      status: d.token_uuid
-        ? "ACCEPTED"
-        : new Date().valueOf() < d.expiration_date.valueOf()
-        ? "PENDING"
-        : "EXPIRED",
-    })),
+    data: data
+      .map((d) => ({
+        code: d.code,
+        status: d.token_uuid
+          ? "ACCEPTED"
+          : new Date().valueOf() < d.expiration_date.valueOf()
+          ? "PENDING"
+          : "EXPIRED",
+        date: d.created_date.valueOf(),
+      }))
+      .sort((a, b) => {
+        if (a.status === b.status) {
+          return b.date - a.date;
+        } else if (a.status === "PENDING") {
+          return -1;
+        } else if (b.status === "PENDING") {
+          return 1;
+        } else {
+          return b.date - a.date;
+        }
+      }),
   };
 };
 

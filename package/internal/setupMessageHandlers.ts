@@ -8,12 +8,20 @@ import type {
 
 const messageHandlers: MessageHandlers = {};
 
-export const handleMessage = (content: string, source?: Notebook) => {
+export const handleMessage = ({
+  content,
+  source,
+  uuid,
+}: {
+  content: string;
+  source?: Notebook;
+  uuid: string;
+}) => {
   const { operation, ...props } = JSON.parse(content);
   const handler = messageHandlers[operation];
   if (handler) {
     // try {
-    handler(props, source || props.source || "");
+    handler(props, source || props.source || "", uuid);
     // } catch (e) {
     //   dispatchAppEvent({
     //     type: "log",
@@ -43,7 +51,7 @@ export const receiveChunkedMessage = (str: string, source?: Notebook) => {
   ongoingMessage[chunk] = message;
   if (ongoingMessage.filter((c) => !!c).length === total) {
     delete ongoingMessages[uuid];
-    handleMessage(ongoingMessage.join(""), source);
+    handleMessage({ content: ongoingMessage.join(""), source, uuid });
   }
 };
 

@@ -4,6 +4,7 @@ import type React from "react";
 import { z } from "zod";
 import type { CID } from "multiformats";
 import type defaultSettings from "../utils/defaultSettings";
+import { Operation } from "./messages";
 
 export type App = typeof APPS[number];
 export type AppId = App["id"];
@@ -164,13 +165,31 @@ type PromptInviteCodeEvent = {
   respond: (s: string) => Promise<void>;
 };
 
+export type Notification = {
+  uuid: string;
+  title: string;
+  description: string;
+  data: Record<string, string>;
+  buttons: readonly string[];
+};
+
+type NotificationEvent = {
+  type: "notification";
+  notification: Notification;
+};
+
 export type AppEvent =
   | LogEvent
   | SharePageEvent
   | ConnectionEvent
-  | PromptInviteCodeEvent;
+  | PromptInviteCodeEvent
+  | NotificationEvent;
 
-type MessageHandler = (data: json, source: Notebook & { uuid: string }) => void;
+type MessageHandler = (
+  data: json,
+  source: Notebook & { uuid: string },
+  uuid: string
+) => void;
 export type MessageHandlers = {
   [operation: string]: MessageHandler;
 };
@@ -185,13 +204,13 @@ export type NotificationHandler = (
   args: Record<string, string>
 ) => Promise<void>;
 export type AddNotebookListener = (args: {
-  operation: string;
+  operation: Operation;
   handler: MessageHandler;
 }) => void;
 export type RemoveNotebookListener = (args: { operation: string }) => void;
 export type SendToNotebook = (args: {
   target: Notebook | string;
-  operation: string;
+  operation: Operation;
   data?: { [k: string]: json };
 }) => void;
 export type SendToBackend = (args: {
@@ -287,6 +306,13 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
   z.object({
     method: z.literal("get-ipfs-cid"),
     notebookPageId: z.string(),
+  }),
+  z.object({
+    method: z.literal("get-unmarked-messages"),
+  }),
+  z.object({
+    method: z.literal("mark-message-read"),
+    messageUuid: z.string(),
   }),
 ]);
 

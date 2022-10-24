@@ -33,6 +33,7 @@ addNotebookListener({
   handler: (
     data,   // json object
     source, // notebook that sent the message
+    uuid,   // universal id of the message
   ) => {
     const {
         uuid,      // uuid string

@@ -24,6 +24,7 @@ import {
   receiveChunkedMessage,
   removeNotebookListener,
 } from "./setupMessageHandlers";
+import { Operation } from "./messages";
 
 const USAGE_LABEL = "View SamePage Usage";
 
@@ -286,6 +287,7 @@ const setupWsFeatures = () => {
               apiClient<{
                 data: string;
                 source: Notebook;
+                operation: Operation;
               }>({
                 method: "load-message",
                 messageUuid: msg,
@@ -293,11 +295,12 @@ const setupWsFeatures = () => {
                 progress = progress + 1;
                 dispatchAppEvent({
                   type: "log",
-                  intent: "info",
+                  intent: "debug",
                   content: `Loaded ${progress} of ${messages.length} remote messages...`,
                   id: "load-remote-message",
                 });
-                handleMessage(r.data, r.source);
+                handleMessage({ content: r.data, source: r.source, uuid: msg });
+                apiClient({ messageUuid: msg, method: "mark-message-read" });
               })
             )
           ).finally(() => {

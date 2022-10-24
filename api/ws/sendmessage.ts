@@ -13,6 +13,7 @@ import type {
 } from "aws-lambda";
 import getNotebookUuids from "~/data/getNotebookUuids.server";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
+import { Operation } from "package/internal/messages";
 
 // postToConnection({
 //   ConnectionId,
@@ -102,8 +103,9 @@ const dataHandler = async (
     });
   } else if (operation === "PROXY") {
     const { proxyOperation, ...data } = props as {
-      proxyOperation: string;
-    } & ({ workspace: string; app: AppId } | { notebookUuid: string });
+      proxyOperation: Operation;
+    } & ({ workspace: string; app: AppId } | { notebookUuid: string }) &
+      Record<string, string>;
     const cxn = await getMysqlConnection(requestId);
     const [source] = await cxn
       .execute(`SELECT notebook_uuid FROM online_clients WHERE id = ?`, [
@@ -129,10 +131,8 @@ const dataHandler = async (
         ? messageNotebook({
             source: source.notebook_uuid,
             target,
-            data: {
-              operation: proxyOperation,
-              ...proxyData,
-            },
+            operation: proxyOperation,
+            data: proxyData,
             messageUuid,
             requestId,
           })

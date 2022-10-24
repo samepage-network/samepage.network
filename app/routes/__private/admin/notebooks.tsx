@@ -13,6 +13,16 @@ const ConnectionsPage = () => {
       <Table
         className="max-w-3xl w-full"
         onRowClick={(r) => navigate(r.uuid as string)}
+        renderCell={{
+          connected: (v) =>
+            typeof v === "number"
+              ? new Date(v).toLocaleString()
+              : (v as string),
+          invited: (v) =>
+            typeof v === "number"
+              ? new Date(v).toLocaleString()
+              : (v as string),
+        }}
       />
       <div className={"flex-grow-1 overflow-auto"}>
         <Outlet />

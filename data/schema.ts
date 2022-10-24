@@ -65,6 +65,8 @@ const message = z.object({
   marked: z.boolean(),
   source: optionalUuid,
   target: optionalUuid,
+  operation: z.string(),
+  metadata: z.object({}).optional(),
 });
 
 const ongoingMessage = z.object({

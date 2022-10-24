@@ -29,6 +29,8 @@ import saveSharedPage from "~/data/saveSharedPage.server";
 import getNotebookUuids from "~/data/getNotebookUuids.server";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
 import { randomBytes } from "crypto";
+import { Operation } from "package/internal/messages";
+import messageToNotification from "package/internal/messageToNotification";
 
 const zMethod = zUnauthenticatedBody
   .and(zBaseHeaders)
@@ -248,29 +250,27 @@ const logic = async (req: Record<string, unknown>) => {
           }),
           getMysql(requestId).then((cxn) => {
             return cxn
-              .execute(`UPDATE messages SET marked = ? WHERE uuid = ?`, [
-                1,
-                messageUuid,
-              ])
-              .then(() =>
-                cxn.execute(
-                  `SELECT n.* FROM messages m INNER JOIN notebooks n ON n.uuid = m.source WHERE m.uuid = ?`,
-                  [messageUuid]
-                )
+              .execute(
+                `SELECT n.*, m.operation FROM messages m INNER JOIN notebooks n ON n.uuid = m.source WHERE m.uuid = ?`,
+                [messageUuid]
               )
               .then(([args]) => {
                 cxn.destroy();
-                return args as (Notebook & { uuid: string })[];
+                return args as (Notebook & {
+                  uuid: string;
+                  operation: string;
+                })[];
               });
           }),
         ])
-          .then(([Data, [source]]) => {
+          .then(([Data, [{ operation, ...source }]]) => {
             if (!source) {
               throw new NotFoundError(`No message: ${messageUuid} exists`);
             }
             return {
               data: Data,
               source,
+              operation,
             };
           })
           .catch(catchError("Failed to load a message"));
@@ -369,8 +369,8 @@ const logic = async (req: Record<string, unknown>) => {
         await messageNotebook({
           target: invited_by,
           source: notebookUuid,
+          operation: "SHARE_PAGE_RESPONSE",
           data: {
-            operation: "SHARE_PAGE_RESPONSE",
             success: true,
             title: notebookPageId,
           },
@@ -413,10 +413,10 @@ const logic = async (req: Record<string, unknown>) => {
                 messageNotebook({
                   source: notebookUuid,
                   target,
+                  operation: "SHARE_PAGE_UPDATE",
                   data: {
                     changes,
                     notebookPageId: notebook_page_id,
-                    operation: "SHARE_PAGE_UPDATE",
                   },
                   requestId,
                 })
@@ -488,10 +488,10 @@ const logic = async (req: Record<string, unknown>) => {
               messageNotebook({
                 source: notebookUuid,
                 target,
+                operation: "SHARE_PAGE_FORCE",
                 data: {
                   state,
                   notebookPageId: notebook_page_id,
-                  operation: "SHARE_PAGE_FORCE",
                 },
                 requestId,
               })
@@ -551,16 +551,17 @@ const logic = async (req: Record<string, unknown>) => {
                 targetNotebookUuid,
               ]
             );
-            console.log("sending from", notebookUuid, "to", targetNotebookUuid);
             return messageNotebook({
               source: notebookUuid,
               target: targetNotebookUuid,
+              operation: "SHARE_PAGE",
               data: {
+                // today, these two values are the same. Future state, ideally they are independent
                 notebookPageId,
-                pageUuid,
-                operation: "SHARE_PAGE",
+                title: notebookPageId,
               },
               requestId: requestId,
+              metadata: ["title"],
             }).then(() => ({ success: true }));
           })
           .catch(catchError("Failed to invite notebook to a shared page"))
@@ -612,8 +613,8 @@ const logic = async (req: Record<string, unknown>) => {
                 title: notebookPageId,
                 rejected: !target,
                 success: false,
-                operation: "SHARE_PAGE_RESPONSE",
               },
+              operation: "SHARE_PAGE_RESPONSE",
               requestId,
             })
           )
@@ -711,11 +712,10 @@ const logic = async (req: Record<string, unknown>) => {
             messageNotebook({
               source: notebookUuid,
               target,
+              operation: "QUERY",
               data: {
                 request,
-                operation: "QUERY",
               },
-              messageUuid: v4(),
               requestId: requestId,
             }).then(() => body)
           )
@@ -731,12 +731,11 @@ const logic = async (req: Record<string, unknown>) => {
         return messageNotebook({
           target,
           source: notebookUuid,
+          operation: `QUERY_RESPONSE`,
           data: {
-            operation: `QUERY_RESPONSE`,
             ephemeral: true,
             ...JSON.parse(response),
           },
-          messageUuid: v4(),
           requestId: requestId,
         })
           .then(() => ({ success: true }))
@@ -803,6 +802,42 @@ const logic = async (req: Record<string, unknown>) => {
         const { body: state } = await downloadSharedPage({ cid });
         cxn.destroy();
         return { state: Buffer.from(state).toString("base64") };
+      }
+      case "get-unmarked-messages": {
+        return {
+          messages: await cxn
+            .execute(
+              `SELECT m.uuid, m.operation, n.app, n.workspace, m.metadata FROM messages m
+              LEFT JOIN notebooks n ON n.uuid = m.source 
+              WHERE m.marked = 0 AND m.target = ?`,
+              [notebookUuid]
+            )
+            .then(([r]) =>
+              (
+                r as ({
+                  uuid: string;
+                  operation: Operation;
+                  metadata: null | Record<string, string>;
+                } & Notebook)[]
+              ).map(({ uuid, operation, metadata, ...source }) => {
+                return messageToNotification({
+                  operation,
+                  source,
+                  data: metadata || {},
+                  uuid,
+                });
+              })
+            ),
+        };
+      }
+      case "mark-message-read": {
+        const { messageUuid } = args;
+        await cxn.execute(`UPDATE messages SET marked = ? WHERE uuid = ?`, [
+          1,
+          messageUuid,
+        ]);
+        cxn.destroy();
+        return { success: true };
       }
       default:
         throw new NotFoundError(`Unknown method: ${JSON.stringify(args)}`);
