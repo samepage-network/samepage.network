@@ -5,22 +5,8 @@ import { onAppEvent } from "../internal/registerAppEventListener";
 import apiClient from "../internal/apiClient";
 import { Notification } from "../internal/types";
 
-const defaults: {
-  state: Record<string, Notification>;
-} & NotificationContainerProps["api"] = {
-  state: {},
-  addNotification: async (not) => (defaults.state[not.uuid] = not),
-  deleteNotification: async (uuid) => delete defaults.state[uuid],
-  getNotifications: async () => Object.values(defaults.state),
-};
-
 export type NotificationContainerProps = {
   actions?: Record<string, (args: Record<string, string>) => Promise<unknown>>;
-  api?: {
-    addNotification: (n: Notification) => Promise<unknown>;
-    deleteNotification: (uuid: string) => Promise<unknown>;
-    getNotifications: () => Promise<Notification[]>;
-  };
 };
 
 const ActionButtons = ({

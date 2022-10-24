@@ -44,7 +44,7 @@ const setupSharePageWithNotebook = ({
 }: {
   overlayProps?: {
     viewSharedPageProps?: ViewSharedPagesProps;
-    notificationContainerProps?: NotificationContainerProps;
+    notificationContainerProps?: NotificationContainerProps & { path?: string };
     sharedPageStatusProps?: {
       getHtmlElement?: (
         notebookPageId: string
@@ -674,6 +674,7 @@ const setupSharePageWithNotebook = ({
       id: "samepage-notification-container",
       Overlay: NotificationContainer,
       props: notificationContainerProps,
+      path: notificationContainerProps?.path,
     });
   }
 
