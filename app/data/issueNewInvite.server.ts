@@ -1,5 +1,5 @@
 import getMysqlConnection from "fuegojs/utils/mysql";
-import { randomBytes } from "crypto";
+import randomString from "./randomString.server";
 
 const issueNewInvite = async ({
   context: { requestId },
@@ -10,11 +10,7 @@ const issueNewInvite = async ({
   const today = new Date();
   const nextWeek = new Date(today);
   nextWeek.setDate(nextWeek.getDate() + 7);
-  const code = await new Promise<string>((resolve) =>
-    randomBytes(4, function (_, buffer) {
-      resolve(buffer.toString("hex"));
-    })
-  );
+  const code = await randomString({ length: 4, encoding: "hex" });
   await cxn.execute(
     `INSERT INTO invitations (code, created_date, expiration_date)
     VALUES (?, ?, ?)`,
