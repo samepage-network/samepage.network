@@ -147,7 +147,7 @@ const NotificationContainer = ({
             "bg-white w-72 absolute top-0 right-0 shadow-xl text-black"
           }
         >
-          <div className="flex items-center justify-between py-2 px-4 bg-slate-100 bg-opacity-50 border-b border-b-black">
+          <div className="flex items-center justify-between py-2 px-4 bg-slate-100 bg-opacity-50 border-b border-b-black border-solid">
             <h4 className="font-normal text-lg">Notifications</h4>
             <Button
               onClick={() => setIsOpen(false)}
@@ -165,7 +165,7 @@ const NotificationContainer = ({
             {notifications.map((not) => (
               <div key={not.uuid} className={"py-2 px-4"}>
                 <h5 className="font-base text-base mb-1">{not.title}</h5>
-                <div className="text-sm">
+                <div className="text-sm whitespace-pre-wrap">
                   <Markdown
                     options={{
                       overrides: {

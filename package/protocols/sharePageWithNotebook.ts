@@ -206,6 +206,10 @@ const setupSharePageWithNotebook = ({
       actorId: getActorId(),
     });
 
+  // TODO - Could probably get away with removing this if all it will do is add a notification
+  // Any messages received that require further user input could be auto-notification
+  // Maybe we add params on here for futher user actions that could be taken
+  // addNotebookListener({ operation, actions });
   addNotebookListener({
     operation: "SHARE_PAGE",
     handler: (e, source, uuid) => {
