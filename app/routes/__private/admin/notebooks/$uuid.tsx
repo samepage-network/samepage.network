@@ -4,7 +4,7 @@ import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server"
 import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
 import Button from "@dvargas92495/app/components/Button";
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
-import { Form, useLoaderData } from "@remix-run/react";
+import { Form, useLoaderData, Link } from "@remix-run/react";
 import deleteNotebook from "~/data/deleteNotebook.server";
 import getNotebookProfile from "~/data/getNotebookProfile.server";
 
@@ -22,6 +22,16 @@ const SingleNotebookPage = () => {
       <div>
         <b>Workspace: </b>
         <span>{data.notebook.workspace}</span>
+      </div>
+      <div>
+        Shared Pages
+        <ul>
+          {data.pages.map((i) => (
+            <li>
+              <Link to={`/admin/pages/${i.uuid}`}>{i.title}</Link>
+            </li>
+          ))}
+        </ul>
       </div>
       <div>
         Incoming Messages

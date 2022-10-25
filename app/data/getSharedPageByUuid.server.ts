@@ -7,7 +7,10 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
   const notebooks = await cxn
     .execute(
-      `SELECT app, workspace, notebook_page_id, uuid, cid FROM page_notebook_links WHERE page_uuid = ?`,
+      `SELECT n.app, n.workspace, l.notebook_page_id, l.uuid, l.cid 
+       FROM page_notebook_links l 
+       INNER JOIN notebooks n ON n.uuid = l.notebook_uuid
+       WHERE page_uuid = ?`,
       [uuid]
     )
     .then(

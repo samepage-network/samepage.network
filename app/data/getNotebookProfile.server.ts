@@ -25,6 +25,18 @@ const getNotebookProfile = async ({
   }[];
   if (!notebook)
     throw new NotFoundError(`Could not find notebook by uuid: ${uuid}`);
+  const pages = await cxn
+    .execute(
+      `SELECT p.uuid, p.notebook_page_id FROM page_notebook_links p
+    WHERE p.notebook_uuid = ? ORDER BY m.invited_date DESC LIMIT 10`,
+      [uuid]
+    )
+    .then(([a]) =>
+      (a as { uuid: string; notebook_page_id: string }[]).map((m) => ({
+        uuid: m.uuid,
+        title: m.notebook_page_id,
+      }))
+    );
   const outgoingMessages = await cxn
     .execute(
       `SELECT m.source, m.created_date, m.marked FROM messages m
@@ -63,6 +75,7 @@ const getNotebookProfile = async ({
     },
     outgoingMessages,
     incomingMessages,
+    pages,
   };
 };
 
