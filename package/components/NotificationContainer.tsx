@@ -3,8 +3,11 @@ import React from "react";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { onAppEvent } from "../internal/registerAppEventListener";
 import apiClient from "../internal/apiClient";
-import { Notification } from "../internal/types";
+import { Notebook, Notification } from "../internal/types";
 import Markdown from "markdown-to-jsx";
+import { Operation } from "../internal/messages";
+import { handleMessage } from "../internal/setupMessageHandlers";
+import MESSAGES from "../internal/messages";
 
 export type NotificationContainerProps = {
   actions?: Record<string, (args: Record<string, string>) => Promise<unknown>>;
@@ -79,10 +82,43 @@ const NotificationContainer = ({
   );
 
   React.useEffect(() => {
+    // TODO - Problems to solve with this:
+    // 1. 2N + 1 API calls. Might as well do it all in `get-unmarked-messages` and remove the metadata column
+    // 2. Weird dependency between buttons.length being nonzero and auto marking as read
+    // 3. This initial message loading should happen in the client setup and not in the protocol > share page > notification container setup
+    // 4. Need better API level tests in the future to protect against regression
     apiClient<{ messages: Notification[] }>({
       method: "get-unmarked-messages",
-    }).then((r) => {
-      setNotifications((notificationsRef.current = r.messages));
+    }).then(async (r) => {
+      const messages = await Promise.all(
+        r.messages.map((msg) =>
+          apiClient<{
+            data: string;
+            source: Notebook;
+            operation: Operation;
+          }>({
+            method: "load-message",
+            messageUuid: msg.uuid,
+          }).then((r) => {
+            handleMessage({
+              content: r.data,
+              source: r.source,
+              uuid: msg.uuid,
+            });
+            if (!MESSAGES[r.operation].buttons.length)
+              return apiClient({
+                messageUuid: msg.uuid,
+                method: "mark-message-read",
+              }).then(() => undefined);
+            else return msg;
+          })
+        )
+      );
+      setNotifications(
+        (notificationsRef.current = messages.filter(
+          (m): m is Notification => !!m
+        ))
+      );
     });
     onAppEvent("notification", (evt) => {
       if (
@@ -113,29 +149,38 @@ const NotificationContainer = ({
         >
           <div className="flex items-center justify-between py-2 px-4 bg-slate-100 bg-opacity-50 border-b border-b-black">
             <h4 className="font-normal text-lg">Notifications</h4>
-            <Button onClick={() => setIsOpen(false)} icon={"cross"} minimal />
+            <Button
+              onClick={() => setIsOpen(false)}
+              icon={"cross"}
+              minimal
+              className=""
+            />
           </div>
           <div>
             {!notifications.length && (
-              <div className="px-4 py-2">All caught up on notifications!</div>
+              <div className="px-4 py-2 text-sm">
+                All caught up on notifications!
+              </div>
             )}
             {notifications.map((not) => (
               <div key={not.uuid} className={"py-2 px-4"}>
                 <h5 className="font-base text-base mb-1">{not.title}</h5>
-                <Markdown
-                  options={{
-                    overrides: {
-                      code: {
-                        props: {
-                          className:
-                            "bg-gray-100 px-2 py-1 rounded-full font-base",
+                <div className="text-sm">
+                  <Markdown
+                    options={{
+                      overrides: {
+                        code: {
+                          props: {
+                            className:
+                              "bg-gray-100 px-2 py-1 rounded-full font-base",
+                          },
                         },
                       },
-                    },
-                  }}
-                >
-                  {not.description}
-                </Markdown>
+                    }}
+                  >
+                    {not.description}
+                  </Markdown>
+                </div>
                 <div className={"flex gap-2 mt-2 justify-between"}>
                   <ActionButtons
                     actions={not.buttons.map((label) => ({

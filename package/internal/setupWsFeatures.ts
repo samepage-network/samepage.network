@@ -2,7 +2,7 @@ import { Spinner, SpinnerSize } from "@blueprintjs/core";
 import React from "react";
 import Onboarding from "../components/Onboarding";
 import UsageChart, { UsageChartProps } from "../components/UsageChart";
-import type { Status, SendToBackend, Notebook } from "./types";
+import type { Status, SendToBackend } from "./types";
 import apiClient from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
 import getNodeEnv from "./getNodeEnv";
@@ -20,11 +20,9 @@ import {
 import sendChunkedMessage from "./sendChunkedMessage";
 import {
   addNotebookListener,
-  handleMessage,
   receiveChunkedMessage,
   removeNotebookListener,
 } from "./setupMessageHandlers";
-import { Operation } from "./messages";
 
 const USAGE_LABEL = "View SamePage Usage";
 
@@ -262,10 +260,9 @@ const setupWsFeatures = () => {
   addNotebookListener({
     operation: "AUTHENTICATION",
     handler: async (props) => {
-      const { success, reason, messages } = props as {
+      const { success, reason } = props as {
         success: boolean;
         reason?: string;
-        messages: string[];
       };
       if (success) {
         samePageBackend.status = "CONNECTED";
@@ -274,44 +271,6 @@ const setupWsFeatures = () => {
           status: "CONNECTED",
         });
         removeConnectCommand();
-        if (messages.length) {
-          let progress = 0;
-          dispatchAppEvent({
-            type: "log",
-            intent: "debug",
-            content: `Loaded ${progress} of ${messages.length} remote messages...`,
-            id: "load-remote-message",
-          });
-          await Promise.all(
-            messages.map((msg) =>
-              apiClient<{
-                data: string;
-                source: Notebook;
-                operation: Operation;
-              }>({
-                method: "load-message",
-                messageUuid: msg,
-              }).then((r) => {
-                progress = progress + 1;
-                dispatchAppEvent({
-                  type: "log",
-                  intent: "debug",
-                  content: `Loaded ${progress} of ${messages.length} remote messages...`,
-                  id: "load-remote-message",
-                });
-                handleMessage({ content: r.data, source: r.source, uuid: msg });
-                apiClient({ messageUuid: msg, method: "mark-message-read" });
-              })
-            )
-          ).finally(() => {
-            dispatchAppEvent({
-              type: "log",
-              intent: "info",
-              content: `Finished loading remote messages`,
-              id: "load-remote-messages",
-            });
-          });
-        }
         addCommand({
           label: USAGE_LABEL,
           callback: () =>

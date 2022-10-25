@@ -59,26 +59,18 @@ const dataHandler = async (
             requestId,
           }).then((n) => n[0]);
 
-    const [_, messages] = await Promise.all([
-      // one downside of inserting here instead of onconnect is the clock drift on created date
-      // a client could theoretically connect without authenticate and would get free usage
-      cxn.execute(
-        `INSERT INTO online_clients (id, created_date, notebook_uuid) 
+    // one downside of inserting here instead of onconnect is the clock drift on created date
+    // a client could theoretically connect without authenticate and would get free usage
+    await cxn.execute(
+      `INSERT INTO online_clients (id, created_date, notebook_uuid) 
       VALUES (?,?,?)`,
-        [clientId, new Date(), notebookUuid]
-      ),
-      cxn
-        .execute(`SELECT uuid FROM messages WHERE marked = 0 AND target = ?`, [
-          notebookUuid,
-        ])
-        .then(([r]) => (r as { uuid: string }[]).map((s) => s.uuid)),
-    ]);
+      [clientId, new Date(), notebookUuid]
+    );
     await postToConnection({
       ConnectionId: clientId,
       Data: {
         operation: "AUTHENTICATION",
         success: true,
-        messages,
       },
     });
     cxn.destroy();
