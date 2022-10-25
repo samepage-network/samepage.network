@@ -4,6 +4,7 @@ import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { onAppEvent } from "../internal/registerAppEventListener";
 import apiClient from "../internal/apiClient";
 import { Notification } from "../internal/types";
+import Markdown from "markdown-to-jsx";
 
 export type NotificationContainerProps = {
   actions?: Record<string, (args: Record<string, string>) => Promise<unknown>>;
@@ -28,7 +29,7 @@ const ActionButtons = ({
           <Button
             key={action.label}
             text={action.label}
-            className={"capitalize mr-2"}
+            className={"capitalize"}
             onClick={() => {
               setLoading(true);
               action
@@ -94,7 +95,7 @@ const NotificationContainer = ({
   }, [setNotifications, notificationsRef]);
   return (
     <div
-      className="samepage-notification-container shadow-xl"
+      className="samepage-notification-container relative"
       style={{
         zIndex: 1000,
       }}
@@ -104,10 +105,14 @@ const NotificationContainer = ({
       ) : (
         <></>
       )}
-      {isOpen ? (
-        <div className={"bg-white w-72"}>
+      {isOpen && (
+        <div
+          className={
+            "bg-white w-72 absolute top-0 right-0 shadow-xl text-black"
+          }
+        >
           <div className="flex items-center justify-between py-2 px-4 bg-slate-100 bg-opacity-50 border-b border-b-black">
-            <h4>Notifications</h4>
+            <h4 className="font-normal text-lg">Notifications</h4>
             <Button onClick={() => setIsOpen(false)} icon={"cross"} minimal />
           </div>
           <div>
@@ -115,10 +120,23 @@ const NotificationContainer = ({
               <div className="px-4 py-2">All caught up on notifications!</div>
             )}
             {notifications.map((not) => (
-              <div key={not.uuid} className={"pb-1 px-4"}>
-                <h5>{not.title}</h5>
-                <p>{not.description}</p>
-                <div className={"flex g-2"}>
+              <div key={not.uuid} className={"py-2 px-4"}>
+                <h5 className="font-base text-base mb-1">{not.title}</h5>
+                <Markdown
+                  options={{
+                    overrides: {
+                      code: {
+                        props: {
+                          className:
+                            "bg-gray-100 px-2 py-1 rounded-full font-base",
+                        },
+                      },
+                    },
+                  }}
+                >
+                  {not.description}
+                </Markdown>
+                <div className={"flex gap-2 mt-2 justify-between"}>
                   <ActionButtons
                     actions={not.buttons.map((label) => ({
                       label,
@@ -141,13 +159,12 @@ const NotificationContainer = ({
             ))}
           </div>
         </div>
-      ) : (
-        <img
-          onClick={() => setIsOpen(true)}
-          src={"https://samepage.network/images/logo.png"}
-          className={"rounded-full h-6 w-6 cursor-pointer"}
-        />
       )}
+      <img
+        onClick={() => setIsOpen(true)}
+        src={"https://samepage.network/images/logo.png"}
+        className={"rounded-full h-6 w-6 cursor-pointer shadow-xl"}
+      />
     </div>
   );
 };
