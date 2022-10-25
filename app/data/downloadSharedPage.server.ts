@@ -10,6 +10,7 @@ const downloadSharedPage = ({ cid }: { cid: string }) => {
   });
   const start = performance.now();
   // a race between ipfs and s3 - who will win?
+  let fails = 0;
   return new Promise<{ encoded: Uint8Array; method: string }>(
     (resolve, reject) => {
       client
@@ -40,13 +41,9 @@ const downloadSharedPage = ({ cid }: { cid: string }) => {
         .catch((e) => {
           console.error("FAILURE FROM DOWNLOADING FROM W3 STORAGE");
           console.error(e);
-          const newError = new Error(
-            "FAILURE FROM DOWNLOADING FROM W3 STORAGE"
-          );
-          try {
-            throw newError;
-          } catch (e) {
-            console.error(newError.stack);
+          fails++;
+          if (fails > 1) {
+            reject(new Error(`Both clients failed to download`));
           }
         });
       downloadFileBuffer({
@@ -57,8 +54,12 @@ const downloadSharedPage = ({ cid }: { cid: string }) => {
             resolve({ encoded: new Uint8Array(fil), method: "AWS S3" });
         })
         .catch((e) => {
-          console.error("FAILURE FROM DOWNLOADING FROM W3 STORAGE");
+          console.error("FAILURE FROM DOWNLOADING FROM S3 STORAGE");
           console.error(e);
+          fails++;
+          if (fails > 1) {
+            reject(new Error(`Both clients failed to download`));
+          }
         });
     }
   ).then(({ encoded, method }) => {

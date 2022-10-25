@@ -70,6 +70,7 @@ const SinglePagePage = () => {
                 className={"cursor-pointer"}
               >
                 {appsById[l.app].name} / {l.workspace} / {l.notebook_page_id}
+                {l.open ? " (PENDING)" : ""}
               </span>
               <Form method={"delete"}>
                 <Button
