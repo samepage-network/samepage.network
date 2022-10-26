@@ -1,4 +1,3 @@
-import { appsById } from "../internal/apps";
 import React, { useMemo } from "react";
 import type { Annotation, InitialSchema, Schema } from "../internal/types";
 
@@ -88,9 +87,11 @@ const AnnotationRendered = ({
   ) : annotation.type === "image" ? (
     <img src={annotation.attributes.src} />
   ) : annotation.type === "reference" ? (
-    <span className="cursor underline">
-      (({appsById[annotation.attributes.app].name}:
-      {annotation.attributes.workspace}:{annotation.attributes.notebookPageId}))
+    <span
+      className="cursor underline"
+      title={`${annotation.attributes.notebookUuid}:${annotation.attributes.notebookPageId}`}
+    >
+      (({children}))
     </span>
   ) : (
     <>{children}</>

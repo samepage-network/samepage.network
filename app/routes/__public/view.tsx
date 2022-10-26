@@ -16,7 +16,7 @@ const ViewPage = () => {
     setCidOrLink(params.cid || "");
   }, [params.cid]);
   return (
-    <div className="flex flex-col gap-2 w-full">
+    <div className="flex flex-col gap-2 w-full max-w-3xl">
       <div className="flex items-center gap-8 w-full">
         <TextInput
           onChange={(e) => setCidOrLink(e.target.value)}

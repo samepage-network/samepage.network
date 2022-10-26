@@ -77,7 +77,10 @@ const externalLinkAnnotation = annotationBase.merge(
 const referenceAnnotation = annotationBase.merge(
   z.object({
     type: z.literal("reference"),
-    attributes: zNotebook.merge(z.object({ notebookPageId: z.string() })),
+    attributes: z.object({
+      notebookPageId: z.string(),
+      notebookUuid: z.string(),
+    }),
   })
 );
 const imageAnnotation = annotationBase.merge(
@@ -105,10 +108,11 @@ export type Schema = {
   content: Automerge.Text;
   annotations: Automerge.List<Annotation>;
 };
-export type InitialSchema = {
-  content: string;
-  annotations: Annotation[];
-};
+export const atJsonInitialSchema = z.object({
+  content: z.string(),
+  annotations: annotationSchema.array(),
+});
+export type InitialSchema = z.infer<typeof atJsonInitialSchema>;
 
 export type json =
   | string
