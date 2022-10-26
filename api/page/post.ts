@@ -26,11 +26,12 @@ import getSharedPage from "~/data/getSharedPage.server";
 import Automerge from "automerge";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
 import saveSharedPage from "~/data/saveSharedPage.server";
-import getNotebookUuids from "~/data/getNotebookUuids.server";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
 import { randomBytes } from "crypto";
 import { Operation } from "package/internal/messages";
 import messageToNotification from "package/internal/messageToNotification";
+import inviteNotebookToPage from "~/data/inviteNotebookToPage.server";
+import getNotebookUuids from "~/data/getNotebookUuids.server";
 
 const zMethod = zUnauthenticatedBody
   .and(zBaseHeaders)
@@ -527,45 +528,28 @@ const logic = async (req: Record<string, unknown>) => {
             safe: true,
             requestId,
           }),
-        ])
-          .then(async ([page, targetPage]) => {
-            if (!page) {
-              throw new NotFoundError(
-                `Attempted to invite a notebook to a page that isn't shared.`
-              );
-            }
-            if (targetPage) {
-              throw new MethodNotAllowedError(
-                `Attempted to invite a notebook to a page that was already shared with it`
-              );
-            }
-            const { uuid: pageUuid } = page;
-            await cxn.execute(
-              `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, version, open, invited_by, invited_date, notebook_uuid)
-            VALUES (UUID(), ?, ?, 0, 1, ?, ?, ?)`,
-              [
-                pageUuid,
-                notebookPageId,
-                notebookUuid,
-                new Date(),
-                targetNotebookUuid,
-              ]
+        ]).then(async ([page, targetPage]) => {
+          if (!page) {
+            throw new NotFoundError(
+              `Attempted to invite a notebook to a page that isn't shared.`
             );
-            return messageNotebook({
-              source: notebookUuid,
-              target: targetNotebookUuid,
-              operation: "SHARE_PAGE",
-              data: {
-                // today, these two values are the same. Future state, ideally they are independent
-                notebookPageId,
-                title: notebookPageId,
-              },
-              requestId: requestId,
-              metadata: ["title"],
-            }).then(() => ({ success: true }));
+          }
+          if (targetPage) {
+            throw new MethodNotAllowedError(
+              `Attempted to invite a notebook to a page that was already shared with it`
+            );
+          }
+          const { uuid: pageUuid } = page;
+          return inviteNotebookToPage({
+            pageUuid,
+            targetNotebookUuid,
+            notebookPageId,
+            requestId,
+            notebookUuid,
           })
-          .catch(catchError("Failed to invite notebook to a shared page"))
-          .finally(() => cxn.destroy());
+            .catch(catchError("Failed to invite notebook to a shared page"))
+            .finally(() => cxn.destroy());
+        });
       }
       case "remove-page-invite": {
         const { notebookPageId, target } = args;

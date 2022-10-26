@@ -1,7 +1,12 @@
 import getMysqlConnection from "fuegojs/utils/mysql";
-import type { AppId, Schema } from "package/internal/types";
+import type { AppId, InitialSchema, Schema } from "package/internal/types";
 import Automerge from "automerge";
 import downloadSharedPage from "./downloadSharedPage.server";
+
+const DEFAULT_SCHEMA: InitialSchema = {
+  content: "",
+  annotations: [],
+};
 
 const getSharedPageByUuid = async (uuid: string, requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
@@ -29,21 +34,19 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
       n.cid
         ? downloadSharedPage({ cid: n.cid }).then((d) => {
             if (d.body.length === 0)
-              return { data: {}, history: [], cid: n.cid };
+              return { data: DEFAULT_SCHEMA, history: [], cid: n.cid };
             const data = Automerge.load<Schema>(d.body);
             return {
-              data,
+              data: {
+                content: data.content.toString(),
+                annotations: data.annotations,
+              },
               history: Automerge.getHistory(data),
               cid: n.cid,
             };
           })
         : {
-            data: {
-              contentType:
-                "application/vnd.atjson+samepage; version=2022-08-17",
-              content: new Automerge.Text(""),
-              annotations: [],
-            } as Schema,
+            data: DEFAULT_SCHEMA,
             history: [],
             cid: n.cid,
           }
