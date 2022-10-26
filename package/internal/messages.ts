@@ -68,4 +68,11 @@ const MESSAGES = {
 
 export type Operation = keyof typeof MESSAGES;
 
+export const notificationActions: {
+  [k in Operation]?: Record<
+    string,
+    (args: Record<string, string>) => Promise<unknown>
+  >;
+} = {};
+
 export default MESSAGES;

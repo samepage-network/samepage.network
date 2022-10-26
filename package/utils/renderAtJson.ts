@@ -3,7 +3,7 @@ import type { Annotation, InitialSchema } from "../internal/types";
 type AppliedAnnotation = {
   prefix: string;
   suffix: string;
-  replace?: true;
+  replace?: boolean;
 };
 
 const renderAtJson = ({

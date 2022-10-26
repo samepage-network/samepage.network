@@ -4,7 +4,6 @@ import {
   Annotation,
   annotationSchema,
   InitialSchema,
-  Notebook,
   Schema,
 } from "../internal/types";
 import setupSamePageClient from "../protocols/setupSamePageClient";
@@ -20,6 +19,7 @@ import apiClient from "../internal/apiClient";
 import Automerge from "automerge";
 import base64ToBinary from "../internal/base64ToBinary";
 import type defaultSettings from "../utils/defaultSettings";
+import { notificationActions } from "../internal/messages";
 
 const findEl = (dom: JSDOM, index: number) => {
   let start = 0;
@@ -94,8 +94,6 @@ const createTestSamePageClient = async ({
   let currentNotebookPageId = "";
   const appClientState: Record<string, string> = {};
   const commands: Record<string, () => unknown> = {};
-  const sharedPages: Record<string, { source: Notebook; pageUuid: string }> =
-    {};
 
   const defaultApplyState = async (id: string, data: Schema) =>
     (appClientState[id] = ReactDOMServer.renderToString(
@@ -209,19 +207,16 @@ const createTestSamePageClient = async ({
     refreshContent,
     insertContent,
     deleteContent,
-    joinPage,
     isShared,
   } = setupSharePageWithNotebook({
     getCurrentNotebookPageId: async () => currentNotebookPageId,
+    createPage: async (notebookPageId) => (appClientState[notebookPageId] = ""),
+    deletePage: async (notebookPageId) => delete appClientState[notebookPageId],
     calculateState,
     applyState: async (id: string, data: Schema) => applyState(id, data),
   });
 
-  onAppEvent("share-page", (e) => {
-    sharedPages[e.notebookPageId] = {
-      source: e.source,
-      pageUuid: e.pageUuid,
-    };
+  onAppEvent("notification", () => {
     onMessage({ type: "notification" });
   });
   console.log = (...args) => onMessage({ type: "log", data: args.join(" ") });
@@ -255,12 +250,11 @@ const createTestSamePageClient = async ({
             onMessage({ type: "init-page-success" })
           );
         } else if (message.type === "accept") {
-          appClientState[message.notebookPageId] = "";
-          const notification = sharedPages[message.notebookPageId];
-          await joinPage({
-            notebookPageId: message.notebookPageId,
-            ...notification,
-          }).then(() => onMessage({ type: "accept" }));
+          notificationActions["SHARE_PAGE"]
+            ?.["accept"]({
+              title: message.notebookPageId,
+            })
+            .then(() => onMessage({ type: "accept" }));
         } else if (message.type === "read") {
           onMessage({
             type: "read",

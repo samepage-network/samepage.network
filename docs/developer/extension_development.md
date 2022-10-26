@@ -131,6 +131,9 @@ To help implement the native _Share Page_ protocol, the `samepage` package expor
 const setupSharePageWithNotebook = () => {
   const { unload } = loadSharePageWithNotebook({
     getCurrentNotebookPageId,
+    createPage,
+    openPage,
+    deletePage,
     applyState,
     calculateState,
     overlayProps,

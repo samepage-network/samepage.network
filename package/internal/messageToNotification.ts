@@ -13,9 +13,9 @@ const messageToNotification = ({
   operation: Operation;
   data: Record<string, string>;
 }): Notification => {
-  console.log(data, typeof data);
   return {
     uuid,
+    operation,
     title: MESSAGES[operation]?.title || "Unknown",
     description: (MESSAGES[operation]?.description || "Unknown")
       .replace(

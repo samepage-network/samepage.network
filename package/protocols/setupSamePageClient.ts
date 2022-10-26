@@ -27,6 +27,7 @@ const setupSamePageClient = ({
   setSetting,
   appRoot,
   onAppLog = (e) => console.log(`(${e.id}) ${e.content}`),
+  notificationContainerPath,
 }: {
   addCommand?: AddCommand;
   removeCommand?: RemoveCommand;
@@ -37,6 +38,7 @@ const setupSamePageClient = ({
   app?: typeof APPS[number]["name"];
   appRoot?: HTMLElement;
   onAppLog?: (e: LogEvent) => void;
+  notificationContainerPath?: string;
 } = {}) => {
   setupRegistry({
     addCommand,
@@ -48,7 +50,7 @@ const setupSamePageClient = ({
     workspace,
     appRoot,
   });
-  const unloadWS = setupWsFeatures();
+  const unloadWS = setupWsFeatures({ notificationContainerPath });
   const unloadP2P = setupP2PFeatures();
   onAppEvent("log", onAppLog);
 

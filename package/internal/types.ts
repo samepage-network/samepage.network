@@ -171,6 +171,7 @@ type PromptInviteCodeEvent = {
 
 export type Notification = {
   uuid: string;
+  operation: Operation;
   title: string;
   description: string;
   data: Record<string, string>;
