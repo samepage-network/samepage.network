@@ -5,7 +5,7 @@ import { onAppEvent } from "../internal/registerAppEventListener";
 import apiClient from "../internal/apiClient";
 import { Notification } from "../internal/types";
 import Markdown from "markdown-to-jsx";
-import { notificationActions } from "package/internal/messages";
+import { notificationActions } from "../internal/messages";
 
 const ActionButtons = ({
   actions,

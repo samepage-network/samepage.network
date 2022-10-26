@@ -29,7 +29,7 @@ import binaryToBase64 from "../internal/binaryToBase64";
 import base64ToBinary from "../internal/base64ToBinary";
 import { clear, has, deleteId, load, set } from "../utils/localAutomergeDb";
 import messageToNotification from "../internal/messageToNotification";
-import { notificationActions } from "package/internal/messages";
+import { notificationActions } from "../internal/messages";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
