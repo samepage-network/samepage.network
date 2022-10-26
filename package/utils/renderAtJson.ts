@@ -3,6 +3,7 @@ import type { Annotation, InitialSchema } from "../internal/types";
 type AppliedAnnotation = {
   prefix: string;
   suffix: string;
+  replace?: true;
 };
 
 const renderAtJson = ({
@@ -13,7 +14,7 @@ const renderAtJson = ({
   applyAnnotation: {
     [t in Annotation as t["type"]]?:
       | AppliedAnnotation
-      | ((attributes: t["attributes"]) => AppliedAnnotation);
+      | ((attributes: t["attributes"], content: string) => AppliedAnnotation);
   };
 }) => {
   return state.annotations
@@ -26,27 +27,30 @@ const renderAtJson = ({
     .map(({ annotation }) => annotation)
     .reduce((p, c, index, all) => {
       const appliedAnnotationData = applyAnnotation[c.type];
+      const annotatedContent = p.slice(c.start, c.end);
       const appliedAnnotation =
         typeof appliedAnnotationData === "object"
           ? appliedAnnotationData
           : typeof appliedAnnotationData === "function"
-          ? // @ts-ignore should be consistent with above
-            appliedAnnotationData(c.attributes || {})
+          ? // @ts-ignore
+            appliedAnnotationData(c.attributes || {}, annotatedContent)
           : { prefix: "", suffix: "" };
-      const annotatedContent = p.slice(c.start, c.end);
-      const isEmptyAnnotation = annotatedContent === String.fromCharCode(0);
       all.slice(index + 1).forEach((a) => {
         a.start +=
           (a.start >= c.start ? appliedAnnotation.prefix.length : 0) +
           (a.start >= c.end ? appliedAnnotation.suffix.length : 0) +
-          (isEmptyAnnotation && a.start >= c.end ? -1 : 0);
+          (appliedAnnotation.replace && a.start >= c.end
+            ? -annotatedContent.length
+            : 0);
         a.end +=
           (a.end >= c.start ? appliedAnnotation.prefix.length : 0) +
           (a.end > c.end ? appliedAnnotation.suffix.length : 0) +
-          (isEmptyAnnotation && a.end > c.end ? -1 : 0);
+          (appliedAnnotation.replace && a.end > c.end
+            ? -annotatedContent.length
+            : 0);
       });
       return `${p.slice(0, c.start)}${appliedAnnotation.prefix}${
-        isEmptyAnnotation ? "" : annotatedContent
+        appliedAnnotation.replace ? "" : annotatedContent
       }${appliedAnnotation.suffix}${p.slice(c.end)}`;
     }, state.content.toString());
 };
