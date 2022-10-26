@@ -2,6 +2,7 @@ import getMysqlConnection from "fuegojs/utils/mysql";
 import type { AppId, InitialSchema, Schema } from "package/internal/types";
 import Automerge from "automerge";
 import downloadSharedPage from "./downloadSharedPage.server";
+import { NotFoundError } from "@dvargas92495/app/backend/errors.server";
 
 const DEFAULT_SCHEMA: InitialSchema = {
   content: "",
@@ -29,6 +30,9 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
           open: 1 | 0;
         }[]
     );
+  if (!notebooks.length) {
+    throw new NotFoundError(`No notebooks connected to page ${uuid}`);
+  }
   const pages = await Promise.all(
     notebooks.map((n) =>
       n.cid

@@ -59,7 +59,9 @@ const AnnotationRendered = ({
         style={{ marginLeft: annotation.attributes.level * 16 }}
         className={"my-2"}
       >
-        {children}
+        {children.map((c, i) =>
+          i === children.length - 1 ? (c as string).slice(0, -1) : c
+        )}
       </li>
     ) : annotation.attributes.viewType === "numbered" ? (
       <li

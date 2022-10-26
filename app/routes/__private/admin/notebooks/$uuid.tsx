@@ -27,7 +27,7 @@ const SingleNotebookPage = () => {
         Shared Pages
         <ul>
           {data.pages.map((i) => (
-            <li>
+            <li key={i.uuid}>
               <Link to={`/admin/pages/${i.uuid}`}>{i.title}</Link>
             </li>
           ))}
@@ -37,7 +37,7 @@ const SingleNotebookPage = () => {
         Incoming Messages
         <ul>
           {data.incomingMessages.map((i) => (
-            <li>
+            <li key={i.date}>
               Sent to <code>{i.target}</code> at{" "}
               {new Date(i.date).toLocaleString()}
             </li>
@@ -48,7 +48,7 @@ const SingleNotebookPage = () => {
         Outgoing Messages
         <ul>
           {data.outgoingMessages.map((i) => (
-            <li>
+            <li key={i.date}>
               Sent to <code>{i.source}</code> at{" "}
               {new Date(i.date).toLocaleString()}
             </li>

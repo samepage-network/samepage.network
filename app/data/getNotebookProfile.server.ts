@@ -27,13 +27,13 @@ const getNotebookProfile = async ({
     throw new NotFoundError(`Could not find notebook by uuid: ${uuid}`);
   const pages = await cxn
     .execute(
-      `SELECT p.uuid, p.notebook_page_id FROM page_notebook_links p
+      `SELECT p.page_uuid, p.notebook_page_id FROM page_notebook_links p
     WHERE p.notebook_uuid = ? ORDER BY p.invited_date DESC LIMIT 10`,
       [uuid]
     )
     .then(([a]) =>
-      (a as { uuid: string; notebook_page_id: string }[]).map((m) => ({
-        uuid: m.uuid,
+      (a as { page_uuid: string; notebook_page_id: string }[]).map((m) => ({
+        uuid: m.page_uuid,
         title: m.notebook_page_id,
       }))
     );

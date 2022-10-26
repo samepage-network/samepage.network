@@ -76,6 +76,7 @@ const ConnectNotebookPage = ({
         <InputGroup
           value={notebookUuid}
           onChange={(e) => setNotebookUuid(e.target.value)}
+          autoFocus
         />
       </Label>
       <Label className={"w-1/2"}>
@@ -172,6 +173,7 @@ const CreateNotebookPage = ({
         <InputGroup
           value={inviteCode}
           onChange={(e) => setInviteCode(e.target.value)}
+          autoFocus
         />
       </Label>
       <Checkbox

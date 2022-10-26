@@ -27,42 +27,16 @@ import Automerge from "automerge";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
 import saveSharedPage from "~/data/saveSharedPage.server";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
-import { randomBytes } from "crypto";
 import { Operation } from "package/internal/messages";
 import messageToNotification from "package/internal/messageToNotification";
 import inviteNotebookToPage from "~/data/inviteNotebookToPage.server";
 import getNotebookUuids from "~/data/getNotebookUuids.server";
+import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
+import createNotebook from "~/data/createNotebook.server";
 
 const zMethod = zUnauthenticatedBody
   .and(zBaseHeaders)
   .or(zAuthenticatedBody.and(zAuthHeaders).and(zBaseHeaders));
-
-const getOrGenerateNotebookUuid = async ({
-  requestId,
-  workspace,
-  app,
-}: { requestId: string } & Notebook) => {
-  const cxn = await getMysql(requestId);
-  const [existingNotebooks] = await cxn.execute(
-    `SELECT n.uuid FROM notebooks n
-  LEFT JOIN token_notebook_links l ON l.notebook_uuid = n.uuid
-  where n.workspace = ? and n.app = ? and l.token_uuid is NULL`,
-    [workspace, app]
-  );
-  const [potentialNotebookUuid] = existingNotebooks as { uuid: string }[];
-  return (
-    potentialNotebookUuid?.uuid ||
-    (await Promise.resolve(v4()).then((uuid) =>
-      cxn
-        .execute(
-          `INSERT INTO notebooks (uuid, app, workspace)
-  VALUES (?, ?, ?)`,
-          [uuid, app, workspace]
-        )
-        .then(() => uuid)
-    ))
-  );
-};
 
 const logic = async (req: Record<string, unknown>) => {
   const result = zMethod.safeParse(req);
@@ -106,30 +80,15 @@ const logic = async (req: Record<string, unknown>) => {
           "Invite has expired. Please request a new one from the team."
         );
       }
-      const token = await new Promise<string>((resolve) =>
-        randomBytes(12, function (_, buffer) {
-          resolve(buffer.toString("base64"));
-        })
-      );
-      const tokenUuid = v4();
-      await cxn.execute(
-        `INSERT INTO tokens (uuid, value)
-      VALUES (?, ?)`,
-        [tokenUuid, token]
-      );
-      await cxn.execute(
-        `UPDATE invitations SET token_uuid = ? where code = ?`,
-        [tokenUuid, inviteCode]
-      );
-      const notebookUuid = await getOrGenerateNotebookUuid({
+
+      const { token, tokenUuid, notebookUuid } = await createNotebook({
         requestId,
         app,
         workspace,
       });
       await cxn.execute(
-        `INSERT INTO token_notebook_links (uuid, token_uuid, notebook_uuid)
-        VALUES (UUID(), ?, ?)`,
-        [tokenUuid, notebookUuid]
+        `UPDATE invitations SET token_uuid = ? where code = ?`,
+        [tokenUuid, inviteCode]
       );
       cxn.destroy();
       return { notebookUuid, token };
@@ -264,10 +223,11 @@ const logic = async (req: Record<string, unknown>) => {
               });
           }),
         ])
-          .then(([Data, [{ operation, ...source }]]) => {
-            if (!source) {
+          .then(([Data, [msg]]) => {
+            if (!msg) {
               throw new NotFoundError(`No message: ${messageUuid} exists`);
             }
+            const { operation, ...source } = msg;
             return {
               data: Data,
               source,

@@ -26,7 +26,10 @@ const SinglePagePage = () => {
   const { notebooks, pages } =
     useLoaderData<Awaited<ReturnType<typeof getSharedPageByUuid>>>();
   const [chosenNotebook, setChosenNotebook] = useState(0);
-  const { data, history } = pages[notebooks[chosenNotebook].cid];
+  const { data, history } = pages[notebooks[chosenNotebook]?.cid] || {
+    data: { content: "", annotations: [] },
+    history: [],
+  };
   const [isData, setIsData] = useState(false);
   return (
     <div className={"flex flex-col gap-12 h-full"}>
@@ -56,18 +59,17 @@ const SinglePagePage = () => {
         </div>
         <div className="flex-grow border-gray-800 flex flex-col h-full">
           <h1 className={"text-3xl py-4 flex items-center justify-between"}>
-            <span>
-              State
-              <Switch
-                onChange={setIsData}
-                label={"Show Raw Data"}
-                labelClassname={"w-28"}
-              />
-            </span>
             <span className="opacity-75 text-xl italic">
-              Showing data from {appsById[notebooks[chosenNotebook].app].name} /{" "}
-              {notebooks[chosenNotebook].workspace}
+              Showing data from{" "}
+              {appsById[notebooks[chosenNotebook]?.app]?.name || "Unknown"} /{" "}
+              {notebooks[chosenNotebook]?.workspace || "Unknown"}
             </span>
+            <Switch
+              onChange={setIsData}
+              label={"Show Raw Data"}
+              labelClassname={"w-28 text-xs"}
+              className={"inline-block mb-0"}
+            />
           </h1>
           {isData ? (
             <pre
@@ -116,12 +118,12 @@ const SinglePagePage = () => {
         <Form className="flex items-center gap-8" method="post">
           <BaseInput
             type={"hidden"}
-            value={notebooks[chosenNotebook].uuid}
+            value={notebooks[chosenNotebook]?.uuid}
             name={"notebookUuid"}
           />
           <BaseInput
             type={"hidden"}
-            value={notebooks[chosenNotebook].notebook_page_id}
+            value={notebooks[chosenNotebook]?.notebook_page_id}
             name={"notebookPageId"}
           />
           <Select
