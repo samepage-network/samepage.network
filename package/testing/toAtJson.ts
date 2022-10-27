@@ -1,5 +1,5 @@
-import { InitialSchema } from "package/internal/types";
-import { reduceTokens } from "package/utils/atJsonTokens";
+import { InitialSchema } from "../internal/types";
+import { reduceTokens } from "../utils/atJsonTokens";
 
 const toAtJson = (node: ChildNode): InitialSchema => {
   if (node.nodeType === node.TEXT_NODE) {
