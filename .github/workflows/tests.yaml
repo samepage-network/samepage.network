@@ -28,6 +28,8 @@ jobs:
           npm install
           rm -Rf node_modules/react node_modules/react-dom node_modules/jsdom
         working-directory: package
+      - name: Install playwright
+        run: npx playwright install
       - name: setup mysql
         run: |
           sudo systemctl start mysql.service

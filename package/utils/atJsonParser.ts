@@ -1,7 +1,7 @@
 import { InitialSchema } from "../internal/types";
 import { Parser, Grammar, CompiledRules } from "nearley";
 import { apiPost } from "../internal/apiClient";
-import { app } from "package/internal/registry";
+import { app } from "../internal/registry";
 
 const atJsonParser = (grammar: CompiledRules, text: string): InitialSchema => {
   const parser = new Parser(Grammar.fromCompiled(grammar));
