@@ -300,6 +300,19 @@ const setupWsFeatures = ({
                 })
               ),
         });
+        if (notificationContainerPath) {
+          const notificationUnmount = renderOverlay({
+            id: "samepage-notification-container",
+            Overlay: NotificationContainer,
+            path: notificationContainerPath,
+          });
+          if (notificationUnmount) {
+            unloads["samepage-notification-container"] = () => {
+              notificationUnmount?.();
+              delete unloads["samepage-notification-container"];
+            };
+          }
+        }
         // TODO - Problems to solve with this:
         // 1. 2N + 1 API calls. Might as well do it all in `get-unmarked-messages` and remove the metadata column
         // 2. Weird dependency between buttons.length being nonzero and auto marking as read
@@ -331,19 +344,6 @@ const setupWsFeatures = ({
               })
             )
           );
-          if (notificationContainerPath) {
-            const notificationUnmount = renderOverlay({
-              id: "samepage-notification-container",
-              Overlay: NotificationContainer,
-              path: notificationContainerPath,
-            });
-            if (notificationUnmount) {
-              unloads["samepage-notification-container"] = () => {
-                notificationUnmount?.();
-                delete unloads["samepage-notification-container"];
-              };
-            }
-          }
           messages.filter((m): m is Notification => !!m);
           dispatchAppEvent({
             type: "log",
@@ -387,6 +387,9 @@ const setupWsFeatures = ({
           };
       } else {
         unloads["samepage-connection-loading"]?.();
+        if (evt.status === "DISCONNECTED") {
+          unloads["samepage-notification-container"]?.();
+        }
       }
     }
   });
