@@ -4,6 +4,7 @@ on:
   push:
     branches: main
     paths:
+      # We need the gh action to somehow watch for new files inserted in api
       - "data/**"
       - ".github/workflows/data.yaml"
 

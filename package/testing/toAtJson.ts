@@ -1,4 +1,4 @@
-import { InitialSchema } from "../internal/types";
+import { Annotation, InitialSchema } from "../internal/types";
 import { reduceTokens } from "../utils/atJsonTokens";
 
 const toAtJson = (node: ChildNode): InitialSchema => {
@@ -23,8 +23,8 @@ const toAtJson = (node: ChildNode): InitialSchema => {
               viewType: "document",
               level: 1,
             },
-          },
-        ],
+          } as Annotation,
+        ].concat(childSchema.annotations),
       };
     } else if (el.tagName === "LI") {
       return {
@@ -38,19 +38,22 @@ const toAtJson = (node: ChildNode): InitialSchema => {
               viewType: "bullet",
               level: 1,
             },
-          },
-        ],
+          } as Annotation,
+        ].concat(childSchema.annotations),
       };
     } else if (el.tagName === "SPAN") {
       const span = el as HTMLSpanElement;
       if (el.classList.contains("samepage-reference")) {
         const [notebookUuid, notebookPageId] = span.title.split(":");
+        const content =
+          childSchema.content.replace(/^\(\(/, "").replace(/\)\)$/, "") ||
+          String.fromCharCode(0);
         return {
-          content: childSchema.content,
+          content,
           annotations: [
             {
               start: 0,
-              end: childSchema.content.length,
+              end: content.length,
               type: "reference",
               attributes: {
                 notebookPageId,
@@ -101,12 +104,13 @@ const toAtJson = (node: ChildNode): InitialSchema => {
       };
     } else if (el.tagName === "IMG") {
       const img = el as HTMLImageElement;
+      const content = img.alt || String.fromCharCode(0);
       return {
-        content: childSchema.content,
+        content,
         annotations: [
           {
             start: 0,
-            end: childSchema.content.length,
+            end: content.length,
             type: "image",
             attributes: {
               src: img.src,
@@ -138,6 +142,11 @@ const toAtJson = (node: ChildNode): InitialSchema => {
         annotations: [],
       };
     }
+  } else if (node.nodeType === node.COMMENT_NODE) {
+    return {
+      content: node.nodeValue || "",
+      annotations: [],
+    };
   } else {
     console.warn(`UNKNOWN NODE TYPE`, node.nodeType);
     return {
