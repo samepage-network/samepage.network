@@ -1,8 +1,8 @@
 import { onAppEvent } from "../internal/registerAppEventListener";
 import setupSharePageWithNotebook from "../protocols/sharePageWithNotebook";
 import {
-  Annotation,
   annotationSchema,
+  atJsonInitialSchema,
   InitialSchema,
   Schema,
 } from "../internal/types";
@@ -14,6 +14,7 @@ import inviteNotebookToPage from "../utils/inviteNotebookToPage";
 import ReactDOMServer from "react-dom/server";
 import React from "react";
 import AtJsonRendered from "../components/AtJsonRendered";
+import toAtJson from "./toAtJson";
 import { JSDOM } from "jsdom";
 import apiClient from "../internal/apiClient";
 import Automerge from "automerge";
@@ -23,7 +24,7 @@ import { notificationActions } from "../internal/messages";
 
 const findEl = (dom: JSDOM, index: number) => {
   let start = 0;
-  const el = Array.from(dom.window.document.body.children).find(
+  const el = Array.from(dom.window.document.body.childNodes).find(
     (el): el is HTMLElement => {
       const len = (el.textContent || "")?.length;
       if (index >= start && index < len + start) {
@@ -66,6 +67,7 @@ const createTestSamePageClient = async ({
       | { type: "error"; data: string }
       | { type: "ready" }
       | { type: "ipfs"; data: Schema }
+      | { type: "refresh" }
   ) => void;
 }) => {
   // @ts-ignore
@@ -103,26 +105,7 @@ const createTestSamePageClient = async ({
   const calculateState = async (id: string): Promise<InitialSchema> => {
     const html = appClientState[id];
     const dom = new JSDOM(html);
-    const blocks = Array.from(dom.window.document.body.children).map(
-      (t) => t.textContent || ""
-    );
-    let start = 0;
-    return {
-      content: blocks.join(""),
-      annotations: blocks.map((b) => {
-        const annotation: Annotation = {
-          type: "block",
-          start,
-          end: start + b.length,
-          attributes: {
-            level: 1,
-            viewType: "document",
-          },
-        };
-        start += b.length;
-        return annotation;
-      }),
-    };
+    return toAtJson(dom.window.document.body);
   };
   const processMessageSchema = z.discriminatedUnion("type", [
     z.object({ type: z.literal("accept"), notebookPageId: z.string() }),
@@ -177,6 +160,11 @@ const createTestSamePageClient = async ({
       type: z.literal("ipfs"),
       notebookPageId: z.string(),
     }),
+    z.object({
+      type: z.literal("refresh"),
+      notebookPageId: z.string(),
+      data: atJsonInitialSchema,
+    }),
   ]);
   const settings =
     "inviteCode" in initOptions
@@ -227,7 +215,6 @@ const createTestSamePageClient = async ({
     })
   );
   onMessage({ type: "ready" });
-  console.log("ready kids", workspace, settings.uuid);
   return {
     send: async (m: z.infer<typeof processMessageSchema>) => {
       try {
@@ -340,6 +327,14 @@ const createTestSamePageClient = async ({
               ),
             })
           );
+        } else if (message.type === "refresh") {
+          await applyState(message.notebookPageId, {
+            content: new Automerge.Text(message.data.content),
+            annotations: message.data.annotations,
+            contentType: "application/vnd.atjson+samepage; version=2022-08-17",
+          });
+          await refreshContent({ notebookPageId: message.notebookPageId });
+          onMessage({ type: "refresh" });
         }
       } catch (e) {
         onMessage({

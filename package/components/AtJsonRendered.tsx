@@ -53,51 +53,54 @@ const AnnotationRendered = ({
       ] as { el: React.ReactNode; start: number; end: number }[]
     )
     .map((c) => c.el);
-  return annotation.type === "block" ? (
-    annotation.attributes.viewType === "bullet" ? (
+  if (annotation.type === "block") {
+    const trimChildren = children.map((c, i) =>
+      i === children.length - 1 ? (c as string).slice(0, -1) : c
+    );
+    return annotation.attributes.viewType === "bullet" ? (
       <li
         style={{ marginLeft: annotation.attributes.level * 16 }}
         className={"my-2"}
       >
-        {children.map((c, i) =>
-          i === children.length - 1 ? (c as string).slice(0, -1) : c
-        )}
+        {trimChildren}
       </li>
     ) : annotation.attributes.viewType === "numbered" ? (
       <li
         style={{ marginLeft: annotation.attributes.level * 16 }}
         className={"my-2 list-decimal"}
       >
-        {children}
+        {trimChildren}
       </li>
     ) : (
       <div
         style={{ marginLeft: annotation.attributes.level * 16 }}
         className={"my-2"}
       >
-        {children}
+        {trimChildren}
       </div>
-    )
-  ) : annotation.type === "highlighting" ? (
-    <span className="bg-yellow-300">{children}</span>
-  ) : annotation.type === "bold" ? (
-    <b className="font-bold">{children}</b>
-  ) : annotation.type === "italics" ? (
-    <i className="italics">{children}</i>
-  ) : annotation.type === "link" ? (
-    <a href={annotation.attributes.href}>{children}</a>
-  ) : annotation.type === "image" ? (
-    <img src={annotation.attributes.src} />
-  ) : annotation.type === "reference" ? (
-    <span
-      className="cursor underline"
-      title={`${annotation.attributes.notebookUuid}:${annotation.attributes.notebookPageId}`}
-    >
-      (({children}))
-    </span>
-  ) : (
-    <>{children}</>
-  );
+    );
+  } else {
+    return annotation.type === "highlighting" ? (
+      <span className="bg-yellow-300 samepage-highlighting">{children}</span>
+    ) : annotation.type === "bold" ? (
+      <b className="font-bold">{children}</b>
+    ) : annotation.type === "italics" ? (
+      <i className="italics">{children}</i>
+    ) : annotation.type === "link" ? (
+      <a href={annotation.attributes.href}>{children}</a>
+    ) : annotation.type === "image" ? (
+      <img src={annotation.attributes.src} />
+    ) : annotation.type === "reference" ? (
+      <span
+        className="cursor underline samepage-reference"
+        title={`${annotation.attributes.notebookUuid}:${annotation.attributes.notebookPageId}`}
+      >
+        (({children}))
+      </span>
+    ) : (
+      <>{children}</>
+    );
+  }
 };
 
 const AtJsonRendered = ({ content, annotations }: Schema | InitialSchema) => {

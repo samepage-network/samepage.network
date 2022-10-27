@@ -209,13 +209,13 @@ export type NotificationHandler = (
   args: Record<string, string>
 ) => Promise<void>;
 export type AddNotebookListener = (args: {
-  operation: Operation;
+  operation: Operation | string;
   handler: MessageHandler;
 }) => void;
 export type RemoveNotebookListener = (args: { operation: string }) => void;
 export type SendToNotebook = (args: {
   target: Notebook | string;
-  operation: Operation;
+  operation: Operation | string;
   data?: { [k: string]: json };
 }) => void;
 export type SendToBackend = (args: {

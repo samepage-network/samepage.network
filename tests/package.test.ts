@@ -167,12 +167,12 @@ test("Full integration test of sharing pages", async () => {
     });
   await test.step("Client 1 loads intial data correctly from IPFS", () =>
     expect.poll(client1Ipfs).toEqual({
-      content: "First entry in page",
+      content: "First entry in page\n",
       annotations: [
         {
           type: "block",
           start: 0,
-          end: 19,
+          end: 20,
           attributes: { level: 1, viewType: "document" },
         },
       ],
@@ -237,12 +237,12 @@ test("Full integration test of sharing pages", async () => {
       ));
   await test.step("Client 1 loads data post insert correctly from IPFS", () =>
     expect.poll(client1Ipfs).toEqual({
-      content: "First super entry in page",
+      content: "First super entry in page\n",
       annotations: [
         {
           type: "block",
           start: 0,
-          end: 25,
+          end: 26,
           attributes: { level: 1, viewType: "document" },
         },
       ],
@@ -267,12 +267,12 @@ test("Full integration test of sharing pages", async () => {
     }));
   await test.step("Client 1 loads data post deletion correctly from IPFS", () =>
     expect.poll(client1Ipfs).toEqual({
-      content: "First super page",
+      content: "First super page\n",
       annotations: [
         {
           type: "block",
           start: 0,
-          end: 16,
+          end: 17,
           attributes: { level: 1, viewType: "document" },
         },
       ],
@@ -310,12 +310,12 @@ test("Full integration test of sharing pages", async () => {
     }));
   await test.step("Client 1 loads data when other are broken correctly from IPFS", () =>
     expect.poll(client1Ipfs).toEqual({
-      content: "First super page alpha",
+      content: "First super page alpha\n",
       annotations: [
         {
           type: "block",
           start: 0,
-          end: 22,
+          end: 23,
           attributes: { level: 1, viewType: "document" },
         },
       ],
@@ -348,12 +348,12 @@ test("Full integration test of sharing pages", async () => {
       })),
     test.step("Client 1 loads data post other fixed correctly from IPFS", () =>
       expect.poll(client1Ipfs).toEqual({
-        content: "First super page alphabet",
+        content: "First super page alphabet\n",
         annotations: [
           {
             type: "block",
             start: 0,
-            end: 25,
+            end: 26,
             attributes: { level: 1, viewType: "document" },
           },
         ],
