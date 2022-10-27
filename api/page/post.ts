@@ -645,7 +645,7 @@ const logic = async (req: Record<string, unknown>) => {
           .then((r) => {
             if (r)
               return {
-                node: JSON.parse(r),
+                ...JSON.parse(r),
                 found: true,
                 fromCache: true,
                 ephemeral: true,
@@ -667,9 +667,10 @@ const logic = async (req: Record<string, unknown>) => {
       }
       case "query-response": {
         const { request, response, target } = args;
+        // TODO replace with IPFS
         const hash = crypto.createHash("md5").update(request).digest("hex");
         await uploadFile({
-          Body: JSON.stringify(response),
+          Body: response,
           Key: `data/queries/${hash}.json`,
         });
         return messageNotebook({
@@ -678,6 +679,7 @@ const logic = async (req: Record<string, unknown>) => {
           operation: `QUERY_RESPONSE`,
           data: {
             ephemeral: true,
+            request,
             ...JSON.parse(response),
           },
           requestId: requestId,
