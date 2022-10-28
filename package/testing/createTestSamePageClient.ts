@@ -1,19 +1,17 @@
 import { onAppEvent } from "../internal/registerAppEventListener";
+import setupSamePageClient from "../protocols/setupSamePageClient";
 import setupSharePageWithNotebook from "../protocols/sharePageWithNotebook";
+import setupNotebookQuerying from "../protocols/notebookQuerying";
 import {
-  annotationSchema,
   atJsonInitialSchema,
   InitialSchema,
+  Notification,
   Schema,
 } from "../internal/types";
-import setupSamePageClient from "../protocols/setupSamePageClient";
 import { z } from "zod";
 import WebSocket from "ws";
 import fetch from "node-fetch";
 import inviteNotebookToPage from "../utils/inviteNotebookToPage";
-import ReactDOMServer from "react-dom/server";
-import React from "react";
-import AtJsonRendered from "../components/AtJsonRendered";
 import toAtJson from "./toAtJson";
 import { JSDOM } from "jsdom";
 import apiClient from "../internal/apiClient";
@@ -21,21 +19,96 @@ import Automerge from "automerge";
 import base64ToBinary from "../internal/base64ToBinary";
 import type defaultSettings from "../utils/defaultSettings";
 import { notificationActions } from "../internal/messages";
+import fromAtJson from "./fromAtJson";
 
-const findEl = (dom: JSDOM, index: number) => {
-  let start = 0;
-  const el = Array.from(dom.window.document.body.childNodes).find(
-    (el): el is HTMLElement => {
-      const len = (el.textContent || "")?.length;
-      if (index >= start && index < len + start) {
-        return true;
-      }
-      start += len;
-      return false;
-    }
-  );
-  return { start, el };
-};
+const SUPPORTED_TAGS = ["SPAN", "DIV", "A"] as const;
+const TAG_SET = new Set<string>(SUPPORTED_TAGS);
+const processMessageSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("accept"), notebookPageId: z.string() }),
+  z.object({
+    type: z.literal("setCurrentNotebookPageId"),
+    notebookPageId: z.string(),
+  }),
+  z.object({
+    type: z.literal("setAppClientState"),
+    notebookPageId: z.string(),
+    data: z.string(),
+  }),
+  z.object({ type: z.literal("share") }),
+  z.object({
+    type: z.literal("invite"),
+    workspace: z.string(),
+  }),
+  z.object({ type: z.literal("unload") }),
+  z.object({ type: z.literal("read"), notebookPageId: z.string() }),
+  z.object({
+    type: z.literal("insert"),
+    notebookPageId: z.string(),
+    content: z.string(),
+    index: z.number().or(z.string()),
+    path: z.string(),
+  }),
+  z.object({
+    type: z.literal("delete"),
+    notebookPageId: z.string(),
+    count: z.number(),
+    index: z.number(),
+    path: z.string(),
+  }),
+  z.object({
+    type: z.literal("disconnect"),
+  }),
+  z.object({
+    type: z.literal("connect"),
+  }),
+  z.object({
+    type: z.literal("break"),
+  }),
+  z.object({
+    type: z.literal("fix"),
+  }),
+  z.object({
+    type: z.literal("updates"),
+  }),
+  z.object({
+    type: z.literal("query"),
+    request: z.string(),
+  }),
+  z.object({
+    type: z.literal("ipfs"),
+    notebookPageId: z.string(),
+  }),
+  z.object({
+    type: z.literal("refresh"),
+    notebookPageId: z.string(),
+    data: atJsonInitialSchema,
+  }),
+  z.object({
+    type: z.literal("waitForNotification"),
+  }),
+]);
+export const responseMessageSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("log"),
+    data: z.string(),
+  }),
+  z.object({
+    type: z.literal("error"),
+    data: z.string(),
+  }),
+  z.object({
+    type: z.literal("ready"),
+    uuid: z.string(),
+  }),
+  z.object({
+    type: z.literal("response"),
+    uuid: z.string(),
+    data: z.record(z.unknown()).optional(),
+  }),
+]);
+
+export type MessageSchema = z.infer<typeof processMessageSchema>;
+export type ResponseSchema = z.infer<typeof responseMessageSchema>;
 
 const createTestSamePageClient = async ({
   workspace,
@@ -46,29 +119,7 @@ const createTestSamePageClient = async ({
     | { inviteCode: string }
     | Record<typeof defaultSettings[number]["id"], string>;
   workspace: string;
-  onMessage: (
-    args:
-      | { type: "log"; data: string }
-      | { type: "notification" }
-      | { type: "setCurrentNotebookPageId" }
-      | { type: "setAppClientState" }
-      | { type: "init-page-success" }
-      | { type: "accept" }
-      | { type: "read"; data: string }
-      | { type: "unload" }
-      | { type: "share-page-success" }
-      | { type: "insert" }
-      | { type: "delete" }
-      | { type: "disconnect" }
-      | { type: "connect" }
-      | { type: "break" }
-      | { type: "fix" }
-      | { type: "updates" }
-      | { type: "error"; data: string }
-      | { type: "ready" }
-      | { type: "ipfs"; data: Schema }
-      | { type: "refresh" }
-  ) => void;
+  onMessage: (args: ResponseSchema) => void;
 }) => {
   // @ts-ignore
   global.WebSocket = WebSocket;
@@ -94,78 +145,24 @@ const createTestSamePageClient = async ({
     });
 
   let currentNotebookPageId = "";
-  const appClientState: Record<string, string> = {};
+  const appClientState: Record<string, JSDOM> = {};
   const commands: Record<string, () => unknown> = {};
 
-  const defaultApplyState = async (id: string, data: Schema) =>
-    (appClientState[id] = ReactDOMServer.renderToString(
-      React.createElement(AtJsonRendered, data)
-    ));
+  const defaultApplyState = async (id: string, data: Schema) => {
+    console.log("Applied", JSON.stringify(data));
+    appClientState[id] = new JSDOM(fromAtJson(data));
+  };
   let applyState = defaultApplyState;
   const calculateState = async (id: string): Promise<InitialSchema> => {
-    const html = appClientState[id];
-    const dom = new JSDOM(html);
-    return toAtJson(dom.window.document.body);
+    const dom = appClientState[id];
+    if (dom) {
+      const atJson = toAtJson(dom.window.document.body);
+      console.log("Calculated", JSON.stringify(atJson));
+      return atJson;
+    } else {
+      return { content: "", annotations: [] };
+    }
   };
-  const processMessageSchema = z.discriminatedUnion("type", [
-    z.object({ type: z.literal("accept"), notebookPageId: z.string() }),
-    z.object({
-      type: z.literal("setCurrentNotebookPageId"),
-      notebookPageId: z.string(),
-    }),
-    z.object({
-      type: z.literal("setAppClientState"),
-      notebookPageId: z.string(),
-      data: z.string(),
-    }),
-    z.object({ type: z.literal("share") }),
-    z.object({
-      type: z.literal("invite"),
-      workspace: z.string(),
-    }),
-    z.object({ type: z.literal("unload") }),
-    z.object({ type: z.literal("read"), notebookPageId: z.string() }),
-    z.object({
-      type: z.literal("insert"),
-      notebookPageId: z.string(),
-      content: z.string(),
-      index: z.number(),
-    }),
-    z.object({
-      type: z.literal("delete"),
-      notebookPageId: z.string(),
-      count: z.number(),
-      index: z.number(),
-    }),
-    z.object({
-      type: z.literal("disconnect"),
-    }),
-    z.object({
-      type: z.literal("connect"),
-    }),
-    z.object({
-      type: z.literal("break"),
-    }),
-    z.object({
-      type: z.literal("fix"),
-    }),
-    z.object({
-      type: z.literal("updates"),
-    }),
-    z.object({
-      type: z.literal("annotate"),
-      annotation: annotationSchema,
-    }),
-    z.object({
-      type: z.literal("ipfs"),
-      notebookPageId: z.string(),
-    }),
-    z.object({
-      type: z.literal("refresh"),
-      notebookPageId: z.string(),
-      data: atJsonInitialSchema,
-    }),
-  ]);
   const settings =
     "inviteCode" in initOptions
       ? {
@@ -193,20 +190,29 @@ const createTestSamePageClient = async ({
   const {
     unload: unloadSharePage,
     refreshContent,
-    insertContent,
-    deleteContent,
     isShared,
   } = setupSharePageWithNotebook({
     getCurrentNotebookPageId: async () => currentNotebookPageId,
-    createPage: async (notebookPageId) => (appClientState[notebookPageId] = ""),
+    createPage: async (notebookPageId) =>
+      (appClientState[notebookPageId] = new JSDOM()),
     deletePage: async (notebookPageId) => delete appClientState[notebookPageId],
     calculateState,
     applyState: async (id: string, data: Schema) => applyState(id, data),
   });
-
-  onAppEvent("notification", () => {
-    onMessage({ type: "notification" });
+  const { unload: unloadNotebookQuerying, query } = setupNotebookQuerying({
+    onQuery: async (notebookPageId) => {
+      return toAtJson(appClientState[notebookPageId].window.document.body);
+    },
+    onQueryResponse: async (response) => {
+      if (response.data.content) {
+        const [notebookUuid, notebookPageId] = response.request.split(":");
+        appClientState[`${notebookUuid}:${notebookPageId}`] = new JSDOM(
+          fromAtJson(response.data)
+        );
+      }
+    },
   });
+
   console.log = (...args) => onMessage({ type: "log", data: args.join(" ") });
   await initializingPromise.catch(() =>
     onMessage({
@@ -214,43 +220,60 @@ const createTestSamePageClient = async ({
       data: `Error: 3 arguments required for --forked (workspace, notebook id, token)\nFound: ${process.argv}`,
     })
   );
-  onMessage({ type: "ready" });
+  onMessage({ type: "ready", uuid: settings.uuid });
   return {
-    send: async (m: z.infer<typeof processMessageSchema>) => {
+    send: async (m: MessageSchema) => {
       try {
-        const message = processMessageSchema.parse(m);
+        const message = processMessageSchema
+          .and(z.object({ uuid: z.string().uuid() }))
+          .parse(m);
         if (message.type === "setCurrentNotebookPageId") {
           currentNotebookPageId = message.notebookPageId;
-          onMessage({ type: "setCurrentNotebookPageId" });
+          onMessage({ type: "response", uuid: message.uuid });
         } else if (message.type === "setAppClientState") {
-          appClientState[message.notebookPageId] = message.data;
+          appClientState[message.notebookPageId] = new JSDOM(message.data);
           if (isShared(message.notebookPageId)) {
             await refreshContent({
               notebookPageId: message.notebookPageId,
-            });
+            }).then(() =>
+              onMessage({
+                type: "response",
+                uuid: message.uuid,
+                data: { success: true },
+              })
+            );
           } else {
-            onMessage({ type: "setAppClientState" });
+            onMessage({
+              type: "response",
+              uuid: message.uuid,
+              data: { success: false },
+            });
           }
         } else if (message.type === "share") {
           commands["Share Page on SamePage"]();
-          awaitLog("init-page-success").then(() =>
-            onMessage({ type: "init-page-success" })
+          await awaitLog("init-page-success").then(() =>
+            onMessage({ type: "response", uuid: message.uuid })
           );
         } else if (message.type === "accept") {
           notificationActions["SHARE_PAGE"]
             ?.["accept"]({
               title: message.notebookPageId,
             })
-            .then(() => onMessage({ type: "accept" }));
+            .then(() => onMessage({ type: "response", uuid: message.uuid }));
         } else if (message.type === "read") {
+          const dom = appClientState[message.notebookPageId];
           onMessage({
-            type: "read",
-            data: appClientState[message.notebookPageId],
+            type: "response",
+            uuid: message.uuid,
+            data: {
+              html: dom ? dom.window.document.body.innerHTML : "",
+            },
           });
         } else if (message.type === "unload") {
+          unloadNotebookQuerying();
           unloadSharePage();
           unload();
-          onMessage({ type: "unload" });
+          onMessage({ type: "response", uuid: message.uuid });
         } else if (message.type === "invite") {
           await Promise.all([
             awaitLog("share-page-success"),
@@ -259,61 +282,101 @@ const createTestSamePageClient = async ({
               app: 0,
               workspace: message.workspace,
             }),
-          ]).then(() => onMessage({ type: "share-page-success" }));
+          ]).then(() => onMessage({ type: "response", uuid: message.uuid }));
+        } else if (message.type === "waitForNotification") {
+          await new Promise<Notification>((resolve) => {
+            const offAppEvent = onAppEvent("notification", (e) => {
+              offAppEvent();
+              resolve(e.notification);
+            });
+          }).then((data) => {
+            onMessage({ type: "response", uuid: message.uuid, data });
+          });
         } else if (message.type === "insert") {
-          const old = appClientState[message.notebookPageId];
-          const dom = new JSDOM(old);
-          const { el, start } = findEl(dom, message.index);
-          if (el) {
-            const oldContent = el.textContent || "";
-            el.textContent = `${oldContent.slice(
-              start,
-              message.index - start
-            )}${message.content}${oldContent.slice(message.index - start)}`;
+          const dom = appClientState[message.notebookPageId];
+          const el = dom.window.document.body.querySelector(message.path);
+          if (!el) {
+            onMessage({
+              type: "error",
+              data: `Failed to insert: cannot find ${message.path}`,
+            });
+          } else if (TAG_SET.has(message.content)) {
+            const newEl = dom.window.document.createElement(
+              message.content.toLowerCase()
+            );
+            const index = Number(message.index);
+            if (index >= el.children.length) {
+              el.appendChild(newEl);
+            } else {
+              el.insertBefore(newEl, el.children[index]);
+            }
+          } else if (typeof message.index === "string") {
+            el.setAttribute(message.index, message.content);
           } else {
-            const newEl = dom.window.document.createElement("div");
-            newEl.innerHTML = message.content;
-            dom.window.document.body.appendChild(newEl);
-          }
-          appClientState[message.notebookPageId] =
-            dom.window.document.body.innerHTML;
-          await insertContent(message).then(() =>
-            onMessage({ type: "insert" })
-          );
-        } else if (message.type === "delete") {
-          const old = appClientState[message.notebookPageId];
-          const dom = new JSDOM(old);
-          const { el, start } = findEl(dom, message.index);
-          if (el) {
             const oldContent = el.textContent || "";
-            el.textContent = `${oldContent.slice(
-              start,
-              message.index - start
-            )}${oldContent.slice(message.index - start + message.count)}`;
-            if (!el.textContent) el.remove();
+            el.textContent = `${oldContent.slice(0, message.index)}${
+              message.content
+            }${oldContent.slice(message.index)}`;
           }
-          await deleteContent(message).then(() =>
-            onMessage({ type: "delete" })
-          );
+          if (el)
+            await refreshContent({
+              notebookPageId: message.notebookPageId,
+            }).then(() =>
+              onMessage({
+                type: "response",
+                uuid: message.uuid,
+                data: { success: true },
+              })
+            );
+        } else if (message.type === "delete") {
+          const dom = appClientState[message.notebookPageId];
+          const el = dom.window.document.body.querySelector(message.path);
+          if (el) {
+            if (message.count === 0) {
+              el.remove();
+            } else {
+              const oldContent = el.textContent || "";
+              el.textContent = `${oldContent.slice(
+                0,
+                message.index
+              )}${oldContent.slice(message.index + message.count)}`;
+            }
+            await refreshContent({
+              notebookPageId: message.notebookPageId,
+            }).then(() =>
+              onMessage({
+                type: "response",
+                uuid: message.uuid,
+                data: { success: false },
+              })
+            );
+          } else {
+            onMessage({
+              type: "error",
+              data: `Failed to delete: cannot find ${message.path}`,
+            });
+          }
         } else if (message.type === "disconnect") {
           const awaitDisconnect = awaitLog("samepage-disconnect");
           commands["Disconnect from SamePage Network"]();
-          awaitDisconnect.then(() => onMessage({ type: "disconnect" }));
+          awaitDisconnect.then(() =>
+            onMessage({ type: "response", uuid: message.uuid })
+          );
         } else if (message.type === "connect") {
           commands["Connect to SamePage Network"]();
           awaitLog("samepage-success").then(() =>
-            onMessage({ type: "connect" })
+            onMessage({ type: "response", uuid: message.uuid })
           );
         } else if (message.type === "break") {
           applyState = () =>
             Promise.reject(new Error("Something went wrong..."));
-          onMessage({ type: "break" });
+          onMessage({ type: "response", uuid: message.uuid });
         } else if (message.type === "fix") {
           applyState = defaultApplyState;
-          onMessage({ type: "fix" });
+          onMessage({ type: "response", uuid: message.uuid });
         } else if (message.type === "updates") {
           await awaitLog("update-success").then(() =>
-            onMessage({ type: "updates" })
+            onMessage({ type: "response", uuid: message.uuid })
           );
         } else if (message.type === "ipfs") {
           await apiClient<{ state: string }>({
@@ -321,7 +384,8 @@ const createTestSamePageClient = async ({
             notebookPageId: message.notebookPageId,
           }).then(({ state }) =>
             onMessage({
-              type: "ipfs",
+              type: "response",
+              uuid: message.uuid,
               data: Automerge.load(
                 base64ToBinary(state) as Automerge.BinaryDocument
               ),
@@ -334,7 +398,10 @@ const createTestSamePageClient = async ({
             contentType: "application/vnd.atjson+samepage; version=2022-08-17",
           });
           await refreshContent({ notebookPageId: message.notebookPageId });
-          onMessage({ type: "refresh" });
+          onMessage({ type: "response", uuid: message.uuid });
+        } else if (message.type === "query") {
+          const data = await query(message.request);
+          onMessage({ type: "response", uuid: message.uuid, data });
         }
       } catch (e) {
         onMessage({

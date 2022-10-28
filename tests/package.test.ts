@@ -1,16 +1,18 @@
 import { fork, spawn } from "child_process";
-import { z } from "zod";
 import { v4 } from "uuid";
 import getMysqlConnection from "fuegojs/utils/mysql";
 import { test, expect } from "@playwright/test";
 import issueNewInvite from "~/data/issueNewInvite.server";
+import {
+  MessageSchema,
+  responseMessageSchema,
+  ResponseSchema,
+} from "../package/testing/createTestSamePageClient";
 
 let cleanup: () => unknown;
 const logs: { data: string; time: string }[] = [];
 const inviteCodes: string[] = [];
 const testId = v4();
-let client1ExpectedToClose = false;
-let client2ExpectedToClose = false;
 
 test.beforeAll(async () => {
   await getMysqlConnection(testId).then((cxn) =>
@@ -23,18 +25,72 @@ test.beforeAll(async () => {
   );
 });
 
-test("Full integration test of sharing pages", async () => {
-  const startTime = process.hrtime.bigint();
-  const addToLog = (data: string) => {
-    logs.push({
-      data,
-      time: (Number(process.hrtime.bigint() - startTime) / 1000000000).toFixed(
-        3
-      ),
-    });
+const log = (...args: Parameters<typeof console.log>) =>
+  process.env.DEBUG && console.log(...args);
+
+const forkSamePageClient = ({
+  workspace,
+  inviteCode,
+}: {
+  workspace: string;
+  inviteCode: string;
+}) => {
+  let expectedToClose = false;
+  const client = fork(
+    "./package/testing/createTestSamePageClient",
+    ["--forked", workspace, inviteCode]
+    // { execArgv: ["--inspect-brk=127.0.0.1:9323"] }
+  );
+  const pendingRequests: Record<string, (data: unknown) => void> = {};
+  const api = {
+    send: (m: MessageSchema) => {
+      const uuid = v4();
+      log(`Client ${workspace}: Sending ${m.type} request (${uuid})`);
+      return new Promise<unknown>((resolve) => {
+        pendingRequests[uuid] = resolve;
+        client.send({ ...m, uuid });
+      });
+    },
+    kill: () => client.kill(),
+    prepare: () => (expectedToClose = true),
+    uuid: "",
   };
 
-  const messageSchema = z.object({ type: z.string(), data: z.any() });
+  return new Promise<typeof api>((resolve) => {
+    const clientCallbacks: {
+      [k in ResponseSchema as k["type"]]: (data: k) => void;
+    } = {
+      log: ({ data }) => log(`Client ${workspace}: ${data}`),
+      error: ({ data }) => {
+        expectedToClose = true;
+        console.error(`Client ${workspace}: ERROR ${data}`);
+        throw new Error(`Client ${workspace} threw an unexpected error`);
+      },
+      ready: ({ uuid }) => resolve({ ...api, uuid }),
+      response: (m) => {
+        const { uuid, data } = m as {
+          uuid: string;
+          data: Record<string, unknown>;
+        };
+        pendingRequests[uuid](data);
+        delete pendingRequests[uuid];
+      },
+    };
+    client.on("message", (_data) => {
+      const { type, ...data } = responseMessageSchema.parse(_data);
+      // @ts-ignore same problem I always have about discriminated unions...
+      clientCallbacks[type]?.(data);
+    });
+    client.on("exit", (e) => {
+      log(`Client ${workspace}: exited (${e})`);
+      if (!expectedToClose) {
+        throw new Error(`Client ${workspace} closed before we expected it to.`);
+      }
+    });
+  });
+};
+
+test("Full integration test of sharing pages", async () => {
   const api = spawn("node", ["./node_modules/.bin/fuego", "api"], {
     env: { ...process.env, NODE_ENV: "development", DEBUG: undefined },
   });
@@ -46,7 +102,7 @@ test("Full integration test of sharing pages", async () => {
 
   api.stdout.on("data", (s) => {
     spawnCallbacks.filter((c) => c.test.test(s)).forEach((c) => c.callback());
-    addToLog(`API Message: ${s as string}`);
+    log(`API Message: ${s as string}`);
   });
   const apiReady = new Promise<void>((resolve) =>
     spawnCallbacks.push({ test: /API server listening/, callback: resolve })
@@ -60,111 +116,46 @@ test("Full integration test of sharing pages", async () => {
     Promise.all([wsReady, apiReady]));
 
   const notebookPageId = v4();
-  const client1 = fork(
-    "./package/testing/createTestSamePageClient",
-    ["--forked", "one", inviteCodes[0]]
-    // { execArgv: ["--inspect-brk=127.0.0.1:9323"] }
-  );
-  const client1Callbacks: Record<string, (data: unknown) => void> = {
-    log: (log) => addToLog(`Client 1: ${log}`),
-    error: (message) => {
-      console.error(`Client 1: ERROR ${message}`);
-      throw new Error("Client 1 threw an unexpected error");
-    },
-  };
-  client1.on("message", (_data) => {
-    const data = messageSchema.parse(_data);
-    client1Callbacks[data.type]?.(data.data);
-  });
-  client1.on("exit", (e) => {
-    addToLog(`Client 1: exited (${e})`);
-    if (!client1ExpectedToClose) {
-      throw new Error(`Client 1 closed before we expected it to.`);
-    }
-  });
-  const client1Ready = new Promise<unknown>(
-    (resolve) => (client1Callbacks["ready"] = () => resolve(true))
-  );
 
-  const client2 = fork(
-    "./package/testing/createTestSamePageClient",
-    ["--forked", "two", inviteCodes[0]]
-    // { execArgv: ["--inspect-brk=127.0.0.1:9324"] }
-  );
-  const client2Callbacks: Record<string, (data: unknown) => void> = {
-    log: (log) => addToLog(`Client 2: ${log}`),
-    error: (message) => {
-      console.error(`Client 2: ERROR ${message}`);
-      throw new Error("Client 2 threw an unexpected error");
-    },
-  };
-  client2.on("message", (_data) => {
-    const data = messageSchema.parse(_data);
-    client2Callbacks[data.type]?.(data.data);
-  });
-  client2.on("exit", (e) => {
-    addToLog(`Client 2: exited (${e})`);
-    if (!client2ExpectedToClose) {
-      throw new Error(`Client 2 closed before we expected it to.`);
-    }
-  });
-  const client2Ready = new Promise<unknown>(
-    (resolve) => (client2Callbacks["ready"] = () => resolve(true))
-  );
+  const [client1, client2] =
+    await test.step("Wait for SamePage clients to be ready", () =>
+      Promise.all([
+        forkSamePageClient({
+          workspace: "one",
+          inviteCode: inviteCodes[0],
+        }),
+        forkSamePageClient({
+          workspace: "two",
+          inviteCode: inviteCodes[1],
+        }),
+      ]));
   cleanup = () => {
     client1.kill();
     client2.kill();
     api.kill();
-    addToLog("Test: cleaned up!");
+    log("Test: cleaned up!");
   };
 
-  await test.step("Wait for SamePage clients to be ready", async () => {
-    await expect.poll(() => client1Ready, { timeout: 20000 }).toEqual(true);
-    await expect.poll(() => client2Ready, { timeout: 25000 }).toEqual(true);
-  });
+  await test.step("Client 1 connects", () => client1.send({ type: "connect" }));
 
-  await test.step("Client 1 connects", () =>
-    new Promise<unknown>((resolve) => {
-      client1Callbacks["connect"] = resolve;
-      client1.send({ type: "connect" });
-    }));
-
-  await test.step("Client 2 connects", () =>
-    new Promise<unknown>((resolve) => {
-      client2Callbacks["connect"] = resolve;
-      client2.send({ type: "connect" });
-    }));
+  await test.step("Client 2 connects", () => client2.send({ type: "connect" }));
 
   await test.step("Navigate to Demo Page", () =>
-    new Promise<unknown>((resolve) => {
-      client1.send({
-        type: "setCurrentNotebookPageId",
-        notebookPageId,
-      });
-      client1Callbacks["setCurrentNotebookPageId"] = resolve;
+    client1.send({
+      type: "setCurrentNotebookPageId",
+      notebookPageId,
     }));
 
   await test.step("Add some initial data", () =>
-    new Promise<unknown>((resolve) => {
-      client1Callbacks["setAppClientState"] = resolve;
-      client1.send({
-        type: "setAppClientState",
-        notebookPageId,
-        data: '<div style="margin-left:16px" class="my-2">First entry in page</div>',
-      });
+    client1.send({
+      type: "setAppClientState",
+      notebookPageId,
+      data: '<div style="margin-left:16px" class="my-2">First entry in page</div>',
     }));
 
-  await test.step("Init Page", async () =>
-    new Promise<unknown>((resolve) => {
-      client1Callbacks["init-page-success"] = resolve;
-      client1.send({ type: "share" });
-    }));
+  await test.step("Init Page", async () => client1.send({ type: "share" }));
 
-  const client1Ipfs = () =>
-    new Promise<unknown>((resolve) => {
-      client1Callbacks["ipfs"] = resolve;
-      client1.send({ type: "ipfs", notebookPageId });
-    });
+  const client1Ipfs = () => client1.send({ type: "ipfs", notebookPageId });
   await test.step("Client 1 loads intial data correctly from IPFS", () =>
     expect.poll(client1Ipfs).toEqual({
       content: "First entry in page\n",
@@ -180,29 +171,18 @@ test("Full integration test of sharing pages", async () => {
     }));
 
   await test.step("Share page", () =>
-    new Promise<unknown>((resolve) => {
-      Promise.all([
-        new Promise<unknown>(
-          (inner) => (client1Callbacks["share-page-success"] = inner)
-        ),
-        new Promise<unknown>(
-          (inner) => (client2Callbacks["notification"] = inner)
-        ),
-      ]).then(resolve);
-      client1.send({ type: "invite", workspace: "two" });
-    }));
+    Promise.all([
+      client1.send({ type: "invite", workspace: "two" }),
+      client2.send({ type: "waitForNotification" }),
+    ]));
 
   await test.step("Accept Shared Page", () =>
-    new Promise<unknown>((resolve) => {
-      client2Callbacks["accept"] = resolve;
-      client2.send({ type: "accept", notebookPageId });
-    }));
+    client2.send({ type: "accept", notebookPageId }));
 
   const client2Read = () =>
-    new Promise<unknown>((resolve) => {
-      client2Callbacks["read"] = resolve;
-      client2.send({ type: "read", notebookPageId });
-    });
+    client2
+      .send({ type: "read", notebookPageId })
+      .then((data) => (data as { html: string }).html);
 
   await test.step("Validate initial page data", () =>
     expect
@@ -210,25 +190,21 @@ test("Full integration test of sharing pages", async () => {
       .toEqual(
         '<div style="margin-left:16px" class="my-2">First entry in page</div>'
       ));
-  // TODO: test `load` here
-  // await expect.poll(client2Read).toEqual(initialPageData);
 
   await test.step("Client 2 sends an insert update", () =>
-    new Promise<unknown>((resolve) => {
-      client2Callbacks["insert"] = resolve;
-      client2.send({
-        type: "insert",
-        notebookPageId,
-        content: " super",
-        index: 5,
-      });
+    client2.send({
+      type: "insert",
+      notebookPageId,
+      content: " super",
+      index: 5,
+      path: "div",
     }));
 
   const client1Read = () =>
-    new Promise<unknown>((resolve) => {
-      client1Callbacks["read"] = resolve;
-      client1.send({ type: "read", notebookPageId });
-    });
+    client1
+      .send({ type: "read", notebookPageId })
+      .then((data) => (data as { html: string }).html);
+
   await test.step("Client 1 receives the insert update", () =>
     expect
       .poll(client1Read)
@@ -250,21 +226,17 @@ test("Full integration test of sharing pages", async () => {
     }));
 
   await test.step("Client 2 disconnects", () =>
-    new Promise<unknown>((resolve) => {
-      client2Callbacks["disconnect"] = resolve;
-      client2.send({ type: "disconnect" });
-    }));
+    client2.send({ type: "disconnect" }));
 
   await test.step("Client 1 sends an update while client 2 is offline", () =>
-    new Promise<unknown>((resolve) => {
-      client1Callbacks["delete"] = resolve;
-      client1.send({
-        type: "delete",
-        notebookPageId,
-        count: 9,
-        index: 12,
-      });
+    client1.send({
+      type: "delete",
+      notebookPageId,
+      count: 9,
+      index: 12,
+      path: "div",
     }));
+
   await test.step("Client 1 loads data post deletion correctly from IPFS", () =>
     expect.poll(client1Ipfs).toEqual({
       content: "First super page\n",
@@ -280,10 +252,7 @@ test("Full integration test of sharing pages", async () => {
     }));
 
   await test.step("Client 2 reconnects", () =>
-    new Promise<unknown>((resolve) => {
-      client2Callbacks["connect"] = resolve;
-      client2.send({ type: "connect" });
-    }));
+    client2.send({ type: "connect" }));
 
   await test.step("Client 2 loads missed updates while offline", () =>
     expect
@@ -293,21 +262,17 @@ test("Full integration test of sharing pages", async () => {
       ));
 
   await test.step("Break client 2 save and apply", () =>
-    new Promise<unknown>((resolve) => {
-      client2Callbacks["break"] = resolve;
-      client2.send({ type: "break" });
-    }));
+    client2.send({ type: "break" }));
 
   await test.step("Client 1 sends an update while client 2 is broken", () =>
-    new Promise<unknown>((resolve) => {
-      client1Callbacks["insert"] = resolve;
-      client1.send({
-        type: "insert",
-        notebookPageId,
-        content: " alpha",
-        index: 16,
-      });
+    client1.send({
+      type: "insert",
+      notebookPageId,
+      content: " alpha",
+      index: 16,
+      path: "div",
     }));
+
   await test.step("Client 1 loads data when other are broken correctly from IPFS", () =>
     expect.poll(client1Ipfs).toEqual({
       content: "First super page alpha\n",
@@ -330,41 +295,30 @@ test("Full integration test of sharing pages", async () => {
       ));
 
   await test.step("Fix client 2 save and apply", () =>
-    new Promise<unknown>((resolve) => {
-      client2Callbacks["fix"] = resolve;
-      client2.send({ type: "fix" });
+    client2.send({ type: "fix" }));
+
+  await test.step("Client 1 sends another update now that client 2 is fixed", () =>
+    client1.send({
+      type: "insert",
+      notebookPageId,
+      content: "bet",
+      index: 22,
+      path: "div",
     }));
 
-  await Promise.all([
-    test.step("Client 1 sends another update now that client 2 is fixed", () =>
-      new Promise<unknown>((resolve) => {
-        client1Callbacks["insert"] = resolve;
-        client1.send({
-          type: "insert",
-          notebookPageId,
-          content: "bet",
-          index: 22,
-        });
-      })),
-    test.step("Client 1 loads data post other fixed correctly from IPFS", () =>
-      expect.poll(client1Ipfs).toEqual({
-        content: "First super page alphabet\n",
-        annotations: [
-          {
-            type: "block",
-            start: 0,
-            end: 26,
-            attributes: { level: 1, viewType: "document" },
-          },
-        ],
-        contentType: "application/vnd.atjson+samepage; version=2022-08-17",
-      })),
-    test.step("Client 2 waits for an update", () =>
-      new Promise<unknown>((resolve) => {
-        client2Callbacks["updates"] = resolve;
-        client2.send({ type: "updates" });
-      })),
-  ]);
+  await test.step("Client 1 loads data correctly from IPFS after other client is fixed", () =>
+    expect.poll(client1Ipfs).toEqual({
+      content: "First super page alphabet\n",
+      annotations: [
+        {
+          type: "block",
+          start: 0,
+          end: 26,
+          attributes: { level: 1, viewType: "document" },
+        },
+      ],
+      contentType: "application/vnd.atjson+samepage; version=2022-08-17",
+    }));
 
   await test.step("Client 2 loads correct state", () =>
     expect
@@ -373,23 +327,83 @@ test("Full integration test of sharing pages", async () => {
         '<div style="margin-left:16px" class="my-2">First super page alphabet</div>'
       ));
 
-  await test.step("Unload first client", () =>
-    new Promise<unknown>((resolve) => {
-      client1Callbacks["unload"] = resolve;
-      client1.send({ type: "unload" });
+  const referencedNotebookPageId = v4();
+  await test.step("Client 1 has other content", () =>
+    client1.send({
+      type: "setAppClientState",
+      data: "<div>Hello</div>",
+      notebookPageId: referencedNotebookPageId,
     }));
-  client1ExpectedToClose = true;
+
+  await test.step("Client 1 creates a reference", () =>
+    client1
+      .send({
+        type: "insert",
+        notebookPageId,
+        content: "SPAN",
+        index: 1,
+        path: "div",
+      })
+      .then(() =>
+        client1.send({
+          type: "insert",
+          notebookPageId,
+          content: referencedNotebookPageId,
+          path: "span",
+          index: "title",
+        })
+      )
+      .then(() =>
+        client1.send({
+          type: "insert",
+          notebookPageId,
+          content: `cursor underline samepage-reference`,
+          path: "span",
+          index: "class",
+        })
+      ));
+
+  await test.step("Client 2 loads state with external reference", () =>
+    expect
+      .poll(client2Read)
+      .toEqual(
+        `<div style="margin-left:16px" class="my-2">First super page alphabet<span class="cursor underline samepage-reference" title="${client1.uuid}:${referencedNotebookPageId}"></span></div>`
+      ));
+
+  await test.step("Client 2 queries the reference on their end and should not be found", () =>
+    expect
+      .poll(() =>
+        client2.send({
+          type: "query",
+          // I think this is the dream state to get to.
+          // request: `[:find (pull ?p :page/content) :where [?n :notebook/uuid "${client1.uuid}"] [?p :page/notebook-page-id "${referencedNotebookPageId}"] [?p :page/notebook ?n]]`,
+          request: `${client1.uuid}:${referencedNotebookPageId}`,
+        })
+      )
+      .toEqual({ found: false }));
+
+  await test.step("Client 2 automatically receives the query response later", () =>
+    expect
+      .poll(() =>
+        client2
+          .send({
+            type: "read",
+            notebookPageId: `${client1.uuid}:${referencedNotebookPageId}`,
+          })
+          .then((data) => (data as { html: string }).html)
+      )
+      .toEqual(`<div style="margin-left:16px" class="my-2">Hello</div>`));
+
+  await test.step("Unload first client", () =>
+    client1.send({ type: "unload" }));
+  client1.prepare();
 
   await test.step("Unload second client", () =>
-    new Promise<unknown>((resolve) => {
-      client2Callbacks["unload"] = resolve;
-      client2.send({ type: "unload" });
-    }));
-  client2ExpectedToClose = true;
+    client2.send({ type: "unload" }));
+  client2.prepare();
 });
 
 test.afterAll(async () => {
-  client1ExpectedToClose = client2ExpectedToClose = true;
   cleanup?.();
   await getMysqlConnection(testId).then((cxn) => cxn.destroy());
   if (process.env.DEBUG) {

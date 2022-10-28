@@ -639,38 +639,44 @@ const logic = async (req: Record<string, unknown>) => {
       }
       case "query": {
         const { request } = args;
-        const [target] = request.split(":");
+        const getTargetsForQuery = () => {
+          const [target] = request.split(":");
+          return [target];
+        };
+        const targets = getTargetsForQuery();
         const hash = crypto.createHash("md5").update(request).digest("hex");
         return downloadFileContent({ Key: `data/queries/${hash}.json` })
           .then((r) => {
             if (r)
               return {
-                ...JSON.parse(r),
+                data: JSON.parse(r),
                 found: true,
-                fromCache: true,
-                ephemeral: true,
               };
             else return { found: false };
           })
           .then(async (body) =>
-            messageNotebook({
-              source: notebookUuid,
-              target,
-              operation: "QUERY",
-              data: {
-                request,
-              },
-              requestId: requestId,
-            }).then(() => body)
+            Promise.all(
+              targets.map((target) =>
+                messageNotebook({
+                  source: notebookUuid,
+                  target,
+                  operation: "QUERY",
+                  data: {
+                    request,
+                  },
+                  requestId,
+                })
+              )
+            ).then(() => body)
           )
           .catch(catchError("Failed to query across notebooks"));
       }
       case "query-response": {
-        const { request, response, target } = args;
+        const { request, data, target } = args;
         // TODO replace with IPFS
         const hash = crypto.createHash("md5").update(request).digest("hex");
         await uploadFile({
-          Body: response,
+          Body: JSON.stringify(data),
           Key: `data/queries/${hash}.json`,
         });
         return messageNotebook({
@@ -678,9 +684,8 @@ const logic = async (req: Record<string, unknown>) => {
           source: notebookUuid,
           operation: `QUERY_RESPONSE`,
           data: {
-            ephemeral: true,
             request,
-            ...JSON.parse(response),
+            data,
           },
           requestId: requestId,
         })

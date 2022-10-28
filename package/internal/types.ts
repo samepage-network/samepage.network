@@ -294,7 +294,7 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
   z.object({ method: z.literal("query"), request: z.string() }),
   z.object({
     method: z.literal("query-response"),
-    response: z.string(),
+    data: z.any(),
     request: z.string(),
     target: z.string(),
   }),

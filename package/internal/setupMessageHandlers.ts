@@ -20,17 +20,17 @@ export const handleMessage = ({
   const { operation, ...props } = JSON.parse(content);
   const handler = messageHandlers[operation];
   if (handler) {
-    // try {
-    handler(props, source || props.source || "", uuid);
-    // } catch (e) {
-    //   dispatchAppEvent({
-    //     type: "log",
-    //     id: `handler-error-${operation}`,
-    //     content: `Failed to handle message: ${e}`,
-    //     intent: "error",
-    //   });
-    // }
-  } else if (!props.ephemeral)
+    try {
+      handler(props, source || props.source || "", uuid);
+    } catch (e) {
+      dispatchAppEvent({
+        type: "log",
+        id: `handler-error-${operation}`,
+        content: `Failed to handle message: ${e}`,
+        intent: "error",
+      });
+    }
+  } else {
     dispatchAppEvent({
       type: "log",
       id: `network-error-${operation}`,
@@ -39,6 +39,7 @@ export const handleMessage = ({
       }`,
       intent: "error",
     });
+  }
 };
 
 const ongoingMessages: { [uuid: string]: string[] } = {};

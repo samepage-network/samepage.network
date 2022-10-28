@@ -1,3 +1,4 @@
+import { getSetting } from "../internal/registry";
 import { Annotation, InitialSchema } from "../internal/types";
 import { reduceTokens } from "../utils/atJsonTokens";
 
@@ -44,7 +45,9 @@ const toAtJson = (node: ChildNode): InitialSchema => {
     } else if (el.tagName === "SPAN") {
       const span = el as HTMLSpanElement;
       if (el.classList.contains("samepage-reference")) {
-        const [notebookUuid, notebookPageId] = span.title.split(":");
+        const parts = span.title.split(":");
+        const notebookUuid = parts.length === 1 ? getSetting("uuid") : parts[0];
+        const notebookPageId = parts.length === 1 ? parts[0] : parts[1];
         const content =
           childSchema.content.replace(/^\(\(/, "").replace(/\)\)$/, "") ||
           String.fromCharCode(0);

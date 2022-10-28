@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import type { Annotation, InitialSchema, Schema } from "../internal/types";
+import { getSetting } from "../internal/registry";
 
 type AnnotationTree = (Annotation & { children: AnnotationTree })[];
 
@@ -93,9 +94,13 @@ const AnnotationRendered = ({
     ) : annotation.type === "reference" ? (
       <span
         className="cursor underline samepage-reference"
-        title={`${annotation.attributes.notebookUuid}:${annotation.attributes.notebookPageId}`}
+        title={
+          annotation.attributes.notebookUuid === getSetting("uuid")
+            ? annotation.attributes.notebookPageId
+            : `${annotation.attributes.notebookUuid}:${annotation.attributes.notebookPageId}`
+        }
       >
-        (({children}))
+        {children}
       </span>
     ) : (
       <>{children}</>
