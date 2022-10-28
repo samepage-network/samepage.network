@@ -1,12 +1,7 @@
-import type defaultSettings from "../utils/defaultSettings";
+import type { default as defaultSettings } from "../utils/defaultSettings";
 import React from "react";
 import { v4 } from "uuid";
-import type {
-  AddCommand,
-  RemoveCommand,
-  AppId,
-  RenderOverlay,
-} from "./types";
+import type { AddCommand, RemoveCommand, AppId, RenderOverlay } from "./types";
 import defaultGetSetting from "../utils/defaultGetSetting";
 import defaultSetSetting from "../utils/defaultSetSetting";
 
@@ -25,7 +20,7 @@ const defaultRenderOverlay: RenderOverlay = ({
   path = "body",
 } = {}) => {
   const parent = document.createElement("div");
-  parent.id = id.replace(/^\d*/, "");;
+  parent.id = id.replace(/^\d*/, "");
   const pathElement =
     typeof path === "string" ? document.querySelector(path) : path;
   let onClose: () => void;

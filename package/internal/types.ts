@@ -3,7 +3,7 @@ import type Automerge from "automerge";
 import type React from "react";
 import { z } from "zod";
 import type { CID } from "multiformats";
-import type defaultSettings from "../utils/defaultSettings";
+import type { default as defaultSettings } from "../utils/defaultSettings";
 import { Operation } from "./messages";
 
 export type App = typeof APPS[number];

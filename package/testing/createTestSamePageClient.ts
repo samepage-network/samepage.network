@@ -17,7 +17,7 @@ import { JSDOM } from "jsdom";
 import apiClient from "../internal/apiClient";
 import Automerge from "automerge";
 import base64ToBinary from "../internal/base64ToBinary";
-import type defaultSettings from "../utils/defaultSettings";
+import type { default as defaultSettings } from "../utils/defaultSettings";
 import { notificationActions } from "../internal/messages";
 import fromAtJson from "./fromAtJson";
 
