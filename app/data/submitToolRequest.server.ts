@@ -1,3 +1,4 @@
+import { BadRequestError } from "@dvargas92495/app/backend/errors.server";
 import invokeAsync from "./invokeAsync.server";
 
 const submitToolRequest = ({
@@ -9,6 +10,9 @@ const submitToolRequest = ({
   tool: string;
   message: string;
 }): Promise<{ success: boolean }> => {
+  if (message.includes("@Cryptaxbot")) {
+    throw new BadRequestError("Message blocked due to spam detected");
+  }
   return invokeAsync({
     path: "send-email",
     data: {
