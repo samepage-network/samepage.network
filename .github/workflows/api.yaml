@@ -13,7 +13,7 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.LAMBDA_AWS_ACCESS_SECRET }}
   AWS_REGION: us-east-1
   CLERK_API_KEY: ${{ secrets.CLERK_API_KEY }}
-  DATABASE_URL: mysql://samepage_network:${{ secrets.MYSQL_PASSWORD }}@vargas-arts.c2sjnb5f4d57.us-east-1.rds.amazonaws.com:5432/samepage_network
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
   IS_PRODUCTION: 1
   ORIGIN: https://samepage.network
   STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
@@ -25,10 +25,6 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 16
-        uses: actions/setup-node@v1
-        with:
-          node-version: 16.14.0
       - name: install
         run: npm install
       - name: build

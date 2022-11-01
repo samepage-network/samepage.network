@@ -42,7 +42,7 @@
   "dependencies": {
     "@blueprintjs/core": "^4.10.1",
     "@blueprintjs/select": "^4.6.6",
-    "@dvargas92495/app": "^0.13.26",
+    "@dvargas92495/app": "^0.13.27",
     "@ipld/dag-cbor": "^7.0.3",
     "@playwright/experimental-ct-react": "^1.27.1",
     "@types/moo": "^0.5.5",
