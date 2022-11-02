@@ -1,15 +1,17 @@
 import apiClient from "../internal/apiClient";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
-import { Notebook } from "../internal/types";
 
 const inviteNotebookToPage = ({
   notebookPageId,
-  ...target
-}: { notebookPageId: string } & Notebook) =>
-  apiClient<{ success: boolean; }>({
+  notebookUuid,
+}: {
+  notebookPageId: string;
+  notebookUuid: string;
+}) =>
+  apiClient<{ success: boolean }>({
     method: "invite-notebook-to-page",
     notebookPageId,
-    target,
+    targetUuid: notebookUuid,
   })
     .then(() => {
       dispatchAppEvent({

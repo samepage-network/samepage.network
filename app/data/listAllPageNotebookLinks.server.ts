@@ -6,7 +6,7 @@ const listAllPageNotebookLinks = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
   const results = await cxn
     .execute(
-      "SELECT l.*, n.app, n.workspace FROM page_notebook_links l INNER JOIN notebooks n ON n.uuid = l.notebook_uuid"
+      "SELECT l.*, n.app, n.workspace, n.uuid as notebook FROM page_notebook_links l INNER JOIN notebooks n ON n.uuid = l.notebook_uuid"
     )
     .then(
       ([r]) =>
@@ -17,6 +17,7 @@ const listAllPageNotebookLinks = async (requestId: string) => {
           notebook_page_id: string;
           uuid: string;
           open: boolean;
+          notebook: string;
         }[]
     );
   cxn.destroy();
@@ -28,6 +29,7 @@ const listAllPageNotebookLinks = async (requestId: string) => {
         id: c.notebook_page_id,
         uuid: c.uuid,
         inviteOpen: c.open,
+        notebook: c.notebook,
       });
     } else {
       p[c.page_uuid] = [
@@ -37,11 +39,12 @@ const listAllPageNotebookLinks = async (requestId: string) => {
           id: c.notebook_page_id,
           uuid: c.uuid,
           inviteOpen: c.open,
+          notebook: c.notebook,
         },
       ];
     }
     return p;
-  }, {} as Record<string, { id: string; workspace: string; app: string; uuid: string; inviteOpen: boolean }[]>);
+  }, {} as Record<string, { id: string; workspace: string; app: string; uuid: string; inviteOpen: boolean; notebook: string }[]>);
   return {
     pages,
   };

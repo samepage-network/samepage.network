@@ -12,7 +12,7 @@ import {
 import { appsById } from "../internal/apps";
 import React from "react";
 import SharePageDialog from "./SharePageDialog";
-import { OverlayProps, Schema } from "../internal/types";
+import { Notebook, OverlayProps, Schema } from "../internal/types";
 import Automerge from "automerge";
 import apiClient from "../internal/apiClient";
 import { app, workspace } from "../internal/registry";
@@ -183,19 +183,22 @@ const SharedPageStatus = ({
                     workspace: string;
                     version: number;
                     openInvite: boolean;
+                    uuid: string;
                   }[];
+                  recents: ({ uuid: string } & Notebook)[];
                 }>({
                   method: "list-page-notebooks",
                   notebookPageId,
                 }),
                 load(notebookPageId),
-              ]).then(([{ notebooks }, doc]) => {
+              ]).then(([{ notebooks, recents }, doc]) => {
                 return {
                   notebooks: notebooks.map((n) =>
                     n.workspace !== workspace || n.app !== appsById[app].name
                       ? n
                       : { ...n, version: getLastLocalVersion(doc) }
                   ),
+                  recents,
                 };
               })
             }

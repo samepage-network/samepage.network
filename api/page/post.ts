@@ -465,14 +465,22 @@ const logic = async (req: Record<string, unknown>) => {
         };
       }
       case "invite-notebook-to-page": {
-        const { notebookPageId, target } = args;
-        const targetNotebookUuids = await getNotebookUuids({
-          ...target,
-          requestId,
-        });
-        if (targetNotebookUuids.length > 1) {
+        const { notebookPageId, target, targetUuid } = args;
+        const targetNotebookUuids = target
+          ? await getNotebookUuids({
+              ...target,
+              requestId,
+            })
+          : targetUuid
+          ? [targetUuid]
+          : [];
+        if (target && targetNotebookUuids.length > 1) {
           throw new ConflictError(
             `Attempted to invite an ambiguous notebook - multiple notebooks within this app have the workspace name: ${target.workspace}`
+          );
+        } else if (targetNotebookUuids.length === 0) {
+          throw new BadRequestError(
+            `No live notebooks specified. Inviting new notebooks to SamePage is coming soon!`
           );
         }
         const [targetNotebookUuid] = targetNotebookUuids;
@@ -577,23 +585,40 @@ const logic = async (req: Record<string, unknown>) => {
             });
             const clients = await cxn
               .execute(
-                `SELECT n.app, n.workspace, l.version, l.open FROM page_notebook_links l 
+                `SELECT n.app, n.workspace, n.uuid, l.version, l.open FROM page_notebook_links l 
                 INNER JOIN notebooks n ON n.uuid = l.notebook_uuid 
                 WHERE l.page_uuid = ?`,
                 [pageUuid]
               )
               .then(
                 ([res]) =>
-                  res as (Notebook & { version: number; open: 0 | 1 })[]
+                  res as (Notebook & {
+                    version: number;
+                    open: 0 | 1;
+                    uuid: string;
+                  })[]
               );
+            const clientUuids = new Set(clients.map((c) => c.uuid));
+            const recents = await cxn
+              // TODO - create better hueristics here for recent notebooks, prob its own LRU cache table
+              .execute(`SELECT n.* FROM notebooks n WHERE app != 0`)
+              .then(([a]) => a as ({ uuid: string } & Notebook)[]);
             cxn.destroy();
             return {
               notebooks: clients.map((c) => ({
+                uuid: c.uuid,
                 workspace: c.workspace,
                 app: appsById[c.app].name,
                 version: c.version,
                 openInvite: !!c.open,
               })),
+              recents: Object.values(
+                Object.fromEntries(
+                  recents
+                    .filter((r) => !clientUuids.has(r.uuid))
+                    .map((r) => [r.uuid, r])
+                )
+              ),
             };
           })
           .catch(catchError("Failed to retrieve page notebooks"));

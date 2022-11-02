@@ -273,7 +273,8 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
   z.object({
     method: z.literal("invite-notebook-to-page"),
     notebookPageId: z.string(),
-    target: zNotebook,
+    target: zNotebook.optional(),
+    targetUuid: z.string().optional(),
   }),
   z.object({
     method: z.literal("remove-page-invite"),
