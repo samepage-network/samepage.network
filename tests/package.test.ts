@@ -172,7 +172,7 @@ test("Full integration test of sharing pages", async () => {
 
   await test.step("Share page", () =>
     Promise.all([
-      client1.send({ type: "invite", workspace: "two" }),
+      client1.send({ type: "invite", notebookUuid: client2.uuid }),
       client2.send({ type: "waitForNotification" }),
     ]));
 

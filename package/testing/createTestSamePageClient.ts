@@ -37,7 +37,7 @@ const processMessageSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("share") }),
   z.object({
     type: z.literal("invite"),
-    workspace: z.string(),
+    notebookUuid: z.string(),
   }),
   z.object({ type: z.literal("unload") }),
   z.object({ type: z.literal("read"), notebookPageId: z.string() }),
@@ -279,8 +279,7 @@ const createTestSamePageClient = async ({
             awaitLog("share-page-success"),
             inviteNotebookToPage({
               notebookPageId: currentNotebookPageId,
-              app: 0,
-              workspace: message.workspace,
+              notebookUuid: message.notebookUuid,
             }),
           ]).then(() => onMessage({ type: "response", uuid: message.uuid }));
         } else if (message.type === "waitForNotification") {
