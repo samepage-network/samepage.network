@@ -9,7 +9,7 @@ import {
   Spinner,
   Tooltip,
 } from "@blueprintjs/core";
-import { MultiSelect2 } from "@blueprintjs/select";
+import { MultiSelect } from "@blueprintjs/select";
 import inviteNotebookToPage from "../utils/inviteNotebookToPage";
 import { appIdByName, appsById } from "../internal/apps";
 
@@ -129,7 +129,7 @@ const SharePageDialog = ({
       autoFocus={false}
       portalContainer={portalContainer}
     >
-      <div className={Classes.DIALOG_BODY}>
+      <div className={`${Classes.DIALOG_BODY} text-black`}>
         {notebooks.map((g, i) => (
           <div
             key={`${g.app}/${g.workspace}`}
@@ -165,15 +165,19 @@ const SharePageDialog = ({
           </div>
         ))}
         <div className={"flex gap-4 items-center"}>
-          <MultiSelect2<typeof recents[number]>
+          <style>{`.samepage-notebook-select .bp3-popover-target, .samepage-notebook-select .bp4-popover-target {
+  width: 100%;
+}`}</style>
+          <MultiSelect<typeof recents[number]>
             items={recents}
-            className={"flex-grow"}
+            className={"flex-grow samepage-notebook-select"}
             itemsEqual={(a, b) => a.uuid === b.uuid}
             itemRenderer={(a, props) => (
               <MenuItem
                 key={a.uuid}
                 selected={currentNotebookUuids.has(a.uuid)}
                 onClick={props.handleClick}
+                intent={"primary"}
                 active={props.modifiers.active}
                 disabled={props.modifiers.disabled}
                 text={
@@ -229,9 +233,24 @@ const SharePageDialog = ({
                 setInviteQuery("");
               }
             }}
-            tagInputProps={{ className: "mt-2" }}
-            popoverProps={{ minimal: true }}
-            onClear={() => setCurrentNotebooks([])}
+            tagInputProps={{
+              inputProps: {
+                style: {
+                  width: "unset",
+                },
+              },
+              className: "mt-2",
+              rightElement: currentNotebookUuids.size ? (
+                <Button
+                  icon={"cross"}
+                  small
+                  minimal
+                  onClick={() => setCurrentNotebooks([])}
+                  className={"self-center"}
+                />
+              ) : undefined,
+            }}
+            popoverProps={{ minimal: true, position: "bottom-left" }}
             onRemove={(item) =>
               setCurrentNotebooks(
                 currentNotebooks.filter((n) => n.uuid !== item.uuid)

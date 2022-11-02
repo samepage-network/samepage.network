@@ -6,10 +6,11 @@ const listNotebooks = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
   const data = await cxn
     .execute(
-      `SELECT n.uuid, n.app, n.workspace, MAX(c.created_date) as created_date, MAX(i.created_date) as invited_date
+      `SELECT n.uuid, n.app, n.workspace, MAX(c.created_date) as created_date, MAX(i.created_date) as invited_date, MAX(t.value) as token
   FROM notebooks n 
   LEFT JOIN online_clients c ON n.uuid = c.notebook_uuid
   LEFT JOIN token_notebook_links l ON n.uuid = l.notebook_uuid
+  LEFT JOIN tokens t ON t.uuid = l.token_uuid
   LEFT JOIN invitations i ON i.token_uuid = l.token_uuid
   GROUP BY n.uuid`
     )
@@ -19,6 +20,7 @@ const listNotebooks = async (requestId: string) => {
           created_date: Date | null;
           uuid: string;
           invited_date: Date | null;
+          token: string;
         } & Notebook)[]
     );
   cxn.destroy();
@@ -46,6 +48,7 @@ const listNotebooks = async (requestId: string) => {
         app: appsById[d.app].name,
         connected: d.created_date ? d.created_date.valueOf() : "OFFLINE",
         invited: d.invited_date ? d.invited_date.valueOf() : "UNINVITED",
+        token: d.token,
       })),
   };
 };

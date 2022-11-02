@@ -544,13 +544,7 @@ const logic = async (req: Record<string, unknown>) => {
               .then(async ([link]) => {
                 const { uuid, invited_by } =
                   (link as { uuid: string; invited_by: string }[])[0] || {};
-                const [invitedBy] = await cxn
-                  .execute(
-                    `SELECT notebook_uuid FROM notebooks WHERE uuid = ?`,
-                    [invited_by]
-                  )
-                  .then(([a]) => a as { notebook_uuid: string }[]);
-                return { linkUuid: uuid, invitedBy: invitedBy?.notebook_uuid };
+                return { linkUuid: uuid, invitedBy: invited_by };
               }));
         if (!linkUuid) {
           throw new NotFoundError(`Could not find valid invite to remove.`);
@@ -558,17 +552,19 @@ const logic = async (req: Record<string, unknown>) => {
         return cxn
           .execute(`DELETE FROM page_notebook_links WHERE uuid = ?`, [linkUuid])
           .then(() =>
-            messageNotebook({
-              source: notebookUuid,
-              target: invitedBy,
-              data: {
-                title: notebookPageId,
-                rejected: !target,
-                success: false,
-              },
-              operation: "SHARE_PAGE_RESPONSE",
-              requestId,
-            })
+            invitedBy
+              ? messageNotebook({
+                  source: notebookUuid,
+                  target: invitedBy,
+                  data: {
+                    title: notebookPageId,
+                    rejected: !target,
+                    success: false,
+                  },
+                  operation: "SHARE_PAGE_RESPONSE",
+                  requestId,
+                })
+              : Promise.resolve() // TODO - send us an email of this error
           )
           .then(() => ({ success: true }))
           .catch(catchError("Failed to remove a shared page"))
