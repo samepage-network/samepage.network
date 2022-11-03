@@ -31,8 +31,12 @@ export type RemoveOpenInvite = (
   workspace: string
 ) => Promise<{ success: boolean }>;
 
+// sometimes we get versions in second denominations and sometimes in millisecond
+const BEGINNING_OF_CENTURY = new Date(2000, 0, 1).valueOf();
 const formatVersion = (s: number) =>
-  s ? new Date(s * 1000).toLocaleString() : "unknown";
+  s
+    ? new Date(BEGINNING_OF_CENTURY > s ? s * 1000 : s).toLocaleString()
+    : "unknown";
 
 export type Props = {
   onClose: () => void;

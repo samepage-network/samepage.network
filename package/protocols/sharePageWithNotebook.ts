@@ -29,7 +29,7 @@ import binaryToBase64 from "../internal/binaryToBase64";
 import base64ToBinary from "../internal/base64ToBinary";
 import { clear, has, deleteId, load, set } from "../utils/localAutomergeDb";
 import messageToNotification from "../internal/messageToNotification";
-import { notificationActions } from "../internal/messages";
+import { registerNotificationActions } from "../internal/messages";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
@@ -225,91 +225,100 @@ const setupSharePageWithNotebook = ({
 
   onAppEvent("connection", (e) => {
     if (e.status === "CONNECTED") {
-      // TODO - Could probably get away with removing this if all it will do is add a notification
-      // Any messages received that require further user input could be auto-notification
-      notificationActions["SHARE_PAGE"] = {
-        accept: ({ title }) =>
-          // TODO support block or page tree as a user action
-          doesPageExist(title).then(async (preexisted) => {
-            if (!preexisted) await createPage(title);
-            return apiClient<
-              | { found: false }
-              | {
-                  state: string;
-                  found: true;
-                }
-            >({
-              method: "join-shared-page",
-              notebookPageId: title,
-            })
-              .then(async (res) => {
-                if (res.found) {
-                  const saveDoc = (doc: Schema) =>
-                    saveAndApply(title, doc).catch((e) =>
-                      apiClient({
-                        method: "disconnect-shared-page",
-                        notebookPageId: title,
-                      }).then(() => Promise.reject(e))
-                    );
-                  const doc = loadAutomergeFromBase64(res.state);
-                  if (preexisted) {
-                    const preExistingDoc = await calculateState(title);
-                    const mergedDoc = Automerge.change(
-                      doc,
-                      "Merged",
-                      (oldDoc) => {
-                        const offset = oldDoc.content.length;
-                        oldDoc.content.insertAt?.(
-                          offset,
-                          ...preExistingDoc.content
-                        );
-                        oldDoc.annotations.push(
-                          ...preExistingDoc.annotations.map((a) => ({
-                            ...a,
-                            start: a.start + offset,
-                            end: a.end + offset,
-                          }))
-                        );
-                      }
-                    );
-                    return saveDoc(mergedDoc);
+      registerNotificationActions({
+        operation: "SHARE_PAGE",
+        actions: {
+          accept: ({ title }) =>
+            // TODO support block or page tree as a user action
+            doesPageExist(title).then(async (preexisted) => {
+              if (!preexisted) await createPage(title);
+              return apiClient<
+                | { found: false }
+                | {
+                    state: string;
+                    found: true;
                   }
-                  return saveDoc(doc);
-                } else {
-                  return Promise.reject(
-                    new Error(
-                      `Could not find open invite for Notebook Page: ${title}`
-                    )
-                  );
-                }
+              >({
+                method: "join-shared-page",
+                notebookPageId: title,
               })
-              .then(() => {
-                initPage({
-                  notebookPageId: title,
+                .then(async (res) => {
+                  if (res.found) {
+                    const saveDoc = (doc: Schema) =>
+                      saveAndApply(title, doc).catch((e) =>
+                        apiClient({
+                          method: "disconnect-shared-page",
+                          notebookPageId: title,
+                        }).then(() => Promise.reject(e))
+                      );
+                    const doc = loadAutomergeFromBase64(res.state);
+                    if (preexisted) {
+                      const preExistingDoc = await calculateState(title);
+                      const mergedDoc = Automerge.change(
+                        doc,
+                        "Merged",
+                        (oldDoc) => {
+                          const offset = oldDoc.content.length;
+                          oldDoc.content.insertAt?.(
+                            offset,
+                            ...preExistingDoc.content
+                          );
+                          oldDoc.annotations.push(
+                            ...preExistingDoc.annotations.map((a) => ({
+                              ...a,
+                              start: a.start + offset,
+                              end: a.end + offset,
+                            }))
+                          );
+                        }
+                      );
+                      await apiClient({
+                        method: "update-shared-page",
+                        changes: Automerge.getChanges(doc, mergedDoc).map(
+                          binaryToBase64
+                        ),
+                        notebookPageId: title,
+                        state: binaryToBase64(Automerge.save(mergedDoc)),
+                      });
+                      return saveDoc(mergedDoc);
+                    }
+                    return saveDoc(doc);
+                  } else {
+                    return Promise.reject(
+                      new Error(
+                        `Could not find open invite for Notebook Page: ${title}`
+                      )
+                    );
+                  }
+                })
+                .then(() => {
+                  initPage({
+                    notebookPageId: title,
+                  });
+                  dispatchAppEvent({
+                    type: "log",
+                    id: "join-page-success",
+                    content: `Successfully connected to shared page ${title}!`,
+                    intent: "success",
+                  });
+                  return openPage(title);
+                })
+                .catch((e) => {
+                  if (!preexisted) deletePage(title);
+                  apiClient({
+                    method: "revert-page-join",
+                    notebookPageId: title,
+                  });
+                  return Promise.reject(e);
                 });
-                dispatchAppEvent({
-                  type: "log",
-                  id: "join-page-success",
-                  content: `Successfully connected to shared page ${title}!`,
-                  intent: "success",
-                });
-                return openPage(title);
-              })
-              .catch((e) => {
-                if (!preexisted) deletePage(title);
-                apiClient({
-                  method: "revert-page-join",
-                  notebookPageId: title,
-                });
-                return Promise.reject(e);
-              });
-          }),
-        reject: async ({ title }) =>
-          apiClient({
-            method: "remove-page-invite",
-            notebookPageId: title,
-          }),
-      };
+            }),
+          reject: async ({ title }) =>
+            apiClient({
+              method: "remove-page-invite",
+              notebookPageId: title,
+            }),
+        },
+      });
       addNotebookListener({
         operation: "SHARE_PAGE",
         handler: (e, source, uuid) => {
@@ -377,19 +386,25 @@ const setupSharePageWithNotebook = ({
           };
 
           load(notebookPageId).then((oldDoc) => {
+            const binaryChanges = changes.map(
+              (c) => base64ToBinary(c) as Automerge.BinaryChange
+            );
             const [newDoc, patch] = Automerge.applyChanges(
               oldDoc,
-              changes.map((c) => base64ToBinary(c) as Automerge.BinaryChange)
+              binaryChanges
             );
             if (patch.pendingChanges) {
-              const existingDependencies = Object.fromEntries(
-                Automerge.getAllChanges(newDoc)
-                  .map((c) => Automerge.decodeChange(c))
-                  .map((c) => [`${c.actor}~${c.seq}`, c.hash])
+              const storedChanges = Automerge.getAllChanges(newDoc).map((c) =>
+                Automerge.decodeChange(c)
               );
+              const existingDependencies = Object.fromEntries(
+                storedChanges.map((c) => [`${c.actor}~${c.seq}`, c.hash])
+              );
+              const me = Automerge.getActorId(newDoc);
               if (
                 Object.entries(dependencies).some(
                   ([actor, { seq, hash }]) =>
+                    actor !== me &&
                     existingDependencies[`${actor}~${seq}`] &&
                     existingDependencies[`${actor}~${seq}`] !== hash
                 )
@@ -401,10 +416,34 @@ const setupSharePageWithNotebook = ({
                   intent: "error",
                 });
               } else {
-                const me = Automerge.getActorId(newDoc);
-                Object.keys(patch.clock)
-                  .filter((actor) => me !== actor)
-                  .forEach((actor) => {
+                const storedHashes = new Set(
+                  storedChanges.map((c) => c.hash || "")
+                );
+                const actorsToRequest = Object.entries(patch.clock).filter(
+                  ([actor, seq]) => {
+                    if (me === actor) {
+                      return false;
+                    }
+                    const dependentHashFromActor =
+                      existingDependencies[`${actor}~${seq}`];
+                    return !(
+                      dependentHashFromActor &&
+                      storedHashes.has(dependentHashFromActor)
+                    );
+                  }
+                );
+                if (!actorsToRequest.length) {
+                  const missingDependencies = binaryChanges
+                    .map((c) => Automerge.decodeChange(c))
+                    .flatMap((c) => c.deps)
+                    .filter((c) => !storedHashes.has(c));
+                  // TODO - figure out a mitigation here in case it happens, even though it shouldn't
+                  console.error(
+                    "No actors to request and still waiting for changes:",
+                    missingDependencies
+                  );
+                } else {
+                  actorsToRequest.forEach(([actor]) => {
                     sendToNotebook({
                       target: parseActorId(actor),
                       operation: "REQUEST_PAGE_UPDATE",
@@ -414,6 +453,7 @@ const setupSharePageWithNotebook = ({
                       },
                     });
                   });
+                }
               }
             }
             if (Object.keys(patch.diffs.props).length) {
@@ -463,18 +503,19 @@ const setupSharePageWithNotebook = ({
               ({ decoded }) => decoded.actor === me && decoded.seq > seq
             );
             if (missingChanges.length) {
+              const dependencies = Object.fromEntries(
+                missingChanges[0].decoded.deps.map((h) => [
+                  clockByHash[h].actor,
+                  { seq: clockByHash[h].seq, hash: h },
+                ])
+              );
               sendToNotebook({
                 target: source,
                 operation: "SHARE_PAGE_UPDATE",
                 data: {
                   notebookPageId,
                   changes: missingChanges.map((c) => binaryToBase64(c.encoded)),
-                  dependencies: Object.fromEntries(
-                    missingChanges[0].decoded.deps.map((h) => [
-                      clockByHash[h].actor,
-                      { seq: clockByHash[h].seq, hash: h },
-                    ])
-                  ),
+                  dependencies,
                 },
               });
             }
@@ -627,13 +668,11 @@ const setupSharePageWithNotebook = ({
     return load(notebookPageId).then((oldDoc) => {
       const doc = Automerge.change(oldDoc, label, callback);
       set(notebookPageId, doc);
-      const { seq } = Automerge.decodeChange(Automerge.getLastLocalChange(doc));
       return apiClient({
         method: "update-shared-page",
         changes: Automerge.getChanges(oldDoc, doc).map(binaryToBase64),
         notebookPageId,
         state: binaryToBase64(Automerge.save(doc)),
-        seq,
       });
     });
   };

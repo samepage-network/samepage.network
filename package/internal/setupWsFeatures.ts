@@ -393,7 +393,7 @@ const setupWsFeatures = ({
     }
   });
 
-  if (!!getSetting("auto-connect") && !!notebookUuid) {
+  if (!!notebookUuid) {
     connectToBackend();
   } else {
     addConnectCommand();

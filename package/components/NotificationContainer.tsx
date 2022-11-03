@@ -2,20 +2,19 @@ import { Button, Spinner } from "@blueprintjs/core";
 import React from "react";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { onAppEvent } from "../internal/registerAppEventListener";
-import apiClient from "../internal/apiClient";
 import { Notification } from "../internal/types";
 import Markdown from "markdown-to-jsx";
-import { notificationActions } from "../internal/messages";
+import {
+  callNotificationAction,
+} from "../internal/messages";
 
 const ActionButtons = ({
   actions,
-  onSuccess,
 }: {
   actions: {
     label: string;
     callback: () => Promise<unknown>;
   }[];
-  onSuccess: () => void;
 }) => {
   const [loading, setLoading] = React.useState(false);
 
@@ -31,7 +30,6 @@ const ActionButtons = ({
               setLoading(true);
               action
                 .callback()
-                .then(onSuccess)
                 .catch((e) => {
                   dispatchAppEvent({
                     type: "log",
@@ -57,18 +55,13 @@ const NotificationContainer = () => {
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const notificationsRef = React.useRef<Notification[]>(notifications);
   const [isOpen, setIsOpen] = React.useState(false);
-  const removeNotificaton = React.useCallback(
+  const removeNotification = React.useCallback(
     (not: Notification) => {
-      return apiClient({
-        method: "mark-message-read",
-        messageUuid: not.uuid,
-      }).then(() => {
-        notificationsRef.current = notificationsRef.current.filter(
-          (n) => n.uuid !== not.uuid
-        );
-        setNotifications(notificationsRef.current);
-        setIsOpen(!!notificationsRef.current.length);
-      });
+      notificationsRef.current = notificationsRef.current.filter(
+        (n) => n.uuid !== not.uuid
+      );
+      setNotifications(notificationsRef.current);
+      setIsOpen(!!notificationsRef.current.length);
     },
     [setNotifications, notificationsRef, setIsOpen]
   );
@@ -140,18 +133,20 @@ const NotificationContainer = () => {
                     actions={not.buttons.map((label) => ({
                       label,
                       callback: () => {
-                        const action = notificationActions[not.operation]?.[label];
-                        if (action) return action(not.data);
-                        return Promise.resolve();
+                        return callNotificationAction({
+                          operation: not.operation,
+                          label,
+                          data: not.data,
+                          messageUuid: not.uuid,
+                        }).then(() => removeNotification(not));
                       },
                     }))}
-                    onSuccess={() => removeNotificaton(not)}
                   />
                   <Button
                     icon={"trash"}
                     minimal
                     small
-                    onClick={() => removeNotificaton(not)}
+                    onClick={() => removeNotification(not)}
                   />
                 </div>
               </div>

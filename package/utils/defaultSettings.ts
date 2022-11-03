@@ -14,16 +14,9 @@ const defaultSettings = [
     description: "Token assigned to this Notebook by SamePage.",
   },
   {
-    id: "auto-connect",
-    name: "Auto Connect",
-    type: "boolean",
-    default: false,
-    description: "Automatically connect to the SamePage Network",
-  },
-  {
     id: "granular-changes",
     name: "Granular Changes",
-    description: "Send changes granularly",
+    description: "(EXPERIMENTAL) Sync changes between notebooks granularly",
     type: "boolean",
     default: false,
   },

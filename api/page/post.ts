@@ -33,6 +33,8 @@ import getNotebookUuids from "~/data/getNotebookUuids.server";
 import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
 import createNotebook from "~/data/createNotebook.server";
 
+const BEGINNING_OF_CENTURY = new Date(2000, 0, 1).valueOf();
+
 const zMethod = zUnauthenticatedBody
   .and(zBaseHeaders)
   .or(zAuthenticatedBody.and(zAuthHeaders).and(zBaseHeaders));
@@ -604,7 +606,10 @@ const logic = async (req: Record<string, unknown>) => {
                 uuid: c.uuid,
                 workspace: c.workspace,
                 app: appsById[c.app].name,
-                version: c.version,
+                version:
+                  BEGINNING_OF_CENTURY > c.version
+                    ? c.version * 1000
+                    : c.version,
                 openInvite: !!c.open,
               })),
               recents: Object.values(

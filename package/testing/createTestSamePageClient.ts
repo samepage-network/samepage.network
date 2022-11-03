@@ -18,13 +18,19 @@ import apiClient from "../internal/apiClient";
 import Automerge from "automerge";
 import base64ToBinary from "../internal/base64ToBinary";
 import type { default as defaultSettings } from "../utils/defaultSettings";
-import { notificationActions } from "../internal/messages";
+import {
+  callNotificationAction,
+} from "../internal/messages";
 import fromAtJson from "./fromAtJson";
 
 const SUPPORTED_TAGS = ["SPAN", "DIV", "A"] as const;
 const TAG_SET = new Set<string>(SUPPORTED_TAGS);
 const processMessageSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("accept"), notebookPageId: z.string() }),
+  z.object({
+    type: z.literal("accept"),
+    notebookPageId: z.string(),
+    notificationUuid: z.string(),
+  }),
   z.object({
     type: z.literal("setCurrentNotebookPageId"),
     notebookPageId: z.string(),
@@ -168,7 +174,6 @@ const createTestSamePageClient = async ({
       ? {
           uuid: "",
           token: "",
-          "auto-connect": "",
           "granular-changes": "",
         }
       : initOptions;
@@ -255,11 +260,14 @@ const createTestSamePageClient = async ({
             onMessage({ type: "response", uuid: message.uuid })
           );
         } else if (message.type === "accept") {
-          notificationActions["SHARE_PAGE"]
-            ?.["accept"]({
+          callNotificationAction({
+            operation: "SHARE_PAGE",
+            label: "accept",
+            data: {
               title: message.notebookPageId,
-            })
-            .then(() => onMessage({ type: "response", uuid: message.uuid }));
+            },
+            messageUuid: message.notificationUuid,
+          }).then(() => onMessage({ type: "response", uuid: message.uuid }));
         } else if (message.type === "read") {
           const dom = appClientState[message.notebookPageId];
           onMessage({

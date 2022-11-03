@@ -263,7 +263,6 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     notebookPageId: z.string(),
     changes: z.string().array(),
     state: z.string(),
-    seq: z.number().optional(),
   }),
   z.object({
     method: z.literal("force-push-page"),

@@ -24,11 +24,12 @@ const messageNotebook = ({
   metadata?: string[];
 }) => {
   return getMysql(requestId).then(async (cxn) => {
-    const ids = await cxn
-      .execute(`SELECT id FROM online_clients WHERE notebook_uuid = ?`, [
-        target,
-      ])
-      .then(([res]) => (res as { id: string }[]).map(({ id }) => id));
+    const ConnectionId = await cxn
+      .execute(
+        `SELECT id FROM online_clients WHERE notebook_uuid = ? ORDER BY created_date DESC LIMIT 1`,
+        [target]
+      )
+      .then(([res]) => (res as { id: string }[]).map(({ id }) => id)[0]);
     const sourceNotebook = await getNotebookByUuid({ uuid: source, requestId });
     const Data = {
       ...data,
@@ -38,11 +39,11 @@ const messageNotebook = ({
       },
       operation,
     };
-    const online = await Promise.all(
-      ids.map((ConnectionId) =>
-        postToConnection({
+    const online = ConnectionId
+      ? await postToConnection({
           ConnectionId,
           Data,
+          uuid: messageUuid,
         })
           .then(() => true)
           .catch((e) => {
@@ -54,8 +55,7 @@ const messageNotebook = ({
               .then(() => false)
               .catch(() => false);
           })
-      )
-    ).then((all) => !!all.length && all.every((i) => i));
+      : false;
     await cxn.execute(
       `INSERT INTO messages (uuid, created_date, marked, source, target, operation, metadata)
           VALUES (?, ?, ?, ?, ?, ?, ?)`,

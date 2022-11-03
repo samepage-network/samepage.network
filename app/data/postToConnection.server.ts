@@ -5,6 +5,7 @@ import getApi from "./getApi.server";
 type SendData = {
   ConnectionId: string;
   Data: Record<string, unknown>;
+  uuid?: string;
 };
 
 const MESSAGE_LIMIT = 15750; // 16KB minus 250b buffer for metadata
@@ -20,9 +21,17 @@ const getSender = (ConnectionId: string) => {
   } else {
     return (Data: string): Promise<void> => {
       return axios
-        .post("http://localhost:3003/ws", {
+        .post<{ success: boolean }>("http://localhost:3003/ws", {
           ConnectionId,
           Data,
+        })
+        .then((r) => {
+          if (r.data.success) {
+            return Promise.resolve();
+          } else {
+            // TODO = do a better job emulating AWS' web socket postToConnection behavior
+            return Promise.reject("No connection");
+          }
         });
     };
   }
@@ -30,7 +39,7 @@ const getSender = (ConnectionId: string) => {
 
 const postToConnection: (params: SendData) => Promise<void> = (params) => {
   const fullMessage = JSON.stringify(params.Data);
-  const uuid = v4();
+  const uuid = params.uuid || v4();
   const size = Buffer.from(fullMessage).length;
   const total = Math.ceil(size / MESSAGE_LIMIT);
   const chunkSize = Math.ceil(fullMessage.length / total);

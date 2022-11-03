@@ -8,6 +8,7 @@ import {
   responseMessageSchema,
   ResponseSchema,
 } from "../package/testing/createTestSamePageClient";
+import { Notification } from "../package/internal/types";
 
 let cleanup: () => unknown;
 const logs: { data: string; time: string }[] = [];
@@ -66,7 +67,10 @@ const forkSamePageClient = ({
         console.error(`Client ${workspace}: ERROR ${data}`);
         throw new Error(`Client ${workspace} threw an unexpected error`);
       },
-      ready: ({ uuid }) => resolve({ ...api, uuid }),
+      ready: ({ uuid }) => {
+        log(`Client ${workspace} has uuid ${uuid}`);
+        return resolve({ ...api, uuid });
+      },
       response: (m) => {
         const { uuid, data } = m as {
           uuid: string;
@@ -170,14 +174,17 @@ test("Full integration test of sharing pages", async () => {
       contentType: "application/vnd.atjson+samepage; version=2022-08-17",
     }));
 
-  await test.step("Share page", () =>
+  const [, notification] = await test.step("Share page", () =>
     Promise.all([
       client1.send({ type: "invite", notebookUuid: client2.uuid }),
       client2.send({ type: "waitForNotification" }),
     ]));
-
   await test.step("Accept Shared Page", () =>
-    client2.send({ type: "accept", notebookPageId }));
+    client2.send({
+      type: "accept",
+      notebookPageId,
+      notificationUuid: (notification as Notification).uuid,
+    }));
 
   const client2Read = () =>
     client2
