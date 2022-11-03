@@ -249,6 +249,7 @@ const SharePageDialog = ({
                 style: {
                   width: "unset",
                 },
+                autoFocus: true,
               },
               className: "mt-2",
               rightElement: currentNotebookUuids.size ? (
@@ -261,7 +262,11 @@ const SharePageDialog = ({
                 />
               ) : undefined,
             }}
-            popoverProps={{ minimal: true, position: "bottom-left" }}
+            popoverProps={{
+              minimal: true,
+              position: "bottom-left",
+              portalContainer,
+            }}
             onRemove={(item) =>
               setCurrentNotebooks(
                 currentNotebooks.filter((n) => n.uuid !== item.uuid)
