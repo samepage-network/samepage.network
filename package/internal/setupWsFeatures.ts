@@ -319,7 +319,6 @@ const setupWsFeatures = ({
         await apiClient<{ messages: Notification[] }>({
           method: "get-unmarked-messages",
         }).then(async (r) => {
-          console.log("received", r.messages.length, "messages to read");
           const messages = await Promise.all(
             r.messages.map((msg) =>
               apiClient<{

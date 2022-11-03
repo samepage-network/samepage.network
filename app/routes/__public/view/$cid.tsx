@@ -1,9 +1,9 @@
 import AtJsonRendered from "package/components/AtJsonRendered";
 import type { LoaderFunction } from "@remix-run/node";
 import { useLoaderData, Link } from "@remix-run/react";
-import downloadSharedPage from "~/data/downloadSharedPage.server";
+import downloadIpfsFile from "~/data/downloadIpfsFile.server";
 import Automerge from "automerge";
-import { Schema, InitialSchema } from "package/internal/types";
+import { Schema, InitialSchema, Memo } from "package/internal/types";
 import Button from "@dvargas92495/app/components/Button";
 import binaryToBase64 from "package/internal/binaryToBase64";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
@@ -11,6 +11,7 @@ export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultEr
 import { useMemo } from "react";
 import base64ToBinary from "package/internal/base64ToBinary";
 import { parseAndFormatActorId } from "package/internal/parseActorId";
+import { decode } from "@ipld/dag-cbor";
 
 const ViewCidPage = () => {
   const data = useLoaderData<
@@ -69,7 +70,8 @@ export const loader: LoaderFunction = ({ params }) => {
   if (!cid) {
     return { content: new Automerge.Text(""), annotations: [], parent: null };
   }
-  return downloadSharedPage({ cid }).then((memo) => {
+  return downloadIpfsFile({ cid }).then((bytes) => {
+    const memo = decode<Memo>(bytes);
     const doc = Automerge.load<Schema>(memo.body);
     return {
       parent: memo.parent?.toString() || null,

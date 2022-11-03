@@ -23,7 +23,6 @@ import differenceInMinutes from "date-fns/differenceInMinutes";
 import format from "date-fns/format";
 import crypto from "crypto";
 import getSharedPage from "~/data/getSharedPage.server";
-import Automerge from "automerge";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
 import saveSharedPage from "~/data/saveSharedPage.server";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
@@ -247,29 +246,31 @@ const logic = async (req: Record<string, unknown>) => {
             const [link] = results as { page_uuid: string }[];
             if (link) return { id: link.page_uuid, created: false };
             const pageUuid = v4();
-            const { cid, body } = await saveSharedPage({
-              doc: state,
-            });
             // TODO - do we even need version here???
             await cxn.execute(
               `INSERT INTO pages (uuid, version)
             VALUES (?, 0)`,
               [pageUuid]
             );
+            const linkUuid = v4();
             await cxn.execute(
               `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, version, open, invited_by, invited_date, notebook_uuid, cid)
-            VALUES (UUID(), ?, ?, ?, 0, ?, ?, ?, ?)`,
+            VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)`,
               [
+                linkUuid,
                 pageUuid,
                 notebookPageId,
-                Automerge.getHistory(Automerge.load(body)).slice(-1)?.[0]
-                  ?.change?.time,
+                0,
                 notebookUuid,
                 new Date(),
                 notebookUuid,
-                cid,
+                "",
               ]
             );
+            await saveSharedPage({
+              uuid: linkUuid,
+              doc: state,
+            });
             cxn.destroy();
             return { created: true, id: pageUuid };
           })
@@ -314,19 +315,14 @@ const logic = async (req: Record<string, unknown>) => {
             found: false,
           };
         }
+        await cxn.execute(
+          `UPDATE page_notebook_links SET open = 0 WHERE uuid = ?`,
+          [uuid]
+        );
         const { body: state } = await downloadSharedPage({
           cid: invitedByResults[0].cid,
         });
-        const { cid } = await saveSharedPage({ doc: state });
-        await cxn.execute(
-          `UPDATE page_notebook_links SET open = 0, cid = ?, version = ? WHERE uuid = ?`,
-          [
-            cid,
-            Automerge.getHistory(Automerge.load(state)).slice(-1)[0]?.change
-              ?.time,
-            uuid,
-          ]
-        );
+        await saveSharedPage({ doc: state, uuid });
         await messageNotebook({
           target: invited_by,
           source: notebookUuid,
@@ -384,20 +380,16 @@ const logic = async (req: Record<string, unknown>) => {
               )
             );
           });
-        const res = await saveSharedPage({
+        const [result] = await cxn.execute(
+          `SELECT uuid FROM page_notebook_links WHERE notebook_uuid = ? AND notebook_page_id = ?`,
+          [notebookUuid, notebookPageId]
+        );
+        await saveSharedPage({
           cid,
           doc: state,
+          uuid: (result as { uuid: string }[])[0].uuid,
         });
-        await cxn.execute(
-          `UPDATE page_notebook_links SET version = ?, cid = ? WHERE notebook_uuid = ? AND notebook_page_id = ?`,
-          [
-            Automerge.getHistory(Automerge.load(res.body)).slice(-1)[0]?.change
-              ?.time,
-            res.cid,
-            notebookUuid,
-            notebookPageId,
-          ]
-        );
+
         cxn.destroy();
         return {
           success: true,
@@ -410,21 +402,16 @@ const logic = async (req: Record<string, unknown>) => {
           notebookPageId,
           requestId,
         });
+        const [results] = await cxn.execute(
+          `SELECT uuid FROM page_notebook_links WHERE notebook_uuid = ? AND notebook_page_id = ?`,
+          [notebookUuid, notebookPageId]
+        );
         const state = await (inputState
-          ? saveSharedPage({ doc: inputState, cid })
-              .then((res) =>
-                cxn.execute(
-                  `UPDATE page_notebook_links SET version = ?, cid = ? WHERE notebook_uuid = ? AND notebook_page_id = ?`,
-                  [
-                    Automerge.getHistory(Automerge.load(res.body)).slice(-1)[0]
-                      ?.change?.time,
-                    res.cid,
-                    notebookUuid,
-                    notebookPageId,
-                  ]
-                )
-              )
-              .then(() => inputState)
+          ? saveSharedPage({
+              doc: inputState,
+              cid,
+              uuid: (results as { uuid: string }[])[0].uuid,
+            }).then(() => inputState)
           : downloadSharedPage({ cid }).then((b) =>
               Buffer.from(b.body).toString("base64")
             ));
@@ -551,20 +538,21 @@ const logic = async (req: Record<string, unknown>) => {
         }
         return cxn
           .execute(`DELETE FROM page_notebook_links WHERE uuid = ?`, [linkUuid])
-          .then(() =>
-            invitedBy
-              ? messageNotebook({
-                  source: notebookUuid,
-                  target: invitedBy,
-                  data: {
-                    title: notebookPageId,
-                    rejected: !target,
-                    success: false,
-                  },
-                  operation: "SHARE_PAGE_RESPONSE",
-                  requestId,
-                })
-              : Promise.resolve() // TODO - send us an email of this error
+          .then(
+            () =>
+              invitedBy
+                ? messageNotebook({
+                    source: notebookUuid,
+                    target: invitedBy,
+                    data: {
+                      title: notebookPageId,
+                      rejected: !target,
+                      success: false,
+                    },
+                    operation: "SHARE_PAGE_RESPONSE",
+                    requestId,
+                  })
+                : Promise.resolve() // TODO - send us an email of this error
           )
           .then(() => ({ success: true }))
           .catch(catchError("Failed to remove a shared page"))
@@ -740,17 +728,15 @@ const logic = async (req: Record<string, unknown>) => {
           notebookPageId,
           requestId,
         });
-        const res = await saveSharedPage({ cid, doc: state });
-        await cxn.execute(
-          `UPDATE page_notebook_links SET version = ?, cid = ? WHERE notebook_uuid = ? AND notebook_page_id = ?`,
-          [
-            Automerge.getHistory(Automerge.load(res.body)).slice(-1)[0]?.change
-              ?.time,
-            res.cid,
-            notebookUuid,
-            notebookPageId,
-          ]
+        const [results] = await cxn.execute(
+          `SELECT uuid FROM page_notebook_links WHERE notebook_uuid = ? AND notebook_page_id = ?`,
+          [notebookUuid, notebookPageId]
         );
+        await saveSharedPage({
+          cid,
+          doc: state,
+          uuid: (results as { uuid: string }[])[0].uuid,
+        });
         cxn.destroy();
         return { success: true };
       }

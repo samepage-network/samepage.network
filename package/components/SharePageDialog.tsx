@@ -130,7 +130,7 @@ const SharePageDialog = ({
       portalContainer={portalContainer}
     >
       <div className={`${Classes.DIALOG_BODY} text-black`}>
-        {notebooks.map((g, i) => (
+        {notebooks.map((g) => (
           <div
             key={`${g.app}/${g.workspace}`}
             className={"flex gap-4 items-center mb-2 justify-between"}
@@ -147,9 +147,20 @@ const SharePageDialog = ({
                   onClick={() => {
                     setLoading(true);
                     removeOpenInvite(appIdByName[g.app], g.workspace)
-                      .then(() =>
-                        setNotebooks(notebooks.filter((_, j) => j !== i))
-                      )
+                      .then(() => {
+                        setNotebooks(
+                          notebooks.filter((n) => n.uuid !== g.uuid)
+                        );
+                        setRecents(
+                          [
+                            {
+                              uuid: g.uuid,
+                              workspace: g.workspace,
+                              app: appIdByName[g.app],
+                            },
+                          ].concat(recents)
+                        );
+                      })
                       .finally(() => setLoading(false));
                   }}
                 />
