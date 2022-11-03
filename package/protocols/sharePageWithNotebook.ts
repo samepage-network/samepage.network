@@ -259,7 +259,10 @@ const setupSharePageWithNotebook = ({
                       "Merged",
                       (oldDoc) => {
                         const offset = oldDoc.content.length;
-                        oldDoc.content.push(...preExistingDoc.content);
+                        oldDoc.content.insertAt?.(
+                          offset,
+                          ...preExistingDoc.content
+                        );
                         oldDoc.annotations.push(
                           ...preExistingDoc.annotations.map((a) => ({
                             ...a,
@@ -294,6 +297,10 @@ const setupSharePageWithNotebook = ({
               })
               .catch((e) => {
                 if (!preexisted) deletePage(title);
+                apiClient({
+                  method: "revert-page-join",
+                  notebookPageId: title,
+                });
                 return Promise.reject(e);
               });
           }),

@@ -9,7 +9,7 @@ import {
   Spinner,
   Tooltip,
 } from "@blueprintjs/core";
-import { MultiSelect } from "@blueprintjs/select";
+import { MultiSelect, MultiSelect2 } from "@blueprintjs/select";
 import inviteNotebookToPage from "../utils/inviteNotebookToPage";
 import { appIdByName, appsById } from "../internal/apps";
 
@@ -43,9 +43,7 @@ export type Props = {
   removeOpenInvite: RemoveOpenInvite;
 };
 
-// const appOptions = getNodeEnv() === "test" ? APPS : APPS.slice(1);
-
-// const AppSelect = Select.ofType<AppId>();
+const MultiSelectComponent = MultiSelect2 || MultiSelect;
 
 const SharePageDialog = ({
   onClose,
@@ -179,7 +177,7 @@ const SharePageDialog = ({
           <style>{`.samepage-notebook-select .bp3-popover-target, .samepage-notebook-select .bp4-popover-target {
   width: 100%;
 }`}</style>
-          <MultiSelect<typeof recents[number]>
+          <MultiSelectComponent<typeof recents[number]>
             items={recents}
             className={"flex-grow samepage-notebook-select"}
             itemsEqual={(a, b) => a.uuid === b.uuid}
@@ -251,7 +249,7 @@ const SharePageDialog = ({
                 },
                 autoFocus: true,
               },
-              className: "mt-2",
+              className: "mt-2 text-black",
               rightElement: currentNotebookUuids.size ? (
                 <Button
                   icon={"cross"}

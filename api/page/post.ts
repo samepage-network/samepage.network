@@ -340,6 +340,17 @@ const logic = async (req: Record<string, unknown>) => {
           found: true,
         };
       }
+      case "revert-page-join": {
+        const { notebookPageId } = args;
+        await cxn.execute(
+          `UPDATE page_notebook_links SET open = 1 WHERE notebook_page_id = ? AND notebook_uuid = ? AND open = 0`,
+          [notebookUuid, notebookPageId]
+        );
+        cxn.destroy();
+        return {
+          success: true,
+        };
+      }
       case "update-shared-page": {
         const { notebookPageId, changes, state } = args;
         const { uuid: pageUuid, cid } = await getSharedPage({

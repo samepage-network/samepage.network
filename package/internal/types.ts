@@ -255,6 +255,10 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     notebookPageId: z.string(),
   }),
   z.object({
+    method: z.literal("revert-page-join"),
+    notebookPageId: z.string(),
+  }),
+  z.object({
     method: z.literal("update-shared-page"),
     notebookPageId: z.string(),
     changes: z.string().array(),
