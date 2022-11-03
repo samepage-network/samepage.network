@@ -40,6 +40,7 @@ const setupSharePageWithNotebook = ({
   createPage = () => Promise.resolve(),
   openPage = () => Promise.resolve(),
   deletePage = () => Promise.resolve(),
+  doesPageExist = () => Promise.resolve(false),
   applyState = () => Promise.resolve(),
   calculateState = () => Promise.resolve({ annotations: [], content: "" }),
 }: {
@@ -59,6 +60,7 @@ const setupSharePageWithNotebook = ({
   createPage?: (notebookPageId: string) => Promise<unknown>;
   openPage?: (notebookPageId: string) => Promise<unknown>;
   deletePage?: (notebookPageId: string) => Promise<unknown>;
+  doesPageExist?: (notebookPageId: string) => Promise<boolean>;
   applyState?: (notebookPageId: string, state: Schema) => Promise<unknown>;
   calculateState?: (notebookPageId: string) => Promise<InitialSchema>;
 } = {}) => {
@@ -228,16 +230,73 @@ const setupSharePageWithNotebook = ({
       notificationActions["SHARE_PAGE"] = {
         accept: ({ title }) =>
           // TODO support block or page tree as a user action
-          createPage(title).then(() =>
-            joinPage({
+          doesPageExist(title).then(async (preexisted) => {
+            if (!preexisted) await createPage(title);
+            return apiClient<
+              | { found: false }
+              | {
+                  state: string;
+                  found: true;
+                }
+            >({
+              method: "join-shared-page",
               notebookPageId: title,
             })
-              .then(() => openPage(title))
-              .catch((e) => {
-                deletePage(title);
-                return Promise.reject(e);
+              .then(async (res) => {
+                if (res.found) {
+                  const saveDoc = (doc: Schema) =>
+                    saveAndApply(title, doc).catch((e) =>
+                      apiClient({
+                        method: "disconnect-shared-page",
+                        notebookPageId: title,
+                      }).then(() => Promise.reject(e))
+                    );
+                  const doc = loadAutomergeFromBase64(res.state);
+                  if (preexisted) {
+                    const preExistingDoc = await calculateState(title);
+                    const mergedDoc = Automerge.change(
+                      doc,
+                      "Merged",
+                      (oldDoc) => {
+                        const offset = oldDoc.content.length;
+                        oldDoc.content.push(...preExistingDoc.content);
+                        oldDoc.annotations.push(
+                          ...preExistingDoc.annotations.map((a) => ({
+                            ...a,
+                            start: a.start + offset,
+                            end: a.end + offset,
+                          }))
+                        );
+                      }
+                    );
+                    return saveDoc(mergedDoc);
+                  }
+                  return saveDoc(doc);
+                } else {
+                  return Promise.reject(
+                    new Error(
+                      `Could not find open invite for Notebook Page: ${title}`
+                    )
+                  );
+                }
               })
-          ),
+              .then(() => {
+                initPage({
+                  notebookPageId: title,
+                });
+                dispatchAppEvent({
+                  type: "log",
+                  id: "join-page-success",
+                  content: `Successfully connected to shared page ${title}!`,
+                  intent: "success",
+                });
+                return openPage(title);
+              })
+              .catch((e) => {
+                if (!preexisted) deletePage(title);
+                return Promise.reject(e);
+              });
+          }),
         reject: async ({ title }) =>
           apiClient({
             method: "remove-page-invite",
@@ -548,46 +607,6 @@ const setupSharePageWithNotebook = ({
       unload();
     }
   });
-
-  const joinPage = ({ notebookPageId }: { notebookPageId: string }) =>
-    apiClient<
-      | { found: false }
-      | {
-          state: string;
-          found: true;
-        }
-    >({
-      method: "join-shared-page",
-      notebookPageId,
-    }).then((res) => {
-      if (res.found) {
-        const doc = loadAutomergeFromBase64(res.state);
-        return saveAndApply(notebookPageId, doc)
-          .then(() => {
-            initPage({
-              notebookPageId,
-            });
-            dispatchAppEvent({
-              type: "log",
-              id: "join-page-success",
-              content: `Successfully connected to shared page ${notebookPageId}!`,
-              intent: "success",
-            });
-          })
-          .catch((e) =>
-            apiClient({
-              method: "disconnect-shared-page",
-              notebookPageId,
-            }).then(() => Promise.reject(e))
-          );
-      } else {
-        return Promise.reject(
-          new Error(
-            `Could not find open invite for Notebook Page: ${notebookPageId}`
-          )
-        );
-      }
-    });
 
   const updatePage = ({
     notebookPageId,
