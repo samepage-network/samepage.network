@@ -18,9 +18,7 @@ import apiClient from "../internal/apiClient";
 import Automerge from "automerge";
 import base64ToBinary from "../internal/base64ToBinary";
 import type { default as defaultSettings } from "../utils/defaultSettings";
-import {
-  callNotificationAction,
-} from "../internal/messages";
+import { callNotificationAction } from "../internal/messages";
 import fromAtJson from "./fromAtJson";
 
 const SUPPORTED_TAGS = ["SPAN", "DIV", "A"] as const;
@@ -225,9 +223,10 @@ const createTestSamePageClient = async ({
       data: `Error: 3 arguments required for --forked (workspace, notebook id, token)\nFound: ${process.argv}`,
     })
   );
+  await awaitLog("samepage-success");
   onMessage({ type: "ready", uuid: settings.uuid });
   return {
-    send: async (m: MessageSchema) => {
+    send: async (m: unknown) => {
       try {
         const message = processMessageSchema
           .and(z.object({ uuid: z.string().uuid() }))

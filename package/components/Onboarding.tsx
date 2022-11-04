@@ -20,14 +20,14 @@ import { app, appRoot, workspace } from "../internal/registry";
 const PAGES = ["WELCOME", "SETUP", "CONNECT", "START", "COMPLETE"] as const;
 type Page = typeof PAGES[number];
 
+type OnSuccess = (s: { notebookUuid: string; token: string }) => void;
+
 const ConnectNotebookPage = ({
   setPage,
-  setNotebookUuid: rootSetNotebookUuid,
-  setToken: rootSetToken,
+  onSuccess,
 }: {
   setPage: (s: Page) => void;
-  setNotebookUuid: (s: string) => void;
-  setToken: (s: string) => void;
+  onSuccess: OnSuccess;
 }) => {
   const [notebookUuid, setNotebookUuid] = React.useState("");
   const [token, setToken] = React.useState("");
@@ -38,29 +38,20 @@ const ConnectNotebookPage = ({
     setLoading(true);
     apiClient<{ notebookUuid: string }>({
       method: "connect-notebook",
-      notebookUuid, 
+      notebookUuid,
       token,
       app,
       workspace,
     })
       .then(({ notebookUuid }) => {
-        rootSetToken(token);
-        rootSetNotebookUuid(notebookUuid);
+        onSuccess({ token, notebookUuid });
         setPage("COMPLETE");
       })
       .catch((e) => setError(e.message))
       .finally(() => {
         setLoading(false);
       });
-  }, [
-    setError,
-    setLoading,
-    setPage,
-    setNotebookUuid,
-    token,
-    notebookUuid,
-    rootSetToken,
-  ]);
+  }, [setError, setLoading, setPage, setNotebookUuid, token, notebookUuid]);
   return (
     <div className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center`}>
       {loading && (
@@ -120,12 +111,10 @@ const ConnectNotebookPage = ({
 
 const CreateNotebookPage = ({
   setPage,
-  setNotebookUuid,
-  setToken: rootSetToken,
+  onSuccess,
 }: {
   setPage: (s: Page) => void;
-  setNotebookUuid: (s: string) => void;
-  setToken: (s: string) => void;
+  onSuccess: OnSuccess;
 }) => {
   const [inviteCode, setInviteCode] = React.useState("");
   const [termsOfUse, setTermsOfUse] = React.useState(false);
@@ -140,22 +129,14 @@ const CreateNotebookPage = ({
       workspace,
     })
       .then(({ notebookUuid, token }) => {
-        rootSetToken(token);
-        setNotebookUuid(notebookUuid);
+        onSuccess({ notebookUuid, token });
         setPage("COMPLETE");
       })
       .catch((e) => setError(e.message))
       .finally(() => {
         setLoading(false);
       });
-  }, [
-    setError,
-    setLoading,
-    setPage,
-    setNotebookUuid,
-    inviteCode,
-    rootSetToken,
-  ]);
+  }, [setError, setLoading, setPage, onSuccess, inviteCode]);
   return (
     <div
       className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center relative h-full`}
@@ -233,18 +214,23 @@ const CompletePage = ({ onClose }: { onClose: () => void }) => {
 const Onboarding = ({
   isOpen,
   onClose,
-  setNotebookUuid,
-  setToken,
+  onSuccess,
+  onCancel,
 }: OverlayProps<{
-  setNotebookUuid: (s: string) => void;
-  setToken: (s: string) => void;
+  onSuccess: OnSuccess;
+  onCancel: () => void;
 }>) => {
   const [page, setPage] = React.useState<Page>(PAGES[0]);
   return (
     <Dialog
       title={"Welcome to SamePage"}
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => {
+        onClose();
+        if (page !== "COMPLETE") {
+          onCancel();
+        }
+      }}
       style={{ width: "100%", maxWidth: 800, height: "100%", maxHeight: 600 }}
       portalClassName={"samepage-onboarding-portal"}
       portalContainer={appRoot}
@@ -290,7 +276,7 @@ const Onboarding = ({
                 Id for this notebook.
               </p>
               <Button
-                text={"Connect Notebook"}
+                text={"Use Existing Notebook"}
                 onClick={() => setPage("CONNECT")}
                 intent={"primary"}
                 className={"mt-4"}
@@ -314,18 +300,10 @@ const Onboarding = ({
         </div>
       )}
       {page === "CONNECT" && (
-        <ConnectNotebookPage
-          setPage={setPage}
-          setNotebookUuid={setNotebookUuid}
-          setToken={setToken}
-        />
+        <ConnectNotebookPage setPage={setPage} onSuccess={onSuccess} />
       )}
       {page === "START" && (
-        <CreateNotebookPage
-          setPage={setPage}
-          setNotebookUuid={setNotebookUuid}
-          setToken={setToken}
-        />
+        <CreateNotebookPage setPage={setPage} onSuccess={onSuccess} />
       )}
       {page === "COMPLETE" && <CompletePage onClose={onClose} />}
     </Dialog>

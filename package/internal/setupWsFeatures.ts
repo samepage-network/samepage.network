@@ -118,12 +118,9 @@ const connectToBackend = () => {
     };
 
     samePageBackend.channel.onclose = (args) => {
-      console.warn(
-        "Same page network disconnected:",
-        args.reason || "Unknown reason",
-        `(${args.code})`
-      );
-      disconnectFromBackend("Network Disconnected");
+      const reason = args.reason || "Unknown reason";
+      console.warn("Same page network disconnected:", reason, `(${args.code})`);
+      disconnectFromBackend(reason);
     };
     samePageBackend.channel.onerror = (ev) => {
       onError(ev);
@@ -146,13 +143,13 @@ const connectToBackend = () => {
 };
 
 const disconnectFromBackend = (reason: string) => {
+  const wasPending = samePageBackend.status === "PENDING";
+  dispatchAppEvent({
+    type: "connection",
+    status: "DISCONNECTED",
+  });
   if (samePageBackend.status !== "DISCONNECTED") {
-    const wasPending = samePageBackend.status === "PENDING";
     samePageBackend.status = "DISCONNECTED";
-    dispatchAppEvent({
-      type: "connection",
-      status: "DISCONNECTED",
-    });
     samePageBackend.channel = undefined;
     if (!wasPending) {
       dispatchAppEvent({
@@ -163,12 +160,12 @@ const disconnectFromBackend = (reason: string) => {
       });
     }
   }
-  addConnectCommand();
+  if (reason !== "Unloaded Extension") addConnectCommand();
   removeCommand({ label: USAGE_LABEL });
+  removeDisconnectCommand();
 };
 
 const addConnectCommand = () => {
-  removeDisconnectCommand();
   addCommand({
     label: "Connect to SamePage Network",
     callback: () => connectToBackend(),
@@ -176,7 +173,6 @@ const addConnectCommand = () => {
 };
 
 const removeConnectCommand = () => {
-  addDisconnectCommand();
   removeCommand({
     label: "Connect to SamePage Network",
   });
@@ -190,7 +186,6 @@ const addDisconnectCommand = () => {
       // websocket closure codes
       if (samePageBackend.channel)
         samePageBackend.channel.close(1000, "User Command");
-      disconnectFromBackend("User Command");
     },
   });
 };
@@ -201,18 +196,27 @@ const removeDisconnectCommand = () => {
   });
 };
 
+const onSuccessOnboarding = ({
+  notebookUuid,
+  token,
+}: {
+  notebookUuid: string;
+  token: string;
+}) => {
+  setSetting("uuid", notebookUuid);
+  setSetting("token", token);
+  removeCommand({ label: "Onboard to SamePage" });
+  connectToBackend();
+};
+
 const onboard = () =>
   typeof window !== "undefined"
     ? renderOverlay({
         Overlay: Onboarding,
         props: {
-          // switch to onSuccess(notebookUuid, token), onCancel
-          setNotebookUuid: (v) => {
-            setSetting("uuid", v);
-            removeCommand({ label: "Onboard to SamePage" });
-          },
-          setToken: (v) => {
-            setSetting("token", v);
+          onSuccess: onSuccessOnboarding,
+          onCancel: () => {
+            addCommand({ label: "Onboard to SamePage", callback: onboard });
           },
         },
       })
@@ -224,10 +228,7 @@ const onboard = () =>
             inviteCode,
             app,
             workspace,
-          }).then(({ notebookUuid, token }) => {
-            setSetting("token", token);
-            setSetting("uuid", notebookUuid);
-          }),
+          }).then(onSuccessOnboarding),
       });
 
 const unloads: Record<string, () => void> = {};
@@ -238,8 +239,6 @@ const setupWsFeatures = ({
 }) => {
   const notebookUuid = getSetting("uuid");
   if (!notebookUuid) {
-    // TODO - move this to onCancel
-    addCommand({ label: "Onboard to SamePage", callback: onboard });
     onboard();
   }
 
@@ -259,7 +258,6 @@ const setupWsFeatures = ({
             1000,
             "Error during pending connection"
           );
-        disconnectFromBackend("Error during pending connection");
       }
     },
   });
@@ -277,6 +275,7 @@ const setupWsFeatures = ({
           type: "connection",
           status: "CONNECTED",
         });
+        addDisconnectCommand();
         removeConnectCommand();
         addCommand({
           label: USAGE_LABEL,
@@ -344,6 +343,15 @@ const setupWsFeatures = ({
             )
           );
           messages.filter((m): m is Notification => !!m);
+          unloads["samepage-connection-loading"]?.();
+          const pingInterval = setInterval(
+            () => sendToBackend({ operation: "PING" }),
+            1000 * 60 * 5
+          );
+          unloads["ping-interval"] = () => {
+            delete unloads["ping-interval"];
+            clearInterval(pingInterval);
+          };
           dispatchAppEvent({
             type: "log",
             id: "samepage-success",
@@ -357,7 +365,11 @@ const setupWsFeatures = ({
           type: "connection",
           status: "DISCONNECTED",
         });
-        if (samePageBackend.channel) samePageBackend.channel.close();
+        if (samePageBackend.channel)
+          samePageBackend.channel.close(
+            1000,
+            "Error thrown during authentication"
+          );
         dispatchAppEvent({
           type: "log",
           id: "samepage-failure",
@@ -384,11 +396,8 @@ const setupWsFeatures = ({
             unmountLoadingComponent?.();
             delete unloads["samepage-connection-loading"];
           };
-      } else {
-        unloads["samepage-connection-loading"]?.();
-        if (evt.status === "DISCONNECTED") {
-          unloads["samepage-notification-container"]?.();
-        }
+      } else if (evt.status === "DISCONNECTED") {
+        Object.values(unloads).forEach((u) => u());
       }
     }
   });
@@ -400,15 +409,11 @@ const setupWsFeatures = ({
   }
 
   return () => {
-    Object.values(unloads).forEach((u) => u());
     removeCommand({ label: USAGE_LABEL });
     removeNotebookListener({ operation: "AUTHENTICATION" });
     removeNotebookListener({ operation: "ERROR" });
     if (samePageBackend.channel)
-      samePageBackend.channel.close(1000, "Disabled Client");
-    disconnectFromBackend("Disabled Client");
-    removeConnectCommand();
-    removeDisconnectCommand();
+      samePageBackend.channel.close(1000, "Unloaded Extension");
   };
 };
 

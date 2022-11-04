@@ -117,9 +117,22 @@ const DocsPage = (): React.ReactElement => {
               code: {
                 props: {
                   className:
-                    "bg-gray-200 rounded-md py-0.5 px-2 my-0.5 inline-block font-normal",
+                    "bg-gray-200 rounded-md py-0.5 px-2 my-0.5 inline-block font-normal text-sm",
                 },
               },
+              img: (props) => (
+                <div className="p-12">
+                  <img {...props} className={"rounded-xl shadow-xl"} />
+                </div>
+              ),
+              a: (props) => (
+                <Link
+                  to={props.href.replace(/\.md$/, "")}
+                  className={"text-sky-500 underline hover:no-underline"}
+                >
+                  {props.children}
+                </Link>
+              ),
             },
           }}
         >
@@ -148,7 +161,7 @@ const DocsPage = (): React.ReactElement => {
     }
   }, [setToc, componentRef]);
   return (
-    <div className="flex gap-32 h-min items-start relative">
+    <div className="flex gap-28 h-min items-start relative">
       <div ref={componentRef} key={frontmatter.title}>
         <div>
           <h1 className="font-bold text-5xl mb-8">{frontmatter.title}</h1>
@@ -171,11 +184,11 @@ const DocsPage = (): React.ReactElement => {
               className={`my-2 ${
                 [
                   undefined,
-                  `font-bold text-2xl`,
-                  `font-semibold text-xl`,
-                  `font-medium text-lg pl-2`,
-                  `font-normal text-base pl-4`,
-                  `font-light text-sm pl-6`,
+                  `font-bold text-lg`,
+                  `font-semibold text-md`,
+                  `font-medium text-sm pl-2`,
+                  `font-normal text-xs pl-4`,
+                  `font-light text-xs pl-6`,
                   `font-extralight text-xs pl-8`,
                 ][t.heading] || ""
               }`}

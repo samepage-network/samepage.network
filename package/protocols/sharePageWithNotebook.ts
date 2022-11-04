@@ -116,10 +116,13 @@ const setupSharePageWithNotebook = ({
   const initPage = ({
     notebookPageId,
     created = false,
+    doc,
   }: {
     notebookPageId: string;
     created?: boolean;
+    doc?: Schema;
   }) => {
+    set(notebookPageId, doc);
     if (sharedPageStatusProps) {
       sharedPageStatusProps
         .getHtmlElement?.(notebookPageId)
@@ -245,12 +248,18 @@ const setupSharePageWithNotebook = ({
                 .then(async (res) => {
                   if (res.found) {
                     const saveDoc = (doc: Schema) =>
-                      saveAndApply(title, doc).catch((e) =>
-                        apiClient({
-                          method: "disconnect-shared-page",
-                          notebookPageId: title,
-                        }).then(() => Promise.reject(e))
-                      );
+                      saveAndApply(title, doc)
+                        .then(() => {
+                          initPage({
+                            notebookPageId: title,
+                          });
+                        })
+                        .catch((e) =>
+                          apiClient({
+                            method: "disconnect-shared-page",
+                            notebookPageId: title,
+                          }).then(() => Promise.reject(e))
+                        );
                     const doc = loadAutomergeFromBase64(res.state);
                     if (preexisted) {
                       const preExistingDoc = await calculateState(title);
@@ -292,9 +301,6 @@ const setupSharePageWithNotebook = ({
                   }
                 })
                 .then(() => {
-                  initPage({
-                    notebookPageId: title,
-                  });
                   dispatchAppEvent({
                     type: "log",
                     id: "join-page-success",
@@ -522,118 +528,113 @@ const setupSharePageWithNotebook = ({
           });
         },
       });
+      
+      if (viewSharedPageProps)
+        addCommand({
+          label: VIEW_COMMAND_PALETTE_LABEL,
+          callback: () => {
+            apiClient<{ notebookPageIds: string[] }>({
+              method: "list-shared-pages",
+            }).then((props) =>
+              renderOverlay({
+                id: "samepage-view-shared-pages",
+                Overlay: ViewSharedPages,
+                props: {
+                  ...props,
+                  ...viewSharedPageProps,
+                  linkNewPage: (oldNotebookPageId, title) =>
+                    (viewSharedPageProps.linkNewPage
+                      ? viewSharedPageProps.linkNewPage(
+                          oldNotebookPageId,
+                          title
+                        )
+                      : Promise.resolve(v4())
+                    ).then((newNotebookPageId) => {
+                      if (!newNotebookPageId) {
+                        dispatchAppEvent({
+                          type: "log",
+                          id: "link-shared-page",
+                          content: `Unable to link page: ${title}`,
+                          intent: "error",
+                        });
+                        return "";
+                      }
+                      return linkNewPage({
+                        oldNotebookPageId,
+                        newNotebookPageId,
+                        title,
+                      }).then(() => newNotebookPageId);
+                    }),
+                },
+              })
+            );
+          },
+        });
+
+      addCommand({
+        label: COMMAND_PALETTE_LABEL,
+        callback: () => {
+          return getCurrentNotebookPageId()
+            .then((notebookPageId) =>
+              calculateState(notebookPageId).then((docInit) => {
+                const doc = Automerge.from<Schema>(
+                  {
+                    content: new Automerge.Text(docInit.content),
+                    annotations: docInit.annotations,
+                    contentType:
+                      "application/vnd.atjson+samepage; version=2022-08-17",
+                  },
+                  { actorId: getActorId() }
+                );
+                const state = Automerge.save(doc);
+                return apiClient<{ id: string; created: boolean }>({
+                  method: "init-shared-page",
+                  notebookPageId,
+                  state: binaryToBase64(state),
+                }).then(async (r) => {
+                  if (r.created) {
+                    initPage({
+                      notebookPageId,
+                      created: true,
+                      doc,
+                    });
+                    dispatchAppEvent({
+                      type: "log",
+                      id: "init-page-success",
+                      content: `Successfully initialized shared page! Click on the invite button below to share the page with other notebooks!`,
+                      intent: "info",
+                    });
+                  } else {
+                    dispatchAppEvent({
+                      type: "log",
+                      id: "samepage-warning",
+                      content: "This page is already shared from this notebook",
+                      intent: "warning",
+                    });
+                    return Promise.resolve();
+                  }
+                });
+              })
+            )
+            .catch((e) => {
+              dispatchAppEvent({
+                type: "log",
+                intent: "error",
+                id: "init-page-failure",
+                content: `Failed to share page on network: ${e.message}`,
+              });
+            });
+        },
+      });
 
       apiClient<{ notebookPageIds: string[] }>({
         method: "list-shared-pages",
       })
         .then(({ notebookPageIds }) => {
-          return Promise.all(
-            notebookPageIds.map((id) => {
-              initPage({
-                notebookPageId: id,
-              });
-              set(id);
-            })
-          );
-        })
-        .then(() => {
-          if (viewSharedPageProps)
-            addCommand({
-              label: VIEW_COMMAND_PALETTE_LABEL,
-              callback: () => {
-                apiClient<{ notebookPageIds: string[] }>({
-                  method: "list-shared-pages",
-                }).then((props) =>
-                  renderOverlay({
-                    id: "samepage-view-shared-pages",
-                    Overlay: ViewSharedPages,
-                    props: {
-                      ...props,
-                      ...viewSharedPageProps,
-                      linkNewPage: (oldNotebookPageId, title) =>
-                        (viewSharedPageProps.linkNewPage
-                          ? viewSharedPageProps.linkNewPage(
-                              oldNotebookPageId,
-                              title
-                            )
-                          : Promise.resolve(v4())
-                        ).then((newNotebookPageId) => {
-                          if (!newNotebookPageId) {
-                            dispatchAppEvent({
-                              type: "log",
-                              id: "link-shared-page",
-                              content: `Unable to link page: ${title}`,
-                              intent: "error",
-                            });
-                            return "";
-                          }
-                          return linkNewPage({
-                            oldNotebookPageId,
-                            newNotebookPageId,
-                            title,
-                          }).then(() => newNotebookPageId);
-                        }),
-                    },
-                  })
-                );
-              },
+          notebookPageIds.map((id) => {
+            initPage({
+              notebookPageId: id,
             });
-
-          addCommand({
-            label: COMMAND_PALETTE_LABEL,
-            callback: () => {
-              return getCurrentNotebookPageId()
-                .then((notebookPageId) =>
-                  calculateState(notebookPageId).then((docInit) => {
-                    const doc = Automerge.from<Schema>(
-                      {
-                        content: new Automerge.Text(docInit.content),
-                        annotations: docInit.annotations,
-                        contentType:
-                          "application/vnd.atjson+samepage; version=2022-08-17",
-                      },
-                      { actorId: getActorId() }
-                    );
-                    const state = Automerge.save(doc);
-                    set(notebookPageId, doc);
-                    return apiClient<{ id: string; created: boolean }>({
-                      method: "init-shared-page",
-                      notebookPageId,
-                      state: binaryToBase64(state),
-                    }).then(async (r) => {
-                      if (r.created) {
-                        initPage({
-                          notebookPageId,
-                          created: true,
-                        });
-                        dispatchAppEvent({
-                          type: "log",
-                          id: "init-page-success",
-                          content: `Successfully initialized shared page! Click on the invite button below to share the page with other notebooks!`,
-                          intent: "info",
-                        });
-                      } else {
-                        dispatchAppEvent({
-                          type: "log",
-                          id: "samepage-warning",
-                          content:
-                            "This page is already shared from this notebook",
-                          intent: "warning",
-                        });
-                        return Promise.resolve();
-                      }
-                    });
-                  })
-                )
-                .catch((e) => {
-                  dispatchAppEvent({
-                    type: "log",
-                    intent: "error",
-                    id: "init-page-failure",
-                    content: `Failed to share page on network: ${e.message}`,
-                  });
-                });
-            },
           });
 
           dispatchAppEvent({

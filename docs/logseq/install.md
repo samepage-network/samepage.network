@@ -3,23 +3,32 @@ title: SamePage Docs - Logseq Installation
 description: Install SamePage into your Logseq Graph
 ---
 
-Welcome to the SamePage Network! 
+The SamePage LogSeq extension allows you to connect your LogSeq Graph to other notebooks using the SamePage Network.
 
-## Overview
-The SamePage Network extension allows you to connect your Logseq Graph to other notebooks, like Roam or Obsidian, using the SamePage Network.
+A **Notebook** in LogSeq is a graph. The internal [Logseq Docs](https://docs.logseq.com/#/page/Contents) and your personal graph are examples of **Notebooks**.
 
-Throughout these docs, you'll see the term 'notebook'. A 'notebook' is a 'workspace' within an 'app'. 
-'Apps' include various tools for thought, like Roam, LogSeq, and Obsidian. 
-A 'workspace' is an a single instantiation of those 'apps', like a graph or a vault, signified by the __name__. 
+## Installing the Live Version
 
-So the internal [Logseq Docs](https://docs.logseq.com/#/page/Contents) is an example of a 'notebook'. Your personal Roam graph or Obsidian vault named "Metacognition Research" are other examples.
+The stable version of the SamePage extension is still under review for the LogSeq Marketplace. Subscribe to our newsletter to be notified when the extension is live!
 
-Below are instructions to install SamePage into your Roam graph. 
+## Installing the Development version
 
-## Installation
-Installation is available through the Plugins tab in the Options tab in the top right corner. Click 'Marketplace' and search for SamePage. Then click 'Install' and you're set. 
+After downloading the extension from SamePage, extract the zip into a folder. That folder could be stored anywhere on your computer.
 
-You will then see SamePage appear under 'Installed'. Click to read more and adjust auto-connection settings.
+In Roam, head to your LogSeq settings, head to the `Advanced` tab toggle on `Development Mode` to enable:
 
-## Live! 
+![](/images/logseq-2.png)
+
+Then, head to the plugins dashboard by entering `Go to plugins dashboard` into the LogSeq command palette, and click on `Load unpacked plugin`:
+
+![](/images/logseq-3.png)
+
+Once you do, click on the folder button and select the folder that you downloaded and extracted.
+
+![](/images/logseq-4.png)
+
+The extension should automatically load and connect to SamePage!
+
+## Demo
+
 <div style="position: relative; padding-bottom: 64.5933014354067%; height: 0;"><iframe src="https://www.loom.com/embed/195345835e6f44b5809f4ca344e062d9" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>

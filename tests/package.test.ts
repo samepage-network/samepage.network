@@ -140,10 +140,6 @@ test("Full integration test of sharing pages", async () => {
     log("Test: cleaned up!");
   };
 
-  await test.step("Client 1 connects", () => client1.send({ type: "connect" }));
-
-  await test.step("Client 2 connects", () => client2.send({ type: "connect" }));
-
   await test.step("Navigate to Demo Page", () =>
     client1.send({
       type: "setCurrentNotebookPageId",
