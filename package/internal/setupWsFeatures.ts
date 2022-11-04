@@ -380,6 +380,8 @@ const setupWsFeatures = ({
     },
   });
 
+  addNotebookListener({ operation: "PONG", handler: () => {} });
+
   onAppEvent("connection", (evt) => {
     if (typeof window !== "undefined") {
       if (evt.status === "PENDING") {

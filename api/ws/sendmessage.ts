@@ -93,6 +93,11 @@ const dataHandler = async (
         answer,
       },
     });
+  } else if (operation === "PING") {
+    return postToConnection({
+      ConnectionId: clientId,
+      Data: { operation: "PONG" },
+    });
   } else if (operation === "PROXY") {
     const { proxyOperation, ...data } = props as {
       proxyOperation: Operation;
@@ -136,7 +141,7 @@ const dataHandler = async (
   } else {
     return postError({
       event,
-      Message: `Invalid server operation: ${operation}`,
+      Message: `Invalid web socket server operation: ${operation}`,
     });
   }
 };

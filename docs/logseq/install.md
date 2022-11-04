@@ -1,5 +1,5 @@
 ---
-title: SamePage Docs - Logseq Installation
+title: Installing on LogSeq
 description: Install SamePage into your Logseq Graph
 ---
 

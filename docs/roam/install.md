@@ -1,5 +1,5 @@
 ---
-title: SamePage Docs - Roam Installation
+title: Installing on Roam
 description: Install SamePage into your Roam Graph
 ---
 

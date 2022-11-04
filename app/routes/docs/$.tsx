@@ -1,7 +1,7 @@
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 import type { LoaderFunction, LinksFunction } from "@remix-run/node";
-import { useLoaderData, Link } from "@remix-run/react";
+import { useLoaderData, Link, useLocation } from "@remix-run/react";
 import loadMarkdownFile from "~/data/loadMarkdownFile.server";
 import { useMemo, useState, useEffect, useRef } from "react";
 // import { getMDXComponent } from "mdx-bundler/client";
@@ -84,6 +84,7 @@ const Header = ({
 };
 
 const DocsPage = (): React.ReactElement => {
+  const location = useLocation();
   const { code, frontmatter } =
     useLoaderData<Awaited<ReturnType<typeof loadMarkdownFile>>>();
   const Component = useMemo(
@@ -159,7 +160,7 @@ const DocsPage = (): React.ReactElement => {
         }))
       );
     }
-  }, [setToc, componentRef]);
+  }, [setToc, componentRef, location.pathname]);
   return (
     <div className="flex gap-28 h-min items-start relative">
       <div ref={componentRef} key={frontmatter.title}>
