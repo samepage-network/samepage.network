@@ -3,8 +3,10 @@ import { appRoot } from "../internal/registry";
 const createHTMLObserver = <T extends ChildNode>({
   callback,
   onRemove,
+  onClassName,
   selector: _selector,
 }: {
+  onClassName?: (el: T) => void;
   onRemove?: (el: T) => void;
   callback: (el: T) => void;
   selector: string;
@@ -46,16 +48,32 @@ const createHTMLObserver = <T extends ChildNode>({
 
   getChildren(appRoot).forEach(callback);
   const observer = new MutationObserver((records) => {
-    records.flatMap((m) => getNodes(m.addedNodes, m.target)).forEach(callback);
-    if (onRemove)
-      records
-        .flatMap((m) => getNodes(m.removedNodes, m.target))
-        .forEach(onRemove);
+    records.forEach((r) => {
+      if (r.type === "childList") {
+        getNodes(r.addedNodes, r.target).forEach(callback);
+        if (onRemove) getNodes(r.removedNodes, r.target).forEach(onRemove);
+      } else if (r.type === "attributes") {
+        const className = (selector.match(/\.[^.]$/)?.[0] || "").slice(1);
+        if (r.oldValue && r.oldValue.includes(className))
+          onRemove?.(r.target as T);
+        if (isNode(r.target, r.target)) callback(r.target);
+      }
+    });
   });
-  observer.observe(appRoot, {
-    childList: true,
-    subtree: true,
-  });
+  observer.observe(
+    appRoot,
+    onClassName
+      ? {
+          childList: true,
+          subtree: true,
+          attributeFilter: ["class"],
+          attributeOldValue: true,
+        }
+      : {
+          childList: true,
+          subtree: true,
+        }
+  );
   return observer;
 };
 

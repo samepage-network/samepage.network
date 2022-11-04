@@ -95,7 +95,6 @@ const forkSamePageClient = ({
 };
 
 test("Full integration test of sharing pages", async () => {
-  console.log("ORIGIN", process.env.ORIGIN);
   const api = spawn("node", ["./node_modules/.bin/fuego", "api"], {
     env: { ...process.env, NODE_ENV: "development", DEBUG: undefined },
   });

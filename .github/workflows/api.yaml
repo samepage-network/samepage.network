@@ -8,6 +8,7 @@ on:
       - ".github/workflows/api.yaml"
 
 env:
+  API_URL: https://api.samepage.network
   API_GATEWAY_ID: ${{ secrets.API_GATEWAY_ID }}
   AWS_ACCESS_KEY_ID: ${{ secrets.LAMBDA_AWS_ACCESS_KEY }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.LAMBDA_AWS_ACCESS_SECRET }}
