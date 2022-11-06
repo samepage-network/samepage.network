@@ -3,10 +3,10 @@ import { appRoot } from "../internal/registry";
 const createHTMLObserver = <T extends ChildNode>({
   callback,
   onRemove,
-  onClassName,
+  observeClassName,
   selector: _selector,
 }: {
-  onClassName?: (el: T) => void;
+  observeClassName?: boolean;
   onRemove?: (el: T) => void;
   callback: (el: T) => void;
   selector: string;
@@ -30,13 +30,13 @@ const createHTMLObserver = <T extends ChildNode>({
         ) as T[])
       : [];
   };
-  const isNode = (d: Node, target: Node): d is T => {
+  const isNode = (d: Node, parentNode?: Node): d is T => {
     if (d.nodeType === d.ELEMENT_NODE) return (d as Element).matches(selector);
-    if (d.nodeType === d.TEXT_NODE) {
+    if (d.nodeType === d.TEXT_NODE && parentNode) {
       const parent = d.parentElement;
       if (parent) return parent.matches(selector);
-      if (target.nodeType === target.ELEMENT_NODE)
-        return (target as Element).matches(selector);
+      if (parentNode.nodeType === parentNode.ELEMENT_NODE)
+        return (parentNode as Element).matches(selector);
       return false;
     }
     return false;
@@ -53,16 +53,22 @@ const createHTMLObserver = <T extends ChildNode>({
         getNodes(r.addedNodes, r.target).forEach(callback);
         if (onRemove) getNodes(r.removedNodes, r.target).forEach(onRemove);
       } else if (r.type === "attributes") {
-        const className = (selector.match(/\.[^.]$/)?.[0] || "").slice(1);
-        if (r.oldValue && r.oldValue.includes(className))
+        const className = (selector.match(/\.[^.]+$/)?.[0] || "").slice(1);
+        if (
+          r.oldValue &&
+          className &&
+          r.oldValue.includes(className) &&
+          !(r.target as Element).className.includes(className)
+        )
           onRemove?.(r.target as T);
-        if (isNode(r.target, r.target)) callback(r.target);
+        if (r.oldValue !== (r.target as Element).className && isNode(r.target))
+          callback(r.target);
       }
     });
   });
   observer.observe(
     appRoot,
-    onClassName
+    observeClassName
       ? {
           childList: true,
           subtree: true,
