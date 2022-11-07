@@ -6,6 +6,7 @@ import {
   GithubProvider,
   ActionsOrganizationSecret,
 } from "@cdktf/provider-github";
+import { s3 } from "@cdktf/provider-aws";
 
 if (!process.env.SP_TERRAFORM_CLOUD_TOKEN) {
   base({
@@ -116,6 +117,9 @@ if (!process.env.SP_TERRAFORM_CLOUD_TOKEN) {
         secretName: "SAMEPAGE_TEST_TOKEN",
         plaintextValue: process.env.SAMEPAGE_TEST_TOKEN,
       });
+      new s3.S3Bucket(this, 'temp-samepage-network', {
+        bucket: "temp-samepage-network"
+      })
     },
   });
 }

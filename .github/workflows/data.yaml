@@ -4,7 +4,7 @@ on:
   push:
     branches: 
       - main
-      - AWS_MIGRATE
+      - AWS_MIGRATION
     paths:
       # We need the gh action to somehow watch for new files inserted in api
       - "data/**"
