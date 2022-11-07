@@ -2,7 +2,9 @@ name: Publish Data Infrastructure
 on:
   workflow_dispatch:
   push:
-    branches: main
+    branches: 
+      - main
+      - AWS_MIGRATE
     paths:
       # We need the gh action to somehow watch for new files inserted in api
       - "data/**"
