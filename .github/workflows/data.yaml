@@ -2,7 +2,9 @@ name: Publish Data Infrastructure
 on:
   workflow_dispatch:
   push:
-    branches: main
+    branches: 
+      - main
+      - AWS_MIGRATION
     paths:
       # We need the gh action to somehow watch for new files inserted in api
       - "data/**"
@@ -18,6 +20,7 @@ env:
   IS_PRODUCTION: 1
   STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
   TERRAFORM_CLOUD_TOKEN: ${{ secrets.TERRAFORM_CLOUD_TOKEN }}
+  SP_TERRAFORM_CLOUD_TOKEN: ${{ secrets.SP_TERRAFORM_CLOUD_TOKEN }}
 
 jobs:
   deploy:
