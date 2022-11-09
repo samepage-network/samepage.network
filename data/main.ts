@@ -49,9 +49,5 @@ base({
       secretName: "SAMEPAGE_TEST_TOKEN",
       plaintextValue: process.env.SAMEPAGE_TEST_TOKEN,
     });
-
-    new s3.S3Bucket(this, "temp-samepage-network", {
-      bucket: "temp-samepage-network",
-    });
   },
 });
