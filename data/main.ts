@@ -3,7 +3,6 @@ import {
   ActionsSecret,
   ActionsOrganizationSecret,
 } from "@cdktf/provider-github";
-import { s3 } from "@cdktf/provider-aws";
 
 base({
   projectName: "samepage.network",
