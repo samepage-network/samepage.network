@@ -6,7 +6,6 @@ import {
 
 base({
   projectName: "samepage.network",
-  emailDomain: "samepage.network",
   clerkDnsId: "l7zkq208u6ys",
   organization: "SamePage",
   variables: [
@@ -48,5 +47,7 @@ base({
       secretName: "SAMEPAGE_TEST_TOKEN",
       plaintextValue: process.env.SAMEPAGE_TEST_TOKEN,
     });
+
+    // TODO migrate google verification route53 record
   },
 });
