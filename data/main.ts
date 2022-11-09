@@ -6,6 +6,7 @@ import {
 
 base({
   projectName: "samepage.network",
+  emailSettings: "OUTBOUND",
   clerkDnsId: "l7zkq208u6ys",
   organization: "SamePage",
   variables: [
