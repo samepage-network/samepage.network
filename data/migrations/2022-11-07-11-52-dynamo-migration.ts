@@ -16,8 +16,7 @@ const getOrGenerateNotebookUuid = async ({
 }: { cxn: MigrationProps["connection"] } & Notebook) => {
   const [existingNotebooks] = await cxn.execute(
     `SELECT n.uuid FROM notebooks n
-      LEFT JOIN token_notebook_links l ON l.notebook_uuid = n.uuid
-      where n.workspace = ? and n.app = ? and l.token_uuid is NULL`,
+      where n.workspace = ? and n.app = ?`,
     [workspace, app]
   );
   const [potentialNotebookUuid] = existingNotebooks as { uuid: string }[];
