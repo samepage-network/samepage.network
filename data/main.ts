@@ -64,9 +64,3 @@ base({
     });
   },
 });
-
-// base({
-//   projectName: "samepage.network",
-//   emailDomain: "samepage.network",
-//   clerkDnsId: "l7zkq208u6ys",
-// })

@@ -269,6 +269,7 @@ export const migrate = (args: MigrationProps) => {
         .then((items) => {
           const migrated = items.filter((i) => !!i);
           const reqs = Math.ceil(migrated.length / BATCH_MAX);
+          // this failed with schema validation error
           const batches = migrated.length
             ? Array(reqs)
                 .fill(null)
