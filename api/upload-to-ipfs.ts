@@ -42,7 +42,6 @@ export const handler = async (
     }),
     s3upload.then(async (cid) => {
       if (type === "pages") {
-        console.log("context?.awsRequestId", context?.awsRequestId);
         const cxn = await getMysql(context?.awsRequestId || v4());
         const [cids] = await cxn.execute(
           `SELECT cid FROM page_notebook_links WHERE uuid = ?`,

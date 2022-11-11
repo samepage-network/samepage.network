@@ -19,6 +19,7 @@ base({
   backendProps: {
     sizes: {
       "page/post": "5120",
+      "upload-to-ipfs": "5120",
     },
   },
   async callback() {
