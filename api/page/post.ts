@@ -596,7 +596,9 @@ const logic = async (req: Record<string, unknown>) => {
             const clientUuids = new Set(clients.map((c) => c.uuid));
             const recents = await cxn
               // TODO - create better hueristics here for recent notebooks, prob its own LRU cache table
-              .execute(`SELECT n.* FROM notebooks n WHERE app != 0`)
+              .execute(`SELECT n.* FROM notebooks n 
+              INNER JOIN token_notebook_links l on l.notebook_uuid = n.uuid 
+              WHERE n.app != 0`)
               .then(([a]) => a as ({ uuid: string } & Notebook)[]);
             cxn.destroy();
             return {

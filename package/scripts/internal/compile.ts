@@ -136,10 +136,9 @@ const compile = ({
         "process.env.NODE_ENV": `"${process.env.NODE_ENV}"`,
         "process.env.VERSION": `"${version || toVersion()}"`,
         ...Object.fromEntries(
-          (typeof env === "string" ? [env] : env || []).map((s) => [
-            `process.env.${s}`,
-            `"${process.env[s]}"`,
-          ])
+          (typeof env === "string" ? [env] : env || [])
+            .filter((s) => !!process.env[s])
+            .map((s) => [`process.env.${s}`, `"${process.env[s]}"`])
         ),
       },
       format,
