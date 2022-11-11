@@ -21,11 +21,13 @@ const gatherDocs = (path: string): Promise<DirectoryNode[]> => {
   return (
     process.env.NODE_ENV === "development"
       ? Promise.all([
-          fs.readdirSync(path, { withFileTypes: true }).map((f) => ({
-            path: nodepath.join(path, f.name),
-            name: f.name,
-            type: f.isDirectory() ? "dir" : "file",
-          })),
+          fs.existsSync(path)
+            ? fs.readdirSync(path, { withFileTypes: true }).map((f) => ({
+                path: nodepath.join(path, f.name),
+                name: f.name,
+                type: f.isDirectory() ? "dir" : "file",
+              }))
+            : [],
           fs.existsSync(metadataPath)
             ? JSON.parse(fs.readFileSync(metadataPath).toString())
             : defaultMetadata,
@@ -78,15 +80,12 @@ const gatherDocs = (path: string): Promise<DirectoryNode[]> => {
   });
 };
 
-const listMarkdownFiles = () => {
-  return gatherDocs("docs").then((d) => ({
-    directory: [
-      {
-        path: "",
-        name: "Home",
-      },
-    ].concat(d),
+const listMarkdownFiles = (root: string) => {
+  return gatherDocs(root).then((directory) => ({
+    directory,
   }));
 };
+
+export type ListMarkdownFiles = Awaited<ReturnType<typeof listMarkdownFiles>>;
 
 export default listMarkdownFiles;

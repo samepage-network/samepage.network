@@ -12,8 +12,8 @@ const test = ({
   ...args
 }: CliArgs & { forward?: string | string[]; path?: string }) => {
   process.env.NODE_ENV = process.env.NODE_ENV || "test";
-  if (process.env.DEBUG || process.env.PWDEBUG)
-    process.env.DEBUG = process.env.DEBUG || process.env.PWDEBUG;
+  const isDebug = !!(process.env.DEBUG || process.env.PWDEBUG);
+  if (isDebug) process.env.DEBUG = process.env.DEBUG || process.env.PWDEBUG;
   return compile({ ...args, version: "test" })
     .then(() => {
       const config = fs.existsSync(
@@ -23,17 +23,21 @@ const test = ({
         : fs.existsSync("node_modules/samepage/testing/playwright.config.js")
         ? ["--config=./node_modules/samepage/testing/playwright.config.js"]
         : [];
-      const proc = spawn(
-        "npx",
-        [
-          "playwright",
-          "test",
-          ...config.concat(
-            typeof forward === "string" ? [forward] : forward || []
-          ),
-        ],
-        { stdio: "inherit", env: process.env }
-      );
+      // TODO - add a way to proc with debugger
+      const args = [
+        "playwright",
+        "test",
+        ...config.concat(
+          typeof forward === "string" ? [forward] : forward || []
+        ),
+      ];
+      const options = {
+        stdio: "inherit" as const,
+        env: process.env,
+      };
+      const proc = isDebug
+        ? spawn("npx", ["--inspect"].concat(args), options)
+        : spawn("npx", args, options);
       return new Promise<number>((resolve, reject) => {
         proc.on("exit", resolve);
         proc.on("error", reject);

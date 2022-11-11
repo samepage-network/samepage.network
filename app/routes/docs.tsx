@@ -1,12 +1,11 @@
 import listMarkdownFiles, {
   DirectoryNode,
+  ListMarkdownFiles,
 } from "~/data/listMarkdownFiles.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 import type { LoaderFunction } from "@remix-run/node";
 import { Link, Outlet, useLoaderData, useMatches } from "@remix-run/react";
-
-type ListMarkdownFiles = Awaited<ReturnType<typeof listMarkdownFiles>>;
 
 const DirectoryLink = ({
   level = 0,
@@ -24,7 +23,9 @@ const DirectoryLink = ({
   ) : (
     <Link
       to={d.path}
-      className={`w-full py-1 px-4 cursor-pointer hover:bg-gray-200 capitalize ${pathSelected === d.path ? "bg-gray-100" : ""}`}
+      className={`w-full py-1 px-4 cursor-pointer hover:bg-gray-200 capitalize ${
+        pathSelected === d.path ? "bg-gray-100" : ""
+      }`}
       key={d.path}
     >
       {d.name}
@@ -40,6 +41,7 @@ const DocsPage = () => {
         <Link to={"/"} className={"w-full p-4 pr-24 cursor-pointer"}>
           <img className={"w-full"} src={"/images/full_logo.png"} />
         </Link>
+        <DirectoryLink name={"Home"} path={""} />
         {directory.map((d) => (
           <DirectoryLink {...d} key={d.path} />
         ))}
@@ -52,7 +54,7 @@ const DocsPage = () => {
 };
 
 export const loader: LoaderFunction = () => {
-  return listMarkdownFiles();
+  return listMarkdownFiles("docs");
 };
 
 export default DocsPage;

@@ -8,7 +8,7 @@ import { Link, Outlet, useLoaderData, useMatches } from "@remix-run/react";
 
 const PublicPage: React.FC = () => {
   const isWaitlist = useMemo(() => true, []);
-  const pages = useMemo(() => ["docs", "view"], []);
+  const pages = useMemo(() => ["docs", "blog", "view"], []);
   const authed = useLoaderData();
   const matches = useMatches();
   const mainClassName =
