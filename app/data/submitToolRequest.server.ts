@@ -10,7 +10,7 @@ const submitToolRequest = ({
   tool: string;
   message: string;
 }): Promise<{ success: boolean }> => {
-  if (message.includes("@Cryptaxbot")) {
+  if (tool.includes("@")) {
     throw new BadRequestError("Message blocked due to spam detected");
   }
   return invokeAsync({

@@ -1,12 +1,23 @@
+import { apiPost } from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
+import { getSetting } from "./registry";
 import type {
   AddNotebookListener,
   MessageHandlers,
   RemoveNotebookListener,
   Notebook,
+  json,
 } from "./types";
 
 const messageHandlers: MessageHandlers = {};
+
+export class HandlerError extends Error {
+  data: Record<string, json>;
+  constructor(message: string, data: Record<string, json>) {
+    super(message);
+    this.data = data;
+  }
+}
 
 export const handleMessage = ({
   content,
@@ -23,11 +34,19 @@ export const handleMessage = ({
     try {
       handler(props, source || props.source || "", uuid);
     } catch (e) {
-      dispatchAppEvent({
-        type: "log",
-        id: `handler-error-${operation}`,
-        content: `Failed to handle message: ${e}`,
-        intent: "error",
+      apiPost({
+        path: "errors",
+        data: {
+          method: "message-handler-failed",
+          notebookUuid: getSetting("uuid"),
+          data:
+            e instanceof HandlerError
+              ? e.data
+              : e instanceof Error
+              ? { message: e.message }
+              : e,
+          message: e instanceof Error ? e.message : "Unknown data thrown",
+        },
       });
     }
   } else {

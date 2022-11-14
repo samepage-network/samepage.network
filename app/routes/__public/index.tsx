@@ -1,64 +1,16 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect, useState, useMemo } from "react";
 import type { ActionFunction } from "@remix-run/node";
 import { Link, useFetcher } from "@remix-run/react";
-import Landing, {
-  Showcase,
-  Subscribe,
-} from "@dvargas92495/app/components/Landing";
+import { Subscribe } from "@dvargas92495/app/components/Landing";
 import subscribeToConvertkitAction from "@dvargas92495/app/backend/subscribeToConvertkitAction.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
-import ExternalLink from "@dvargas92495/app/components/ExternalLink";
-import Title from "@dvargas92495/app/components/Title";
 import Subtitle from "@dvargas92495/app/components/Subtitle";
 import TextInput from "@dvargas92495/app/components/TextInput";
-import Textarea from "@dvargas92495/app/components/Textarea";
 import Button from "@dvargas92495/app/components/Button";
 import SuccessfulActionToast from "@dvargas92495/app/components/SuccessfulActionToast";
-import submitToolRequest from "~/data/submitToolRequest.server";
-
-const RequestForm = () => {
-  const fetcher = useFetcher();
-  const formRef = useRef<HTMLFormElement>(null);
-  useEffect(() => {
-    if (fetcher.data?.success && formRef.current) formRef.current.reset();
-  }, [fetcher, formRef]);
-  return (
-    <div>
-      <Title>Want to connect another tool?</Title>
-      <Subtitle>
-        Fill out the form below to let us know which tool{" "}
-        <span className="font-bold">you</span> use day to day and want to
-        connect with the rest of your colleagues.
-      </Subtitle>
-      <fetcher.Form ref={formRef} method={"post"}>
-        <div className="flex items-center w-full gap-16">
-          <TextInput
-            name={"email"}
-            label={"Email"}
-            className={"w-64"}
-            placeholder={"hello@example.com"}
-          />
-          <TextInput
-            name={"tool"}
-            label={"Link to Tool"}
-            className={"flex-grow"}
-            placeholder={"https://roamresearch.com"}
-          />
-        </div>
-        <Textarea
-          name={"message"}
-          label={"Message"}
-          placeholder={
-            "Tell us alittle bit about how you use the tool and with which other tools you are hoping to collaborate with ..."
-          }
-        />
-        <Button>Request</Button>
-      </fetcher.Form>
-      <SuccessfulActionToast fetcher={fetcher} />
-    </div>
-  );
-};
+import AtJsonRendered from "package/components/AtJsonRendered";
+import { InitialSchema } from "package/internal/types";
 
 const SplashLogo = ({ className }: { className?: string }) => (
   <svg
@@ -268,6 +220,104 @@ const SplashLogo = ({ className }: { className?: string }) => (
   </svg>
 );
 
+function getTranslateXY(element: Element) {
+  if (typeof window === "undefined") return { translateX: 0, translateY: 0 };
+  const style = window.getComputedStyle(element);
+  const matrix = new DOMMatrixReadOnly(style.transform);
+  return {
+    translateX: matrix.m41,
+    translateY: matrix.m42,
+  };
+}
+
+const DEFAULT_AT_JSON: InitialSchema = {
+  content:
+    "The goal for today is to decide whether or not we should use SamePage\nWhat are the pros?\nLive editing across apps\nWe each could use our own app\nNo more import/export\nWhat are the cons?\nThe experience feels so native we don't even realize we're using it\nWe're always able to access our data\nWait, what are we waiting for??\n",
+  annotations: [
+    {
+      start: 0,
+      end: 70,
+      type: "block",
+      attributes: {
+        viewType: "bullet",
+        level: 1,
+      },
+    },
+    {
+      start: 70,
+      end: 89,
+      type: "block",
+      attributes: {
+        viewType: "bullet",
+        level: 1,
+      },
+    },
+    {
+      start: 89,
+      end: 114,
+      type: "block",
+      attributes: {
+        viewType: "bullet",
+        level: 2,
+      },
+    },
+    {
+      start: 114,
+      end: 144,
+      type: "block",
+      attributes: {
+        viewType: "bullet",
+        level: 2,
+      },
+    },
+    {
+      start: 144,
+      end: 166,
+      type: "block",
+      attributes: {
+        viewType: "bullet",
+        level: 2,
+      },
+    },
+    {
+      start: 166,
+      end: 185,
+      type: "block",
+      attributes: {
+        viewType: "bullet",
+        level: 1,
+      },
+    },
+    {
+      start: 185,
+      end: 253,
+      type: "block",
+      attributes: {
+        viewType: "bullet",
+        level: 2,
+      },
+    },
+    {
+      start: 253,
+      end: 290,
+      type: "block",
+      attributes: {
+        viewType: "bullet",
+        level: 2,
+      },
+    },
+    {
+      start: 290,
+      end: 328,
+      type: "block",
+      attributes: {
+        viewType: "bullet",
+        level: 2,
+      },
+    },
+  ],
+};
+
 const Home: React.FC = () => {
   const [isLaunched, setIsLaunched] = useState(false);
   const isLaunchedRef = useRef(false);
@@ -293,120 +343,360 @@ const Home: React.FC = () => {
       formRef.current.reset();
     }
   }, [formRef, fetcher]);
+  const step1Ref = useRef<HTMLDivElement>(null);
+  const step2Ref = useRef<HTMLDivElement>(null);
+  const step3Ref = useRef<HTMLDivElement>(null);
+  const [scroll, setScroll] = useState(
+    typeof window === "undefined" ? 0 : window.scrollY
+  );
+  const scrollState = useMemo(() => {
+    if (!step1Ref.current || !step2Ref.current || !step3Ref.current) return 0;
+    if (scroll < step1Ref.current.offsetTop) {
+      return 0;
+    } else if (
+      scroll <
+      step1Ref.current.offsetTop + step1Ref.current.offsetHeight
+    ) {
+      return Math.ceil(
+        (4 * (scroll - step1Ref.current.offsetTop)) /
+          step1Ref.current.offsetHeight
+      ); // 1-4
+    } else if (
+      scroll <
+      step2Ref.current.offsetTop + step2Ref.current.offsetHeight
+    ) {
+      return (
+        Math.ceil(
+          (4 * (scroll - step2Ref.current.offsetTop)) /
+            step2Ref.current.offsetHeight
+        ) + 4
+      ); // 5-8
+    } else if (
+      scroll <
+      step3Ref.current.offsetTop + step3Ref.current.offsetHeight
+    ) {
+      return (
+        Math.ceil(
+          (4 * (scroll - step3Ref.current.offsetTop)) /
+            step3Ref.current.offsetHeight
+        ) + 8
+      ); // 9-12
+    } else {
+      return 13;
+    }
+  }, [scroll, step1Ref, step2Ref, step3Ref]);
+  const pageIconStyle = useMemo(() => {
+    if (scrollState < 5 || !step2Ref.current) return { display: "none" };
+    const step2Logos =
+      step2Ref.current.querySelectorAll<HTMLDivElement>("div.logo");
+    if (scrollState > 7) {
+      const translation = getTranslateXY(step2Logos[0]);
+      return {
+        top: step2Logos[0].offsetTop + translation.translateY,
+        left: step2Logos[0].offsetLeft + translation.translateY,
+      };
+    }
+    const progress =
+      (4 * (scroll - step2Ref.current.offsetTop)) /
+        step2Ref.current.offsetHeight +
+      5 -
+      scrollState;
+    const source = step2Logos[(scrollState - 5) % step2Logos.length];
+    const target = step2Logos[(scrollState - 4) % step2Logos.length];
+    const translationSource = getTranslateXY(source);
+    const translationTarget = getTranslateXY(target);
+    return {
+      top:
+        (target.offsetTop +
+          translationTarget.translateY -
+          source.offsetTop -
+          translationSource.translateY) *
+          progress +
+        (source.offsetTop + translationSource.translateY) +
+        source.offsetHeight / 2,
+      left:
+        (target.offsetLeft +
+          translationTarget.translateX -
+          source.offsetLeft -
+          translationSource.translateX) *
+          progress +
+        (source.offsetLeft + translationSource.translateX) +
+        source.offsetWidth / 2,
+    };
+  }, [step2Ref, scroll, scrollState]);
+  const mockAtJson = useMemo((): InitialSchema => {
+    if (scrollState < 9 || !step3Ref.current)
+      return { content: "", annotations: [] };
+    if (scrollState > 12) return DEFAULT_AT_JSON;
+    const progress = Math.ceil(
+      (500 * (scroll - step3Ref.current.offsetTop)) /
+        step3Ref.current.offsetHeight
+    );
+    return {
+      content: DEFAULT_AT_JSON.content.slice(0, progress),
+      annotations: DEFAULT_AT_JSON.annotations
+        .filter((a) => a.start < progress)
+        .map((a) => ({ ...a, end: Math.min(progress, a.end) })),
+    };
+  }, [scrollState, scroll, step3Ref]);
+  useEffect(() => {
+    const scrollListener = () => {
+      setScroll(window.scrollY);
+    };
+    document.addEventListener("scroll", scrollListener);
+    return () => document.removeEventListener("scroll", scrollListener);
+  }, [step1Ref]);
   return (
-    <Landing>
-      <div className={"flex items-center gap-24"}>
-        <div className={"w-1/2"}>
-          <h1 className="mt-4 mb-12 text-5xl font-bold">
-            {
-              <span className="leading-tight">
-                Bring your <span className="text-green-700">own tool</span>. Own
-                your <span className="text-orange-500">own data</span>. Stay on
-                the <span className="text-sky-700">SamePage</span>
-              </span>
-            }
-          </h1>
-          <Subtitle>
-            <i className="font-normal">
-              {
-                "Everyone has their own tool. SamePage brings them together. You use Roam while they use Obsidian, and SamePage syncs your changes without needing to leave your custom setup."
-              }
-            </i>
-          </Subtitle>
-          {isLaunched ? (
-            <Link to={"install"}>
-              <Button>Install Now</Button>
-            </Link>
-          ) : (
-            <fetcher.Form
-              className="flex gap-8 items-center"
-              method="put"
-              ref={formRef}
-            >
-              <TextInput
-                placeholder="hello@example.com"
-                name={"email"}
-                label={"Email"}
-                className={"flex-grow"}
-              />
-              <Button>Join The Waitlist</Button>
-            </fetcher.Form>
-          )}
+    <div className={"w-full"}>
+      <div
+        className={`py-[20vh] flex justify-center bg-opacity-25 bg-orange-400 -mt-16`}
+      >
+        <div className="max-w-5xl w-full">
+          <div className={"flex items-center gap-24"}>
+            <div className={"w-1/2"}>
+              <h1 className="mt-4 mb-12 text-5xl font-bold">
+                {
+                  <span className="leading-tight">
+                    Connect your Second Brain
+                  </span>
+                }
+              </h1>
+              <Subtitle>
+                <i className="font-normal">
+                  {
+                    "Everyone has their own tool. SamePage brings them together. No matter what tool each member of your team is using, SamePage can sync changes without anybody needing to leave their custom setup."
+                  }
+                </i>
+              </Subtitle>
+              {isLaunched ? (
+                <Link to={"install"}>
+                  <Button>Install Now</Button>
+                </Link>
+              ) : (
+                <fetcher.Form
+                  className="flex gap-8 items-center"
+                  method="put"
+                  ref={formRef}
+                >
+                  <TextInput
+                    placeholder="hello@example.com"
+                    name={"email"}
+                    label={"Email"}
+                    className={"flex-grow"}
+                  />
+                  <Button>Join The Waitlist</Button>
+                </fetcher.Form>
+              )}
+            </div>
+            <div className="flex-grow text-center">
+              <SplashLogo className="h-full w-full" />
+            </div>
+            <SuccessfulActionToast
+              message="Click the confirmation link in your email to confirm!"
+              fetcher={fetcher}
+            />
+          </div>
         </div>
-        <div className="flex-grow text-center">
-          <SplashLogo className="h-full w-full" />
-        </div>
-        <SuccessfulActionToast
-          message="Click the confirmation link in your email to confirm!"
-          fetcher={fetcher}
-        />
       </div>
-      <Showcase
-        header="Does your team use PKM or note-taking tools? We sync changes in shared documents across tools, so you can use your custom setup without leaving your custom setup."
-        showCards={[
-          {
-            title: "Roam",
-            description: (
-              <>
-                A note-taking tool for networked thought.{" "}
-                <ExternalLink href={"https://roamresearch.com/"}>
-                  Visit here.
-                </ExternalLink>
-              </>
-            ),
-            image: "/images/roam.png",
-          },
-          {
-            title: "Obsidian",
-            description: (
-              <>
-                A second brain, for you, forever.{" "}
-                <ExternalLink href={"https://obsidian.md/"}>
-                  Visit here.
-                </ExternalLink>
-              </>
-            ),
-            image: "/images/obsidian.jfif",
-          },
-          {
-            title: "LogSeq",
-            description: (
-              <>
-                A privacy-first, open-source knowledge base.{" "}
-                <ExternalLink href={"https://logseq.com/"}>
-                  Visit here.
-                </ExternalLink>
-              </>
-            ),
-            image: "/images/logseq.png",
-          },
-        ]}
-      />
-      <RequestForm />
-      <Subscribe
-        title={
-          <Subtitle>
-            Join our waitlist below to stay up to date on all news surrounding
-            SamePage!
-          </Subtitle>
-        }
-      />
-    </Landing>
+      <div
+        className="py-24 px-6 relative flex h-[300vh] items-center flex-col justify-start bg-gradient-to-b from-sky-50 to-inherit"
+        ref={step1Ref}
+      >
+        <div className="sticky top-[10%] w-full max-w-6xl">
+          <div className="flex w-full gap-16 h-[80vh]">
+            <div className="flex flex-col max-w-xs">
+              <h1 className="text-gray-500 text-opacity-75 text-4xl mb-4">1</h1>
+              <h1 className="font-semibold text-4xl mb-6">
+                Bring Your <span className="text-green-700">Own Tool</span>
+              </h1>
+              <p className="mb-6">
+                Before you go off exporting your data to import into another new
+                tool, plug your existing tools to the SamePage Network by
+                installing the SamePage extension.
+              </p>
+            </div>
+            <div className="flex-grow relative">
+              <div
+                className="h-[50vh] w-[50vh] absolute top-0 left-0"
+                style={{
+                  opacity: scrollState < 1 ? 0 : 1,
+                  transition: "opacity 1000ms ease 0s",
+                }}
+              >
+                <img
+                  src={"/images/landing/step1-roam.png"}
+                  className={"w-full h-full"}
+                />
+              </div>
+              <div
+                className="h-[50vh] w-[50vh] absolute top-1/2 -translate-y-1/2 right-0"
+                style={{
+                  opacity: scrollState < 2 ? 0 : 1,
+                  transition: "opacity 1000ms ease 0s",
+                }}
+              >
+                <img
+                  src={"/images/landing/step1-logseq.png"}
+                  className={"w-full h-full"}
+                />
+              </div>
+              <div
+                className="h-[50vh] w-[50vh] absolute bottom-0 left-1/4 origin-bottom -translate-x-1/4"
+                style={{
+                  opacity: scrollState < 3 ? 0 : 1,
+                  transition: "opacity 1000ms ease 0s",
+                }}
+              >
+                <img
+                  src={"/images/landing/step1-obsidian.png"}
+                  className={"w-full h-full"}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        className="py-24 px-6 relative flex h-[300vh] items-center flex-col justify-start bg-gradient-to-b from-sky-50 to-inherit"
+        ref={step2Ref}
+      >
+        <div className="sticky top-[10%] w-full max-w-6xl">
+          <div className="flex w-full gap-16 h-[80vh]">
+            <div className="flex-grow relative">
+              <div
+                className="h-[20vh] w-[20vh] absolute top-8 left-1/2 -translate-x-1/2 logo"
+                style={{
+                  opacity: scrollState < 4 ? 0 : 1,
+                  transition: "opacity 1000ms ease 0s",
+                }}
+              >
+                <img src={"/images/roam.png"} className={"w-full h-full"} />
+              </div>
+              <div
+                className="h-[20vh] w-[20vh] absolute right-8 bottom-1/4 translate-y-1/4 logo"
+                style={{
+                  opacity: scrollState < 5 ? 0 : 1,
+                  transition: "opacity 1000ms ease 0s",
+                }}
+              >
+                <img src={"/images/logseq.png"} className={"w-full h-full"} />
+              </div>
+              <div
+                className="h-[20vh] w-[20vh] absolute left-8 bottom-1/4 translate-y-1/4 logo"
+                style={{
+                  opacity: scrollState < 6 ? 0 : 1,
+                  transition: "opacity 1000ms ease 0s",
+                }}
+              >
+                <img
+                  src={"/images/obsidian.jfif"}
+                  className={"w-full h-full"}
+                />
+              </div>
+              <div
+                className="absolute text-6xl -translate-x-1/2 -translate-y-1/2"
+                style={pageIconStyle}
+              >
+                📝
+              </div>
+            </div>
+            <div className="flex flex-col max-w-xs">
+              <h1 className="text-gray-500 text-opacity-75 text-4xl mb-4">2</h1>
+              <h1 className="font-semibold text-4xl mb-6">
+                Own Your <span className="text-orange-700">Own Data</span>
+              </h1>
+              <p className="mb-6">
+                Create Shared pages{" "}
+                <span className="font-bold">across applications</span> and
+                control which notebooks have access to which data.
+              </p>
+              <p className="mb-6">
+                All while being backed up by the decentralized web so that you
+                don't need SamePage to access your data.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        className="py-24 px-6 relative flex h-[300vh] items-center flex-col justify-start bg-gradient-to-b from-sky-50 to-inherit"
+        ref={step3Ref}
+      >
+        <div className="sticky top-[10%] w-full max-w-6xl">
+          <div className="flex w-full gap-16 h-[80vh]">
+            <div
+              className="flex-grow relative rounded-lg shadow-lg p-4"
+              style={{
+                opacity: scrollState < 8 ? 0 : 1,
+                transition: "opacity 1000ms ease 0s",
+                background: "#002b36",
+                color: "#a4b5b6",
+              }}
+            >
+              <h1 className="text-lg font-normal">
+                Meeting notes for {new Date().toLocaleDateString()}
+              </h1>
+              <AtJsonRendered {...mockAtJson} />
+            </div>
+            <div className="flex flex-col max-w-xs">
+              <h1 className="text-gray-500 text-opacity-75 text-4xl mb-4">3</h1>
+              <h1 className="font-semibold text-4xl mb-6">
+                Stay on the <span className="text-sky-700">SamePage</span>
+              </h1>
+              <p className="mb-6">
+                We are bringing collaboration{" "}
+                <span className="font-bold">back</span> to the tools for thought
+                space by letting users connect pages in their second brains to
+                those in others - no matter the tool you each used.
+              </p>
+            </div>
+            <div
+              className="flex-grow relative rounded-lg shadow-lg p-4"
+              style={{
+                opacity: scrollState < 8 ? 0 : 1,
+                transition: "opacity 1000ms ease 0s",
+                background: "#1e1e1e",
+                color: "#fff",
+              }}
+            >
+              <h1 className="text-lg font-normal">
+                Meeting notes for {new Date().toLocaleDateString()}
+              </h1>
+              <AtJsonRendered {...mockAtJson} />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        className={`flex justify-center bg-opacity-25 bg-inherit mt-[60vh] mb-[20vh]`}
+      >
+        <div className="max-w-5xl w-full">
+          <Subscribe
+            title={
+              <Subtitle>
+                Join our waitlist below to stay up to date on all news
+                surrounding SamePage!
+              </Subtitle>
+            }
+          />
+          <p className="mt-8 font-semibold text-lg w-full text-center">
+            Have another tool you'd like to see supported?{" "}
+            <Link
+              className="text-sky-500 underline hover:no-underline cursor-pointer"
+              to={"feedback"}
+            >
+              Let us know!
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
   );
 };
 
 export const action: ActionFunction = async (args) => {
   if (args.request.method === "PUT") return subscribeToConvertkitAction(args);
-  else if (args.request.method === "POST") {
-    const formData = await args.request.formData();
-    return submitToolRequest({
-      email: formData.get("email") as string,
-      tool: formData.get("tool") as string,
-      message: formData.get("message") as string,
-    });
-  }
+  else return {};
 };
-
-export const handle = Landing.handle;
 
 export default Home;

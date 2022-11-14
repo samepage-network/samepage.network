@@ -11,6 +11,7 @@ import type { InitialSchema, Schema } from "../internal/types";
 import Automerge from "automerge";
 import {
   addNotebookListener,
+  HandlerError,
   removeNotebookListener,
 } from "../internal/setupMessageHandlers";
 import { v4 } from "uuid";
@@ -443,10 +444,13 @@ const setupSharePageWithNotebook = ({
                     .map((c) => Automerge.decodeChange(c))
                     .flatMap((c) => c.deps)
                     .filter((c) => !storedHashes.has(c));
-                  // TODO - figure out a mitigation here in case it happens, even though it shouldn't
-                  console.error(
-                    "No actors to request and still waiting for changes:",
-                    missingDependencies
+                  throw new HandlerError(
+                    "No actors to request and still waiting for changes",
+                    {
+                      missingDependencies,
+                      binaryDocument: binaryToBase64(Automerge.save(newDoc)),
+                      notebookPageId,
+                    }
                   );
                 } else {
                   actorsToRequest.forEach(([actor]) => {
@@ -528,7 +532,7 @@ const setupSharePageWithNotebook = ({
           });
         },
       });
-      
+
       if (viewSharedPageProps)
         addCommand({
           label: VIEW_COMMAND_PALETTE_LABEL,
