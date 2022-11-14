@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import build from "./build";
 import dev from "./dev";
-import publish from "./publish";
 import test from "./test";
 
 const run = async (command: string, args: string[]): Promise<number> => {
@@ -51,8 +50,6 @@ const run = async (command: string, args: string[]): Promise<number> => {
       return dev(opts);
     case "test":
       return test(opts);
-    case "publish":
-      return publish(opts);
     default:
       console.error("Command", command, "is unsupported");
       return 1;

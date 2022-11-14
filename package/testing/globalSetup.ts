@@ -12,7 +12,7 @@ const globalSetup = async () => {
         //@ts-ignore
         (mod) => typeof mod.setup === "function" && mod.setup()
       )
-      .catch((e) => console.error("wah", e));
+      .catch((e) => console.error(e));
   }
 };
 

@@ -3,8 +3,10 @@ import {
   ActionsSecret,
   ActionsOrganizationSecret,
 } from "@cdktf/provider-github";
+import schema from "./schema";
 
 base({
+  schema,
   projectName: "samepage.network",
   emailSettings: "OUTBOUND",
   clerkDnsId: "l7zkq208u6ys",
