@@ -3,6 +3,9 @@ import issueNewInvite from "~/data/issueNewInvite.server";
 import { handler } from "../../api/page/post";
 import { v4 } from "uuid";
 import randomString from "~/data/randomString.server";
+import messageNotebook from "~/data/messageNotebook.server";
+import createNotebook from "~/data/createNotebook.server";
+import getMysql from "fuegojs/utils/mysql";
 
 const mockLambda = async (body: Record<string, unknown>) => {
   const requestId = v4();
@@ -71,7 +74,30 @@ const mockLambda = async (body: Record<string, unknown>) => {
     },
     () => {}
   );
-  return res ? res.then((r) => JSON.parse(r.body)) : {};
+  return res
+    ? res.then((r) => {
+        try {
+          return JSON.parse(r.body);
+        } catch (e) {
+          throw new Error(`Failed to handle response body as JSON: ${r.body}`);
+        }
+      })
+    : {};
+};
+
+const mockRandomNotebook = async () => {
+  const workspace = `test-${await randomString({
+    length: 4,
+    encoding: "hex",
+  })}`;
+  return createNotebook({
+    requestId: v4(),
+    app: 0,
+    workspace,
+  }).then((n) => ({
+    ...n,
+    workspace,
+  }));
 };
 
 test("Connect Notebook with same app/workspace returns same notebook uuid", async () => {
@@ -98,4 +124,45 @@ test("Connect Notebook with same app/workspace returns same notebook uuid", asyn
     workspace,
   });
   expect(connected.notebookUuid).toBe(notebookUuid);
+});
+
+test("Messages from deleted notebooks should return Unknown", async () => {
+  const { notebookUuid: source, workspace: sourceWorkspace } =
+    await mockRandomNotebook();
+  const { notebookUuid: target, token: targetToken } =
+    await mockRandomNotebook();
+  await messageNotebook({ source, target });
+  const cxn = await getMysql();
+  await cxn.execute(`DELETE FROM notebooks WHERE uuid = ?`, [source]);
+  cxn.destroy();
+
+  const { messages } = await mockLambda({
+    method: "get-unmarked-messages",
+    notebookUuid: target,
+    token: targetToken,
+  });
+  expect(messages).toHaveLength(1);
+
+  const messageUuid = messages[0].uuid as string;
+  const response = await mockLambda({
+    method: "load-message",
+    notebookUuid: target,
+    token: targetToken,
+    messageUuid,
+  });
+  expect(response.operation).toEqual("PING");
+  // TODO - god this data field is redundant
+  expect(JSON.parse(response.data)).toEqual({
+    source: {
+      uuid: source,
+      workspace: sourceWorkspace,
+      app: 0,
+    },
+    operation: "PING",
+  });
+  expect(response.source).toEqual({
+    uuid: "Unknown",
+    app: 0,
+    workspace: "Unknown",
+  });
 });

@@ -126,14 +126,22 @@ const DocsPage = (): React.ReactElement => {
                   <img {...props} className={"rounded-xl shadow-xl"} />
                 </div>
               ),
-              a: (props) => (
-                <Link
-                  to={props.href.replace(/\.md$/, "")}
-                  className={"text-sky-500 underline hover:no-underline"}
-                >
-                  {props.children}
-                </Link>
-              ),
+              a: (props) =>
+                /^http/.test(props.href) ? (
+                  <a
+                    href={props.href}
+                    className={"text-sky-500 underline hover:no-underline"}
+                  >
+                    {props.children}
+                  </a>
+                ) : (
+                  <Link
+                    to={props.href.replace(/\.md$/, "")}
+                    className={"text-sky-500 underline hover:no-underline"}
+                  >
+                    {props.children}
+                  </Link>
+                ),
             },
           }}
         >

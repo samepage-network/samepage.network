@@ -210,7 +210,7 @@ const logic = async (req: Record<string, unknown>) => {
           getMysql(requestId).then((cxn) => {
             return cxn
               .execute(
-                `SELECT n.*, m.operation FROM messages m INNER JOIN notebooks n ON n.uuid = m.source WHERE m.uuid = ?`,
+                `SELECT n.*, m.operation FROM messages m LEFT JOIN notebooks n ON n.uuid = m.source WHERE m.uuid = ?`,
                 [messageUuid]
               )
               .then(([args]) => {
@@ -229,7 +229,11 @@ const logic = async (req: Record<string, unknown>) => {
             const { operation, ...source } = msg;
             return {
               data: Data,
-              source,
+              source: {
+                uuid: source.uuid || "Unknown",
+                app: source.app || 0,
+                workspace: source.workspace || "Unknown",
+              },
               operation,
             };
           })
@@ -596,9 +600,11 @@ const logic = async (req: Record<string, unknown>) => {
             const clientUuids = new Set(clients.map((c) => c.uuid));
             const recents = await cxn
               // TODO - create better hueristics here for recent notebooks, prob its own LRU cache table
-              .execute(`SELECT n.* FROM notebooks n 
+              .execute(
+                `SELECT n.* FROM notebooks n 
               INNER JOIN token_notebook_links l on l.notebook_uuid = n.uuid 
-              WHERE n.app != 0`)
+              WHERE n.app != 0`
+              )
               .then(([a]) => a as ({ uuid: string } & Notebook)[]);
             cxn.destroy();
             return {

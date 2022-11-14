@@ -9,18 +9,18 @@ import MESSAGES, { Operation } from "package/internal/messages";
 const messageNotebook = ({
   source,
   target,
-  data,
+  data = {},
   messageUuid = v4(),
-  operation,
-  requestId,
+  operation = "PING",
+  requestId = v4(),
   metadata = [],
 }: {
   source: string;
   target: string;
   messageUuid?: string;
-  operation: Operation;
-  data: Record<string, unknown>;
-  requestId: string;
+  operation?: Operation;
+  data?: Record<string, unknown>;
+  requestId?: string;
   metadata?: string[];
 }) => {
   return getMysql(requestId).then(async (cxn) => {

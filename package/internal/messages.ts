@@ -27,6 +27,11 @@ const MESSAGES = {
     description: "",
     buttons: [],
   },
+  PING: {
+    title: "",
+    description: "",
+    buttons: [],
+  },
 
   // Page Sync Protocol
   SHARE_PAGE: {
