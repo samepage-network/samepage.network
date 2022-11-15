@@ -27,6 +27,7 @@ const publish = async ({
   execSync(
     `aws s3 cp ${destPath}.zip s3://${domain}/${destPath}/${version}.zip`
   );
+  process.chdir("..");
 
   if (review && fs.existsSync(`${process.cwd()}/${review}`)) {
     await import(`${process.cwd()}/${review.replace(/\.[jt]s$/, "")}`)

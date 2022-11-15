@@ -4,7 +4,7 @@
   "description": "The intra tool for thought network.",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vargasarts/samepage.network.git"
+    "url": "git+https://github.com/samepage-network/samepage.network.git"
   },
   "license": "MIT",
   "sideEffects": false,
@@ -32,7 +32,7 @@
     "LogSeq"
   ],
   "bugs": {
-    "url": "https://github.com/vargasarts/samepage.network/issues"
+    "url": "https://github.com/samepage-network/samepage.network/issues"
   },
   "homepage": "https://samepage.network/docs/developer",
   "engines": {
