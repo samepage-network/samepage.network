@@ -8,16 +8,17 @@ const publish = async ({
   path: destPath = getPackageName().replace(/-samepage$/, ""),
   domain = "samepage.network/extensions",
   review,
+  version,
 }: {
   path?: string;
   domain?: string;
   review?: string;
+  version?: string;
 } = {}): Promise<number> => {
   if (!destPath) {
     return Promise.reject(new Error("`path` argument is required."));
   }
 
-  const version = process.env.VERSION;
   console.log(
     `Preparing to publish zip to destination ${destPath} as version ${version}`
   );
@@ -49,7 +50,9 @@ const build = (args: CliArgs & { dry?: boolean; review?: string } = {}) => {
     `${envExisting.replace(/VERSION=[\d-]+\n/gs, "")}VERSION=${version}\n`
   );
   return compile({ ...args, opts: { minify: true }, version })
-    .then(() => (args.dry ? Promise.resolve(0) : publish()))
+    .then(() =>
+      args.dry ? Promise.resolve(0) : publish({ review: args.review, version })
+    )
     .then((exitCode) => {
       console.log("done");
       return exitCode;
