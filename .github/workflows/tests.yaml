@@ -26,11 +26,6 @@ jobs:
       - uses: actions/checkout@v3
       - name: install
         run: npm install
-      - name: package deps
-        run: |
-          npm install
-          rm -Rf node_modules/react node_modules/react-dom node_modules/jsdom
-        working-directory: package
       - name: Install playwright
         run: npx playwright install
       - name: setup mysql
@@ -38,6 +33,6 @@ jobs:
           sudo systemctl start mysql.service
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
           npx fuego plan --sql
-          npx fuego apply --sql
+          npx fuego apply --sql --bare
       - name: tests
         run: npm t
