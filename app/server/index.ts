@@ -1,5 +1,6 @@
 import getRemixHandler from "@dvargas92495/app/backend/getRemixHandler.server";
 export const handler = getRemixHandler({
+  // TODO - top three paths should live in /data
   originPaths: [
     {
       test: /^\/extensions\/[a-z0-9]+\.zip$/,
@@ -20,5 +21,6 @@ export const handler = getRemixHandler({
     },
     /^\/extensions\/[a-z0-9]+\/[\d-]+\.zip$/,
     /^\/extensions\/tests\/.+$/,
+    /^\/videos\/.*/,
   ],
 });

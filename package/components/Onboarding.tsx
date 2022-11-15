@@ -241,7 +241,7 @@ const Onboarding = ({
 }`}</style>
       {page === "WELCOME" && (
         <div
-          className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center`}
+          className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center text-black`}
         >
           <div className="w-40 h-40">
             <img src="https://samepage.network/images/logo.png" />
