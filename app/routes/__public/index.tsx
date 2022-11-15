@@ -5,7 +5,6 @@ import { Subscribe } from "@dvargas92495/app/components/Landing";
 import subscribeToConvertkitAction from "@dvargas92495/app/backend/subscribeToConvertkitAction.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
-import Subtitle from "@dvargas92495/app/components/Subtitle";
 import TextInput from "@dvargas92495/app/components/TextInput";
 import Button from "@dvargas92495/app/components/Button";
 import SuccessfulActionToast from "@dvargas92495/app/components/SuccessfulActionToast";
@@ -449,25 +448,19 @@ const Home: React.FC = () => {
   return (
     <div className={"w-full"}>
       <div
-        className={`py-[20vh] flex justify-center bg-opacity-25 bg-orange-400 -mt-16`}
+        className={`py-[20vh] flex justify-center bg-opacity-25 bg-orange-400 -mt-16 h-[calc(100vh-64px)]`}
       >
         <div className="max-w-5xl w-full">
           <div className={"flex items-center gap-24"}>
             <div className={"w-1/2"}>
               <h1 className="mt-4 mb-12 text-5xl font-bold">
-                {
-                  <span className="leading-tight">
-                    Connect your Second Brain
-                  </span>
-                }
+                <span className="leading-tight">Connect your Second Brain</span>
               </h1>
-              <Subtitle>
-                <i className="font-normal">
-                  {
-                    "Everyone has their own tool. SamePage brings them together. No matter what tool each member of your team is using, SamePage can sync changes without anybody needing to leave their custom setup."
-                  }
-                </i>
-              </Subtitle>
+              <h2 className={`font-normal mb-4 text-2xl italic`}>
+                {
+                  "Designed for native interaction, SamePage plugs right into your tool for thought to enable collaboration with other users - no matter what tool they are using."
+                }
+              </h2>
               {isLaunched ? (
                 <Link to={"install"}>
                   <Button>Install Now</Button>
@@ -494,6 +487,27 @@ const Home: React.FC = () => {
             <SuccessfulActionToast
               message="Click the confirmation link in your email to confirm!"
               fetcher={fetcher}
+            />
+          </div>
+        </div>
+      </div>
+      <div className="h-[100vh] py-16">
+        <div className=" max-w-5xl m-auto">
+          <h1 className="mb-16 font-bold text-5xl max-w-lg">
+            Welcome to the{" "}
+            <span className="text-indigo-800">Protocol for Thought</span>
+          </h1>
+          <h2 className={`font-normal mb-8 text-lg max-w-xl`}>
+            {
+              "Everyone has their own tool. SamePage brings them together. No matter what tool each member of your team is using, we're bringing collaboration back as SamePage can sync changes without anybody needing to leave their custom setup."
+            }
+          </h2>
+          <div className="relative pb-[56.25%] h-0">
+            <iframe
+              src="https://www.loom.com/embed/9f124d41ca8a47f4b09bc6d268cb36b8"
+              frameBorder={0}
+              allowFullScreen
+              className="absolute top-0 left-0 w-full h-full"
             />
           </div>
         </div>
@@ -668,15 +682,15 @@ const Home: React.FC = () => {
         </div>
       </div>
       <div
-        className={`flex justify-center bg-opacity-25 bg-inherit mt-[60vh] mb-[20vh]`}
+        className={`flex justify-center bg-opacity-25 bg-inherit h-[calc(100vh-270px)] items-center`}
       >
         <div className="max-w-5xl w-full">
           <Subscribe
             title={
-              <Subtitle>
+              <h2 className={`font-semibold mb-4 text-2xl italic`}>
                 Join our waitlist below to stay up to date on all news
                 surrounding SamePage!
-              </Subtitle>
+              </h2>
             }
           />
           <p className="mt-8 font-semibold text-lg w-full text-center">

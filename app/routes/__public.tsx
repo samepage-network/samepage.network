@@ -19,7 +19,7 @@ const PublicPage: React.FC = () => {
       ?.rootClassName || "";
   return (
     <div className={`flex flex-col min-h-full ${rootClassName}`}>
-      <header className="static bg-transparent shadow-xl z-10">
+      <header className="sticky bg-transparent shadow-xl z-10 backdrop-blur top-0">
         <div className="px-6 h-16 flex items-center">
           <Link to={"/"} className="flex max-h-full w-16 mr-32">
             <img src={`/images/logo.png`} />
@@ -31,7 +31,7 @@ const PublicPage: React.FC = () => {
                   href={`/${p}`}
                   color="inherit"
                   className={
-                    "text-gray-400 hover:text-gray-700 active:text-gray-800 hover:no-underline active:no-underline cursor-pointer"
+                    "text-gray-600 hover:text-gray-700 active:text-gray-800 hover:no-underline active:no-underline cursor-pointer"
                   }
                 >
                   {p}

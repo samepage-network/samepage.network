@@ -54,7 +54,7 @@ const test = ({
         const reportData = fs.readdirSync("playwright-report/data");
 
         const version = toVersion();
-        const root = "extensions/tests";
+        const root = "data/tests";
         const Key = `${root}/${path}/${version}.html`;
         return Promise.all(
           [
@@ -68,7 +68,7 @@ const test = ({
             reportData.map((r) =>
               s3.putObject({
                 Bucket: "samepage.network",
-                Key: `${root}/${path}/${version}/data/${r}`,
+                Key: `${root}/${path}/data/${r}`,
                 ContentType: mime.lookup(r) || undefined,
                 Body: fs.createReadStream(`playwright-report/data/${r}`),
               })
