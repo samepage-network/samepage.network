@@ -21,7 +21,7 @@ const InvitesPage = () => {
           onRowClick={(r) =>
             window.navigator.clipboard.writeText(r.code as string)
           }
-          renderCell={{ date: (r) => new Date(r as number).valueOf() }}
+          renderCell={{ date: (r) => new Date(r as number).toLocaleString() }}
         />
       </div>
       <div></div>

@@ -381,7 +381,7 @@ const setupSharePageWithNotebook = ({
 
       addNotebookListener({
         operation: "SHARE_PAGE_UPDATE",
-        handler: (data) => {
+        handler: async (data) => {
           const {
             changes,
             notebookPageId,
@@ -392,7 +392,7 @@ const setupSharePageWithNotebook = ({
             dependencies: { [a: string]: { seq: number; hash: string } };
           };
 
-          load(notebookPageId).then((oldDoc) => {
+          return load(notebookPageId).then((oldDoc) => {
             const binaryChanges = changes.map(
               (c) => base64ToBinary(c) as Automerge.BinaryChange
             );
