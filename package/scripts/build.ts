@@ -3,6 +3,8 @@ import compile, { CliArgs } from "./internal/compile";
 import toVersion from "./internal/toVersion";
 import { execSync } from "child_process";
 import getPackageName from "./internal/getPackageName";
+import axios from "axios";
+import mimeTypes from "mime-types";
 
 const publish = async ({
   path: destPath = getPackageName().replace(/-samepage$/, ""),
@@ -27,6 +29,63 @@ const publish = async ({
   execSync(
     `aws s3 cp ${destPath}.zip s3://${domain}/${destPath}/${version}.zip`
   );
+
+  const token = process.env.GITHUB_TOKEN;
+  if (token) {
+    const opts = {
+      headers: {
+        Authorization: `token ${token}`,
+        Accept: "application/vnd.github+json",
+      },
+    };
+    const message = await axios
+      .get(
+        `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/commits/${process.env.GITHUB_SHA}`,
+        opts
+      )
+      .then((r) => r.data.commit.message as string);
+    const release = await axios.post(
+      `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/releases`,
+      {
+        tag_name: version,
+        name: message.length > 50 ? `${message.substring(0, 47)}...` : message,
+        body: message.length > 50 ? `...${message.substring(47)}` : "",
+      },
+      opts
+    );
+    const { tag_name, upload_url } = release.data;
+   
+    console.log("upload url:", upload_url);
+    const assets = fs.readdirSync(".");
+    await Promise.all(
+      assets
+        .filter((f) => f !== "README.md" && f !== "package.json")
+        .map((asset) => {
+          const content = fs.readFileSync(asset);
+          const contentType = mimeTypes.lookup(asset);
+          return axios.post(
+            `${upload_url}?name=${asset}`,
+            content,
+            contentType
+              ? {
+                  ...opts,
+                  headers: {
+                    ...opts.headers,
+                    "Content-Type": contentType,
+                  },
+                }
+              : opts
+          );
+        })
+    );
+
+    console.log(`Successfully created github release for version ${tag_name}`);
+  } else {
+    console.warn(
+      "No GitHub token set - please set one to create a Github release"
+    );
+  }
+
   process.chdir("..");
 
   if (review && fs.existsSync(`${process.cwd()}/${review}`)) {
