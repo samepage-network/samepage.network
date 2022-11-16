@@ -53,9 +53,8 @@ const publish = async ({
       },
       opts
     );
-    const { tag_name, upload_url } = release.data;
-   
-    console.log("upload url:", upload_url);
+    const { tag_name, id } = release.data;
+
     const assets = fs.readdirSync(".");
     await Promise.all(
       assets
@@ -64,7 +63,7 @@ const publish = async ({
           const content = fs.readFileSync(asset);
           const contentType = mimeTypes.lookup(asset);
           return axios.post(
-            `${upload_url}?name=${asset}`,
+            `https://uploads.github.com/repos/${process.env.GITHUB_REPOSITORY}/releases/${id}/assets?name=${asset}`,
             content,
             contentType
               ? {
