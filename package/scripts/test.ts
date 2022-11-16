@@ -51,7 +51,9 @@ const test = ({
       if (process.env.CI) {
         const s3 = new S3({});
         const report = fs.createReadStream("playwright-report/index.html");
-        const reportData = fs.readdirSync("playwright-report/data");
+        const reportData = fs.existsSync("playwright-report/data")
+          ? fs.readdirSync("playwright-report/data")
+          : [];
 
         const version = toVersion();
         const root = "data/tests";
