@@ -1,23 +1,30 @@
-import APPS, { appsById } from "package/internal/apps";
-import type { AppId } from "package/internal/types";
+import APPS from "package/internal/apps";
 import { useState } from "react";
-import { useLoaderData } from "@remix-run/react";
+import { useLoaderData, useSearchParams } from "@remix-run/react";
 import { LoaderFunction } from "@remix-run/node";
 import listExtensionsMetadata from "~/data/listExtensionsMetadata.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 
-const userApps = APPS.slice(1);
+const userApps = APPS.slice(1).map(({ name }) => ({
+  id: name.toLowerCase(),
+  name,
+}));
 
 type InstructionSteps = {
   title: string;
   children: "link" | "image" | React.ReactNode;
 }[];
 
-const Instruction = ({ id, steps }: { id: AppId; steps: InstructionSteps }) => {
+const Instruction = ({
+  id,
+  steps,
+}: {
+  id: string;
+  steps: InstructionSteps;
+}) => {
   const data =
     useLoaderData<Awaited<ReturnType<typeof listExtensionsMetadata>>>();
-  const path = appsById[id].name.toLowerCase();
   return (
     <div className="flex justify-between items-start gap-8 h-full">
       {steps.map((s, i) => (
@@ -30,8 +37,8 @@ const Instruction = ({ id, steps }: { id: AppId; steps: InstructionSteps }) => {
               className={
                 "px-4 py-2 font-normal rounded-full bg-sky-500 shadow-sm hover:bg-sky-700 active:bg-sky-900 hover:shadow-md active:shadow-none disabled:cursor-not-allowed disabled:bg-opacity-50 disabled:opacity-50 disabled:hover:bg-sky-500 disabled:hover:shadow-none disabled:active:bg-sky-500 disabled:hover:bg-opacity-50 justify-between flex items-baseline"
               }
-              href={`https://samepage.network/extensions/${path}/${data.versions[id][0]}.zip`}
-              download={`${path}-samepage.zip`}
+              href={"href" in data ? data.href : data.versions[id][0].href}
+              download={`${id}-samepage.zip`}
             >
               <span className={"text-xs opacity-50"}>
                 <>
@@ -42,14 +49,14 @@ const Instruction = ({ id, steps }: { id: AppId; steps: InstructionSteps }) => {
                     className={"inline"}
                   >
                     <path d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm4.71 11.71l-4 4c-.18.18-.43.29-.71.29s-.53-.11-.71-.29l-4-4a1.003 1.003 0 011.42-1.42L9 12.59V5c0-.55.45-1 1-1s1 .45 1 1v7.59l2.29-2.29c.18-.19.43-.3.71-.3a1.003 1.003 0 01.71 1.71z" />
-                  </svg>
-                  {" "}(v{data.versions[id][0]})
+                  </svg>{" "}
+                  (v{"version" in data ? data.version : data.versions[id][0].version})
                 </>
               </span>
             </a>
           ) : s.children === "image" ? (
             <img
-              src={`/images/install/${path}-${i + 1}.png`}
+              src={`/images/install/${id}-${i + 1}.png`}
               className="rounded-md"
             />
           ) : (
@@ -61,9 +68,9 @@ const Instruction = ({ id, steps }: { id: AppId; steps: InstructionSteps }) => {
   );
 };
 
-const INSTRUCTIONS: Record<AppId, InstructionSteps> = {
-  0: [],
-  1: [
+const INSTRUCTIONS: Record<string, InstructionSteps> = {
+  samepage: [],
+  roam: [
     {
       title: `Download & Unzip`,
       children: "link",
@@ -81,7 +88,7 @@ const INSTRUCTIONS: Record<AppId, InstructionSteps> = {
       children: "image",
     },
   ],
-  2: [
+  logseq: [
     {
       title: `Download & Unzip`,
       children: "link",
@@ -99,7 +106,7 @@ const INSTRUCTIONS: Record<AppId, InstructionSteps> = {
       children: "image",
     },
   ],
-  3: [
+  obsidian: [
     {
       title: `Download & Unzip`,
       children: "link",
@@ -120,7 +127,11 @@ const INSTRUCTIONS: Record<AppId, InstructionSteps> = {
 };
 
 const InstallPage = () => {
-  const [selectedApp, setSelectedApp] = useState(userApps[0].id);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedApp, setSelectedApp] = useState(
+    searchParams.get("id") || userApps[0].id
+  );
+  const name = userApps.find((a) => a.id === selectedApp)?.name;
 
   return (
     <div className="flex flex-col items-center max-w-4xl w-full">
@@ -129,7 +140,10 @@ const InstallPage = () => {
           const selected = selectedApp === id;
           return (
             <div
-              onClick={() => setSelectedApp(id)}
+              onClick={() => {
+                setSelectedApp(id);
+                setSearchParams({ id });
+              }}
               key={id}
               className={`cursor-pointer py-2 px-4 first:rounded-l-full last:rounded-r-full ${
                 selected ? "text-white bg-sky-600" : "text-sky-600 bg-white"
@@ -140,10 +154,8 @@ const InstallPage = () => {
           );
         })}
       </div>
-      <h1 className="font-bold text-3xl mb-8">
-        Install SamePage in {appsById[selectedApp].name}
-      </h1>
-      <img src={"/images/logo.png"} width={300} height={300} />
+      <h1 className="font-bold text-3xl mb-8">Install SamePage in {name}</h1>
+      <img src={`/images/${selectedApp}.png`} width={300} height={300} />
       <div className="rounded-md shadow-xl mb-8 flex flex-col p-10 w-full">
         <Instruction id={selectedApp} steps={INSTRUCTIONS[selectedApp]} />
       </div>

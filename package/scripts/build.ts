@@ -7,7 +7,7 @@ import axios from "axios";
 import mimeTypes from "mime-types";
 
 const publish = async ({
-  path: destPath = getPackageName().replace(/-samepage$/, ""),
+  path: destPath = getPackageName(),
   domain = "samepage.network/extensions",
   review,
   version,
@@ -27,7 +27,7 @@ const publish = async ({
   process.chdir("dist");
   execSync(`zip -qr ${destPath}.zip .`);
   execSync(
-    `aws s3 cp ${destPath}.zip s3://${domain}/${destPath}/${version}.zip`
+    `aws s3 cp ${destPath}.zip s3://${domain}/${destPath.replace(/-samepage$/, "")}/${version}.zip`
   );
 
   const token = process.env.GITHUB_TOKEN;

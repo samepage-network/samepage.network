@@ -303,13 +303,14 @@ const SharedPageStatus = ({
       </Tooltip>
       <Tooltip content={"Copy IPFS Link"} portalContainer={portalContainer}>
         <Button
+          style={{ width: 30 }}
           disabled={loading}
           icon={
             <Icon
               icon={
                 <svg
-                  width="24px"
-                  height="24px"
+                  width="18px"
+                  height="18px"
                   viewBox="0 0 24 24"
                   role="img"
                   xmlns="http://www.w3.org/2000/svg"
