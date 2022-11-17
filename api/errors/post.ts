@@ -18,6 +18,11 @@ const zBody = z.discriminatedUnion("method", [
     message: z.string(),
     data: z.record(z.unknown()),
   }),
+  z.object({
+    method: z.literal("web-app-error"),
+    path: z.string(),
+    stack: z.string(),
+  }),
 ]);
 
 const logic = async (body: Record<string, unknown>) => {
@@ -53,6 +58,15 @@ const logic = async (body: Record<string, unknown>) => {
         body: `App: ${appsById[notebook.app]}\n\nWorkspace: ${
           notebook.workspace
         }\n\nContext: ${JSON.stringify(data, null, 4)}`,
+      });
+      return { success: true };
+    }
+    case "web-app-error": {
+      const { path, stack } = args;
+      await sendEmail({
+        to: "support@samepage.network",
+        subject: `SamePage webapp path failed: /${path}`,
+        body: stack,
       });
       return { success: true };
     }

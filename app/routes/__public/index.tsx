@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import type { ActionFunction } from "@remix-run/node";
-import { Link, useFetcher } from "@remix-run/react";
+import { Link, useFetcher, useOutletContext } from "@remix-run/react";
 import { Subscribe } from "@dvargas92495/app/components/Landing";
 import subscribeToConvertkitAction from "@dvargas92495/app/backend/subscribeToConvertkitAction.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
@@ -11,6 +11,7 @@ import SuccessfulActionToast from "@dvargas92495/app/components/SuccessfulAction
 import AtJsonRendered from "package/components/AtJsonRendered";
 import { InitialSchema } from "package/internal/types";
 import Typed from "typed.js";
+import BaseInput from "@dvargas92495/app/components/BaseInput";
 
 function getTranslateXY(element: Element) {
   if (typeof window === "undefined") return { translateX: 0, translateY: 0 };
@@ -201,8 +202,7 @@ const SPLASH_APPS = [
 ];
 
 const Home: React.FC = () => {
-  const [isLaunched, setIsLaunched] = useState(false);
-  const isLaunchedRef = useRef(false);
+  const oc = useOutletContext<{ isLaunched: boolean }>();
   const typedElRef = useRef<HTMLSpanElement>(null);
   const typedRef = useRef<Typed>();
   const [typedIndex, setTypedIndex] = useState(-1);
@@ -214,13 +214,6 @@ const Home: React.FC = () => {
   const splashIntervalRef = useRef(0);
 
   useEffect(() => {
-    const listener = (e: KeyboardEvent) => {
-      if (e.metaKey && e.shiftKey && /^m$/i.test(e.key)) {
-        const val = !isLaunchedRef.current;
-        setIsLaunched((isLaunchedRef.current = val));
-      }
-    };
-    document.addEventListener("keydown", listener);
     if (typedElRef.current)
       typedRef.current = new Typed(typedElRef.current, {
         strings: SPLASH_APPS.map((a) => a.title),
@@ -242,16 +235,13 @@ const Home: React.FC = () => {
       setSplashProgress(new Date().valueOf());
     }, 10);
     return () => {
-      document.removeEventListener("keydown", listener);
       typedRef.current?.destroy();
       window.clearInterval(splashIntervalRef.current);
     };
   }, [
-    isLaunchedRef,
     typedElRef,
     typedRef,
     splashIntervalRef,
-    setIsLaunched,
     setTypedIndex,
     setCursorDone,
     setSplashProgress,
@@ -462,25 +452,28 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
               />
             </div>
           </div>
-          {isLaunched ? (
-            <Link to={"install"}>
-              <Button>Install Now</Button>
-            </Link>
-          ) : (
-            <fetcher.Form
-              className={`flex gap-8 items-center max-w-xl w-full shadow-`}
-              method="put"
-              ref={formRef}
-            >
-              <TextInput
-                placeholder="hello@example.com"
-                name={"email"}
-                label={"Email"}
-                className={"flex-grow"}
+          <fetcher.Form
+            className={`flex gap-8 items-center max-w-xl w-full shadow-`}
+            method="put"
+            ref={formRef}
+          >
+            {oc.isLaunched && (
+              <BaseInput
+                name={"invite"}
+                type={"hidden"}
+                defaultValue={"true"}
               />
-              <Button>Join The Waitlist</Button>
-            </fetcher.Form>
-          )}
+            )}
+            <TextInput
+              placeholder="hello@example.com"
+              name={"email"}
+              label={"Email"}
+              className={"flex-grow"}
+            />
+            <Button>
+              {oc.isLaunched ? "Request Access" : "Join The Waitlist"}
+            </Button>
+          </fetcher.Form>
           <SuccessfulActionToast
             message="Click the confirmation link in your email to confirm!"
             fetcher={fetcher}
