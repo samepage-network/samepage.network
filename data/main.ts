@@ -48,6 +48,7 @@ base({
     INNER JOIN token_notebook_links l ON l.token_uuid = t.uuid
     INNER JOIN notebooks n ON n.uuid = l.notebook_uuid
     WHERE n.app = 0 AND n.workspace = 'test'`);
+    cxn.destroy();
     const [creds] = record as { uuid: string; value: string }[];
     if (creds) {
       new ActionsOrganizationSecret(this, `deploy_samepage_test_uuid`, {
