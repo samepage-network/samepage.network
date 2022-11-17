@@ -16,8 +16,6 @@ base({
     "convertkit_api_key",
     "staging_clerk_api_key",
     "web3_storage_api_key",
-    "samepage_test_uuid",
-    "samepage_test_token",
   ],
   backendProps: {
     sizes: {
@@ -50,6 +48,7 @@ base({
     WHERE n.app = 0 AND n.workspace = 'test'`);
     cxn.destroy();
     const [creds] = record as { uuid: string; value: string }[];
+    console.log(typeof creds, creds.uuid);
     if (creds) {
       new ActionsOrganizationSecret(this, `deploy_samepage_test_uuid`, {
         visibility: "all",
