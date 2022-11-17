@@ -27,9 +27,9 @@ const test = ({
       const args = [
         "playwright",
         "test",
-        ...config.concat(
-          typeof forward === "string" ? [forward] : forward || []
-        ),
+        ...config
+          .concat(typeof forward === "string" ? [forward] : forward || [])
+          .concat(isDebug && !process.env.CI ? ["--debug"] : []),
       ];
       const options = {
         stdio: "inherit" as const,

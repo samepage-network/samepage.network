@@ -72,7 +72,11 @@ const ConnectNotebookPage = ({
       </Label>
       <Label className={"w-1/2"}>
         Token
-        <InputGroup value={token} onChange={(e) => setToken(e.target.value)} />
+        <InputGroup
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+          type={"password"}
+        />
       </Label>
       <Checkbox
         checked={termsOfUse}

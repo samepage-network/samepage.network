@@ -4,6 +4,7 @@ import {
   ActionsOrganizationSecret,
 } from "@cdktf/provider-github";
 import schema from "./schema";
+import getMysql from "fuegojs/utils/mysql";
 
 base({
   schema,
@@ -41,16 +42,25 @@ base({
       secretName: "SAMEPAGE_AWS_ACCESS_SECRET",
       plaintextValue: (accessSecret as ActionsSecret).plaintextValue,
     });
-    new ActionsOrganizationSecret(this, `deploy_samepage_test_uuid`, {
-      visibility: "all",
-      secretName: "SAMEPAGE_TEST_UUID",
-      plaintextValue: process.env.SAMEPAGE_TEST_UUID,
-    });
-    new ActionsOrganizationSecret(this, `deploy_samepage_test_token`, {
-      visibility: "all",
-      secretName: "SAMEPAGE_TEST_TOKEN",
-      plaintextValue: process.env.SAMEPAGE_TEST_TOKEN,
-    });
+
+    const cxn = await getMysql();
+    const [record] = await cxn.execute(`SELECT t.value, n.uuid FROM tokens t
+    INNER JOIN token_notebook_links l ON l.token_uuid = t.uuid
+    INNER JOIN notebooks n ON n.uuid = l.notebook_uuid
+    WHERE n.app = 0 AND n.workspace = 'test'`);
+    const [creds] = record as { uuid: string; value: string }[];
+    if (creds) {
+      new ActionsOrganizationSecret(this, `deploy_samepage_test_uuid`, {
+        visibility: "all",
+        secretName: "SAMEPAGE_TEST_UUID",
+        plaintextValue: creds.uuid,
+      });
+      new ActionsOrganizationSecret(this, `deploy_samepage_test_token`, {
+        visibility: "all",
+        secretName: "SAMEPAGE_TEST_TOKEN",
+        plaintextValue: creds.value,
+      });
+    }
 
     // TODO migrate google verification route53 record
   },
