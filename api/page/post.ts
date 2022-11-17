@@ -612,8 +612,7 @@ const logic = async (req: Record<string, unknown>) => {
               // TODO - create better hueristics here for recent notebooks, prob its own LRU cache table
               .execute(
                 `SELECT n.* FROM notebooks n 
-              INNER JOIN token_notebook_links l on l.notebook_uuid = n.uuid 
-              WHERE n.app != 0`
+              INNER JOIN token_notebook_links l on l.notebook_uuid = n.uuid`
               )
               .then(([a]) => a as ({ uuid: string } & Notebook)[]);
             cxn.destroy();
