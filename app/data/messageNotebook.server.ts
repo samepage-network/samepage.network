@@ -39,6 +39,7 @@ const messageNotebook = ({
       },
       operation,
     };
+    console.log("messaging", target, "found connection", ConnectionId);
     const online = ConnectionId
       ? await postToConnection({
           ConnectionId,

@@ -114,7 +114,7 @@ const AtJsonRendered = ({ content, annotations }: Schema | InitialSchema) => {
     annotations.forEach((anno) => {
       const insert = (annotations: AnnotationTree, a: Annotation) => {
         const parent = annotations.find(
-          (an) => an.start <= a.start && an.end >= a.end
+          (an) => an.start <= a.start && an.end > a.end
         );
         if (parent) {
           insert(parent.children, a);

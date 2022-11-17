@@ -17,12 +17,17 @@ const testId = v4();
 
 test.beforeAll(async () => {
   await getMysqlConnection(testId).then((cxn) =>
-    cxn.execute(`DELETE FROM notebooks n WHERE n.app = ?`, [0]).then(() => {
-      return Promise.all([
-        issueNewInvite({ context: { requestId: testId } }),
-        issueNewInvite({ context: { requestId: testId } }),
-      ]).then((codes) => inviteCodes.push(...codes.map((c) => c.code)));
-    })
+    cxn
+      .execute(
+        `DELETE FROM notebooks n WHERE n.app = ? AND (n.workspace = 'one' OR n.workspace = 'two')`,
+        [0]
+      )
+      .then(() => {
+        return Promise.all([
+          issueNewInvite({ context: { requestId: testId } }),
+          issueNewInvite({ context: { requestId: testId } }),
+        ]).then((codes) => inviteCodes.push(...codes.map((c) => c.code)));
+      })
   );
 });
 

@@ -22,7 +22,50 @@ function getTranslateXY(element: Element) {
   };
 }
 
-const DEFAULT_AT_JSON: InitialSchema = {
+const LANDING_AT_JSON: InitialSchema = {
+  content:
+    "Designed for native interaction\nPlugs right into your tool for thought\nEnabling collaboration with others\nNo matter what tool they are using.\n",
+  annotations: [
+    {
+      start: 0,
+      end: 32,
+      type: "block",
+      attributes: {
+        viewType: "bullet",
+        level: 1,
+      },
+    },
+    {
+      start: 32,
+      end: 71,
+      type: "block",
+      attributes: {
+        viewType: "bullet",
+        level: 1,
+      },
+    },
+    {
+      start: 71,
+      end: 106,
+      type: "block",
+      attributes: {
+        viewType: "bullet",
+        level: 1,
+      },
+    },
+    {
+      start: 106,
+      end: 142,
+      type: "block",
+      attributes: {
+        viewType: "bullet",
+        level: 1,
+      },
+    },
+  ],
+};
+
+const STEP_3_AT_JSON: InitialSchema = {
   content:
     "The goal for today is to decide whether or not we should use SamePage\nWhat are the pros?\nLive editing across apps\nWe each could use our own app\nNo more import/export\nWhat are the cons?\nThe experience feels so native we don't even realize we're using it\nWe're always able to access our data\nWait, what are we waiting for??\n",
   annotations: [
@@ -164,6 +207,11 @@ const Home: React.FC = () => {
   const typedRef = useRef<Typed>();
   const [typedIndex, setTypedIndex] = useState(-1);
   const [cursorDone, setCursorDone] = useState(false);
+  const [splashStart, setSplashStart] = useState(() => new Date().valueOf());
+  const [splashProgress, setSplashProgress] = useState(() =>
+    new Date().valueOf()
+  );
+  const splashIntervalRef = useRef(0);
 
   useEffect(() => {
     const listener = (e: KeyboardEvent) => {
@@ -180,23 +228,34 @@ const Home: React.FC = () => {
         backSpeed: 50,
         startDelay: 100,
         preStringTyped(arrayPos) {
+          setSplashStart(new Date().valueOf());
           setTypedIndex(arrayPos);
         },
         onComplete() {
-          setTimeout(() => setCursorDone(true), 5000);
+          setTimeout(() => {
+            window.clearInterval(splashIntervalRef.current);
+            setCursorDone(true);
+          }, 2000);
         },
       });
+    splashIntervalRef.current = window.setInterval(() => {
+      setSplashProgress(new Date().valueOf());
+    }, 10);
     return () => {
       document.removeEventListener("keydown", listener);
       typedRef.current?.destroy();
+      window.clearInterval(splashIntervalRef.current);
     };
   }, [
-    setIsLaunched,
     isLaunchedRef,
     typedElRef,
     typedRef,
+    splashIntervalRef,
+    setIsLaunched,
     setTypedIndex,
     setCursorDone,
+    setSplashProgress,
+    setSplashStart,
   ]);
 
   const fetcher = useFetcher();
@@ -291,17 +350,38 @@ const Home: React.FC = () => {
         source.offsetWidth / 2,
     };
   }, [step2Ref, scroll, scrollState]);
-  const mockAtJson = useMemo((): InitialSchema => {
+  const landingAtJson = useMemo((): InitialSchema => {
+    if (typedIndex < 0) return { content: "", annotations: [] };
+    const focusedAnnotation = LANDING_AT_JSON.annotations[typedIndex];
+    const progress =
+      Math.ceil(
+        ((splashProgress - splashStart - 1000) *
+          (focusedAnnotation.end - focusedAnnotation.start)) /
+          (100 * SPLASH_APPS[typedIndex].title.length)
+      ) + focusedAnnotation.start;
+    const contentEnd = Math.max(
+      Math.min(progress, focusedAnnotation.end),
+      focusedAnnotation.start
+    );
+    return {
+      content: LANDING_AT_JSON.content.slice(0, contentEnd),
+      annotations: LANDING_AT_JSON.annotations.slice(0, typedIndex).concat({
+        ...focusedAnnotation,
+        end: contentEnd,
+      }),
+    };
+  }, [splashStart, splashProgress, typedIndex]);
+  const step3AtJson = useMemo((): InitialSchema => {
     if (scrollState < 9 || !step3Ref.current)
       return { content: "", annotations: [] };
-    if (scrollState > 12) return DEFAULT_AT_JSON;
+    if (scrollState > 12) return STEP_3_AT_JSON;
     const progress = Math.ceil(
       (500 * (scroll - step3Ref.current.offsetTop)) /
         step3Ref.current.offsetHeight
     );
     return {
-      content: DEFAULT_AT_JSON.content.slice(0, progress),
-      annotations: DEFAULT_AT_JSON.annotations
+      content: STEP_3_AT_JSON.content.slice(0, progress),
+      annotations: STEP_3_AT_JSON.annotations
         .filter((a) => a.start < progress)
         .map((a) => ({ ...a, end: Math.min(progress, a.end) })),
     };
@@ -316,30 +396,79 @@ const Home: React.FC = () => {
   return (
     <div className={"w-full"}>
       <div
-        className={`flex flex-col justify-center items-center bg-opacity-25 bg-gradient-to-b from-sky-50 to-inherit -mt-32 h-[100vh]`}
+        className={`bg-opacity-25 bg-gradient-to-b from-sky-50 to-inherit -mt-32 pt-32 h-[100vh]`}
       >
-        <div className="max-w-5xl w-full">
-          <h1 className="mt-4 mb-12 text-5xl font-bold">
+        <div className="max-w-5xl w-full flex flex-col justify-between items-center m-auto h-full">
+          <h1 className="mt-4 mb-12 text-8xl font-bold flex flex-col w-full text-center">
             <style>{`.splash-title .typed-cursor {
   color: ${SPLASH_APPS[typedIndex]?.cursorColor};
-${cursorDone ? "display: none;\n" : ""}}`}</style>
-            <span className="leading-tight splash-title">
-              Connect your{" "}
-              <span ref={typedElRef} style={SPLASH_APPS[typedIndex]?.style} />
+${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
+            <span className="leading-tight">Connect your</span>
+            <span className="splash-title">
+              <span
+                ref={typedElRef}
+                style={SPLASH_APPS[typedIndex]?.style}
+                className={"pl-3"}
+              />
             </span>
           </h1>
-          <h2 className={`font-normal mb-4 text-2xl italic max-w-2xl`}>
-            {
-              "Designed for native interaction, SamePage plugs right into your tool for thought to enable collaboration with other users - no matter what tool they are using."
-            }
-          </h2>
+          <div className="flex justify-between w-full gap-16 h-96">
+            <div
+              className="flex-grow relative rounded-lg shadow-lg p-4 text-xl"
+              style={{
+                opacity: typedIndex < 0 ? 0 : 1,
+                transition: "opacity 1000ms ease 0s",
+                background: "#fff",
+                color: "#000",
+              }}
+            >
+              <h1 className="text-2xl font-semibold">Benefits of SamePage</h1>
+              <AtJsonRendered {...landingAtJson} />
+              <img
+                src={"/images/roam.png"}
+                className={"h-8 w-8 absolute bottom-4 right-4"}
+              />
+            </div>
+            <div
+              className="flex-grow relative rounded-lg shadow-lg p-4 text-xl"
+              style={{
+                opacity: typedIndex < 1 ? 0 : 1,
+                transition: "opacity 1000ms ease 0s",
+                background: "#002b36",
+                color: "#a4b5b6",
+              }}
+            >
+              <h1 className="text-2xl font-semibold">Benefits of SamePage</h1>
+              <AtJsonRendered {...landingAtJson} />
+              <img
+                src={"/images/logseq.png"}
+                className={"h-8 w-8 absolute bottom-4 right-4"}
+              />
+            </div>
+            <div
+              className="flex-grow relative rounded-lg shadow-lg p-4 text-xl"
+              style={{
+                opacity: typedIndex < 2 ? 0 : 1,
+                transition: "opacity 1000ms ease 0s",
+                background: "#1e1e1e",
+                color: "#fff",
+              }}
+            >
+              <h1 className="text-2xl font-semibold">Benefits of SamePage</h1>
+              <AtJsonRendered {...landingAtJson} />
+              <img
+                src={"/images/obsidian.png"}
+                className={"h-8 w-8 absolute bottom-4 right-4"}
+              />
+            </div>
+          </div>
           {isLaunched ? (
             <Link to={"install"}>
               <Button>Install Now</Button>
             </Link>
           ) : (
             <fetcher.Form
-              className="flex gap-8 items-center max-w-2xl"
+              className={`flex gap-8 items-center max-w-xl w-full shadow-`}
               method="put"
               ref={formRef}
             >
@@ -359,7 +488,7 @@ ${cursorDone ? "display: none;\n" : ""}}`}</style>
         </div>
       </div>
       <div className="h-[100vh] py-16 bg-gradient-to-b from-sky-50 to-inherit">
-        <div className=" max-w-5xl m-auto">
+        <div className="max-w-5xl m-auto">
           <h1 className="mb-16 font-bold text-5xl max-w-lg">
             Welcome to the{" "}
             <span className="text-indigo-800">Protocol for Thought</span>
@@ -469,10 +598,7 @@ ${cursorDone ? "display: none;\n" : ""}}`}</style>
                   transition: "opacity 1000ms ease 0s",
                 }}
               >
-                <img
-                  src={"/images/obsidian.jfif"}
-                  className={"w-full h-full"}
-                />
+                <img src={"/images/obsidian.png"} className={"w-full h-full"} />
               </div>
               <div
                 className="absolute text-6xl -translate-x-1/2 -translate-y-1/2"
@@ -517,7 +643,11 @@ ${cursorDone ? "display: none;\n" : ""}}`}</style>
               <h1 className="text-lg font-normal">
                 Meeting notes for {new Date().toLocaleDateString()}
               </h1>
-              <AtJsonRendered {...mockAtJson} />
+              <AtJsonRendered {...step3AtJson} />
+              <img
+                src={"/images/logseq.png"}
+                className={"h-8 w-8 absolute bottom-4 right-4"}
+              />
             </div>
             <div className="flex flex-col max-w-xs">
               <h1 className="text-gray-500 text-opacity-75 text-4xl mb-4">3</h1>
@@ -543,7 +673,11 @@ ${cursorDone ? "display: none;\n" : ""}}`}</style>
               <h1 className="text-lg font-normal">
                 Meeting notes for {new Date().toLocaleDateString()}
               </h1>
-              <AtJsonRendered {...mockAtJson} />
+              <AtJsonRendered {...step3AtJson} />
+              <img
+                src={"/images/obsidian.png"}
+                className={"h-8 w-8 absolute bottom-4 right-4"}
+              />
             </div>
           </div>
         </div>

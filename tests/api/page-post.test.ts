@@ -6,6 +6,8 @@ import randomString from "~/data/randomString.server";
 import messageNotebook from "~/data/messageNotebook.server";
 import createNotebook from "~/data/createNotebook.server";
 import getMysql from "fuegojs/utils/mysql";
+import deleteNotebook from "~/data/deleteNotebook.server";
+import listNotebooks from "~/data/listNotebooks.server";
 
 const mockLambda = async (body: Record<string, unknown>) => {
   const requestId = v4();
@@ -200,4 +202,13 @@ test("Messages from deleted notebooks should return Unknown", async () => {
     app: 0,
     workspace: "Unknown",
   });
+});
+
+test.afterAll(async () => {
+  const notebooks = await listNotebooks(v4());
+  await Promise.all(
+    notebooks.data
+      .filter((n) => /^test-[a-f0-9]{8}$/.test(n.workspace))
+      .map((n) => deleteNotebook({ uuid: n.uuid, requestId: v4() }))
+  );
 });

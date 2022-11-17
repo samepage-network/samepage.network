@@ -22,6 +22,10 @@ const zBody = z.discriminatedUnion("method", [
 
 const logic = async (body: Record<string, unknown>) => {
   const args = zBody.parse(body);
+  if (process.env.NODE_ENV === "development") {
+    console.error(args);
+    return { success: true };
+  }
   switch (args.method) {
     case "at-json-parser": {
       const { app, input, results } = args;

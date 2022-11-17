@@ -68,7 +68,7 @@ const PublicPage: React.FC = () => {
       >
         <Outlet />
       </main>
-      <footer className="px-6 py-4 m-t-auto bg-orange-400 bg-opacity-25">
+      <footer className="px-6 py-4 m-t-auto bg-sky-100 bg-opacity-25 border-t border-t-gray-400 border-opacity-50">
         <hr className="border-gray-400" />
         <div className="flex mt-4">
           <div className="w-1/3 text-gray-400 text-xs">
