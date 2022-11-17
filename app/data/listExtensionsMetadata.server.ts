@@ -3,6 +3,8 @@ import { domain } from "@dvargas92495/app/backend/constants.server";
 import APPS from "package/internal/apps";
 
 const s3 = new S3({ region: "us-east-1" });
+const SEMVER =
+  /^([0-9]+)\.([0-9]+)\.([0-9]+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+)?$/;
 
 const listExtensionsMetadata = async () => {
   return Promise.all(
@@ -23,7 +25,12 @@ const listExtensionsMetadata = async () => {
                   .split("/");
                 return version;
               })
-              .sort((a, b) => b.localeCompare(a))
+              .sort((a, b) => {
+                if (SEMVER.test(b) && SEMVER.test(a)) return b.localeCompare(a);
+                else if (SEMVER.test(a)) return -1;
+                else if (SEMVER.test(b)) return 1;
+                else return b.localeCompare(a);
+              })
               .slice(0, 5),
             id: app.id,
           };

@@ -1,10 +1,8 @@
-const toDoubleDigit = (n: number) => n.toString().padStart(2, "0");
+import fs from "fs";
 
-const toVersion = (today = new Date()): string =>
-  `${today.getFullYear()}-${toDoubleDigit(
-    today.getMonth() + 1
-  )}-${toDoubleDigit(today.getDate())}-${toDoubleDigit(
-    today.getHours()
-  )}-${toDoubleDigit(today.getMinutes())}`;
+const toVersion = (): string => {
+  const json = JSON.parse(fs.readFileSync("package.json").toString());
+  return json?.version || "LIVE";
+};
 
 export default toVersion;
