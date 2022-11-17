@@ -17,11 +17,11 @@ After downloading the extension from SamePage, extract the zip into a folder. Th
 
 In Roam, head to your Roam Depot settings and toggle on `Enable development mode`:
 
-![](/images/roam-3.png)
+![](/images/install/roam-3.png)
 
 Once you do, click on the folder button and select the folder that you downloaded and extracted.
 
-![](/images/roam-4.png)
+![](/images/install/roam-4.png)
 
 The extension should automatically load and connect to SamePage!
 

@@ -484,7 +484,7 @@ ${cursorDone ? "display: none;\n" : ""}}`}</style>
             <div className="flex flex-col max-w-xs">
               <h1 className="text-gray-500 text-opacity-75 text-4xl mb-4">2</h1>
               <h1 className="font-semibold text-4xl mb-6">
-                Own Your <span className="text-orange-700">Own Data</span>
+                Own <span className="text-orange-700">Your Data</span>
               </h1>
               <p className="mb-6">
                 Create Shared pages{" "}

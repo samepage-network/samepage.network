@@ -17,15 +17,15 @@ After downloading the extension from SamePage, extract the zip into a folder. Th
 
 In Roam, head to your LogSeq settings, head to the `Advanced` tab toggle on `Development Mode` to enable:
 
-![](/images/logseq-2.png)
+![](/images/install/logseq-2.png)
 
 Then, head to the plugins dashboard by entering `Go to plugins dashboard` into the LogSeq command palette, and click on `Load unpacked plugin`:
 
-![](/images/logseq-3.png)
+![](/images/install/logseq-3.png)
 
 Once you do, click on the folder button and select the folder that you downloaded and extracted.
 
-![](/images/logseq-4.png)
+![](/images/install/logseq-4.png)
 
 The extension should automatically load and connect to SamePage!
 

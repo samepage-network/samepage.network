@@ -15,15 +15,15 @@ The stable version of the SamePage extension is still under review for the Obsid
 
 After downloading the extension from SamePage, extract the zip into a folder. You then have to move that folder within the folder that represents your vault, within the `.obsidian/plugins` directory:
 
-![](/images/obsidian-2.png)
+![](/images/install/obsidian-2.png)
 
 In Obsidian, click on the settings icon on the bottom left and head to the `Community Plugins` tab:
 
-![](/images/obsidian-3.png)
+![](/images/install/obsidian-3.png)
 
 Once you do, you should see SamePage appear in your community plugins section. Click on the toggle next to SamePage to enable the extension:
 
-![](/images/obsidian-4.png)
+![](/images/install/obsidian-4.png)
 
 The extension should automatically load and connect to SamePage!
 
