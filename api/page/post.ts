@@ -128,11 +128,21 @@ const logic = async (req: Record<string, unknown>) => {
           return { notebookUuid };
         }
         const [results] = await cxn.execute(
-          `SELECT l.uuid FROM token_notebook_links l
+          `SELECT l.uuid, l.notebook_uuid, n.app, n.workspace FROM token_notebook_links l
+          LEFT JOIN notebooks n ON n.uuid = l.notebook_uuid
           where l.token_uuid = ?`,
           [tokenUuid]
         );
-        const tokenLinks = results as { uuid: string; notebook_uuid: string }[];
+        const tokenLinks = results as ({
+          uuid: string;
+          notebook_uuid: string;
+        } & Notebook)[];
+        const existingTokenLink = tokenLinks.find(
+          (tl) => tl.app === app && tl.workspace === workspace
+        );
+        if (existingTokenLink) {
+          return { notebookUuid: existingTokenLink.notebook_uuid };
+        }
         if (tokenLinks.length >= 5) {
           throw new ConflictError(
             `Maximum number of notebooks allowed to be connected to this token is 5.`

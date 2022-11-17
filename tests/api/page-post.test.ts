@@ -85,11 +85,14 @@ const mockLambda = async (body: Record<string, unknown>) => {
     : {};
 };
 
-const mockRandomNotebook = async () => {
-  const workspace = `test-${await randomString({
+const getRandomWorkspace = async () =>
+  `test-${await randomString({
     length: 4,
     encoding: "hex",
   })}`;
+
+const mockRandomNotebook = async () => {
+  const workspace = await getRandomWorkspace();
   return createNotebook({
     requestId: v4(),
     app: 0,
@@ -102,10 +105,7 @@ const mockRandomNotebook = async () => {
 
 test("Connect Notebook with same app/workspace returns same notebook uuid", async () => {
   const { code } = await issueNewInvite({ context: { requestId: v4() } });
-  const workspace = `test-${await randomString({
-    length: 4,
-    encoding: "hex",
-  })}`;
+  const workspace = await getRandomWorkspace();
 
   const { notebookUuid, token } = await mockLambda({
     method: "create-notebook",
@@ -124,6 +124,41 @@ test("Connect Notebook with same app/workspace returns same notebook uuid", asyn
     workspace,
   });
   expect(connected.notebookUuid).toBe(notebookUuid);
+});
+
+test("Connect Notebook with different source notebook same target notebook returns same notebook uuid", async () => {
+  const { code } = await issueNewInvite({ context: { requestId: v4() } });
+  const workspace = await getRandomWorkspace();
+
+  const { notebookUuid, token } = await mockLambda({
+    method: "create-notebook",
+    inviteCode: code,
+    app: 0,
+    workspace,
+  });
+  expect(notebookUuid).toBeTruthy();
+  expect(token).toBeTruthy();
+
+  const workspaceTwo = await getRandomWorkspace();
+  const connected = await mockLambda({
+    method: "connect-notebook",
+    notebookUuid,
+    token,
+    app: 0,
+    workspace: workspaceTwo,
+  });
+  expect(connected.notebookUuid).toBeTruthy();
+  expect(connected.notebookUuid).not.toEqual(notebookUuid);
+
+  const connectedTwo = await mockLambda({
+    method: "connect-notebook",
+    notebookUuid,
+    token,
+    app: 0,
+    workspace: workspaceTwo,
+  });
+  expect(connectedTwo.notebookUuid).toBeTruthy();
+  expect(connectedTwo.notebookUuid).toEqual(connected.notebookUuid);
 });
 
 test("Messages from deleted notebooks should return Unknown", async () => {
