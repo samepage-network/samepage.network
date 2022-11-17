@@ -94,9 +94,8 @@ const compile = ({
   env,
   analyze,
   opts = {},
-  version,
   finish: onFinishFile,
-}: CliArgs & { opts?: esbuild.BuildOptions; version?: string }) => {
+}: CliArgs & { opts?: esbuild.BuildOptions }) => {
   const rootDir = fs
     .readdirSync("./src", { withFileTypes: true })
     .filter((f) => f.isFile())
@@ -134,7 +133,7 @@ const compile = ({
       define: {
         "process.env.BLUEPRINT_NAMESPACE": '"bp4"',
         "process.env.NODE_ENV": `"${process.env.NODE_ENV}"`,
-        "process.env.VERSION": `"${version || toVersion()}"`,
+        "process.env.VERSION": `"${toVersion()}"`,
         ...Object.fromEntries(
           (typeof env === "string" ? [env] : env || [])
             .filter((s) => !!process.env[s])
@@ -177,17 +176,6 @@ const compile = ({
           .forEach((f) => {
             fs.cpSync(f, path.join("dist", path.basename(f)));
           });
-        const distributedPackageJson = path.join("dist", "package.json");
-        fs.writeFileSync(
-          distributedPackageJson,
-          fs
-            .readFileSync(distributedPackageJson)
-            .toString()
-            .replace(
-              /"version": "[\d.-]+",/,
-              `"version": "${version || toVersion()}",`
-            )
-        );
         if (css) {
           const outCssFilename = path.join(
             "dist",

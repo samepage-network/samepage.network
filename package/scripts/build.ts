@@ -108,7 +108,7 @@ const build = (args: CliArgs & { dry?: boolean; review?: string } = {}) => {
     ".env",
     `${envExisting.replace(/VERSION=[\d-]+\n/gs, "")}VERSION=${version}\n`
   );
-  return compile({ ...args, opts: { minify: true }, version })
+  return compile({ ...args, opts: { minify: true } })
     .then(() =>
       args.dry ? Promise.resolve(0) : publish({ review: args.review, version })
     )

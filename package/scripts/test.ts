@@ -14,7 +14,7 @@ const test = ({
   process.env.NODE_ENV = process.env.NODE_ENV || "test";
   const isDebug = !!(process.env.DEBUG || process.env.PWDEBUG);
   if (isDebug) process.env.DEBUG = process.env.DEBUG || process.env.PWDEBUG;
-  return compile({ ...args, version: "test" })
+  return compile(args)
     .then(() => {
       const config = fs.existsSync(
         "node_modules/@samepage/testing/playwright.config.js"
@@ -54,6 +54,7 @@ const test = ({
         const reportData = fs.existsSync("playwright-report/data")
           ? fs.readdirSync("playwright-report/data")
           : [];
+        console.log("Report data:", reportData);
 
         const version = toVersion();
         const root = "data/tests";
