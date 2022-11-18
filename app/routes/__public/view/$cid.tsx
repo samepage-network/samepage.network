@@ -52,6 +52,22 @@ const ViewCidPage = () => {
                 <span className={"font-bold"}>Date: </span>
                 <span>{new Date(l.change.time * 1000).toLocaleString()}</span>
               </div>
+              <div>
+                <span className={"font-bold"}>Hash: </span>
+                <span>
+                  {l.change.hash?.slice(0, 8)}...{l.change.hash?.slice(-4)}
+                </span>
+              </div>
+              <div>
+                <span className={"font-bold"}>Deps: </span>
+                <span>
+                  {l.change.deps.map((d) => (
+                    <span className="mr-4">
+                      {d.slice(0, 8)}...{d.slice(-4)}
+                    </span>
+                  ))}
+                </span>
+              </div>
             </div>
           ))}
         </div>
