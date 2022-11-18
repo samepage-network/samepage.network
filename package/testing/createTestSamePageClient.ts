@@ -172,7 +172,6 @@ const createTestSamePageClient = async ({
       ? {
           uuid: "",
           token: "",
-          "granular-changes": "",
         }
       : initOptions;
   const initializingPromise =

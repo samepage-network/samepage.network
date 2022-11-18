@@ -66,7 +66,6 @@ Tools for thought typically will designate an area for users to configure their 
 
 - `uuid` - The Notebook Universal ID that represents the user's notebook.
 - `token` - The Notebook Token that authenticates the notebook to the network.
-- `granular-changes` - An experimental flag for sending granular changes between clients instead of full page refreshes.
 
 Extensions are free to configure additional settings on top of this set, but these are the base requirement. These settings must be persisted between sessions so that their value is retained when the user reloads the host app. To ease in configuring these settings, look to import the `defaultSettings` object from the `utils` module:
 
