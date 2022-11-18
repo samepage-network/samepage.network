@@ -26,7 +26,7 @@ const listExtensionsMetadata = async ({
           return {
             versions: releases.data.map((r) => ({
               href:
-                r.assets.find((n) => n.name === `${id}.zip`)
+                r.assets.find((n) => n.name === `${id}.zip` || n.name === `${id}-samepage.zip`)
                   ?.browser_download_url || "",
               version: r.tag_name,
             })),

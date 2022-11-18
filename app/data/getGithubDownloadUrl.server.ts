@@ -10,8 +10,9 @@ const getGithubDownloadUrl = (id: string) =>
     )
     .then((r) => ({
       href:
-        r.data.assets.find((n) => n.name === `${id}.zip`)
-          ?.browser_download_url || "",
+        r.data.assets.find(
+          (n) => n.name === `${id}.zip` || n.name === `${id}-samepage.zip`
+        )?.browser_download_url || "",
       version: r.data.tag_name,
     }));
 
