@@ -24,10 +24,12 @@ const listExtensionsMetadata = async ({
         )
         .then((releases) => {
           return {
-            versions: releases.data.map((r) => ({
+            versions: releases.data.slice(0, 5).map((r) => ({
               href:
-                r.assets.find((n) => n.name === `${id}.zip` || n.name === `${id}-samepage.zip`)
-                  ?.browser_download_url || "",
+                r.assets.find(
+                  (n) =>
+                    n.name === `${id}.zip` || n.name === `${id}-samepage.zip`
+                )?.browser_download_url || "",
               version: r.tag_name,
             })),
             id: app.name.toLowerCase(),

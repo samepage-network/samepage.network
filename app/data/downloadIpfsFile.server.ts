@@ -1,25 +1,12 @@
-import { Web3Storage } from "web3.storage";
-import { NotFoundError } from "@dvargas92495/app/backend/errors.server";
+import axios from "axios";
 
 const downloadIpfsFile = ({ cid }: { cid: string }) => {
-  const client = new Web3Storage({
-    token: process.env.WEB3_STORAGE_API_KEY || "",
-  });
   const start = performance.now();
-  return client
-    .get(cid)
-    .then((res) => {
-      if (!res) {
-        throw new NotFoundError(`Failed to find CID: ${cid}`);
-      }
-      return res.files();
+  return axios
+    .get(`https://${cid}.ipfs.w3s.link`, {
+      responseType: "arraybuffer",
     })
-    .then(([file]) => {
-      if (!file) {
-        throw new NotFoundError(`No files found within archive CID: ${cid}`);
-      }
-      return file.arrayBuffer();
-    })
+    .then((r) => r.data as ArrayBuffer)
     .then((encoded) => {
       if (encoded.byteLength) return new Uint8Array(encoded);
       else

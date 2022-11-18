@@ -204,7 +204,10 @@ const createTestSamePageClient = async ({
   });
   const { unload: unloadNotebookQuerying, query } = setupNotebookQuerying({
     onQuery: async (notebookPageId) => {
-      return toAtJson(appClientState[notebookPageId].window.document.body);
+      const dom = appClientState[notebookPageId];
+      return dom
+        ? toAtJson(dom.window.document.body)
+        : { content: "", annotations: [] };
     },
     onQueryResponse: async (response) => {
       if (response.data.content) {
@@ -388,15 +391,19 @@ const createTestSamePageClient = async ({
           await apiClient<{ state: string }>({
             method: "get-shared-page",
             notebookPageId: message.notebookPageId,
-          }).then(({ state }) =>
+          }).then(({ state }) => {
+            const data = Automerge.load<Schema>(
+              base64ToBinary(state) as Automerge.BinaryDocument
+            );
             onMessage({
               type: "response",
               uuid: message.uuid,
-              data: Automerge.load(
-                base64ToBinary(state) as Automerge.BinaryDocument
-              ),
-            })
-          );
+              data: {
+                content: data.content.toString(),
+                annotations: data.annotations,
+              },
+            });
+          });
         } else if (message.type === "refresh") {
           await applyState(message.notebookPageId, {
             content: new Automerge.Text(message.data.content),
