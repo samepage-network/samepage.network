@@ -21,7 +21,7 @@ import type { default as defaultSettings } from "../utils/defaultSettings";
 import { callNotificationAction } from "../internal/messages";
 import fromAtJson from "./fromAtJson";
 
-const SUPPORTED_TAGS = ["SPAN", "DIV", "A"] as const;
+const SUPPORTED_TAGS = ["SPAN", "DIV", "A", "LI"] as const;
 const TAG_SET = new Set<string>(SUPPORTED_TAGS);
 const processMessageSchema = z.discriminatedUnion("type", [
   z.object({
@@ -302,11 +302,11 @@ const createTestSamePageClient = async ({
           });
         } else if (message.type === "insert") {
           const dom = appClientState[message.notebookPageId];
-          const el = dom.window.document.body.querySelector(message.path);
+          const el = dom.window.document.querySelector(message.path);
           if (!el) {
             onMessage({
               type: "error",
-              data: `Failed to insert: cannot find ${message.path}`,
+              data: `Failed to insert: cannot find ${message.path}\nDom: ${dom.window.document.body.innerHTML}`,
             });
           } else if (TAG_SET.has(message.content)) {
             const newEl = dom.window.document.createElement(
@@ -410,7 +410,11 @@ const createTestSamePageClient = async ({
             contentType: "application/vnd.atjson+samepage; version=2022-08-17",
           });
           await refreshContent({ notebookPageId: message.notebookPageId });
-          onMessage({ type: "response", uuid: message.uuid });
+          onMessage({
+            type: "response",
+            uuid: message.uuid,
+            data: { success: true },
+          });
         } else if (message.type === "query") {
           const data = await query(message.request);
           onMessage({ type: "response", uuid: message.uuid, data });
