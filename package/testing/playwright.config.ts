@@ -9,7 +9,11 @@ const config: PlaywrightTestConfig = {
   testDir: `${process.cwd()}/tests`,
   use: {
     screenshot: "only-on-failure",
-    video: process.env.DEBUG ? "on" : "off",
+    video: process.env.DEBUG
+      ? "on"
+      : process.env.CI
+      ? "retry-with-video"
+      : "off",
   },
 };
 

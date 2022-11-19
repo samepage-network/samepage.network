@@ -268,7 +268,13 @@ const createTestSamePageClient = async ({
               title: message.notebookPageId,
             },
             messageUuid: message.notificationUuid,
-          }).then(() => onMessage({ type: "response", uuid: message.uuid }));
+          }).then(() =>
+            onMessage({
+              type: "response",
+              uuid: message.uuid,
+              data: { success: true },
+            })
+          );
         } else if (message.type === "read") {
           const dom = appClientState[message.notebookPageId];
           onMessage({

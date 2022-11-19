@@ -12,6 +12,7 @@ import apiClient from "../internal/apiClient";
 import { OverlayProps } from "../internal/types";
 import React from "react";
 import { app, appRoot, workspace } from "../internal/registry";
+import { appsById } from "package/internal/apps";
 
 // Initial reference - https://www.youtube.com/watch?v=83Yrd3ekWKA
 // TODO - Help us improve SamePage panel?
@@ -250,12 +251,18 @@ const Onboarding = ({
           <div className="w-40 h-40">
             <img src="https://samepage.network/images/logo.png" />
           </div>
-          <h1 className="text-lg font-normal">Welcome to SamePage</h1>
-          <div className="mb-4 flex-grow">
+          <h1 className="text-xl font-semibold mb-4">Welcome to SamePage</h1>
+          <div className="mb-4 flex-grow max-w-sm m-auto">
             <p>
-              Connecting you to SamePage - the intra-tool-for-thought protocol.
+              You're about to connect your notebook to SamePage - the
+              intra-tool-for-thought protocol.
             </p>
-            <p>We're excited to have you!</p>
+            <p className="mb-4">We're excited to have you!</p>
+            <p className="text-xs italic opacity-50">
+              Note: By adding your notebook to SamePage, the name of your{" "}
+              {appsById[app].workspaceLabel} will be reachable by other
+              notebooks on the SamePage Network.
+            </p>
           </div>
           <Button
             text={"Get Started"}
