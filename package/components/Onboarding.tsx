@@ -12,7 +12,7 @@ import apiClient from "../internal/apiClient";
 import { OverlayProps } from "../internal/types";
 import React from "react";
 import { app, appRoot, workspace } from "../internal/registry";
-import { appsById } from "package/internal/apps";
+import { appsById } from "../internal/apps";
 
 // Initial reference - https://www.youtube.com/watch?v=83Yrd3ekWKA
 // TODO - Help us improve SamePage panel?
