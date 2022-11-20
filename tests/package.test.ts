@@ -11,7 +11,6 @@ import {
 import { Notification } from "../package/internal/types";
 
 let cleanup: () => unknown;
-const logs: { data: string; time: string }[] = [];
 const inviteCodes: string[] = [];
 const testId = v4();
 
@@ -414,9 +413,4 @@ test("Full integration test of sharing pages", async () => {
 test.afterAll(async () => {
   cleanup?.();
   await getMysqlConnection(testId).then((cxn) => cxn.destroy());
-  if (process.env.DEBUG) {
-    console.log(
-      logs.map((l) => `${l.data.replace(/\n/g, "\\n")} (${l.time}s)`).join("\n")
-    );
-  }
 });

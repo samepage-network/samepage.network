@@ -90,7 +90,7 @@ const AnnotationRendered = ({
     ) : annotation.type === "link" ? (
       <a href={annotation.attributes.href}>{children}</a>
     ) : annotation.type === "image" ? (
-      <img src={annotation.attributes.src} />
+      <img src={annotation.attributes.src} width={"100%"} />
     ) : annotation.type === "reference" ? (
       <span
         className="cursor underline samepage-reference"
