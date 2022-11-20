@@ -54,7 +54,7 @@ const ConnectNotebookPage = ({
       });
   }, [setError, setLoading, setPage, setNotebookUuid, token, notebookUuid]);
   return (
-    <div className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center`}>
+    <>
       {loading && (
         <div className="flex flex-col items-center absolute inset-0 bg-opacity-25 z-50">
           <Spinner size={32} />
@@ -110,7 +110,7 @@ const ConnectNotebookPage = ({
         />
         <span className="text-red-800">{error}</span>
       </div>
-    </div>
+    </>
   );
 };
 
@@ -143,9 +143,7 @@ const CreateNotebookPage = ({
       });
   }, [setError, setLoading, setPage, onSuccess, inviteCode]);
   return (
-    <div
-      className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center relative h-full`}
-    >
+    <>
       {loading && (
         <div className="flex flex-col items-center absolute inset-0 bg-opacity-25 z-50">
           <Spinner size={32} />
@@ -194,25 +192,40 @@ const CreateNotebookPage = ({
         />
         <span className="text-red-800">{error}</span>
       </div>
-    </div>
+    </>
   );
 };
 
 const CompletePage = ({ onClose }: { onClose: () => void }) => {
   return (
-    <div className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center`}>
+    <>
       <h1 className="text-lg font-normal">Congratulations! 🎉</h1>
-      <p className="flex-grow">
-        Each time you log onto your notebook, you can connect to the SamePage
-        network by entering the{" "}
+      <p className="mb-4">
+        Each time you log onto your notebook, you should be automatically
+        connected to the SamePage Network. At any point, you can disconnect by
+        entering the{" "}
+        <code className="font-mono font-normal bg-gray-200 rounded-sm">
+          Disconnect from SamePage Network
+        </code>{" "}
+        command and reconnect by entering the{" "}
         <code className="font-mono font-normal bg-gray-200 rounded-sm">
           Connect to SamePage Network
         </code>{" "}
-        command. Close this model by clicking the button below and give it a
-        try!
+        command.
+      </p>
+      <p className="flex-grow">
+        Close this modal by clicking the{" "}
+        <code className="font-mono font-normal bg-gray-200 rounded-sm">
+          All Done
+        </code>{" "}
+        button below, and share your first page by entering the{" "}
+        <code className="font-mono font-normal bg-gray-200 rounded-sm">
+          Share Page on SamePage
+        </code>{" "}
+        command!
       </p>
       <Button text={"All Done"} intent={"primary"} onClick={onClose} />
-    </div>
+    </>
   );
 };
 
@@ -244,79 +257,79 @@ const Onboarding = ({
 .samepage-onboarding-portal .bp3-dialog-container {
   height: 100%;
 }`}</style>
-      {page === "WELCOME" && (
-        <div
-          className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center text-black`}
-        >
-          <div className="w-40 h-40">
-            <img src="https://samepage.network/images/logo.png" />
-          </div>
-          <h1 className="text-xl font-semibold mb-4">Welcome to SamePage</h1>
-          <div className="mb-4 flex-grow max-w-sm m-auto">
-            <p>
-              You're about to connect your notebook to SamePage - the
-              intra-tool-for-thought protocol.
-            </p>
-            <p className="mb-4">We're excited to have you!</p>
-            <p className="text-xs italic opacity-50">
-              Note: By adding your notebook to SamePage, the name of your{" "}
-              {appsById[app].workspaceLabel} will be reachable by other
-              notebooks on the SamePage Network.
-            </p>
-          </div>
-          <Button
-            text={"Get Started"}
-            onClick={() => setPage("SETUP")}
-            intent={"primary"}
-          />
-        </div>
-      )}
-      {page === "SETUP" && (
-        <div
-          className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center`}
-        >
-          <h1 className="text-lg font-normal">New to SamePage?</h1>
-          <div className="flex gap-4 items-center h-full">
-            <div className="border-gray-400 rounded-lg border p-8 flex flex-col gap-2 items-center h-full flex-1">
-              <Icon icon={"import"} size={32} />
-              <p className="font-bold text-lg">
-                No, I already have a connected Notebook
-              </p>
-              <p className="text-gray-700 flex-grow">
-                Use your existing notebook to generate a new Notebook Universal
-                Id for this notebook.
-              </p>
-              <Button
-                text={"Use Existing Notebook"}
-                onClick={() => setPage("CONNECT")}
-                intent={"primary"}
-                className={"mt-4"}
-              />
+      <div
+        className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center text-black`}
+      >
+        {page === "WELCOME" && (
+          <>
+            <div className="w-40 h-40">
+              <img src="https://samepage.network/images/logo.png" />
             </div>
-            <div className="border-gray-400 rounded-lg border p-8 flex flex-col gap-2 items-center h-full flex-1">
-              <Icon icon={"plus"} size={32} />
-              <p className="font-bold text-lg">Yes, let's get set up!</p>
-              <p className="text-gray-700 flex-grow">
-                This will create a new Notebook Universal Id and attach it to
-                your notebook
+            <h1 className="text-xl font-semibold mb-4">Welcome to SamePage</h1>
+            <div className="mb-4 flex-grow max-w-sm m-auto">
+              <p>
+                You're about to connect your notebook to SamePage - the
+                intra-tool-for-thought protocol.
               </p>
-              <Button
-                text={"Start Notebook"}
-                onClick={() => setPage("START")}
-                intent={"primary"}
-                className={"mt-4"}
-              />
+              <p className="mb-4">We're excited to have you!</p>
+              <p className="text-xs italic opacity-50">
+                Note: By adding your notebook to SamePage, the name of your{" "}
+                {appsById[app].workspaceLabel} will be reachable by other
+                notebooks on the SamePage Network.
+              </p>
             </div>
-          </div>
-        </div>
-      )}
-      {page === "CONNECT" && (
-        <ConnectNotebookPage setPage={setPage} onSuccess={onSuccess} />
-      )}
-      {page === "START" && (
-        <CreateNotebookPage setPage={setPage} onSuccess={onSuccess} />
-      )}
-      {page === "COMPLETE" && <CompletePage onClose={onClose} />}
+            <Button
+              text={"Get Started"}
+              onClick={() => setPage("SETUP")}
+              intent={"primary"}
+            />
+          </>
+        )}
+        {page === "SETUP" && (
+          <>
+            <h1 className="text-lg font-normal">New to SamePage?</h1>
+            <div className="flex gap-4 items-center h-full">
+              <div className="border-gray-400 rounded-lg border p-8 flex flex-col gap-2 items-center h-full flex-1">
+                <Icon icon={"import"} size={32} />
+                <p className="font-bold text-lg">
+                  No, I already have a connected Notebook
+                </p>
+                <p className="text-gray-700 flex-grow">
+                  Use your existing notebook to generate a new Notebook
+                  Universal Id for this notebook.
+                </p>
+                <Button
+                  text={"Use Existing Notebook"}
+                  onClick={() => setPage("CONNECT")}
+                  intent={"primary"}
+                  className={"mt-4"}
+                />
+              </div>
+              <div className="border-gray-400 rounded-lg border p-8 flex flex-col gap-2 items-center h-full flex-1">
+                <Icon icon={"plus"} size={32} />
+                <p className="font-bold text-lg">Yes, let's get set up!</p>
+                <p className="text-gray-700 flex-grow">
+                  This will create a new Notebook Universal Id and attach it to
+                  your notebook
+                </p>
+                <Button
+                  text={"Start Notebook"}
+                  onClick={() => setPage("START")}
+                  intent={"primary"}
+                  className={"mt-4"}
+                />
+              </div>
+            </div>
+          </>
+        )}
+        {page === "CONNECT" && (
+          <ConnectNotebookPage setPage={setPage} onSuccess={onSuccess} />
+        )}
+        {page === "START" && (
+          <CreateNotebookPage setPage={setPage} onSuccess={onSuccess} />
+        )}
+        {page === "COMPLETE" && <CompletePage onClose={onClose} />}
+      </div>
     </Dialog>
   );
 };

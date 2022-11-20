@@ -1,47 +1,70 @@
-import { LoaderFunction, redirect, ActionFunction } from "@remix-run/node";
-import { Link, useLoaderData, Form } from "@remix-run/react";
+import { LoaderFunction, ActionFunction } from "@remix-run/node";
+import { Link, useLoaderData, Form, useActionData } from "@remix-run/react";
 import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
 import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
 import listPageNotebookLinks from "~/data/listAllPageNotebookLinks.server";
+import searchPageNotebookLinks from "~/data/searchPageNotebookLinks.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
+import TextInput from "@dvargas92495/app/components/TextInput";
+import StatPanels from "~/components/StatPanels";
+import { Chart, ChartOptions } from "react-charts";
+import { useMemo } from "react";
 import Button from "@dvargas92495/app/components/Button";
-import deleteSharedPage from "~/data/deleteSharedPage.server";
 
 const AdminPagesPage = () => {
-  const { pages } =
+  const { pages, stats } =
     useLoaderData<Awaited<ReturnType<typeof listPageNotebookLinks>>>();
-  const pageEntries = Object.entries(pages);
+  const action = useActionData<
+    undefined | Awaited<ReturnType<typeof searchPageNotebookLinks>>
+  >();
+  const barChartOptions = useMemo<
+    Omit<ChartOptions<typeof pages[number]>, "data">
+  >(
+    () => ({
+      primaryAxis: { getValue: (data) => data.range },
+      secondaryAxes: [{ getValue: (data) => data.amount, elementType: "bar" }],
+    }),
+    []
+  );
   return (
-    <div className="grid grid-cols-4 gap-4">
-      {pageEntries.length ? (
-        pageEntries.map(([uuid, links]) => (
-          <div
-            className="rounded-lg shadow-lg bg-slate-300 p-4 flex flex-col"
-            key={uuid}
-          >
-            <Link to={uuid}>
-              <h1 className="font-bold text-lg cursor-pointer underline hover:no-underline">
-                {uuid}
-              </h1>
-            </Link>
-            <ul className="pt-4 ml-4 list-disc mb-4 flex-grow">
-              {links.map((l) => (
-                <li key={l.uuid}>
-                  {l.app}/{l.workspace}/{l.id}
-                </li>
-              ))}
-            </ul>
-            <Form method={"delete"}>
-              <Button name={"uuid"} value={uuid}>
-                Delete
-              </Button>
-            </Form>
+    <div className="flex gap-12 items-start">
+      <div className="w-full max-w-3xl">
+        <div className="relative h-64 mb-8">
+          <Chart
+            options={{
+              ...barChartOptions,
+              data: [{ data: pages, label: "Notebooks With Page Count" }],
+            }}
+          />
+        </div>
+        <StatPanels stats={stats} order={["total", "max"]} />
+      </div>
+      <div className="flex-grow">
+        <Form method="post" className="flex items-center max-w-lg gap-8">
+          <TextInput
+            label={"Search"}
+            name={"search"}
+            placeholder={"Enter page name..."}
+            className={"flex-grow"}
+          />
+          <Button>Search</Button>
+        </Form>
+        {action && (
+          <div>
+            {action.results.map((r) => (
+              <Link
+                to={r.uuid}
+                className={
+                  "text-sky-500 underline hover:no-underline hover:text-sky-700"
+                }
+              >
+                {r.notebook_page_id}
+              </Link>
+            ))}
           </div>
-        ))
-      ) : (
-        <div>No pages found.</div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
@@ -54,12 +77,12 @@ export const loader: LoaderFunction = (args) => {
 
 export const action: ActionFunction = async (args) => {
   return remixAdminAction(args, {
-    DELETE: ({ data, context: { requestId } }) => {
-      return deleteSharedPage(data.uuid?.[0], requestId).then(() =>
-        redirect("/admin/pages")
-      );
-    },
+    POST: searchPageNotebookLinks,
   });
+};
+
+export const handle = {
+  Title: "Pages",
 };
 
 export default AdminPagesPage;

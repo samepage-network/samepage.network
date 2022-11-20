@@ -7,6 +7,7 @@ import TextInput from "@dvargas92495/app/components/TextInput";
 import Button from "@dvargas92495/app/components/Button";
 import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
 import createNotebook from "~/data/createNotebook.server";
+import StatPanels from "~/components/StatPanels";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 
@@ -18,19 +19,7 @@ const ConnectionsPage = () => {
   return (
     <div className={"flex gap-8 items-start"}>
       <div className="max-w-3xl w-full">
-        <div className="flex gap-2 mb-12 items-center">
-          {Object.entries(stats)
-            .sort((a, b) => ORDER.indexOf(a[0]) - ORDER.indexOf(b[0]))
-            .map(([title, stat]) => (
-              <div
-                className="rounded-3xl shadow-2xl bg-amber-200 p-4 flex-1"
-                key={title}
-              >
-                <h4 className="font-semibold capitalize mb-2">{title}</h4>
-                <p className="text-sky-800">{stat}</p>
-              </div>
-            ))}
-        </div>
+        <StatPanels stats={stats} order={ORDER} />
         <Table
           onRowClick={(r) => navigate(r.uuid as string)}
           renderCell={{

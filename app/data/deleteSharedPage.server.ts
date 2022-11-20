@@ -7,6 +7,7 @@ const deleteSharedPage = async (uuid: string, requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
   await Promise.all([
     cxn.execute(`DELETE FROM page_notebook_links WHERE page_uuid = ?`, [uuid]),
+    // TODO - delete page helper
     s3.deleteObject({
       Bucket: "samepage.network",
       Key: `data/page/${uuid}.json`,

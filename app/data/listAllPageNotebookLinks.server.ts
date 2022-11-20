@@ -1,52 +1,55 @@
 import getMysqlConnection from "fuegojs/utils/mysql";
 import type { AppId } from "package/internal/types";
-import { appsById } from "package/internal/apps";
 
 const listAllPageNotebookLinks = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
   const results = await cxn
     .execute(
-      "SELECT l.*, n.app, n.workspace, n.uuid as notebook FROM page_notebook_links l INNER JOIN notebooks n ON n.uuid = l.notebook_uuid"
+      `SELECT COUNT(l.uuid) as amount, MAX(n.app) as app, MAX(n.workspace) as workspace, n.uuid as notebook 
+      FROM notebooks n
+      INNER JOIN page_notebook_links l ON n.uuid = l.notebook_uuid
+      GROUP BY n.uuid`
     )
     .then(
       ([r]) =>
         r as {
-          page_uuid: string;
           app: AppId;
           workspace: string;
-          notebook_page_id: string;
           uuid: string;
-          open: boolean;
-          notebook: string;
+          amount: number;
         }[]
     );
+  const [{ total }] = await cxn
+    .execute(`SELECT COUNT(uuid) as total FROM pages`)
+    .then(([a]) => a as { total: number }[]);
+  const [{ today }] = await cxn
+    .execute(
+      `SELECT COUNT(DISTINCT page_uuid) as today FROM page_notebook_links WHERE invited_date > DATE_SUB(NOW(), INTERVAL 1 DAY)`
+    )
+    .then(([a]) => a as { today: number }[]);
   cxn.destroy();
-  const pages = results.reduce((p, c) => {
-    if (p[c.page_uuid]) {
-      p[c.page_uuid].push({
-        app: appsById[c.app].name,
-        workspace: c.workspace,
-        id: c.notebook_page_id,
-        uuid: c.uuid,
-        inviteOpen: c.open,
-        notebook: c.notebook,
-      });
-    } else {
-      p[c.page_uuid] = [
-        {
-          app: appsById[c.app].name,
-          workspace: c.workspace,
-          id: c.notebook_page_id,
-          uuid: c.uuid,
-          inviteOpen: c.open,
-          notebook: c.notebook,
-        },
-      ];
-    }
-    return p;
-  }, {} as Record<string, { id: string; workspace: string; app: string; uuid: string; inviteOpen: boolean; notebook: string }[]>);
+  const amounts = {
+    "<10": 0,
+    "10-100": 0,
+    ">100": 0,
+  };
+  let max = 0;
+  results.forEach((r) => {
+    if (r.amount > max) max = r.amount;
+    if (r.amount < 10) amounts["<10"]++;
+    else if (r.amount < 100) amounts["10-100"]++;
+    else amounts[">100"]++;
+  });
   return {
-    pages,
+    pages: Object.entries(amounts).map(([range, amount]) => ({
+      amount,
+      range,
+    })),
+    stats: {
+      total,
+      max,
+      today,
+    },
   };
 };
 
