@@ -8,6 +8,10 @@ import createNotebook from "~/data/createNotebook.server";
 import getMysql from "fuegojs/utils/mysql";
 import deleteNotebook from "~/data/deleteNotebook.server";
 import listNotebooks from "~/data/listNotebooks.server";
+import binaryToBase64 from "../../package/internal/binaryToBase64";
+import Automerge from "automerge";
+import { Schema } from "../../package/internal/types";
+import QUOTAS from "~/data/quotas.server";
 
 const mockLambda = async (body: Record<string, unknown>) => {
   const requestId = v4();
@@ -79,9 +83,13 @@ const mockLambda = async (body: Record<string, unknown>) => {
   return res
     ? res.then((r) => {
         try {
-          return JSON.parse(r.body);
+          if (r.statusCode < 300) {
+            return JSON.parse(r.body);
+          } else {
+            return Promise.reject(r.body);
+          }
         } catch (e) {
-          throw new Error(`Failed to handle response body as JSON: ${r.body}`);
+          throw new Error(`Failed to handle response: ${r.body}`);
         }
       })
     : {};
@@ -89,6 +97,12 @@ const mockLambda = async (body: Record<string, unknown>) => {
 
 const getRandomWorkspace = async () =>
   `test-${await randomString({
+    length: 4,
+    encoding: "hex",
+  })}`;
+
+const getRandomNotebookPage = async () =>
+  `page-${await randomString({
     length: 4,
     encoding: "hex",
   })}`;
@@ -204,11 +218,90 @@ test("Messages from deleted notebooks should return Unknown", async () => {
   });
 });
 
+const mockState = (s: string) =>
+  binaryToBase64(
+    Automerge.save(
+      Automerge.from<Schema>({
+        content: new Automerge.Text(s),
+        annotations: [],
+        contentType: "application/vnd.atjson+samepage; version=2022-08-17",
+      })
+    )
+  );
+
+test("Reaching the page limit should throw on init and accept page", async () => {
+  const { notebookUuid, token } = await mockRandomNotebook();
+  await getMysql().then((cxn) =>
+    cxn.execute("UPDATE quotas SET value = ? where field = ?", [
+      1,
+      QUOTAS.indexOf("Pages"),
+    ])
+  );
+  const { created } = await mockLambda({
+    method: "init-shared-page",
+    notebookUuid,
+    token,
+    notebookPageId: await getRandomNotebookPage(),
+    state: mockState("hello"),
+  });
+  expect(created).toEqual(true);
+
+  const notebookPageId = await getRandomNotebookPage();
+  const response = await mockLambda({
+    method: "init-shared-page",
+    notebookUuid,
+    token,
+    notebookPageId,
+    state: mockState("world"),
+  })
+    .then(() => ({ success: true, e: undefined }))
+    .catch((e) => ({ success: false, e: e as Error }));
+  expect(response.success).toEqual(false);
+  expect(response.e).toEqual(
+    "Error: Maximum number of pages allowed to be connected to this notebook on this plan is 1."
+  );
+
+  const { notebookUuid: otherNotebook, token: otherToken } =
+    await mockRandomNotebook();
+  await mockLambda({
+    method: "init-shared-page",
+    notebookUuid: otherNotebook,
+    token: otherToken,
+    state: mockState("world"),
+    notebookPageId,
+  });
+  await mockLambda({
+    method: "invite-notebook-to-page",
+    notebookUuid: otherNotebook,
+    token: otherToken,
+    targetUuid: notebookUuid,
+    notebookPageId,
+  });
+  const response2 = await mockLambda({
+    method: "join-shared-page",
+    notebookUuid,
+    token,
+    notebookPageId,
+  })
+    .then(() => ({ success: true, e: undefined }))
+    .catch((e) => ({ success: false, e: e as Error }));
+  expect(response2.success).toEqual(false);
+  expect(response2.e).toEqual(
+    "Error: Maximum number of pages allowed to be connected to this notebook on this plan is 1."
+  );
+});
+
 test.afterAll(async () => {
   const notebooks = await listNotebooks(v4());
   await Promise.all(
     notebooks.data
       .filter((n) => /^test-[a-f0-9]{8}$/.test(n.workspace))
       .map((n) => deleteNotebook({ uuid: n.uuid, requestId: v4() }))
+  );
+  await getMysql().then((cxn) =>
+    cxn.execute("UPDATE quotas SET value = ? where field = ?", [
+      100,
+      QUOTAS.indexOf("Pages"),
+    ])
   );
 });

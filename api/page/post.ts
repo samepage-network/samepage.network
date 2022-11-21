@@ -32,25 +32,73 @@ import inviteNotebookToPage from "~/data/inviteNotebookToPage.server";
 import getNotebookUuids from "~/data/getNotebookUuids.server";
 import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
 import createNotebook from "~/data/createNotebook.server";
+import QUOTAS from "~/data/quotas.server";
+import { ZodError } from "zod";
 
 const zMethod = zUnauthenticatedBody
   .and(zBaseHeaders)
   .or(zAuthenticatedBody.and(zAuthHeaders).and(zBaseHeaders));
 
+const parseZodError = (e: ZodError, indentation = 0): string =>
+  e.issues
+    .map((i) =>
+      i.code === "invalid_type"
+        ? `Expected \`${i.path.join(".")}\` to be of type \`${
+            i.expected
+          }\` but received type \`${i.received}\``
+        : i.code === "invalid_union"
+        ? `Path ${i.path.join(
+            "."
+          )} had the following union errors:\n${i.unionErrors
+            .map((e) => parseZodError(e, indentation + 1))
+            .join("\n")}`
+        : `${i.message} (${i.code})`
+    )
+    .map((s) => `- ${s}\n`)
+    .join("");
+
+const getQuota = async ({
+  requestId,
+  field,
+}: {
+  requestId: string;
+  field: typeof QUOTAS[number];
+}) => {
+  const cxn = await getMysql(requestId);
+  return cxn
+    .execute(`SELECT value FROM quotas WHERE field = ? AND stripe_id IS NULL`, [
+      QUOTAS.indexOf(field),
+    ])
+    .then(([q]) => (q as { value: number }[])[0]?.value);
+};
+
+const validatePageQuota = async ({
+  requestId,
+  notebookUuid,
+}: {
+  requestId: string;
+  notebookUuid: string;
+}) => {
+  const cxn = await getMysql(requestId);
+  const pageQuota = await getQuota({ requestId, field: "Pages" });
+  const totalPages = await cxn
+    .execute(
+      `SELECT COUNT(page_uuid) as total FROM page_notebook_links WHERE notebook_uuid = ? AND open = 0`,
+      [notebookUuid]
+    )
+    .then(([t]) => (t as { total: number }[])[0]?.total);
+  if (totalPages >= pageQuota) {
+    throw new ConflictError(
+      `Maximum number of pages allowed to be connected to this notebook on this plan is ${pageQuota}.`
+    );
+  }
+};
+
 const logic = async (req: Record<string, unknown>) => {
   const result = zMethod.safeParse(req);
   if (!result.success)
     throw new BadRequestError(
-      `Failed to parse request. Errors:\n${result.error.issues
-        .map((i) =>
-          i.code === "invalid_type"
-            ? `Expected \`${i.path.join(".")}\` to be of type \`${
-                i.expected
-              }\` but received type \`${i.received}\``
-            : i.message
-        )
-        .map((s) => `- ${s}\n`)
-        .join("")}`
+      `Failed to parse request. Errors:\n${parseZodError(result.error)}`
     );
   const { requestId, ...args } = result.data;
   console.log("Received method:", args.method);
@@ -143,9 +191,15 @@ const logic = async (req: Record<string, unknown>) => {
         if (existingTokenLink) {
           return { notebookUuid: existingTokenLink.notebook_uuid };
         }
-        if (tokenLinks.length >= 5) {
+        const notebookQuota = await cxn
+          .execute(
+            `SELECT value FROM quotas WHERE field = ? AND stripe_id IS NULL`,
+            [QUOTAS.indexOf("Notebooks")]
+          )
+          .then(([q]) => (q as { value: number }[])?.[0].value);
+        if (tokenLinks.length >= notebookQuota) {
           throw new ConflictError(
-            `Maximum number of notebooks allowed to be connected to this token is 5.`
+            `Maximum number of notebooks allowed to be connected to this token with this plan is ${notebookQuota}.`
           );
         }
         const newNotebookUuid = await getOrGenerateNotebookUuid({
@@ -259,6 +313,8 @@ const logic = async (req: Record<string, unknown>) => {
             );
             const [link] = results as { page_uuid: string }[];
             if (link) return { id: link.page_uuid, created: false };
+            await validatePageQuota({ requestId, notebookUuid });
+
             const pageUuid = v4();
             // TODO - do we even need version here???
             await cxn.execute(
@@ -329,6 +385,7 @@ const logic = async (req: Record<string, unknown>) => {
             found: false,
           };
         }
+        await validatePageQuota({ requestId, notebookUuid });
         await cxn.execute(
           `UPDATE page_notebook_links SET open = 0 WHERE uuid = ?`,
           [uuid]

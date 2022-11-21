@@ -7,6 +7,7 @@ const optionalUuid = uuidField.optional();
 const token = z.object({
   uuid,
   value: z.string(),
+  userId: z.string().optional(),
 });
 
 const tokenNotebookLink = z.object({
@@ -20,6 +21,7 @@ const invitation = z.object({
   createdDate: z.date(),
   expirationDate: z.date(),
   tokenUuid: z.string().optional().describe("unique"),
+  email: z.string().optional(),
 });
 
 const notebook = z.object({
@@ -75,6 +77,13 @@ const ongoingMessage = z.object({
   messageUuid: z.string().uuid().describe("unique"),
 });
 
+const quota = z.object({
+  uuid,
+  value: z.number(),
+  field: z.number().max(Math.pow(2, 8)).min(0),
+  stripeId: z.string().optional(),
+});
+
 const schema = {
   token,
   tokenNotebookLink,
@@ -86,6 +95,7 @@ const schema = {
   clientSession,
   message,
   ongoingMessage,
+  quota,
 };
 
 export default schema;
