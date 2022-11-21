@@ -4,31 +4,21 @@ import { useLoaderData, useNavigate } from "@remix-run/react";
 import { useState, useMemo } from "react";
 import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
 import Select from "@dvargas92495/app/components/Select";
-import listPageNotebookLinks from "~/data/listAllPageNotebookLinks.server";
+import listPages from "~/data/listPages.server";
 import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 import { getSetting } from "package/internal/registry";
 
 const SharedPageStatusPage = () => {
-  const { pages } =
-    useLoaderData<Awaited<ReturnType<typeof listPageNotebookLinks>>>();
+  const { pages } = useLoaderData<Awaited<ReturnType<typeof listPages>>>();
   const navigate = useNavigate();
   const filtered = useMemo(
-    () =>
-      Object.fromEntries(
-        Object.entries(pages).filter(([_uuid, ps]) =>
-          ps.some((p) => p.notebook === getSetting("uuid") && !p.inviteOpen)
-        )
-      ),
+    () => pages.filter((p) => p.notebook_uuid === getSetting("uuid")),
     [pages]
   );
   const notebookPageIds = useMemo(
-    () =>
-      Object.keys(filtered).map(
-        (k) =>
-          filtered[k].find((n) => n.notebook === getSetting("uuid"))?.id || ""
-      ),
+    () => filtered.map((f) => f.notebook_page_id),
     [pages]
   );
   const [notebookPageId, setNotebookPageId] = useState<string>();
@@ -39,7 +29,7 @@ const SharedPageStatusPage = () => {
           label="Page"
           options={notebookPageIds}
           onChange={(e) => setNotebookPageId(e as string)}
-          defaultValue={""}
+          defaultValue={getSetting("uuid")}
         />
       </div>
       <SharedPageStatus
@@ -54,9 +44,7 @@ const SharedPageStatusPage = () => {
 
 export const loader: LoaderFunction = (args) => {
   return remixAdminLoader(args, ({ context: { requestId } }) => {
-    return listPageNotebookLinks(requestId).then(({ pages }) => ({
-      pages,
-    }));
+    return listPages({ requestId });
   });
 };
 

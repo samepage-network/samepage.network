@@ -222,7 +222,7 @@ const SharePageDialog = ({
               </span>
             )}
             selectedItems={currentNotebooks}
-            placeholder={"Enter notebook or email..."}
+            placeholder={"Enter notebook..."}
             itemPredicate={(Q, i) => {
               const q = Q.toLowerCase();
               return (
