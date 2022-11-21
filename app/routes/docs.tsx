@@ -46,7 +46,7 @@ const DocsPage = () => {
           <DirectoryLink {...d} key={d.path} />
         ))}
       </div>
-      <div className="py-12 px-6 overflow-auto">
+      <div className="py-12 px-6 overflow-auto w-full">
         <Outlet />
       </div>
     </div>

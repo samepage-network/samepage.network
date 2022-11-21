@@ -123,7 +123,10 @@ const DocsPage = (): React.ReactElement => {
               },
               img: (props) => (
                 <div className="p-12">
-                  <img {...props} className={"rounded-xl shadow-xl"} />
+                  <img
+                    {...props}
+                    className={"rounded-md shadow-xl max-w-sm m-auto"}
+                  />
                 </div>
               ),
               a: (props) =>
@@ -131,6 +134,9 @@ const DocsPage = (): React.ReactElement => {
                   <a
                     href={props.href}
                     className={"text-sky-500 underline hover:no-underline"}
+                    download={
+                      props.href.endsWith(".zip") ? "roam-samepage.zip" : false
+                    }
                   >
                     {props.children}
                   </a>
@@ -170,16 +176,18 @@ const DocsPage = (): React.ReactElement => {
     }
   }, [setToc, componentRef, location.pathname]);
   return (
-    <div className="flex gap-28 h-min items-start relative">
+    <div className="flex gap-28 h-min items-start relative justify-between">
       <div ref={componentRef} key={frontmatter.title}>
-        <div>
-          <h1 className="font-bold text-5xl mb-8">{frontmatter.title}</h1>
-          <p className="font-semibold text-lg mb-4">
-            {frontmatter.description}
-          </p>
-        </div>
-        <div>
-          <Component />
+        <div className="max-w-2xl">
+          <div>
+            <h1 className="font-bold text-5xl mb-8">{frontmatter.title}</h1>
+            <p className="font-semibold text-lg mb-4">
+              {frontmatter.description}
+            </p>
+          </div>
+          <div>
+            <Component />
+          </div>
         </div>
       </div>
       <div className="pl-6 pr-8 max-w-sm w-full border rounded-lg flex-shrink-0 sticky top-4">

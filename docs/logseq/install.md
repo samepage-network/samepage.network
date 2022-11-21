@@ -9,7 +9,21 @@ A **Notebook** in LogSeq is a graph. The internal [Logseq Docs](https://docs.log
 
 ## Installing the Live Version
 
-The stable version of the SamePage extension is still under review for the LogSeq Marketplace. Subscribe to our newsletter to be notified when the extension is live!
+The Live version of the SamePage extension is available in the LogSeq Marketplace!
+
+First, open the command palette in LogSeq (CMD+Shift+P) and enter `Go to plugins dashboard`.
+
+![](/images/install/logseq-live-1.png)
+
+Next, click on the Marketplace tab where you could find hundreds of extensions available for LogSeq:
+
+![](/images/install/logseq-live-2.png)
+
+Finally, search for the SamePage plugin and click `Install`:
+
+![](/images/install/logseq-live-3.png)
+
+Once installed, the extension should automatically kick off the onboarding flow.
 
 ## Installing the Development version
 

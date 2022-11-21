@@ -13,9 +13,9 @@ We have listed the installation instructions for each application we support bel
 
 During each of these docs, we reference two versions of the SamePage extension. 
 
-The **Live** version will be the version that we officially support and are reviewed by the companies behind the host application. Those versions are expected to be updated on a slower cadence - once a week or so.
+The **Live** version is the version that we officially support and are reviewed by the companies behind the host application. This is the primary version meant for everyday users.
 
-The **Development** version will the version that will be up to date with all changes to the extension, giving users a sneak peak of what's to come. Those versions are downloadable from the SamePage website and are expected to be updated every day.
+The **Development** version is version that will be up to date with all changes to the extension, giving users a sneak peak of what's to come. Those versions are downloadable from the SamePage website. They are meant for more technical users and contributors helping to test future versions of SamePage extensions before they become live.
 
 ## Onboarding
 

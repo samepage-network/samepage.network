@@ -11,7 +11,7 @@ export const handler = getRemixHandler({
         return getGithubDownloadUrl(id).then((r) => r.href || s);
       },
     },
-    /^\/extensions\/[a-z0-9]+\/[\d-]+\.zip$/,
+    /^\/extensions\/[a-z0-9]+\/[\d.-]+\.zip$/,
     /^\/extensions\/tests\/.+$/,
   ],
 });

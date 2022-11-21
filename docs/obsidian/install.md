@@ -9,7 +9,7 @@ A **Notebook** in Obsidian is a vault. Your personal vault is an example of a **
 
 ## Installing the Live Version
 
-The stable version of the SamePage extension is still under review for the Obsidian Community Marketplace. Subscribe to our newsletter to be notified when the extension is live!
+The Live version of the SamePage extension is still under review for the Obsidian Community Marketplace. Subscribe to our newsletter to be notified when the extension is live!
 
 ## Installing the Development version
 

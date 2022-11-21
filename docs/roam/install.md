@@ -3,7 +3,7 @@ title: Installing on Roam
 description: Install SamePage into your Roam Graph
 ---
 
-The SamePage Roam extension allows you to connect your Roam Graph to other notebooks using the SamePage Network. 
+The SamePage Roam extension allows you to connect your Roam Graph to other notebooks using the SamePage Network.
 
 A **Notebook** in Roam is an online or offline graph. The [Roam Help Graph](https://roamresearch.com/#/app/help/page/fCaJekIoX) and your personal graph are examples of **Notebooks**.
 
@@ -12,6 +12,8 @@ A **Notebook** in Roam is an online or offline graph. The [Roam Help Graph](http
 The stable version of the SamePage extension is still under review for RoamDepot. Subscribe to our newsletter to be notified when the extension is live!
 
 ## Installing the Development version
+
+Click [this link](https://github.com/samepage-network/roam-samepage/releases/download/2.0.7/roam-samepage.zip) to download the latest development version of the SamePage extension for Roam.
 
 After downloading the extension from SamePage, extract the zip into a folder. That folder could be stored anywhere on your computer.
 
