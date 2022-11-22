@@ -13,7 +13,7 @@ import { useMemo } from "react";
 import Button from "@dvargas92495/app/components/Button";
 
 const AdminPagesPage = () => {
-  const { pages, stats } =
+  const { pages, stats, timeSeries } =
     useLoaderData<Awaited<ReturnType<typeof listPageNotebookLinks>>>();
   const action = useActionData<
     undefined | Awaited<ReturnType<typeof searchPageNotebookLinks>>
@@ -24,6 +24,15 @@ const AdminPagesPage = () => {
     () => ({
       primaryAxis: { getValue: (data) => data.range },
       secondaryAxes: [{ getValue: (data) => data.amount, elementType: "bar" }],
+    }),
+    []
+  );
+  const lineChartOptions = useMemo<
+    Omit<ChartOptions<typeof timeSeries[number]>, "data">
+  >(
+    () => ({
+      primaryAxis: { getValue: (data) => data.date },
+      secondaryAxes: [{ getValue: (data) => data.total, elementType: "line" }],
     }),
     []
   );
@@ -38,7 +47,15 @@ const AdminPagesPage = () => {
             }}
           />
         </div>
-        <StatPanels stats={stats} order={["total", "max"]} />
+        <div className="relative h-64 mb-8">
+          <Chart
+            options={{
+              ...lineChartOptions,
+              data: [{ data: timeSeries, label: "Pages Created" }],
+            }}
+          />
+        </div>
+        <StatPanels stats={stats} order={["total", "max", "today"]} />
       </div>
       <div className="flex-grow">
         <Form method="post" className="flex items-center max-w-lg gap-8">

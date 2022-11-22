@@ -44,7 +44,7 @@ const pageNotebookLink = z.object({
 
 const page = z.object({
   uuid,
-  version: z.number(),
+  createdDate: z.date(),
 });
 
 const onlineClient = z.object({

@@ -34,4 +34,4 @@ jobs:
       - name: hack
         run: rm out/apply-sql.txt
       - name: apply
-        run: npx fuego apply
+        run: npx fuego apply --experimental

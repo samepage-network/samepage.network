@@ -316,10 +316,9 @@ const logic = async (req: Record<string, unknown>) => {
             await validatePageQuota({ requestId, notebookUuid });
 
             const pageUuid = v4();
-            // TODO - do we even need version here???
             await cxn.execute(
-              `INSERT INTO pages (uuid, version)
-            VALUES (?, 0)`,
+              `INSERT INTO pages (uuid)
+            VALUES (?)`,
               [pageUuid]
             );
             const linkUuid = v4();
