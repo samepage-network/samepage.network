@@ -98,6 +98,8 @@ const getWsUrl = () => {
   }
 };
 
+let lastDisconnectedReason = "";
+
 const connectToBackend = () => {
   if (samePageBackend.status === "DISCONNECTED") {
     dispatchAppEvent({
@@ -118,10 +120,30 @@ const connectToBackend = () => {
     };
 
     samePageBackend.channel.onclose = (args) => {
-      const reason = args.reason || "Unknown reason";
+      const reason = (lastDisconnectedReason = args.reason || "Unknown reason");
       console.warn("Same page network disconnected:", reason, `(${args.code})`);
-      disconnectFromBackend(reason);
+      const wasPending = samePageBackend.status === "PENDING";
+      dispatchAppEvent({
+        type: "connection",
+        status: "DISCONNECTED",
+      });
+      if (samePageBackend.status !== "DISCONNECTED") {
+        samePageBackend.status = "DISCONNECTED";
+        samePageBackend.channel = undefined;
+        if (!wasPending) {
+          dispatchAppEvent({
+            type: "log",
+            id: "samepage-disconnect",
+            content: `Disconnected from SamePage Network: ${reason}`,
+            intent: "warning",
+          });
+        }
+      }
+      if (reason !== "Unloaded Extension") addConnectCommand();
+      removeCommand({ label: USAGE_LABEL });
+      removeDisconnectCommand();
     };
+
     samePageBackend.channel.onerror = (ev) => {
       onError(ev);
     };
@@ -140,29 +162,6 @@ const connectToBackend = () => {
       receiveChunkedMessage(data.data);
     };
   }
-};
-
-const disconnectFromBackend = (reason: string) => {
-  const wasPending = samePageBackend.status === "PENDING";
-  dispatchAppEvent({
-    type: "connection",
-    status: "DISCONNECTED",
-  });
-  if (samePageBackend.status !== "DISCONNECTED") {
-    samePageBackend.status = "DISCONNECTED";
-    samePageBackend.channel = undefined;
-    if (!wasPending) {
-      dispatchAppEvent({
-        type: "log",
-        id: "samepage-disconnect",
-        content: `Disconnected from SamePage Network: ${reason}`,
-        intent: "warning",
-      });
-    }
-  }
-  if (reason !== "Unloaded Extension") addConnectCommand();
-  removeCommand({ label: USAGE_LABEL });
-  removeDisconnectCommand();
 };
 
 const addConnectCommand = () => {
@@ -352,12 +351,14 @@ const setupWsFeatures = ({
             delete unloads["ping-interval"];
             clearInterval(pingInterval);
           };
-          dispatchAppEvent({
-            type: "log",
-            id: "samepage-success",
-            content: "Successfully connected to SamePage Network!",
-            intent: "success",
-          });
+          if (lastDisconnectedReason === "Going away") {
+            dispatchAppEvent({
+              type: "log",
+              id: "samepage-success",
+              content: "Successfully connected to SamePage Network!",
+              intent: "success",
+            });
+          }
         });
       } else {
         samePageBackend.status = "DISCONNECTED";
@@ -410,7 +411,19 @@ const setupWsFeatures = ({
     addConnectCommand();
   }
 
+  const windowFocusListener = () => {
+    if (lastDisconnectedReason === "Going away") {
+      connectToBackend();
+    }
+  };
+  if (typeof window !== "undefined") {
+    window.addEventListener("focus", windowFocusListener);
+  }
+
   return () => {
+    if (typeof window !== "undefined") {
+      window.removeEventListener("focus", windowFocusListener);
+    }
     removeCommand({ label: USAGE_LABEL });
     removeNotebookListener({ operation: "AUTHENTICATION" });
     removeNotebookListener({ operation: "ERROR" });

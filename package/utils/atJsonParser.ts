@@ -36,7 +36,7 @@ const atJsonParser = (grammar: CompiledRules, text: string): InitialSchema => {
         console.log("");
       });
       throw new Error(
-        `Failed to parse: Multiple results returned by grammar (${parser.results.length})`
+        `Failed to parse: Multiple results returned by grammar (${results.length})`
       );
     }
   }
