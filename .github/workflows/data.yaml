@@ -30,5 +30,8 @@ jobs:
         run: npm install
       - name: plan
         run: npx fuego plan
+      # temporary hack until I figure out better planetscale workflows
+      - name: hack
+        run: rm out/apply-sql.txt
       - name: apply
         run: npx fuego apply
