@@ -31,4 +31,4 @@ Because Roam is used in the browser, everytime you load Roam you will need to re
 
 ## Demo
 
-<div style="position: relative; padding-bottom: 64.5933014354067%; height: 0;"><iframe src="https://www.loom.com/embed/0f755b4bb1d14f419e8382ea8cb9d220" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+<div style="position: relative; padding-bottom: 64.5933014354067%; height: 0;"><iframe src="https://www.loom.com/embed/0f755b4bb1d14f419e8382ea8cb9d220" frameborder="0" webkitallowfullscreen="true" mozallowfullscreen="true" allowfullscreen="true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
