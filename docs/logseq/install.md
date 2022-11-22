@@ -25,7 +25,13 @@ Finally, search for the SamePage plugin and click `Install`:
 
 Once installed, the extension should automatically kick off the onboarding flow.
 
+### Demo
+
+<div style="position: relative; padding-bottom: 64.5933014354067%; height: 0;"><iframe src="https://www.loom.com/embed/ccdba29aeba44f17afab12d2920041ce" frameborder="0" webkitallowfullscreen="true" mozallowfullscreen="true" allowfullscreen="true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+
 ## Installing the Development version
+
+Click [this link](https://samepage.network/extensions/logseq.zip) to download the latest development version of the SamePage extension for Roam.
 
 After downloading the extension from SamePage, extract the zip into a folder. That folder could be stored anywhere on your computer.
 
@@ -42,7 +48,3 @@ Once you do, click on the folder button and select the folder that you downloade
 ![](/images/install/logseq-4.png)
 
 The extension should automatically load and connect to SamePage!
-
-## Demo
-
-<div style="position: relative; padding-bottom: 64.5933014354067%; height: 0;"><iframe src="https://www.loom.com/embed/195345835e6f44b5809f4ca344e062d9" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
