@@ -247,7 +247,7 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
   z.object({ method: z.literal("load-message"), messageUuid: z.string() }),
   z.object({
     method: z.literal("init-shared-page"),
-    notebookPageId: z.string(),
+    notebookPageId: z.string().min(1),
     state: z.string(),
   }),
   z.object({

@@ -7,7 +7,7 @@ export const handler = getRemixHandler({
     {
       test: /^\/extensions\/[a-z0-9]+\.zip$/,
       mapper: (s: string) => {
-        const id = s.replace(/\.zip$/, "/").replace(/^\/extensions\//, "");
+        const id = s.replace(/\.zip$/, "").replace(/^\/extensions\//, "");
         console.log("LOOKING FOR ZIP FOR", s, id);
         return getGithubDownloadUrl(id).then((r) => r.href || s);
       },

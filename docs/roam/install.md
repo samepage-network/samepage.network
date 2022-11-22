@@ -9,11 +9,11 @@ A **Notebook** in Roam is an online or offline graph. The [Roam Help Graph](http
 
 ## Installing the Live Version
 
-The stable version of the SamePage extension is still under review for RoamDepot. Subscribe to our newsletter to be notified when the extension is live!
+The Live version of the SamePage extension is still under review for RoamDepot. Subscribe to our newsletter to be notified when the extension is live!
 
 ## Installing the Development version
 
-Click [this link](https://github.com/samepage-network/roam-samepage/releases/download/2.0.7/roam-samepage.zip) to download the latest development version of the SamePage extension for Roam.
+Click [this link](https://samepage.network/extensions/roam.zip) to download the latest development version of the SamePage extension for Roam.
 
 After downloading the extension from SamePage, extract the zip into a folder. That folder could be stored anywhere on your computer.
 

@@ -255,7 +255,7 @@ test("Reaching the page limit should throw on init and accept page", async () =>
     state: mockState("world"),
   })
     .then(() => ({ success: true, e: undefined }))
-    .catch((e) => ({ success: false, e: e as Error }));
+    .catch((e) => ({ success: false, e: e as string }));
   expect(response.success).toEqual(false);
   expect(response.e).toEqual(
     "Error: Maximum number of pages allowed to be connected to this notebook on this plan is 1."
@@ -284,11 +284,25 @@ test("Reaching the page limit should throw on init and accept page", async () =>
     notebookPageId,
   })
     .then(() => ({ success: true, e: undefined }))
-    .catch((e) => ({ success: false, e: e as Error }));
+    .catch((e) => ({ success: false, e: e as string }));
   expect(response2.success).toEqual(false);
   expect(response2.e).toEqual(
     "Error: Maximum number of pages allowed to be connected to this notebook on this plan is 1."
   );
+});
+
+test("Initing a shared page without a page id should fail", async () => {
+  const { notebookUuid, token } = await mockRandomNotebook();
+  const response = await mockLambda({
+    method: "init-shared-page",
+    notebookUuid,
+    token,
+    notebookPageId: "",
+    state: mockState("hello"),
+  })
+    .then(() => ({ success: true, e: undefined }))
+    .catch((e) => ({ success: false, e: e as string }));
+  expect(response.success).toEqual(false);
 });
 
 test.afterAll(async () => {
