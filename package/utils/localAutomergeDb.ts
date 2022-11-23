@@ -13,11 +13,11 @@ export const load = async (
   id: string
 ): Promise<Automerge.FreezeObject<Schema>> => {
   if (typeof notebookPageIds[id] === "undefined") {
-    return {
+    return Automerge.from({
       content: new Automerge.Text(""),
       contentType: "application/vnd.atjson+samepage; version=2022-08-17",
       annotations: [],
-    };
+    });
   }
   const doc = notebookPageIds[id];
   if (doc === null)

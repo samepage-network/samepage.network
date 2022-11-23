@@ -351,7 +351,7 @@ const setupWsFeatures = ({
             delete unloads["ping-interval"];
             clearInterval(pingInterval);
           };
-          if (lastDisconnectedReason === "Going away") {
+          if (lastDisconnectedReason !== "Going away") {
             dispatchAppEvent({
               type: "log",
               id: "samepage-success",

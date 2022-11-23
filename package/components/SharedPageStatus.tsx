@@ -6,6 +6,7 @@ import {
   DrawerSize,
   Icon,
   IconName,
+  IconSize,
   MaybeElement,
   Tooltip,
 } from "@blueprintjs/core";
@@ -34,7 +35,120 @@ export type SharedPageStatusProps = {
   onCopy?: (s: string) => void;
 };
 
+type SamePageHistory = {
+  states: Automerge.State<Schema>[];
+  date: number;
+}[];
+
 const parseTime = (s = 0) => new Date(s * 1000).toLocaleString();
+
+const COLORS = [
+  "rgb(74 222 128)",
+  "rgb(248 113 113)",
+  "rgb(96 165 250)",
+  "rgb(250 204 21)",
+  "rgb(192 132 252)",
+  "rgb(45 212 191)",
+  "rgb(148 163 184)",
+  "rgb(251 146 60)",
+  "rgb(244 114 182)",
+  "rgb(251 113 133)",
+  "rgb(52 211 153)",
+  "rgb(56 189 248)",
+  "rgb(251 191 36)",
+  "rgb(232 121 249)",
+  "rgb(168 162 158)",
+  "rgb(167 139 250)",
+];
+
+const HistoryContentEntry = ({
+  item,
+  setSelectedChange,
+}: {
+  item: SamePageHistory[number];
+  setSelectedChange: (c: Automerge.State<Schema>) => void;
+}) => {
+  const colors = React.useRef<Record<string, string>>({});
+  const [collapsed, setCollapsed] = React.useState(true);
+  const actors = React.useMemo(
+    () => Array.from(new Set(item.states.map((s) => s.change.actor))),
+    [item]
+  );
+  const getColor = React.useCallback(
+    (actor: string) =>
+      colors.current[actor] ||
+      (colors.current[actor] = COLORS[Object.keys(colors.current).length]),
+    [colors]
+  );
+  return (
+    <div
+      className={"px-4 relative cursor-pointer"}
+      onClick={() => {
+        if (item.states.length > 1) setCollapsed(!collapsed);
+        else setSelectedChange(item.states[0]);
+      }}
+    >
+      {item.states.length > 1 && (
+        <Icon
+          icon={collapsed ? "caret-right" : "caret-down"}
+          className="absolute top-8 left-2 text-2xl text-black"
+          size={IconSize.LARGE}
+        />
+      )}
+      <div
+        className={
+          "px-6 pb-2 pt-4 border-b border-b-gray-400 border-b-opacity-50"
+        }
+      >
+        <h3 className="font-bold mb-2">{parseTime(item.date)}</h3>
+        {actors.map((actor) => (
+          <div className="my-1 text-sm flex items-center gap-2" key={actor}>
+            <span
+              className="h-3 w-3 rounded-full mr-1 inline-block"
+              style={{ background: getColor(actor) }}
+            />
+            <span>{parseAndFormatActorId(actor)}</span>
+          </div>
+        ))}
+        <div className="pl-6 italic text-xs">
+          <span>
+            {item.states.length > 1
+              ? `${item.states.length} changes`
+              : item.states[0].change.message}
+          </span>
+        </div>
+      </div>
+      {!collapsed && (
+        <div className="pl-8">
+          {item.states.map((i) => (
+            <div
+              className="cursor-pointer border-b border-b-gray-400 border-b-opacity-50 py-4"
+              onClick={(e) => {
+                setSelectedChange(i);
+                e.stopPropagation();
+              }}
+              key={i.change.hash}
+            >
+              <h3 className="font-bold mb-2">{parseTime(i.change.time)}</h3>
+              <div className="my-1 text-sm flex items-center gap-2">
+                <span
+                  className="h-3 w-3 rounded-full inline-block"
+                  style={{ background: getColor(i.change.actor) }}
+                />
+                <span>{parseAndFormatActorId(i.change.actor)}</span>
+              </div>
+              <div className="pl-6 italic text-xs">
+                <span>{i.change.message}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const THRESHOLD_IN_MS = 30 * 60;
 
 const HistoryContent = ({
   getHistory,
@@ -43,38 +157,34 @@ const HistoryContent = ({
   getHistory: () => ReturnType<GetLocalHistory>;
   portalContainer?: HTMLElement;
 }) => {
-  const [history, setHistory] = React.useState<
-    Awaited<ReturnType<GetLocalHistory>>
-  >([]);
+  const [history, setHistory] = React.useState<SamePageHistory>([]);
   const [selectedChange, setSelectedChange] =
     React.useState<Automerge.State<Schema>>();
   React.useEffect(() => {
-    getHistory().then(setHistory);
+    getHistory().then((_history) => {
+      const output: SamePageHistory = [];
+      _history.reverse().forEach((h) => {
+        if (
+          !output.length ||
+          output.slice(-1)[0].date - h.change.time > THRESHOLD_IN_MS
+        ) {
+          output.push({ states: [h], date: h.change.time });
+        } else {
+          const entry = output.slice(-1)[0];
+          entry.states.push(h);
+        }
+      });
+      setHistory(output);
+    });
   }, [getHistory, setHistory]);
   return (
-    <div className="flex flex-col-reverse text-gray-800 w-full border border-gray-800 overflow-auto justify-end">
+    <div className="flex flex-col text-gray-800 w-full overflow-auto justify-end">
       {history.map((l, index) => (
-        <div
+        <HistoryContentEntry
           key={index}
-          className={"border-t border-t-gray-800 p-4 relative cursor-pointer"}
-          onClick={() => {
-            setSelectedChange(l);
-          }}
-        >
-          <div className={"text-sm absolute top-2 right-2"}>{index}</div>
-          <div>
-            <span className={"font-bold"}>Action: </span>
-            <span>{l.change.message}</span>
-          </div>
-          <div>
-            <span className={"font-bold"}>Actor: </span>
-            <span>{parseAndFormatActorId(l.change.actor)}</span>
-          </div>
-          <div>
-            <span className={"font-bold"}>Date: </span>
-            <span>{parseTime(l.change.time)}</span>
-          </div>
-        </div>
+          item={l}
+          setSelectedChange={setSelectedChange}
+        />
       ))}
       <Dialog
         title={`Viewing Change: ${parseTime(selectedChange?.change.time)}`}
@@ -209,7 +319,7 @@ const SharedPageStatus = ({
           Overlay={(props) => (
             <Drawer
               {...props}
-              title={"History"}
+              title={"Page History"}
               position={"left"}
               hasBackdrop={false}
               size={DrawerSize.SMALL}

@@ -1,7 +1,7 @@
 import SharedPageStatus from "package/components/SharedPageStatus";
 import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { useLoaderData, useNavigate } from "@remix-run/react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
 import Select from "@dvargas92495/app/components/Select";
 import listPages from "~/data/listPages.server";
@@ -9,6 +9,7 @@ import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server"
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 import { getSetting } from "package/internal/registry";
+import { set } from "package/utils/localAutomergeDb";
 
 const SharedPageStatusPage = () => {
   const { pages } = useLoaderData<Awaited<ReturnType<typeof listPages>>>();
@@ -22,6 +23,9 @@ const SharedPageStatusPage = () => {
     [pages]
   );
   const [notebookPageId, setNotebookPageId] = useState<string>();
+  useEffect(() => {
+    if (notebookPageId) set(notebookPageId);
+  }, [notebookPageId]);
   return (
     <>
       <div className={"mb-8"}>
