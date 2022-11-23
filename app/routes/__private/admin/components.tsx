@@ -79,6 +79,7 @@ const loaderFunction = ({
       "NotificationContainer",
       "Onboarding",
       "SharedPageStatus",
+      "UsageChart",
       "ViewSharedPages",
     ],
     notebooks: data,

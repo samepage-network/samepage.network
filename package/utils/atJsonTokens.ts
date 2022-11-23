@@ -48,10 +48,14 @@ export type Processor<T> = (
 
 export const createInlineToken = (
   _data: unknown[],
-  type: Annotation["type"]
-): InitialSchema => {
+  type: Annotation["type"],
+  reject: {} | undefined,
+): InitialSchema | {} | undefined => {
   const data = _data as [moo.Token, InitialSchema, moo.Token];
   const { content, annotations } = data[1];
+  if (annotations.some(a => a.type === type)) {
+    return reject;
+  }
   return {
     content,
     annotations: [
@@ -64,20 +68,20 @@ export const createInlineToken = (
   };
 };
 
-export const createBoldToken: Processor<InitialSchema> = (_data) => {
-  return createInlineToken(_data, "bold");
+export const createBoldToken: Processor<InitialSchema> = (_data, _, reject) => {
+  return createInlineToken(_data, "bold", reject);
 };
 
-export const createHighlightingToken: Processor<InitialSchema> = (_data) => {
-  return createInlineToken(_data, "highlighting");
+export const createHighlightingToken: Processor<InitialSchema> = (_data, _, reject) => {
+  return createInlineToken(_data, "highlighting", reject);
 };
 
-export const createItalicsToken: Processor<InitialSchema> = (_data) => {
-  return createInlineToken(_data, "italics");
+export const createItalicsToken: Processor<InitialSchema> = (_data, _, reject) => {
+  return createInlineToken(_data, "italics", reject);
 };
 
-export const createStrikethroughToken: Processor<InitialSchema> = (_data) => {
-  return createInlineToken(_data, "strikethrough");
+export const createStrikethroughToken: Processor<InitialSchema> = (_data, _, reject) => {
+  return createInlineToken(_data, "strikethrough", reject);
 };
 
 export const createLinkToken: Processor<InitialSchema> = (_data, _, reject) => {

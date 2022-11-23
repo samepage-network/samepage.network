@@ -228,36 +228,70 @@ const logic = async (req: Record<string, unknown>) => {
 
         return getMysql(requestId)
           .then(async (cxn) => {
-            const [sessions, messages] = await Promise.all([
-              cxn
-                .execute(
-                  `SELECT id, created_date, end_date FROM client_sessions WHERE notebook_uuid = ? AND created_date > ?`,
-                  [notebookUuid, startDate]
-                )
-                .then(
-                  ([items]) =>
-                    items as {
-                      id: string;
-                      created_date: Date;
-                      end_date: Date;
-                    }[]
+            const [sessions, messages, notebooks, [quotas]] = await Promise.all(
+              [
+                cxn
+                  .execute(
+                    `SELECT id, created_date, end_date FROM client_sessions WHERE notebook_uuid = ? AND created_date > ?`,
+                    [notebookUuid, startDate]
+                  )
+                  .then(
+                    ([items]) =>
+                      items as {
+                        id: string;
+                        created_date: Date;
+                        end_date: Date;
+                      }[]
+                  ),
+                cxn
+                  .execute(
+                    `SELECT uuid FROM messages WHERE source = ? AND created_date > ?`,
+                    [notebookUuid, startDate]
+                  )
+                  .then(([items]) => items as { uuid: string }[]),
+                cxn
+                  .execute(
+                    `SELECT uuid FROM token_notebook_links WHERE notebook_uuid = ?`,
+                    [notebookUuid]
+                  )
+                  .then(([links]) => links as { uuid: string }[])
+                  .then((links) =>
+                    cxn.execute(
+                      `SELECT n.uuid, n.app, n.workspace, COUNT(l.uuid) as pages
+                FROM page_notebook_links l
+                INNER JOIN notebooks n ON l.notebook_uuid = n.uuid
+                INNER JOIN token_notebook_links tl ON tl.notebook_uuid = n.uuid
+                WHERE l.open = 0 AND tl.uuid IN (${links
+                  .map(() => "?")
+                  .join(",")})
+                GROUP BY n.uuid, n.app, n.workspace`,
+                      links.map((l) => l.uuid)
+                    )
+                  )
+                  .then(
+                    ([results]) =>
+                      results as ({ uuid: string; pages: number } & Notebook)[]
+                  ),
+                cxn.execute(
+                  `SELECT field, value FROM quotas where stripe_id is null`
                 ),
-              cxn
-                .execute(
-                  `SELECT uuid FROM messages WHERE source = ? AND created_date > ?`,
-                  [notebookUuid, startDate]
-                )
-                .then(([items]) => items as { uuid: string }[]),
-            ]);
+              ]
+            );
             cxn.destroy();
             return {
               minutes: sessions.reduce(
                 (p, c) =>
-                  differenceInMinutes(c.created_date, c.end_date) / 5 + p,
+                  differenceInMinutes(c.end_date, c.created_date) / 5 + p,
                 0
               ),
               messages: messages.length,
               date: format(endDate, "MMMM do, yyyy"),
+              notebooks,
+              quotas: Object.fromEntries(
+                (quotas as { field: number; value: number }[]).map(
+                  (q) => [QUOTAS[q.field], q.value] as const
+                )
+              ),
             };
           })
           .catch(catchError("Failed to retrieve usage"));
