@@ -3,12 +3,16 @@ import ViewSharedPages from "package/components/ViewSharedPages";
 import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
 import type { LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import listPageNotebookLinks from "~/data/listAllPageNotebookLinks.server";
 import Button from "@dvargas92495/app/components/Button";
+import listPages from "~/data/listPages.server";
+import { getSetting } from "package/internal/registry";
 
 const ViewSharedPagesPage = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { pages } = useLoaderData<{ pages: string[] }>();
+  const { pages } = useLoaderData<Awaited<ReturnType<typeof listPages>>>();
+  const notebookPageIds = pages
+    .filter((p) => p.notebook_uuid === getSetting("uuid"))
+    .map((p) => p.notebook_page_id);
   return (
     <>
       <Button type={"button"} onClick={() => setIsOpen(true)}>
@@ -17,7 +21,8 @@ const ViewSharedPagesPage = () => {
       <ViewSharedPages
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        notebookPageIds={pages}
+        notebookPageIds={notebookPageIds}
+        onLinkClick={(id) => window.alert(id)}
       />
     </>
   );
@@ -25,9 +30,7 @@ const ViewSharedPagesPage = () => {
 
 export const loader: LoaderFunction = (args) => {
   return remixAdminLoader(args, ({ context: { requestId } }) => {
-    return listPageNotebookLinks(requestId).then(({ pages }) => ({
-      pages: Object.keys(pages),
-    }));
+    return listPages({ requestId });
   });
 };
 

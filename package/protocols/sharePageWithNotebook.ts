@@ -570,6 +570,7 @@ const setupSharePageWithNotebook = ({
                         title,
                       }).then(() => newNotebookPageId);
                     }),
+                  portalContainer: appRoot,
                 },
               })
             );

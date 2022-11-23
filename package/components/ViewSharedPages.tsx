@@ -33,7 +33,9 @@ const PageLink = ({
   }, [notebookPageId]);
   return typeof title === "undefined" ? (
     <span className="flex justify-between items-center">
-      <i>Page {notebookPageId} was deleted locally. Link another page?</i>{" "}
+      <i>
+        Page {notebookPageId} is missing from your notebook. Link another page?
+      </i>{" "}
       <Button
         icon={"link"}
         minimal
@@ -57,6 +59,7 @@ const PageLink = ({
       }
       onMouseDown={(e) => {
         onLinkClick?.(notebookPageId, e.nativeEvent);
+        onClose();
         e.preventDefault();
         e.stopPropagation();
       }}
