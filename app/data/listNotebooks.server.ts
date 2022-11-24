@@ -20,7 +20,7 @@ const listNotebooks = async (
   GROUP BY n.uuid
   ORDER BY created_date DESC, app, workspace
   LIMIT ? OFFSET ?`,
-      [size, index * size].map((i) => i.toString())
+      [size, index * size] //.map((i) => i.toString())
     )
     .then(
       ([r]) =>
