@@ -22,7 +22,14 @@ const AdminDashboard = () => {
     <Dashboard
       footer={<UserFooter />}
       root={"admin"}
-      tabs={["invites", "notebooks", "pages", "extensions", "components"]}
+      tabs={[
+        "invites",
+        "notebooks",
+        "pages",
+        "extensions",
+        "components",
+        "emails",
+      ]}
     />
   );
 };
