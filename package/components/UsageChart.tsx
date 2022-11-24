@@ -1,7 +1,7 @@
 import React from "react";
 import { Classes, Dialog } from "@blueprintjs/core";
 import type { Notebook, OverlayProps } from "../internal/types";
-import { appsById } from "package/internal/apps";
+import { appsById } from "../internal/apps";
 
 export type UsageChartProps = {
   notebooks: ({ uuid: string; pages: number } & Notebook)[];
