@@ -14,6 +14,7 @@ const listIssuedTokens = async (requestId: string) => {
           token_uuid: string | null;
           created_date: Date;
           expiration_date: Date;
+          email: string | null;
         }[]
     );
   cxn.destroy();
@@ -22,6 +23,7 @@ const listIssuedTokens = async (requestId: string) => {
       { Header: "Invite Code", accessor: "code" },
       { Header: "Status", accessor: "status" },
       { Header: "Created On", accessor: "date" },
+      { Header: "Email", accessor: "email" },
     ],
     data: data
       .map((d) => ({
@@ -32,6 +34,7 @@ const listIssuedTokens = async (requestId: string) => {
           ? "PENDING"
           : "EXPIRED",
         date: d.created_date.valueOf(),
+        email: d.email,
       }))
       .sort((a, b) => {
         if (a.status === b.status) {

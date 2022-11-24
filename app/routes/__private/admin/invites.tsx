@@ -1,5 +1,5 @@
 import type { ActionFunction, LoaderFunction } from "@remix-run/node";
-import { Form } from "@remix-run/react";
+import { Form, Outlet, useNavigate } from "@remix-run/react";
 import Table from "@dvargas92495/app/components/Table";
 import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
 import listInvites from "~/data/listInvites.server";
@@ -10,21 +10,25 @@ export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCa
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 
 const InvitesPage = () => {
+  const navigate = useNavigate();
   return (
     <div className="flex gap-8 items-start">
-      <div>
+      <div className="max-w-3xl">
         <Form method={"post"}>
           <Button>New</Button>
         </Form>
         <Table
           className="max-w-3xl w-full mt-8"
-          onRowClick={(r) =>
-            window.navigator.clipboard.writeText(r.code as string)
-          }
+          onRowClick={(r) => {
+            window.navigator.clipboard.writeText(r.code as string);
+            navigate(r.code as string);
+          }}
           renderCell={{ date: (r) => new Date(r as number).toLocaleString() }}
         />
       </div>
-      <div></div>
+      <div>
+        <Outlet />
+      </div>
     </div>
   );
 };

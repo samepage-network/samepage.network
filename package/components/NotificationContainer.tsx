@@ -4,9 +4,8 @@ import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { onAppEvent } from "../internal/registerAppEventListener";
 import { Notification } from "../internal/types";
 import Markdown from "markdown-to-jsx";
-import {
-  callNotificationAction,
-} from "../internal/messages";
+import { callNotificationAction } from "../internal/messages";
+import apiClient from "../internal/apiClient";
 
 const ActionButtons = ({
   actions,
@@ -146,7 +145,13 @@ const NotificationContainer = () => {
                     icon={"trash"}
                     minimal
                     small
-                    onClick={() => removeNotification(not)}
+                    onClick={() => {
+                      removeNotification(not);
+                      apiClient({
+                        method: "mark-message-read",
+                        messageUuid: not.uuid,
+                      });
+                    }}
                   />
                 </div>
               </div>

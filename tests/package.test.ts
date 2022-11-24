@@ -1,6 +1,5 @@
 import { fork, spawn } from "child_process";
 import { v4 } from "uuid";
-import getMysqlConnection from "fuegojs/utils/mysql";
 import { test, expect } from "@playwright/test";
 import issueNewInvite from "~/data/issueNewInvite.server";
 import {
@@ -9,24 +8,18 @@ import {
   ResponseSchema,
 } from "../package/testing/createTestSamePageClient";
 import { Notification } from "../package/internal/types";
+import deleteNotebook from "~/data/deleteNotebook.server";
+import deleteInvite from "~/data/deleteInvite.server";
 
-let cleanup: () => unknown;
+let cleanup: () => Promise<unknown>;
 const inviteCodes: string[] = [];
-const testId = v4();
 
 test.beforeAll(async () => {
-  await getMysqlConnection(testId).then((cxn) =>
-    cxn
-      .execute(
-        `DELETE FROM notebooks n WHERE n.app = ? AND (n.workspace = 'one' OR n.workspace = 'two')`,
-        [0]
-      )
-      .then(() => {
-        return Promise.all([
-          issueNewInvite({ context: { requestId: testId } }),
-          issueNewInvite({ context: { requestId: testId } }),
-        ]).then((codes) => inviteCodes.push(...codes.map((c) => c.code)));
-      })
+  await issueNewInvite({ context: { requestId: v4() } }).then((c) =>
+    inviteCodes.push(c.code)
+  );
+  await issueNewInvite({ context: { requestId: v4() } }).then((c) =>
+    inviteCodes.push(c.code)
   );
 });
 
@@ -117,7 +110,7 @@ test("Full integration test of sharing pages", async () => {
   );
   api.stderr.on("data", (s) => console.error(`API Error: ${s as string}`));
 
-  cleanup = () => {
+  cleanup = async () => {
     api.kill();
   };
   await test.step("Wait for local network to be ready", () =>
@@ -137,9 +130,11 @@ test("Full integration test of sharing pages", async () => {
           inviteCode: inviteCodes[1],
         }),
       ]));
-  cleanup = () => {
+  cleanup = async () => {
     client1.kill();
+    await deleteNotebook({ uuid: client1.uuid, requestId: v4() });
     client2.kill();
+    await deleteNotebook({ uuid: client2.uuid, requestId: v4() });
     api.kill();
     log("Test: cleaned up!");
   };
@@ -411,6 +406,7 @@ test("Full integration test of sharing pages", async () => {
 });
 
 test.afterAll(async () => {
-  cleanup?.();
-  await getMysqlConnection(testId).then((cxn) => cxn.destroy());
+  await cleanup?.();
+  await deleteInvite({ code: inviteCodes[0], requestId: v4() });
+  await deleteInvite({ code: inviteCodes[1], requestId: v4() });
 });
