@@ -18,9 +18,9 @@ const listNotebooks = async (
   LEFT JOIN tokens t ON t.uuid = l.token_uuid
   LEFT JOIN invitations i ON i.token_uuid = l.token_uuid
   GROUP BY n.uuid
-  ORDER BY created_date DESC, app, workspace
+  ORDER BY created_date DESC, invited_date DESC, app, workspace
   LIMIT ? OFFSET ?`,
-      [size, index * size] //.map((i) => i.toString())
+      [size, index * size]
     )
     .then(
       ([r]) =>
