@@ -36,7 +36,6 @@ export const handler = ({
   bodyProps: Record<string, unknown>;
   bodyComponent: string;
 }) => {
-  console.log("PARAMS", params);
   return sendEmail({
     ...params,
     body: RENDERS[bodyComponent](bodyProps),
