@@ -11,6 +11,8 @@ We have listed the installation instructions for each application we support bel
 - [LogSeq](../logseq/install.md)
 - [Obsidian](../obsidian/install.md)
 
+A quick summary of how to install the extension in each app is also available in our [install](/install) page.
+
 During each of these docs, we reference two versions of the SamePage extension.
 
 The **Live** version is the version that we officially support and are reviewed by the companies behind the host application. This is the primary version meant for everyday users.

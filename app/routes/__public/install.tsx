@@ -1,9 +1,10 @@
 import APPS from "package/internal/apps";
 import { useState } from "react";
-import { useLoaderData, useSearchParams } from "@remix-run/react";
+import { useLoaderData, useSearchParams, Link } from "@remix-run/react";
 import { LoaderFunction } from "@remix-run/node";
 import listExtensionsMetadata from "~/data/listExtensionsMetadata.server";
 import OverlayImg from "~/components/OverlayImg";
+import ExternalLink from "@dvargas92495/app/components/ExternalLink";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 
@@ -183,12 +184,25 @@ const InstallPage = () => {
       <div className="rounded-md shadow-xl mb-8 flex flex-col p-10 w-full">
         <Instruction id={selectedApp} {...INSTRUCTIONS[selectedApp]} />
       </div>
-      <div className="italic text-sm">
+      <div className="italic text-sm mb-2">
         *Note: You will need to obtain an invite code from the team to access
-        the network. SamePage extensions are currently under{" "}
+        the network by emailing{" "}
+        <ExternalLink href="mailto:support@samepage.network">
+          support@samepage.network
+        </ExternalLink>
+        . SamePage extensions are currently under{" "}
         <b className="font-bold">heavy</b> development and these links will
         update frequently with the latest version. Do not use for any sensitive
-        or important data.
+        data.
+      </div>
+      <div className="italic text-sm mb-2 w-full">
+        A more in depth guide on how to install SamePage is available{" "}
+        <Link
+          to={"/docs/getting_started/install"}
+          className={`text-sky-500 underline hover:no-underline active:text-sky-600 active:no-underline`}
+        >
+          in our docs.
+        </Link>
       </div>
     </div>
   );

@@ -3,17 +3,11 @@ import getUserId from "@dvargas92495/app/backend/getUserId.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 import { UserButton } from "@clerk/remix";
-import React, { useMemo, useState, useRef, useEffect } from "react";
+import React, { useMemo } from "react";
 import { Link, Outlet, useLoaderData, useMatches } from "@remix-run/react";
 
 const PublicPage: React.FC = () => {
-  const [isLaunched, setIsLaunched] = useState(false);
-  const isLaunchedRef = useRef(false);
   const isWaitlist = useMemo(() => true, []);
-  const pages = useMemo(
-    () => (isLaunched ? ["install"] : []).concat(["docs", "blog", "view"]),
-    [isLaunched]
-  );
   const authed = useLoaderData();
   const matches = useMatches();
   const mainClassName =
@@ -22,18 +16,6 @@ const PublicPage: React.FC = () => {
   const rootClassName =
     matches.reverse().find((m) => m.handle?.rootClassName)?.handle
       ?.rootClassName || "";
-  useEffect(() => {
-    const listener = (e: KeyboardEvent) => {
-      if (e.metaKey && e.shiftKey && /^m$/i.test(e.key)) {
-        const val = !isLaunchedRef.current;
-        setIsLaunched((isLaunchedRef.current = val));
-      }
-    };
-    document.addEventListener("keydown", listener);
-    return () => {
-      document.removeEventListener("keydown", listener);
-    };
-  }, [isLaunchedRef, setIsLaunched]);
   return (
     <div className={`flex flex-col min-h-full ${rootClassName}`}>
       <header className="sticky bg-transparent shadow-xl z-10 backdrop-blur top-0">
@@ -42,7 +24,7 @@ const PublicPage: React.FC = () => {
             <img src={`/images/logo.png`} />
           </Link>
           <div className="justify-start flex-grow flex gap-6 capitalize text-lg items-center h-full">
-            {pages.map((p) => (
+            {["install", "docs", "blog", "view"].map((p) => (
               <h6 className="mx-2 text-xl" key={p}>
                 <a
                   href={`/${p}`}
@@ -83,7 +65,7 @@ const PublicPage: React.FC = () => {
       <main
         className={`flex justify-center items-start w-full py-16 flex-grow ${mainClassName}`}
       >
-        <Outlet context={{ isLaunched }} />
+        <Outlet />
       </main>
       <footer className="px-6 py-4 m-t-auto bg-sky-100 bg-opacity-25 border-t border-t-gray-400 border-opacity-50">
         <hr className="border-gray-400" />

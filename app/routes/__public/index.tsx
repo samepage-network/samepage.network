@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import type { ActionFunction } from "@remix-run/node";
-import { Link, useFetcher, useOutletContext } from "@remix-run/react";
+import { Link, useFetcher } from "@remix-run/react";
 import { Subscribe } from "@dvargas92495/app/components/Landing";
 import subscribeToConvertkitAction from "@dvargas92495/app/backend/subscribeToConvertkitAction.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
@@ -201,7 +201,6 @@ const SPLASH_APPS = [
 ];
 
 const Home: React.FC = () => {
-  const oc = useOutletContext<{ isLaunched: boolean }>();
   const typedElRef = useRef<HTMLSpanElement>(null);
   const typedRef = useRef<Typed>();
   const [typedIndex, setTypedIndex] = useState(-1);
@@ -462,9 +461,7 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
               label={"Email"}
               className={"flex-grow"}
             />
-            <Button>
-              {oc.isLaunched ? "Request Access" : "Join The Waitlist"}
-            </Button>
+            <Button>{"Subscribe"}</Button>
           </fetcher.Form>
           <SuccessfulActionToast
             message="Click the confirmation link in your email to confirm!"
