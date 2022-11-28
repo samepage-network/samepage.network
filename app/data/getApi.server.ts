@@ -1,7 +1,7 @@
-import AWS from "aws-sdk";
+import { ApiGatewayManagementApi } from "@aws-sdk/client-apigatewaymanagementapi";
 
-const getApi = (): AWS.ApiGatewayManagementApi =>
-  new AWS.ApiGatewayManagementApi({
+const getApi = (): ApiGatewayManagementApi =>
+  new ApiGatewayManagementApi({
     endpoint: `https://${process.env.API_GATEWAY_ID}.execute-api.us-east-1.amazonaws.com/production`,
   });
 

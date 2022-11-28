@@ -4,8 +4,9 @@ import listMarkdownFiles, {
 } from "~/data/listMarkdownFiles.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
-import type { LoaderFunction } from "@remix-run/node";
+import type { LoaderFunction, LinksFunction } from "@remix-run/node";
 import { Link, Outlet, useLoaderData, useMatches } from "@remix-run/react";
+import { DocSearch } from "@docsearch/react";
 
 const DirectoryLink = ({
   level = 0,
@@ -41,6 +42,13 @@ const DocsPage = () => {
         <Link to={"/"} className={"w-full p-4 pr-24 cursor-pointer"}>
           <img className={"w-full"} src={"/images/full_logo.png"} />
         </Link>
+        <div className="mr-4 flex flex-col mb-2">
+          <DocSearch
+            indexName="samepage_docs"
+            apiKey="6435e18907940deb88d244a05bce3ad9"
+            appId="RU1ZMBBVFM"
+          />
+        </div>
         <DirectoryLink name={"Home"} path={""} />
         {directory.map((d) => (
           <DirectoryLink {...d} key={d.path} />
@@ -56,5 +64,12 @@ const DocsPage = () => {
 export const loader: LoaderFunction = () => {
   return listMarkdownFiles("docs");
 };
+
+export const links: LinksFunction = () => [
+  {
+    rel: "stylesheet",
+    href: "https://cdn.jsdelivr.net/npm/@docsearch/css@3",
+  },
+];
 
 export default DocsPage;

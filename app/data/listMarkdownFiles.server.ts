@@ -19,20 +19,8 @@ const defaultMetadata: Metadata = { order: [], names: {} };
 const gatherDocs = (path: string): Promise<DirectoryNode[]> => {
   const metadataPath = nodepath.join(path, "metadata.json");
   return (
-    process.env.NODE_ENV === "development"
+    process.env.NODE_ENV === "production"
       ? Promise.all([
-          fs.existsSync(path)
-            ? fs.readdirSync(path, { withFileTypes: true }).map((f) => ({
-                path: nodepath.join(path, f.name),
-                name: f.name,
-                type: f.isDirectory() ? "dir" : "file",
-              }))
-            : [],
-          fs.existsSync(metadataPath)
-            ? JSON.parse(fs.readFileSync(metadataPath).toString())
-            : defaultMetadata,
-        ])
-      : Promise.all([
           axios
             .get<[{ name: string; type: "file" | "dir"; path: string }]>(
               `https://api.github.com/repos/vargasarts/samepage.network/contents/${path}`
@@ -46,6 +34,18 @@ const gatherDocs = (path: string): Promise<DirectoryNode[]> => {
             )
             .then((r) => r.data)
             .catch(() => defaultMetadata),
+        ])
+      : Promise.all([
+          fs.existsSync(path)
+            ? fs.readdirSync(path, { withFileTypes: true }).map((f) => ({
+                path: nodepath.join(path, f.name),
+                name: f.name,
+                type: f.isDirectory() ? "dir" : "file",
+              }))
+            : [],
+          fs.existsSync(metadataPath)
+            ? JSON.parse(fs.readFileSync(metadataPath).toString())
+            : defaultMetadata,
         ])
   ).then(([r, d]) => {
     const parsedMeta = zMetadata.safeParse(d);
@@ -80,7 +80,7 @@ const gatherDocs = (path: string): Promise<DirectoryNode[]> => {
   });
 };
 
-const listMarkdownFiles = (root: string) => {
+const listMarkdownFiles = async (root: string) => {
   return gatherDocs(root).then((directory) => ({
     directory,
   }));

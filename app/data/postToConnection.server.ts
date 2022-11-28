@@ -13,10 +13,12 @@ const MESSAGE_LIMIT = 15750; // 16KB minus 250b buffer for metadata
 const getSender = (ConnectionId: string) => {
   if (process.env.NODE_ENV === "production") {
     const api = getApi();
-    return (Data: string) =>
+    return (data: string) =>
       api
-        .postToConnection({ ConnectionId, Data })
-        .promise()
+        .postToConnection({
+          ConnectionId,
+          Data: new Uint8Array(Buffer.from(data)),
+        })
         .then(() => Promise.resolve());
   } else {
     return (Data: string): Promise<void> => {

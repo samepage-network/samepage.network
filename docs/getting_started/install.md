@@ -11,7 +11,7 @@ We have listed the installation instructions for each application we support bel
 - [LogSeq](../logseq/install.md)
 - [Obsidian](../obsidian/install.md)
 
-During each of these docs, we reference two versions of the SamePage extension. 
+During each of these docs, we reference two versions of the SamePage extension.
 
 The **Live** version is the version that we officially support and are reviewed by the companies behind the host application. This is the primary version meant for everyday users.
 
@@ -40,6 +40,7 @@ You will then be automatically connected to the SamePage network & can start usi
 ## Onboarding Additional Notebooks
 
 Notebooks are the main concept integral to SamePage. A Notebook is composed of two parts:
+
 - An **App** - this is the host application which you are using as a tool for thought. Examples include Roam, LogSeq, & Obsidian, and we are looking to support more in the future.
 - A **Workspace** - this is the container of data within the app you are using. Examples are your graph name in Roam & LogSeq, or your vault name in Obsidian.
 
@@ -53,4 +54,4 @@ You will be prompted to enter the Notebook Universal Id and Token of a previous 
 
 Once you hit connect, you will arrive to the same success screen and will be ready to use SamePage in this notebook. If this is a Notebook on a different application or different workspace name, it will receive a new Notebook Universal ID, but the Token will remain the same. If this is a Notebook on the same application with the same workspace name (say, because it was in a different browser or different device), it will be linked via the same Notebook Universal ID.
 
-Each Token is allowed a maximum of 5 notebooks.
+On the free plan, each token is allowed a maximum of 3 notebooks.
