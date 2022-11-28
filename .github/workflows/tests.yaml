@@ -32,6 +32,8 @@ jobs:
         run: |
           sudo systemctl start mysql.service
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
+        # TODO - replace this step with a seed database
+          mysql -e "INSERT INTO samepage_network.quotas (uuid, value, field) VALUES (UUID(), 100, 0), (UUID(), 3, 1)"
           npx fuego plan --sql
           npx fuego apply --sql --bare
       - name: tests
