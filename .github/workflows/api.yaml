@@ -5,6 +5,7 @@ on:
     branches: main
     paths:
       - "api/**"
+      - "app/data/**"
       - ".github/workflows/api.yaml"
 
 env:
