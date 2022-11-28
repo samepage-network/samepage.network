@@ -13,12 +13,12 @@ const loadMarkdownFile = async ({ path }: { path: string }) => {
   const fileName = path || "index";
   const source =
     process.env.NODE_ENV === "development"
-      ? fs.existsSync(`./docs/${fileName}.md`)
-        ? fs.readFileSync(`./docs/${fileName}.md`).toString()
+      ? fs.existsSync(`./${fileName}.md`)
+        ? fs.readFileSync(`./${fileName}.md`).toString()
         : undefined
       : await axios
           .get(
-            `https://raw.githubusercontent.com/vargasarts/samepage.network/main/docs/${fileName}.md`,
+            `https://raw.githubusercontent.com/vargasarts/samepage.network/main/${fileName}.md`,
             { responseType: "document" }
           )
           .then((r) => r.data as string)

@@ -13,10 +13,8 @@ const zMetadata = z.object({
   order: z.string().array().default([]),
   names: z.record(z.string()).default({}),
 });
-type Metadata = z.infer<typeof zMetadata>;
-const defaultMetadata: Metadata = { order: [], names: {} };
 
-const gatherDocs = (path: string): Promise<DirectoryNode[]> => {
+export const gatherDocs = (path: string) => {
   const metadataPath = nodepath.join(path, "metadata.json");
   return (
     process.env.NODE_ENV === "production"
@@ -33,7 +31,7 @@ const gatherDocs = (path: string): Promise<DirectoryNode[]> => {
               { responseType: "json" }
             )
             .then((r) => r.data)
-            .catch(() => defaultMetadata),
+            .catch(() => ({})),
         ])
       : Promise.all([
           fs.existsSync(path)
@@ -45,45 +43,51 @@ const gatherDocs = (path: string): Promise<DirectoryNode[]> => {
             : [],
           fs.existsSync(metadataPath)
             ? JSON.parse(fs.readFileSync(metadataPath).toString())
-            : defaultMetadata,
+            : {},
         ])
-  ).then(([r, d]) => {
-    const parsedMeta = zMetadata.safeParse(d);
-    const meta = parsedMeta.success ? parsedMeta.data : defaultMetadata;
-    const orderByPath = Object.fromEntries(meta.order.map((m, i) => [m, i]));
-    return Promise.all(
-      r
-        .filter((f) => f.name !== "metadata.json")
-        .map((f) => {
-          const name =
-            meta.names[f.name] ||
-            f.name.replace(/\.[a-z]+$/, "").replace(/_/g, " ");
-          const order =
-            f.name in orderByPath ? orderByPath[f.name] : Number.MAX_VALUE;
-          const path = f.path.replace(/\.[a-z]+$/, "").replace(/^docs\//, "");
-          return f.type === "dir"
-            ? gatherDocs(f.path).then((children) => ({
-                name,
-                path,
-                children,
-                order,
-              }))
-            : {
-                name,
-                path,
-                order,
-              };
-        })
-    ).then((results) =>
-      results.sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
-    );
-  });
+  ).then(([files, metadata]) => ({ files, metadata }));
 };
 
-const listMarkdownFiles = async (root: string) => {
-  return gatherDocs(root).then((directory) => ({
-    directory,
-  }));
+const listMarkdownFiles = async (
+  root: string
+): Promise<{ directory: DirectoryNode[] }> => {
+  return gatherDocs(root)
+    .then(({ metadata: d, files: r }) => {
+      const parsedMeta = zMetadata.safeParse(d);
+      const meta = parsedMeta.success ? parsedMeta.data : zMetadata.parse({});
+      const orderByPath = Object.fromEntries(meta.order.map((m, i) => [m, i]));
+      return Promise.all(
+        r
+          .filter((f) => f.name !== "metadata.json")
+          .map((f) => {
+            const name =
+              meta.names[f.name] ||
+              f.name.replace(/\.[a-z]+$/, "").replace(/_/g, " ");
+            const order =
+              f.name in orderByPath ? orderByPath[f.name] : Number.MAX_VALUE;
+            const path = f.path.replace(/\.[a-z]+$/, "").replace(/^docs\//, "");
+            return f.type === "dir"
+              ? listMarkdownFiles(f.path).then(({ directory: children }) => ({
+                  name,
+                  path,
+                  children,
+                  order,
+                }))
+              : {
+                  name,
+                  path,
+                  order,
+                };
+          })
+      ).then((results) =>
+        results.sort(
+          (a, b) => a.order - b.order || a.name.localeCompare(b.name)
+        )
+      );
+    })
+    .then((directory) => ({
+      directory,
+    }));
 };
 
 export type ListMarkdownFiles = Awaited<ReturnType<typeof listMarkdownFiles>>;

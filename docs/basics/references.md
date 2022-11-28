@@ -24,7 +24,7 @@ In each of the SamePage extensions, this will appear in your notebook as some va
 
 The content for a cross notebook reference lives in another notebook. Because of this, there is a workflow the SamePage extension undergoes on both ends in order to have the data appear in your notebook:
 
-![](/images/basics/crossRefDiagram.png)
+![](/images/docs/basics/crossRefDiagram.png)
 
 A breakdown of what's going on in this diagram:
 1. Your notebook tries to display a cross notebook reference, which doesn't live in your notebook. It asks SamePage for it.

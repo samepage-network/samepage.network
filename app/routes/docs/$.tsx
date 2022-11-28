@@ -221,7 +221,7 @@ const DocsPage = (): React.ReactElement => {
 
 export const loader: LoaderFunction = ({ params }) => {
   const path = params["*"] || "";
-  return loadMarkdownFile({ path });
+  return loadMarkdownFile({ path: `docs/${path}` });
 };
 
 export const links: LinksFunction = () => {

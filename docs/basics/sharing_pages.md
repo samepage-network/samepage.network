@@ -11,23 +11,23 @@ The docs below should apply to all SamePage supported extensions. For applicatio
 
 The SamePage extension will add a command to your application's command palette titled `Share Page on SamePage`. Navigate to a page you want to share and enter that command. You should see a success notification toast and immediately see a modal to invite other notebooks to the page:
 
-![](/images/basics/sharePageOnSamePage.png)
+![](/images/docs/basics/sharePageOnSamePage.png)
 
 This modal is aware of all of the notebooks that are a part of the SamePage network. By connecting to SamePage, you are consenting to your notebook name to also be discoverable on this modal.
 
 Remember that a notebook is composed of two parts - a workspace name and an application. This is similar to email being composed of the user name `@` mail server. Using the notebook's workspace and application, you could use this modal to search for the notebook you'd like to share this page with and hit enter. You can add several notebooks to share the page with at once. When you are ready, click the `plus` on the right side of the modal to share the page with the other notebooks!
 
-![](/images/basics/sharedPages.png)
+![](/images/docs/basics/sharedPages.png)
 
 You can revoke access at any time before a notebook has accepted the invite by clicking the trash icon next to each notebook name:
 
-![](/images/basics/pendingInvites.png)
+![](/images/docs/basics/pendingInvites.png)
 
 ## Shared Page Status Bar
 
 Once a page is initialized on SamePage, a status bar should appear beneath the page title for the page:
 
-![](/images/basics/status.png)
+![](/images/docs/basics/status.png)
 
 One important thing to note is that once you share a page on SamePage, you should consider that page as being **publicly available**. This is because it is hosted on the decentralized web, allowing users to access this data from anywhere, without needing SamePage's servers. The last icon on the status bar is a public link to your data on the decentralized web. On our [view](https://samepage.network/view) page, one could see what data is behind this link. We plan to support end-to-end encryption for private data in future versions of SamePage.
 

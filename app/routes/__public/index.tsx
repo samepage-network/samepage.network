@@ -11,7 +11,6 @@ import SuccessfulActionToast from "@dvargas92495/app/components/SuccessfulAction
 import AtJsonRendered from "package/components/AtJsonRendered";
 import { InitialSchema } from "package/internal/types";
 import Typed from "typed.js";
-import BaseInput from "@dvargas92495/app/components/BaseInput";
 
 function getTranslateXY(element: Element) {
   if (typeof window === "undefined") return { translateX: 0, translateY: 0 };
@@ -457,13 +456,6 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
             method="put"
             ref={formRef}
           >
-            {oc.isLaunched && (
-              <BaseInput
-                name={"invite"}
-                type={"hidden"}
-                defaultValue={"true"}
-              />
-            )}
             <TextInput
               placeholder="hello@example.com"
               name={"email"}

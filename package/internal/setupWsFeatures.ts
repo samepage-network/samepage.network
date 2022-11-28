@@ -130,7 +130,7 @@ const connectToBackend = () => {
       if (samePageBackend.status !== "DISCONNECTED") {
         samePageBackend.status = "DISCONNECTED";
         samePageBackend.channel = undefined;
-        if (!wasPending) {
+        if (!wasPending && reason !== "Going away") {
           dispatchAppEvent({
             type: "log",
             id: "samepage-disconnect",
