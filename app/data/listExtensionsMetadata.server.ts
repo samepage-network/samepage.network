@@ -22,19 +22,27 @@ const listExtensionsMetadata = async ({
         >(
           `https://api.github.com/repos/samepage-network/${app.name.toLowerCase()}-samepage/releases`
         )
-        .then((releases) => {
-          return {
-            versions: releases.data.slice(0, 5).map((r) => ({
-              href:
-                r.assets.find(
-                  (n) =>
-                    n.name === `${id}.zip` || n.name === `${id}-samepage.zip`
-                )?.browser_download_url || "",
-              version: r.tag_name,
-            })),
-            id: app.name.toLowerCase(),
-          };
-        })
+        .then(
+          (
+            releases
+          ): {
+            id: string;
+            versions: { href: string; version: string }[];
+          } => {
+            const id = app.name.toLowerCase();
+            return {
+              versions: releases.data.slice(0, 5).map((r) => ({
+                href:
+                  r.assets.find(
+                    (n) =>
+                      n.name === `${id}.zip` || n.name === `${id}-samepage.zip`
+                  )?.browser_download_url || "",
+                version: r.tag_name,
+              })),
+              id,
+            };
+          }
+        )
     )
   ).then((extensions) => ({
     versions: Object.fromEntries(extensions.map((e) => [e.id, e.versions])),
