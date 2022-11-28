@@ -1,6 +1,6 @@
 ---
 title: The Vision For SamePage
-description: Install SamePage into your Roam Graph
+description: Today, we are launching the private beta and opening our Discord!
 date: 2022-11-29
 author: Vargas
 type: Announcement

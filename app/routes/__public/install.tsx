@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useLoaderData, useSearchParams } from "@remix-run/react";
 import { LoaderFunction } from "@remix-run/node";
 import listExtensionsMetadata from "~/data/listExtensionsMetadata.server";
+import OverlayImg from "~/components/OverlayImg";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 
@@ -15,33 +16,6 @@ type InstructionSteps = {
   title: string;
   children: "link" | "image" | React.ReactNode;
 }[];
-
-const OverlayImg = ({ src }: { src: string }) => {
-  const [expanded, setExpanded] = useState(false);
-  return (
-    <>
-      {expanded && (
-        <div
-          onClick={() => setExpanded(false)}
-          className={
-            "absolute inset-0 bg-gray-500 bg-opacity-50 z-50 p-32 flex justify-center items-center"
-          }
-        >
-          <img
-            src={src}
-            className="rounded-md w-full"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
-      <img
-        src={src}
-        className="rounded-md cursor-pointer"
-        onClick={() => setExpanded(true)}
-      />
-    </>
-  );
-};
 
 const Instruction = ({
   id,

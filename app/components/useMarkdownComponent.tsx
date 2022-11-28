@@ -3,6 +3,7 @@ import React, { useMemo } from "react";
 import Markdown from "markdown-to-jsx";
 import Highlight, { defaultProps, Language } from "prism-react-renderer";
 import { Link } from "@remix-run/react";
+import OverlayImg from "./OverlayImg";
 
 // why is this not the actual type for React Children?
 type ReactChildren = React.ReactNode[] | React.ReactNode;
@@ -114,8 +115,9 @@ const useMarkdownComponent = (code: string) =>
               },
               img: (props) => (
                 <div className="p-12">
-                  <img
-                    {...props}
+                  <OverlayImg
+                    alt={props.alt}
+                    src={props.src}
                     className={"rounded-md shadow-xl max-w-sm m-auto"}
                   />
                 </div>
