@@ -116,4 +116,11 @@ const PublicPage: React.FC = () => {
 export const loader: LoaderFunction = ({ request }) => {
   return getUserId(request).then((id) => !!id);
 };
+
+export const headers = () => {
+  return {
+    "Cache-Control": "max-age=604800, stale-while-revalidate=86400", // 7 days, 1 day
+  };
+};
+
 export default PublicPage;

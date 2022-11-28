@@ -8,6 +8,7 @@ import { useState } from "react";
 import Button from "@dvargas92495/app/components/Button";
 import TextInput from "@dvargas92495/app/components/TextInput";
 import SuccessfulActionToast from "@dvargas92495/app/components/SuccessfulActionToast";
+import getMeta from "@dvargas92495/app/utils/getMeta";
 
 const Twitter = () => (
   <a
@@ -193,5 +194,9 @@ export const action: ActionFunction = async (args) => {
   if (args.request.method === "PUT") return subscribeToConvertkitAction(args);
   else return {};
 };
+
+export const meta = getMeta({
+  title: "Blog",
+});
 
 export default BlogPage;

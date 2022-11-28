@@ -1,6 +1,10 @@
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
-import type { LoaderFunction, LinksFunction } from "@remix-run/node";
+import type {
+  LoaderFunction,
+  LinksFunction,
+  MetaFunction,
+} from "@remix-run/node";
 import { useLoaderData, Link, useLocation } from "@remix-run/react";
 import loadMarkdownFile from "~/data/loadMarkdownFile.server";
 import { useMemo, useState, useEffect, useRef } from "react";
@@ -9,6 +13,7 @@ import Markdown from "markdown-to-jsx";
 import React from "react";
 import Highlight, { defaultProps, Language } from "prism-react-renderer";
 import prism from "~/styles/prism-vs.css";
+import getMeta from "@dvargas92495/app/utils/getMeta";
 
 const getLanguageFromClassName = (className: string): Language => {
   const match = className.match(/lang(?:uage)?-(\w+)/);
@@ -227,5 +232,11 @@ export const loader: LoaderFunction = ({ params }) => {
 export const links: LinksFunction = () => {
   return [{ rel: "stylesheet", href: prism }];
 };
+
+export const meta: MetaFunction = (args) =>
+  getMeta({
+    title: args.data.frontmatter?.title,
+    description: args.data.frontmatter?.description,
+  })(args);
 
 export default DocsPage;
