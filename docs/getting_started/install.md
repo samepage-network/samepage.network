@@ -54,4 +54,4 @@ You will be prompted to enter the Notebook Universal Id and Token of a previous 
 
 Once you hit connect, you will arrive to the same success screen and will be ready to use SamePage in this notebook. If this is a Notebook on a different application or different workspace name, it will receive a new Notebook Universal ID, but the Token will remain the same. If this is a Notebook on the same application with the same workspace name (say, because it was in a different browser or different device), it will be linked via the same Notebook Universal ID.
 
-On the free plan, each token is allowed a maximum of 3 notebooks.
+On the free plan, each token is allowed a maximum of 3 notebooks and 100 shared pages per notebook.

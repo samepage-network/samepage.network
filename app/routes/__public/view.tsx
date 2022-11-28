@@ -17,6 +17,13 @@ const ViewPage = () => {
   }, [params.cid]);
   return (
     <div className="flex flex-col gap-2 w-full max-w-3xl">
+      <div className="italic mb-8">
+        SamePage stores a copy of your shared pages on IPFS, making it so that
+        they are accessible by any notebook you'd like to connect the data to.
+        <br />
+        <br />
+        To view the data stored on a page, paste in the page's CID.
+      </div>
       <div className="flex items-center gap-8 w-full">
         <TextInput
           onChange={(e) => setCidOrLink(e.target.value)}

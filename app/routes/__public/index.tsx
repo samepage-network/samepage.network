@@ -707,4 +707,10 @@ export const action: ActionFunction = async (args) => {
   else return {};
 };
 
+export const headers = () => {
+  return {
+    "Cache-Control": "max-age=604800, stale-while-revalidate=86400", // 7 days, 1 day
+  };
+};
+
 export default Home;

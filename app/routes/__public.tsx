@@ -81,7 +81,7 @@ const PublicPage: React.FC = () => {
         </div>
       </header>
       <main
-        className={`my-16 flex justify-center items-start w-full p-0 flex-grow ${mainClassName}`}
+        className={`flex justify-center items-start w-full py-16 flex-grow ${mainClassName}`}
       >
         <Outlet context={{ isLaunched }} />
       </main>
