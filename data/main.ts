@@ -1,8 +1,6 @@
 import base from "fuegojs/utils/base";
-import {
-  ActionsSecret,
-  ActionsOrganizationSecret,
-} from "@cdktf/provider-github";
+import { ActionsSecret } from "@cdktf/provider-github/lib/actions-secret";
+import { ActionsOrganizationSecret } from "@cdktf/provider-github/lib/actions-organization-secret";
 import schema from "./schema";
 import getMysql from "fuegojs/utils/mysql";
 
