@@ -7,7 +7,7 @@ export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCa
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 import TextInput from "@dvargas92495/app/components/TextInput";
 import Button from "@dvargas92495/app/components/Button";
-import SuccessfulActionToast from "@dvargas92495/app/components/SuccessfulActionToast";
+import SuccessfulActionToast from "~/components/SuccessfulActionToast";
 import AtJsonRendered from "package/components/AtJsonRendered";
 import { InitialSchema } from "package/internal/types";
 import Typed from "typed.js";

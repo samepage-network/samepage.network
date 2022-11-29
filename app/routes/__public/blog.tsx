@@ -7,7 +7,7 @@ import listBlogPosts from "~/data/listBlogPosts.server";
 import { useState } from "react";
 import Button from "@dvargas92495/app/components/Button";
 import TextInput from "@dvargas92495/app/components/TextInput";
-import SuccessfulActionToast from "@dvargas92495/app/components/SuccessfulActionToast";
+import SuccessfulActionToast from "~/components/SuccessfulActionToast";
 import getMeta from "@dvargas92495/app/utils/getMeta";
 
 const Twitter = () => (
@@ -100,7 +100,7 @@ const BlogPage = () => {
           </span>
           {showFollowUs && (
             <div className="absolute top-full mt-2 rounded-2xl right-0 border border-gray-400 border-opacity-50 text-gray-500 bg-white z-50">
-              <div className="py-6 px-8 flex justify-between border-b border-b-gray-400 border-b-opacity-50">
+              <div className="py-6 px-8 flex justify-between border-b border-b-gray-400 border-opacity-50">
                 <Twitter />
                 <GitHub />
                 <Discord />
