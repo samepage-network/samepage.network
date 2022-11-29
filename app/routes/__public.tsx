@@ -1,14 +1,20 @@
-import type { LoaderFunction } from "@remix-run/node";
-import getUserId from "@dvargas92495/app/backend/getUserId.server";
+// import type { LoaderFunction } from "@remix-run/node";
+// import getUserId from "@dvargas92495/app/backend/getUserId.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
-import { UserButton } from "@clerk/remix";
-import React, { useMemo } from "react";
-import { Link, Outlet, useLoaderData, useMatches } from "@remix-run/react";
+import React, { useState, useEffect } from "react";
+import { Link, Outlet, useMatches } from "@remix-run/react";
+import MenuAlt1Icon from "@heroicons/react/solid/MenuAlt1Icon";
+
+const TABS = [
+  "install",
+  "docs",
+  "blog",
+  "view",
+  { id: "community", href: "https://discord.gg/UpKAfUvUPd" },
+].map((p) => (typeof p === "string" ? { id: p, href: `/${p}` } : p));
 
 const PublicPage: React.FC = () => {
-  const isWaitlist = useMemo(() => true, []);
-  const authed = useLoaderData();
   const matches = useMatches();
   const mainClassName =
     matches.reverse().find((m) => m.handle?.mainClassName)?.handle
@@ -16,29 +22,69 @@ const PublicPage: React.FC = () => {
   const rootClassName =
     matches.reverse().find((m) => m.handle?.rootClassName)?.handle
       ?.rootClassName || "";
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => {
+    // document.addEventListener("click", (e) => {
+    //   if ((e.target as HTMLElement).classList.contains("nav-menu")) {
+    //     setMenuOpen(false);
+    //   }
+    // });
+  }, []);
   return (
     <div className={`flex flex-col min-h-full ${rootClassName}`}>
       <header className="sticky bg-transparent shadow-xl z-10 backdrop-blur top-0">
-        <div className="px-6 h-16 flex items-center sm:gap-16 gap-4">
+        <div className="px-6 h-16 flex items-center lg:gap-16 gap-4">
           <Link to={"/"} className="flex max-h-full w-16 flex-shrink-0">
             <img src={`/images/logo.png`} />
           </Link>
-          <div className="justify-start flex-grow flex gap-6 capitalize text-lg items-center h-full">
-            {["install", "docs", "blog", "view"].map((p) => (
-              <h6 className="mx-2 text-xl" key={p}>
+          <div className="hidden justify-start flex-grow lg:flex gap-6 capitalize text-lg items-center h-full">
+            {TABS.map((p) => (
+              <h6 className="mx-2 text-xl" key={p.id}>
                 <a
-                  href={`/${p}`}
+                  href={p.href}
                   color="inherit"
                   className={
                     "text-gray-600 hover:text-gray-700 active:text-gray-800 hover:no-underline active:no-underline cursor-pointer"
                   }
+                  {...(p.href.startsWith("http")
+                    ? { target: "_blank", rel: "noopener" }
+                    : {})}
                 >
-                  {p}
+                  {p.id}
                 </a>
               </h6>
             ))}
           </div>
-          <div className="w-48 flex justify-end items-center">
+          <div
+            className="lg:hidden justify-self-end relative flex-grow flex justify-end nav-menu"
+            onClick={() => {
+              setMenuOpen(!menuOpen);
+            }}
+          >
+            <MenuAlt1Icon
+              color={menuOpen ? "blue" : "black"}
+              width={24}
+              height={24}
+              className={"nav-menu"}
+            />
+            {menuOpen && (
+              <div className="fixed left-0 right-0 top-full bg-sky-50 flex flex-col shadow-xl z-50">
+                {TABS.map((tab) => (
+                  <a
+                    key={tab.id}
+                    className="capitalize py-3 px-6 font-bold"
+                    href={tab.href}
+                    {...(tab.href.startsWith("http")
+                      ? { target: "_blank", rel: "noopener" }
+                      : {})}
+                  >
+                    {tab.id}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+          {/* <div className="w-48 flex justify-end items-center">
             {isWaitlist ? (
               <span />
             ) : authed ? (
@@ -59,7 +105,7 @@ const PublicPage: React.FC = () => {
                 </a>
               </>
             )}
-          </div>
+          </div> */}
         </div>
       </header>
       <main
@@ -95,9 +141,9 @@ const PublicPage: React.FC = () => {
   );
 };
 
-export const loader: LoaderFunction = ({ request }) => {
-  return getUserId(request).then((id) => !!id);
-};
+// export const loader: LoaderFunction = ({ request }) => {
+//   return getUserId(request).then((id) => !!id);
+// };
 
 export const headers = () => {
   return {

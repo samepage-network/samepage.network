@@ -390,7 +390,7 @@ const Home: React.FC = () => {
         className={`bg-opacity-25 bg-gradient-to-b from-sky-50 to-inherit -mt-32 pt-32 h-[100vh]`}
       >
         <div className="max-w-5xl w-full flex flex-col justify-between items-center m-auto h-full px-4">
-          <h1 className="mt-4 mb-12 text-6xl lg:text-8xl font-bold flex flex-col w-full text-center">
+          <h1 className="sm:mt-4 mb-12 text-4xl sm:text-6xl lg:text-8xl font-bold flex flex-col w-full text-center">
             <style>{`.splash-title .typed-cursor {
   color: ${SPLASH_APPS[typedIndex]?.cursorColor};
 ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
@@ -405,7 +405,7 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
           </h1>
           <div className="flex justify-between w-full gap-16 h-96">
             <div
-              className={`lg:block flex-grow relative rounded-lg shadow-lg p-4 text-xl ${
+              className={`lg:block flex-grow relative rounded-lg shadow-lg p-4 text-base lg:text-xl ${
                 typedIndex % 3 !== 0 ? "hidden" : ""
               }`}
               style={{
@@ -416,14 +416,17 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
               }}
             >
               <h1 className="text-2xl font-semibold">Benefits of SamePage</h1>
-              <AtJsonRendered {...landingAtJson} />
+              <AtJsonRendered
+                {...landingAtJson}
+                classNames={{ blockLi: `lg:my-2 my:0.5` }}
+              />
               <img
                 src={"/images/roam.png"}
                 className={"h-8 w-8 absolute bottom-4 right-4"}
               />
             </div>
             <div
-              className={`lg:block flex-grow relative rounded-lg shadow-lg p-4 text-xl ${
+              className={`lg:block flex-grow relative rounded-lg shadow-lg p-4 text-base lg:text-xl ${
                 typedIndex % 3 !== 1 ? "hidden" : ""
               }`}
               style={{
@@ -434,14 +437,17 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
               }}
             >
               <h1 className="text-2xl font-semibold">Benefits of SamePage</h1>
-              <AtJsonRendered {...landingAtJson} />
+              <AtJsonRendered
+                {...landingAtJson}
+                classNames={{ blockLi: `lg:my-2 my:0.5` }}
+              />
               <img
                 src={"/images/logseq.png"}
                 className={"h-8 w-8 absolute bottom-4 right-4"}
               />
             </div>
             <div
-              className={`lg:block flex-grow relative rounded-lg shadow-lg p-4 text-xl ${
+              className={`lg:block flex-grow relative rounded-lg shadow-lg p-4 text-base lg:text-xl ${
                 typedIndex % 3 !== 2 ? "hidden" : ""
               }`}
               style={{
@@ -452,7 +458,10 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
               }}
             >
               <h1 className="text-2xl font-semibold">Benefits of SamePage</h1>
-              <AtJsonRendered {...landingAtJson} />
+              <AtJsonRendered
+                {...landingAtJson}
+                classNames={{ blockLi: `lg:my-2 my:0.5` }}
+              />
               <img
                 src={"/images/obsidian.png"}
                 className={"h-8 w-8 absolute bottom-4 right-4"}
@@ -460,7 +469,7 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
             </div>
           </div>
           <fetcher.Form
-            className={`flex gap-8 items-center max-w-xl w-full shadow-`}
+            className={`flex flex-col gap-1 sm:flex-row sm:gap-8 items-stretch sm:items-center max-w-xl w-full py-4`}
             method="put"
             ref={formRef}
           >
@@ -468,13 +477,13 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
               placeholder="hello@example.com"
               name={"email"}
               label={"Email"}
-              className={"flex-grow"}
+              className={"flex-grow mb-0"}
             />
             <Button>{"Subscribe"}</Button>
             <Link
               to={"install"}
               className={
-                "border-sky-500 text-sky-500 border rounded-full px-6 py-3 font-bold hover:bg-gray-300 hover:bg-opacity-25 active:bg-gray-400 active:bg-opacity-40"
+                "border-sky-500 text-sky-500 border rounded-full px-6 py-3 font-bold hover:bg-gray-300 hover:bg-opacity-25 active:bg-gray-400 active:bg-opacity-40 text-center"
               }
             >
               {"Get Started"}
@@ -608,10 +617,10 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
         ref={step2Ref}
       >
         <div className="sticky top-[10%] w-full max-w-6xl">
-          <div className="flex flex-col-reverse lg:flex-row w-full gap-16 h-[80vh]">
+          <div className="flex flex-col-reverse lg:flex-row w-full gap-2 lg:gap-16 h-[80vh]">
             <div className="flex-grow relative">
               <div
-                className="h-[20vh] w-[20vh] absolute top-8 left-1/2 -translate-x-1/2 logo"
+                className="h-[20vh] w-[20vh] absolute top-1 lg:top-8 left-1/2 -translate-x-1/2 logo"
                 style={{
                   opacity: scrollState < 4 ? 0 : 1,
                   transition: "opacity 1000ms ease 0s",
@@ -620,7 +629,7 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
                 <img src={"/images/roam.png"} className={"w-full h-full"} />
               </div>
               <div
-                className="h-[20vh] w-[20vh] absolute right-8 bottom-1/4 translate-y-1/4 logo"
+                className="h-[20vh] w-[20vh] absolute right-1 lg:right-8 bottom-1/4 translate-y-1/4 logo"
                 style={{
                   opacity: scrollState < 5 ? 0 : 1,
                   transition: "opacity 1000ms ease 0s",
@@ -629,7 +638,7 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
                 <img src={"/images/logseq.png"} className={"w-full h-full"} />
               </div>
               <div
-                className="h-[20vh] w-[20vh] absolute left-8 bottom-1/4 translate-y-1/4 logo"
+                className="h-[20vh] w-[20vh] absolute left-1 lg:left-8 bottom-1/4 translate-y-1/4 logo"
                 style={{
                   opacity: scrollState < 6 ? 0 : 1,
                   transition: "opacity 1000ms ease 0s",
@@ -638,7 +647,7 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
                 <img src={"/images/obsidian.png"} className={"w-full h-full"} />
               </div>
               <div
-                className="absolute text-6xl -translate-x-1/2 -translate-y-1/2"
+                className="absolute text-4xl lg:text-6xl -translate-x-1/2 -translate-y-1/2"
                 style={pageIconStyle}
               >
                 📝
@@ -691,10 +700,10 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
             </div>
             <div className="flex flex-col max-w-xs">
               <h1 className="text-gray-500 text-opacity-75 text-4xl mb-4">3</h1>
-              <h1 className="font-semibold text-4xl mb-6">
+              <h1 className="font-semibold text-2xl sm:text-4xl mb-2 sm:mb-6">
                 Stay on the <span className="text-sky-700">SamePage</span>
               </h1>
-              <p className="lg:mb-6">
+              <p className="lg:mb-6 sm:text-base text-sm">
                 We are bringing collaboration{" "}
                 <span className="font-bold">back</span> to the tools for thought
                 space by letting users connect pages in their second brains to
