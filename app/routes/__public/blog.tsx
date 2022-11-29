@@ -162,7 +162,7 @@ const BlogPage = () => {
                   <span className="box-border inline-block overflow-hidden w-10 h-10 bg-none opacity-100 border-0 m-0 p-0 relative">
                     <img
                       alt={d.author}
-                      src={`/images/authors/${d.author}.png`}
+                      src={`/images/authors/${d.author.toLowerCase()}.png`}
                       className="rounded-full grayscale absolute inset-0 box-border p-0 border-0 m-auto block w-0 h-0 min-h-full min-w-full max-h-full max-w-full"
                     />
                   </span>
