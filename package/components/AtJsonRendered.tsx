@@ -3,13 +3,16 @@ import type { Annotation, InitialSchema, Schema } from "../internal/types";
 import { getSetting } from "../internal/registry";
 
 type AnnotationTree = (Annotation & { children: AnnotationTree })[];
+type ClassNames = { blockLi?: string };
 
 const AnnotationRendered = ({
   annotation,
   content,
+  classNames = {},
 }: {
   annotation: AnnotationTree[number];
   content: string;
+  classNames?: ClassNames;
 }): React.ReactElement => {
   const children = annotation.children
     .reduce(
@@ -61,7 +64,7 @@ const AnnotationRendered = ({
     return annotation.attributes.viewType === "bullet" ? (
       <li
         style={{ marginLeft: annotation.attributes.level * 16 }}
-        className={"my-2"}
+        className={classNames.blockLi || "my-2"}
       >
         {trimChildren}
       </li>
@@ -108,7 +111,11 @@ const AnnotationRendered = ({
   }
 };
 
-const AtJsonRendered = ({ content, annotations }: Schema | InitialSchema) => {
+const AtJsonRendered = ({
+  content,
+  annotations,
+  classNames,
+}: (Schema | InitialSchema) & { classNames?: ClassNames }) => {
   const selectedSnapshotTree = useMemo(() => {
     const tree: AnnotationTree = [];
     annotations.forEach((anno) => {
@@ -132,6 +139,7 @@ const AtJsonRendered = ({ content, annotations }: Schema | InitialSchema) => {
         <AnnotationRendered
           annotation={annotation}
           content={content.toString() || ""}
+          classNames={classNames}
           key={key}
         />
       ))}

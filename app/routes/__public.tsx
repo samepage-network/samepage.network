@@ -19,8 +19,8 @@ const PublicPage: React.FC = () => {
   return (
     <div className={`flex flex-col min-h-full ${rootClassName}`}>
       <header className="sticky bg-transparent shadow-xl z-10 backdrop-blur top-0">
-        <div className="px-6 h-16 flex items-center">
-          <Link to={"/"} className="flex max-h-full w-16 mr-32">
+        <div className="px-6 h-16 flex items-center sm:gap-16 gap-4">
+          <Link to={"/"} className="flex max-h-full w-16 flex-shrink-0">
             <img src={`/images/logo.png`} />
           </Link>
           <div className="justify-start flex-grow flex gap-6 capitalize text-lg items-center h-full">

@@ -306,7 +306,10 @@ const Home: React.FC = () => {
     if (scrollState > 7) {
       const translation = getTranslateXY(step2Logos[0]);
       return {
-        top: step2Logos[0].offsetTop + translation.translateY,
+        top:
+          step2Logos[0].offsetTop +
+          translation.translateY +
+          step2Logos[0].offsetHeight / 2,
         left: step2Logos[0].offsetLeft + translation.translateY,
       };
     }
@@ -386,8 +389,8 @@ const Home: React.FC = () => {
       <div
         className={`bg-opacity-25 bg-gradient-to-b from-sky-50 to-inherit -mt-32 pt-32 h-[100vh]`}
       >
-        <div className="max-w-5xl w-full flex flex-col justify-between items-center m-auto h-full">
-          <h1 className="mt-4 mb-12 text-8xl font-bold flex flex-col w-full text-center">
+        <div className="max-w-5xl w-full flex flex-col justify-between items-center m-auto h-full px-4">
+          <h1 className="mt-4 mb-12 text-6xl lg:text-8xl font-bold flex flex-col w-full text-center">
             <style>{`.splash-title .typed-cursor {
   color: ${SPLASH_APPS[typedIndex]?.cursorColor};
 ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
@@ -402,7 +405,9 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
           </h1>
           <div className="flex justify-between w-full gap-16 h-96">
             <div
-              className="flex-grow relative rounded-lg shadow-lg p-4 text-xl"
+              className={`lg:block flex-grow relative rounded-lg shadow-lg p-4 text-xl ${
+                typedIndex % 3 !== 0 ? "hidden" : ""
+              }`}
               style={{
                 opacity: typedIndex < 0 ? 0 : 1,
                 transition: "opacity 1000ms ease 0s",
@@ -418,7 +423,9 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
               />
             </div>
             <div
-              className="flex-grow relative rounded-lg shadow-lg p-4 text-xl"
+              className={`lg:block flex-grow relative rounded-lg shadow-lg p-4 text-xl ${
+                typedIndex % 3 !== 1 ? "hidden" : ""
+              }`}
               style={{
                 opacity: typedIndex < 1 ? 0 : 1,
                 transition: "opacity 1000ms ease 0s",
@@ -434,7 +441,9 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
               />
             </div>
             <div
-              className="flex-grow relative rounded-lg shadow-lg p-4 text-xl"
+              className={`lg:block flex-grow relative rounded-lg shadow-lg p-4 text-xl ${
+                typedIndex % 3 !== 2 ? "hidden" : ""
+              }`}
               style={{
                 opacity: typedIndex < 2 ? 0 : 1,
                 transition: "opacity 1000ms ease 0s",
@@ -469,7 +478,7 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
           />
         </div>
       </div>
-      <div className="h-[100vh] py-16 bg-gradient-to-b from-sky-50 to-inherit">
+      <div className="h-[100vh] py-16 bg-gradient-to-b from-sky-50 to-inherit px-4">
         <div className="max-w-5xl m-auto">
           <h1 className="mb-16 font-bold text-5xl max-w-lg">
             Welcome to the{" "}
@@ -480,12 +489,12 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
               "Everyone has their own tool. SamePage brings them together. No matter what tool each member of your team is using, we're bringing collaboration back as SamePage can sync changes without anybody needing to leave their custom setup."
             }
           </h2>
-          <div className="relative pb-[56.25%] h-0">
+          <div className="relative pb-[56.25%] h-0 shadow-2xl rounded-md">
             <iframe
               src="https://www.loom.com/embed/9f124d41ca8a47f4b09bc6d268cb36b8"
               frameBorder={0}
               allowFullScreen
-              className="absolute top-0 left-0 w-full h-full"
+              className="absolute top-0 left-0 w-full h-full rounded-md"
             />
           </div>
         </div>
@@ -495,7 +504,7 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
         ref={step1Ref}
       >
         <div className="sticky top-[10%] w-full max-w-6xl">
-          <div className="flex w-full gap-16 h-[80vh]">
+          <div className="flex flex-col lg:flex-row w-full gap-16 h-[80vh]">
             <div className="flex flex-col max-w-xs">
               <h1 className="text-gray-500 text-opacity-75 text-4xl mb-4">1</h1>
               <h1 className="font-semibold text-4xl mb-6">
@@ -507,7 +516,7 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
                 installing the SamePage extension.
               </p>
             </div>
-            <div className="flex-grow relative">
+            <div className="flex-grow relative hidden lg:block">
               <div
                 className="h-[50vh] w-[50vh] absolute top-0 left-0"
                 style={{
@@ -545,6 +554,44 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
                 />
               </div>
             </div>
+            <div className="flex-grow relative lg:hidden block">
+              <div
+                className="w-full absolute inset-0"
+                style={{
+                  opacity: scrollState === 1 ? 1 : 0,
+                  transition: "opacity 1000ms ease 0s",
+                }}
+              >
+                <img
+                  src={"/images/landing/step1-roam.png"}
+                  className={"w-full h-full"}
+                />
+              </div>
+              <div
+                className="w-full absolute inset-0"
+                style={{
+                  opacity: scrollState === 2 ? 1 : 0,
+                  transition: "opacity 1000ms ease 0s",
+                }}
+              >
+                <img
+                  src={"/images/landing/step1-logseq.png"}
+                  className={"w-full h-full"}
+                />
+              </div>
+              <div
+                className="w-full absolute inset-0"
+                style={{
+                  opacity: scrollState === 3 ? 1 : 0,
+                  transition: "opacity 1000ms ease 0s",
+                }}
+              >
+                <img
+                  src={"/images/landing/step1-obsidian.png"}
+                  className={"w-full h-full"}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -553,7 +600,7 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
         ref={step2Ref}
       >
         <div className="sticky top-[10%] w-full max-w-6xl">
-          <div className="flex w-full gap-16 h-[80vh]">
+          <div className="flex flex-col-reverse lg:flex-row w-full gap-16 h-[80vh]">
             <div className="flex-grow relative">
               <div
                 className="h-[20vh] w-[20vh] absolute top-8 left-1/2 -translate-x-1/2 logo"
@@ -611,10 +658,10 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
         className="py-24 px-6 relative flex h-[300vh] items-center flex-col justify-start bg-gradient-to-b from-sky-50 to-inherit"
         ref={step3Ref}
       >
-        <div className="sticky top-[10%] w-full max-w-6xl">
-          <div className="flex w-full gap-16 h-[80vh]">
+        <div className="sticky top-[10%] w-full max-w-6xl step-three">
+          <div className="flex flex-col lg:flex-row w-full gap-4 lg:gap-16 h-[80vh]">
             <div
-              className="flex-grow relative rounded-lg shadow-lg p-4"
+              className="flex-grow relative rounded-lg shadow-lg p-4 text-xs lg:text-base"
               style={{
                 opacity: scrollState < 8 ? 0 : 1,
                 transition: "opacity 1000ms ease 0s",
@@ -622,10 +669,13 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
                 color: "#a4b5b6",
               }}
             >
-              <h1 className="text-lg font-normal">
+              <h1 className="text:sm lg:text-lg font-normal">
                 Meeting notes for {new Date().toLocaleDateString()}
               </h1>
-              <AtJsonRendered {...step3AtJson} />
+              <AtJsonRendered
+                {...step3AtJson}
+                classNames={{ blockLi: `lg:my-2 my:0.5` }}
+              />
               <img
                 src={"/images/logseq.png"}
                 className={"h-8 w-8 absolute bottom-4 right-4"}
@@ -636,7 +686,7 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
               <h1 className="font-semibold text-4xl mb-6">
                 Stay on the <span className="text-sky-700">SamePage</span>
               </h1>
-              <p className="mb-6">
+              <p className="lg:mb-6">
                 We are bringing collaboration{" "}
                 <span className="font-bold">back</span> to the tools for thought
                 space by letting users connect pages in their second brains to
@@ -644,7 +694,7 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
               </p>
             </div>
             <div
-              className="flex-grow relative rounded-lg shadow-lg p-4"
+              className="flex-grow relative rounded-lg shadow-lg p-4 text-xs lg:text-base"
               style={{
                 opacity: scrollState < 8 ? 0 : 1,
                 transition: "opacity 1000ms ease 0s",
@@ -652,10 +702,13 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
                 color: "#fff",
               }}
             >
-              <h1 className="text-lg font-normal">
+              <h1 className="text:sm lg:text-lg font-normal">
                 Meeting notes for {new Date().toLocaleDateString()}
               </h1>
-              <AtJsonRendered {...step3AtJson} />
+              <AtJsonRendered
+                {...step3AtJson}
+                classNames={{ blockLi: `lg:my-2 my:0.5` }}
+              />
               <img
                 src={"/images/obsidian.png"}
                 className={"h-8 w-8 absolute bottom-4 right-4"}
@@ -665,7 +718,7 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
         </div>
       </div>
       <div
-        className={`flex justify-center bg-opacity-25 bg-inherit h-[calc(100vh-270px)] items-center`}
+        className={`flex justify-center bg-opacity-25 bg-inherit h-[calc(100vh-270px)] items-center px-4`}
       >
         <div className="max-w-5xl w-full">
           <Subscribe
