@@ -19,10 +19,10 @@ const EmailLayout = ({ children }: React.PropsWithChildren) => (
       }}
     >
       <img
-        height={40}
+        height={120}
         src={`${process.env.ORIGIN}/images/logo.png`}
-        style={{ margin: "auto" }}
-      ></img>
+        style={{ margin: "auto", display: "block" }}
+      />
     </div>
     <div
       style={{

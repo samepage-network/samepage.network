@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useState, useMemo } from "react";
 import type { ActionFunction } from "@remix-run/node";
 import { Link, useFetcher } from "@remix-run/react";
-import { Subscribe } from "@dvargas92495/app/components/Landing";
 import subscribeToConvertkitAction from "@dvargas92495/app/backend/subscribeToConvertkitAction.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
@@ -199,6 +198,43 @@ const SPLASH_APPS = [
     cursorColor: "#0ea5e9",
   },
 ];
+
+const Subscribe = ({
+  title,
+  message = "Click the confirmation link in your email to confirm!",
+}: {
+  title: React.ReactNode;
+  message?: string;
+}) => {
+  const fetcher = useFetcher();
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (
+      fetcher.data?.success &&
+      formRef.current &&
+      fetcher.type === "actionReload"
+    ) {
+      formRef.current.reset();
+    }
+  }, [formRef, fetcher]);
+  return (
+    <fetcher.Form
+      className="flex flex-col gap-8 items-center"
+      method="put"
+      ref={formRef}
+    >
+      {title}
+      <TextInput
+        placeholder="hello@example.com"
+        name={"email"}
+        label={"Email"}
+        className={"max-w-full w-96"}
+      />
+      <Button className={"max-w-full w-96"}>Subscribe</Button>
+      <SuccessfulActionToast message={message} fetcher={fetcher} />
+    </fetcher.Form>
+  );
+};
 
 const Home: React.FC = () => {
   const typedElRef = useRef<HTMLSpanElement>(null);
@@ -676,7 +712,7 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
         ref={step3Ref}
       >
         <div className="sticky top-[10%] w-full max-w-6xl step-three">
-          <div className="flex flex-col lg:flex-row w-full gap-4 lg:gap-16 h-[80vh]">
+          <div className="flex flex-col lg:flex-row w-full gap-2 lg:gap-16 h-[80vh]">
             <div
               className="flex-grow relative rounded-lg shadow-lg p-4 text-xs lg:text-base"
               style={{
@@ -691,16 +727,18 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
               </h1>
               <AtJsonRendered
                 {...step3AtJson}
-                classNames={{ blockLi: `lg:my-2 my:0.5` }}
+                classNames={{ blockLi: `lg:my-2 my:0.5 z-10` }}
               />
               <img
                 src={"/images/logseq.png"}
                 className={"h-8 w-8 absolute bottom-4 right-4"}
               />
             </div>
-            <div className="flex flex-col max-w-xs">
-              <h1 className="text-gray-500 text-opacity-75 text-4xl mb-4">3</h1>
-              <h1 className="font-semibold text-2xl sm:text-4xl mb-2 sm:mb-6">
+            <div className="max-w-xs items-start">
+              <h1 className="text-gray-500 text-opacity-75 text-2xl sm:text-4xl sm:mb-4 sm:block inline mr-2">
+                3
+              </h1>
+              <h1 className="font-semibold text-2xl sm:text-4xl mb-2 sm:mb-6 sm:block inline">
                 Stay on the <span className="text-sky-700">SamePage</span>
               </h1>
               <p className="lg:mb-6 sm:text-base text-sm">
@@ -741,7 +779,7 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
           <Subscribe
             title={
               <h2 className={`font-semibold mb-4 text-2xl italic`}>
-                Join our waitlist below to stay up to date on all news
+                Join our email list below to stay up to date on all news
                 surrounding SamePage!
               </h2>
             }
