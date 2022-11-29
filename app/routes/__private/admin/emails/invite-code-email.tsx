@@ -15,7 +15,7 @@ const InviteCodeEmailPage = () => {
 
 export const loader: LoaderFunction = (args) => {
   return remixAdminLoader(args, async () => ({
-    code: await randomString({ length: 4, encoding: "base64" }),
+    code: await randomString({ length: 4, encoding: "hex" }),
   }));
 };
 

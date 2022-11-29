@@ -8,8 +8,6 @@ const EmailLayout = ({ children }: React.PropsWithChildren) => (
       fontFamily: `"Proxima Nova","proxima-nova",Helvetica,Arial sans-serif`,
       padding: `20px 0`,
       minHeight: "100%",
-      display: "flex",
-      flexDirection: "column",
     }}
   >
     <div
@@ -18,19 +16,20 @@ const EmailLayout = ({ children }: React.PropsWithChildren) => (
         margin: "0 auto",
         paddingBottom: 20,
         borderBottom: "1px dashed #dadada",
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
       }}
     >
-      <img height={40} src={`${process.env.ORIGIN}/images/logo.png`}></img>
+      <img
+        height={40}
+        src={`${process.env.ORIGIN}/images/logo.png`}
+        style={{ margin: "auto" }}
+      ></img>
     </div>
     <div
       style={{
         width: "80%",
         margin: "30px auto",
         fontSize: 16,
-        flexGrow: 1,
+        minHeight: 400,
       }}
     >
       {children}
@@ -40,12 +39,11 @@ const EmailLayout = ({ children }: React.PropsWithChildren) => (
         width: "80%",
         margin: "30px auto",
         borderTop: "1px dashed #dadada",
-        display: "flex",
         color: "#a8a8a8",
         paddingTop: 15,
       }}
     >
-      <div style={{ width: "50%" }}>
+      <span style={{ width: "50%", display: "inline-block" }}>
         Sent From{" "}
         <a
           href={process.env.ORIGIN}
@@ -53,15 +51,17 @@ const EmailLayout = ({ children }: React.PropsWithChildren) => (
         >
           SamePage
         </a>
-      </div>
-      <div style={{ width: "50%", textAlign: "right" }}>
+      </span>
+      <span
+        style={{ width: "50%", textAlign: "right", display: "inline-block" }}
+      >
         <a
           href={`mailto:support@${process.env.ORIGIN}`}
           style={{ color: "#4d9bd7", textDecoration: "none" }}
         >
           Contact Support
         </a>
-      </div>
+      </span>
     </div>
   </div>
 );
@@ -100,7 +100,7 @@ const InviteCodeEmail = ({ code }: { code: string }) => (
       >
         clicking here.
       </a>{" "}
-      We also encourage you to join our
+      We also encourage you to join our{" "}
       <a
         href="https://discord.gg/UpKAfUvUPd"
         style={{ color: "rgb(56, 189, 248)", textDecoration: "underline" }}
