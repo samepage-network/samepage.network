@@ -9,7 +9,25 @@ A **Notebook** in Roam is an online or offline graph. The [Roam Help Graph](http
 
 ## Installing the Live Version
 
-The Live version of the SamePage extension is still under review for RoamDepot. Subscribe to our newsletter to be notified when the extension is live!
+The Live version of the SamePage extension is available in Roam Depot!
+
+First, open the command palette in Roam (CMD+p) and enter `Roam Depot Marketplace`.
+
+![](/images/install/roam-live-1.png)
+
+Next, click on the search bar on the top left and search for "SamePage":
+
+![](/images/install/roam-live-2.png)
+
+Finally, when you arrive to the extension's page, click on the Install button!
+
+![](/images/install/roam-live-3.png)
+
+Once installed, the extension should automatically kick off the onboarding flow.
+
+### Demo
+
+<div style="position: relative; padding-bottom: 64.5933014354067%; height: 0;"><iframe src="https://www.loom.com/embed/6ad21a2983ce43b6bcc2acdbe8b7ff4f" frameborder="0" webkitallowfullscreen="true" mozallowfullscreen="true" allowfullscreen="true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
 ## Installing the Development version
 

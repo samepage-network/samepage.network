@@ -93,23 +93,19 @@ const INSTRUCTIONS: Record<string, { steps: InstructionSteps; live: boolean }> =
     roam: {
       steps: [
         {
-          title: `Download & Unzip`,
-          children: "link",
-        },
-        {
           title: "Open Roam Depot",
           children: "image",
         },
         {
-          title: "Enable Developer Mode",
+          title: "Search SamePage",
           children: "image",
         },
         {
-          title: "Load roam-samepage!",
+          title: "Install!",
           children: "image",
         },
       ],
-      live: false,
+      live: true,
     },
     logseq: {
       steps: [
@@ -212,6 +208,12 @@ export const loader: LoaderFunction = listExtensionsMetadata;
 
 export const handle = {
   mainClassName: "bg-gradient-to-b from-sky-50 to-inherit -mt-16 pt-32",
+};
+
+export const headers = () => {
+  return {
+    "Cache-Control": "max-age=86400, stale-while-revalidate=3600", // 1 day, 1 hour
+  };
 };
 
 export default InstallPage;
