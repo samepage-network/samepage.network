@@ -9,7 +9,6 @@ const SuccessfulActionToast = ({
   message?: string;
   fetcher?: Fetcher;
 }) => {
-  console.log("enter", fetcher);
   const data = useActionData();
   const [isOpen, setIsOpen] = useState(false);
   const [errReason, setErrReason] = useState("");

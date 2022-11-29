@@ -471,6 +471,14 @@ ${cursorDone ? "visibility: hidden;\n" : ""}}`}</style>
               className={"flex-grow"}
             />
             <Button>{"Subscribe"}</Button>
+            <Link
+              to={"install"}
+              className={
+                "border-sky-500 text-sky-500 border rounded-full px-6 py-3 font-bold hover:bg-gray-300 hover:bg-opacity-25 active:bg-gray-400 active:bg-opacity-40"
+              }
+            >
+              {"Get Started"}
+            </Link>
           </fetcher.Form>
           <SuccessfulActionToast
             message="Click the confirmation link in your email to confirm!"
