@@ -37,7 +37,7 @@ Why is "just use Google Docs" insufficient? Because of context. All data we inte
 
 Decentralized teams and organizations could have tasks, notes, and context scattered throughout several tools. Cross-notebook queries will allow users to create centralized views of that data _within their own notebook_. In practice, _where_ the data lives is less important to the user than it being _available_ when they query the question that needs to be answered.
 
-One of the first use cases for queries will be the [Discourse Graph Protocol](https://discoursegraph.com) under development by Joel Chan's research in collaboration with [Protocol Labs](https://protocol.ai). This extensible framework will allow researchers to map their ideas and arguments in a modular, composable graph format. With SamePage as the underlying communication protocol, the nodes that make up the protocol could be queryable regardless of the tool used by the researcher.
+One of the first use cases for queries will be the [Discourse Graph Protocol](http://discoursegraph.com) under development by Joel Chan's research in collaboration with [Protocol Labs](https://protocol.ai). This extensible framework will allow researchers to map their ideas and arguments in a modular, composable graph format. With SamePage as the underlying communication protocol, the nodes that make up the protocol could be queryable regardless of the tool used by the researcher.
 
 ### Beyond
 
