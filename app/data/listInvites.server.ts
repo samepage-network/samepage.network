@@ -1,22 +1,45 @@
 import getMysqlConnection from "fuegojs/utils/mysql";
 
-const listIssuedTokens = async (requestId: string) => {
+const listIssuedTokens = async (
+  requestId: string,
+  searchParams: Record<string, string> = {}
+) => {
+  const index = Number(searchParams["index"] || "1") - 1;
+  const size = Number(searchParams["size"]) || 10;
   const cxn = await getMysqlConnection(requestId);
   const data = await cxn
     .execute(
-      `SELECT i.*
-    FROM invitations i`
+      `SELECT code, email, created_date as date, 
+      CASE 
+        WHEN token_uuid IS NOT NULL THEN "ACCEPTED" 
+        WHEN NOW() < expiration_date THEN "PENDING" 
+        ELSE "EXPIRED" 
+      END as status
+    FROM invitations i
+    ORDER BY status DESC, date DESC
+    LIMIT ? OFFSET ?`,
+      [size, index * size]
     )
     .then(
       ([r]) =>
         r as {
           code: string;
-          token_uuid: string | null;
-          created_date: Date;
-          expiration_date: Date;
+          date: Date;
+          status: "ACCEPTED" | "EXPIRED" | "PENDING";
           email: string | null;
         }[]
     );
+  const [count] = await cxn
+    .execute(`SELECT COUNT(n.uuid) as total FROM invites n`)
+    .then(([a]) => a as { total: number }[]);
+  const stats = await Promise.all([
+    cxn
+      .execute(
+        `SELECT COUNT(code) as today FROM invitations WHERE created_date > DATE_SUB(NOW(), INTERVAL 1 DAY)`
+      )
+      .then(([a]) => ["today", (a as { today: number }[])[0].today] as const),
+  ]).then((entries) => Object.fromEntries(entries));
+  stats["total"] = count.total;
   cxn.destroy();
   return {
     columns: [
@@ -25,28 +48,12 @@ const listIssuedTokens = async (requestId: string) => {
       { Header: "Created On", accessor: "date" },
       { Header: "Email", accessor: "email" },
     ],
-    data: data
-      .map((d) => ({
-        code: d.code,
-        status: d.token_uuid
-          ? "ACCEPTED"
-          : new Date().valueOf() < d.expiration_date.valueOf()
-          ? "PENDING"
-          : "EXPIRED",
-        date: d.created_date.valueOf(),
-        email: d.email,
-      }))
-      .sort((a, b) => {
-        if (a.status === b.status) {
-          return b.date - a.date;
-        } else if (a.status === "PENDING") {
-          return -1;
-        } else if (b.status === "PENDING") {
-          return 1;
-        } else {
-          return b.date - a.date;
-        }
-      }),
+    data: data.map((d) => ({
+      ...d,
+      date: d.date.valueOf(),
+    })),
+    count: count.total,
+    stats,
   };
 };
 
