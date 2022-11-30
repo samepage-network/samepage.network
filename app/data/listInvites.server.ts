@@ -30,7 +30,7 @@ const listIssuedTokens = async (
         }[]
     );
   const [count] = await cxn
-    .execute(`SELECT COUNT(n.uuid) as total FROM invites n`)
+    .execute(`SELECT COUNT(n.uuid) as total FROM invitations n`)
     .then(([a]) => a as { total: number }[]);
   const stats = await Promise.all([
     cxn
