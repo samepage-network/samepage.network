@@ -1,5 +1,4 @@
 import { test, expect } from "@playwright/test";
-import issueNewInvite from "~/data/issueNewInvite.server";
 import { handler } from "../../api/page/post";
 import { v4 } from "uuid";
 import randomString from "~/data/randomString.server";
@@ -12,6 +11,7 @@ import binaryToBase64 from "../../package/internal/binaryToBase64";
 import Automerge from "automerge";
 import { Schema } from "../../package/internal/types";
 import QUOTAS from "~/data/quotas.server";
+import issueRandomInvite from "../utils/issueRandomInvite";
 
 const mockLambda = async (body: Record<string, unknown>) => {
   const requestId = v4();
@@ -120,7 +120,7 @@ const mockRandomNotebook = async () => {
 };
 
 test("Connect Notebook with same app/workspace returns same notebook uuid", async () => {
-  const { code } = await issueNewInvite({ context: { requestId: v4() } });
+  const { code } = await issueRandomInvite();
   const workspace = await getRandomWorkspace();
 
   const { notebookUuid, token } = await mockLambda({
@@ -143,7 +143,7 @@ test("Connect Notebook with same app/workspace returns same notebook uuid", asyn
 });
 
 test("Connect Notebook with different source notebook same target notebook returns same notebook uuid", async () => {
-  const { code } = await issueNewInvite({ context: { requestId: v4() } });
+  const { code } = await issueRandomInvite();
   const workspace = await getRandomWorkspace();
 
   const { notebookUuid, token } = await mockLambda({

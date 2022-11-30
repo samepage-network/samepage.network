@@ -1,7 +1,6 @@
 import { fork, spawn } from "child_process";
 import { v4 } from "uuid";
 import { test, expect } from "@playwright/test";
-import issueNewInvite from "~/data/issueNewInvite.server";
 import {
   MessageSchema,
   responseMessageSchema,
@@ -10,17 +9,14 @@ import {
 import { Notification } from "../package/internal/types";
 import deleteNotebook from "~/data/deleteNotebook.server";
 import deleteInvite from "~/data/deleteInvite.server";
+import issueRandomInvite from "./utils/issueRandomInvite";
 
 let cleanup: () => Promise<unknown>;
 const inviteCodes: string[] = [];
 
 test.beforeAll(async () => {
-  await issueNewInvite({ context: { requestId: v4() } }).then((c) =>
-    inviteCodes.push(c.code)
-  );
-  await issueNewInvite({ context: { requestId: v4() } }).then((c) =>
-    inviteCodes.push(c.code)
-  );
+  await issueRandomInvite().then((c) => inviteCodes.push(c.code));
+  await issueRandomInvite().then((c) => inviteCodes.push(c.code));
 });
 
 const log = (...args: Parameters<typeof console.log>) =>

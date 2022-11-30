@@ -24,7 +24,7 @@ const InvitesPage = () => {
           <Button>New</Button>
         </Form>
         <Table
-          className="max-w-3xl w-full mt-8"
+          className="max-w-3xl w-full my-8"
           onRowClick={(r) => {
             window.navigator.clipboard.writeText(r.code as string);
             navigate(r.code as string);
