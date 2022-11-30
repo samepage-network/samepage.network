@@ -6,10 +6,9 @@ import messageNotebook from "~/data/messageNotebook.server";
 import createNotebook from "~/data/createNotebook.server";
 import getMysql from "fuegojs/utils/mysql";
 import deleteNotebook from "~/data/deleteNotebook.server";
-import listNotebooks from "~/data/listNotebooks.server";
 import binaryToBase64 from "../../package/internal/binaryToBase64";
 import Automerge from "automerge";
-import { Schema } from "../../package/internal/types";
+import { Notebook, Schema } from "../../package/internal/types";
 import QUOTAS from "~/data/quotas.server";
 import issueRandomInvite from "../utils/issueRandomInvite";
 
@@ -305,17 +304,46 @@ test("Initing a shared page without a page id should fail", async () => {
   expect(response.success).toEqual(false);
 });
 
+test("Sharing a page that is already shared locally should return a readable error", async () => {
+  const { notebookUuid, token } = await mockRandomNotebook();
+  const notebookPageId = await getRandomNotebookPage();
+
+  const response = await mockLambda({
+    method: "init-shared-page",
+    notebookUuid,
+    token,
+    notebookPageId,
+    state: mockState("hello"),
+  });
+  expect(response.created).toEqual(true);
+
+  const response2 = await mockLambda({
+    method: "init-shared-page",
+    notebookUuid,
+    token,
+    notebookPageId,
+    state: mockState("world"),
+  });
+  expect(response2.created).toEqual(false);
+  expect(response2.id).toEqual(response.id);
+});
+
 test.afterAll(async () => {
-  const notebooks = await listNotebooks(v4());
-  await Promise.all(
-    notebooks.data
-      .filter((n) => /^test-[a-f0-9]{8}$/.test(n.workspace))
-      .map((n) => deleteNotebook({ uuid: n.uuid, requestId: v4() }))
-  );
-  await getMysql().then((cxn) =>
-    cxn.execute("UPDATE quotas SET value = ? where field = ?", [
+  await getMysql().then(async (cxn) => {
+    const data = await cxn
+      .execute(
+        `SELECT n.uuid
+  FROM notebooks n
+  WHERE app = 0 AND workspace LIKE "test-%"`,
+        []
+      )
+      .then(([r]) => r as ({ uuid: string } & Notebook)[]);
+    await Promise.all(
+      data.map((n) => deleteNotebook({ uuid: n.uuid, requestId: v4() }))
+    );
+    await cxn.execute("UPDATE quotas SET value = ? where field = ?", [
       100,
       QUOTAS.indexOf("Pages"),
-    ])
-  );
+    ]);
+  });
 });

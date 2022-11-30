@@ -29,7 +29,7 @@ Click on the button on the right to get started with connecting your first noteb
 
 ![](/images/docs/getting-started/onboarding-create.png)
 
-Enter the invite code you were sent by the SamePage team. If you do not yet have an invite code, please reach out to the team to secure your own. Make sure to also check the flag ensuring you agree to SamePage's terms and conditions:
+Enter the invite code you were sent by the SamePage team. If you do not yet have an invite code, please reach out to the team by emailing [support@samepage.network](mailto:support@samepage.network) to secure your own. Make sure to also check the flag ensuring you agree to SamePage's terms and conditions:
 
 ![](/images/docs/getting-started/onboarding-invite.png)
 

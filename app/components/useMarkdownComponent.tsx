@@ -114,13 +114,15 @@ const useMarkdownComponent = (code: string) =>
                 },
               },
               img: (props) => (
-                <div className="p-12">
+                <span className="lg:p-12 py-6 inline-block">
                   <OverlayImg
                     alt={props.alt}
                     src={props.src}
-                    className={"rounded-md shadow-xl max-w-sm m-auto"}
+                    className={
+                      "rounded-md shadow-xl max-w-full lg:max-w-sm m-auto"
+                    }
                   />
-                </div>
+                </span>
               ),
               a: (props) =>
                 /^http/.test(props.href) ? (

@@ -13,10 +13,10 @@ const OverlayImg = ({
   return (
     <>
       {expanded && (
-        <div
+        <span
           onClick={() => setExpanded(false)}
           className={
-            "fixed inset-0 bg-gray-500 bg-opacity-50 z-50 sm:p-32 p-4 flex justify-center items-center"
+            "fixed inset-0 bg-gray-500 bg-opacity-50 z-50 sm:p-32 p-2 flex justify-center items-center"
           }
         >
           <img
@@ -25,7 +25,7 @@ const OverlayImg = ({
             className="rounded-md w-full"
             onClick={(e) => e.stopPropagation()}
           />
-        </div>
+        </span>
       )}
       <img
         src={src}

@@ -38,8 +38,8 @@ const DocsPage = (): React.ReactElement => {
     }
   }, [setToc, componentRef, location.pathname]);
   return (
-    <div className="flex gap-28 h-min items-start relative justify-between">
-      <div ref={componentRef} key={frontmatter.title}>
+    <div className="flex-col-reverse lg:flex-row flex gap-4 lg:gap-28 h-min items-start relative justify-between">
+      <div ref={componentRef} key={frontmatter.title} className={"max-w-full"}>
         <div className="max-w-2xl">
           <div>
             <h1 className="font-bold text-5xl mb-8">{frontmatter.title}</h1>
@@ -52,7 +52,7 @@ const DocsPage = (): React.ReactElement => {
           </div>
         </div>
       </div>
-      <div className="pl-6 pr-8 max-w-sm w-full border rounded-lg flex-shrink-0 sticky top-4">
+      <div className="pl-6 pr-8 max-w-sm w-full border rounded-lg flex-shrink-0 lg:sticky lg:top-4">
         {toc.map((t, i) => (
           <Link
             to={`#${t.id}`}

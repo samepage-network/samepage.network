@@ -1,4 +1,12 @@
 {
-  "order": ["getting_started", "basics", "roam", "logseq", "obsidian", "developer"],
-  "names": { "logseq": "LogSeq" }
+  "order": [
+    "index.md",
+    "getting_started",
+    "basics",
+    "roam",
+    "logseq",
+    "obsidian",
+    "developer"
+  ],
+  "names": { "logseq": "LogSeq", "index.md": "Home" }
 }
