@@ -199,14 +199,13 @@ Compiles the extension with a file watcher running to respond to file changes an
 
 ### Test
 
-Compiles the extension and runs tests using [Playwright](https://playwright.dev). Tests are expected to be in the `tests` directory with a `.test.ts` suffix. There should be at least one full integration test defined.  The `process.env.NODE_ENV` variable has a value of `test`.
+Compiles the extension and runs tests using [Playwright](https://playwright.dev). Tests are expected to be in the `tests` directory with a `.test.ts` suffix. There should be at least one full integration test defined.  The `process.env.NODE_ENV` variable has a value of `test`. Along with the standard arguments from above, the following two arguments are also supported:
+- `forward` - Could be specified multiple times, to forward the arguments to `Playwright` directly.
 
 The `samepage` package also exposes a set of testing utilities available in the `testing` module. These utilities are meant to ease the development of tests and provide a consistent SamePage test client to test against.
 
 ### Build
 
-Compiles the extension with a `process.env.NODE_ENV` value of `production`.
-
-### Publish
-
-Coming soon...
+Compiles the extension with a `process.env.NODE_ENV` value of `production` and publishes the artifacts created as a Github Release. Along with the standard arguments from above, the following two arguments are also supported:
+- `dry` - Add this flag to build the extension without publishing the artifacts.
+- `review` - Value should resolve to a javascript file with a callback default exported that will run after publishing as a GitHub Release. Useful for if the company behind the related application requires an extra review process to publish to.

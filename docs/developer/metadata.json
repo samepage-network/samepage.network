@@ -3,6 +3,7 @@
     "getting_started.md",
     "how_to_contribute.md",
     "extension_development.md",
+    "data_schema.md",
     "share_page_protocol.md",
     "npm_api.md",
     "global_api.md"

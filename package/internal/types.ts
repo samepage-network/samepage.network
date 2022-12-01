@@ -26,6 +26,7 @@ const annotationBase = z.object({
   start: z.number(),
   end: z.number(),
   attributes: z.object({}).optional(),
+  appAttributes: z.record(z.record(z.string())).optional(),
 });
 const blockAnnotation = annotationBase.merge(
   z.object({
@@ -33,7 +34,6 @@ const blockAnnotation = annotationBase.merge(
     attributes: z.object({
       level: z.number(),
       viewType: z.enum(["bullet", "numbered", "document"]),
-      appAttributes: z.record(z.record(z.string())).optional(),
     }),
   })
 );
@@ -91,6 +91,14 @@ const imageAnnotation = annotationBase.merge(
     }),
   })
 );
+const customAnnotation = annotationBase.merge(
+  z.object({
+    type: z.literal("custom"),
+    attributes: z.object({
+      name: z.string(),
+    }),
+  })
+);
 export const annotationSchema = z.discriminatedUnion("type", [
   blockAnnotation,
   metadataAnnotation,
@@ -101,6 +109,7 @@ export const annotationSchema = z.discriminatedUnion("type", [
   externalLinkAnnotation,
   referenceAnnotation,
   imageAnnotation,
+  customAnnotation,
 ]);
 export type Annotation = z.infer<typeof annotationSchema>;
 export type Schema = {

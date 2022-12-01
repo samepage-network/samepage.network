@@ -39,8 +39,14 @@ const test = ({
         ? spawn("npx", ["--inspect"].concat(args), options)
         : spawn("npx", args, options);
       return new Promise<number>((resolve, reject) => {
-        proc.on("exit", resolve);
-        proc.on("error", reject);
+        proc.on("exit", (c) => {
+          console.log("exiting playwright...", c);
+          resolve(c || 1);
+        });
+        proc.on("error", (e) => {
+          console.error("error from playwright:", e);
+          reject(e);
+        });
       });
     })
     .catch((e) => {
@@ -54,7 +60,6 @@ const test = ({
         const reportData = fs.existsSync("playwright-report/data")
           ? fs.readdirSync("playwright-report/data")
           : [];
-        console.log("Report data:", reportData);
 
         const version = toVersion();
         const root = "data/tests";
