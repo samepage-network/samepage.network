@@ -1,4 +1,5 @@
 import Table from "@dvargas92495/app/components/Table";
+import getMeta from "@dvargas92495/app/utils/getMeta";
 import type { LoaderFunction } from "@remix-run/node";
 import { Outlet, useNavigate } from "@remix-run/react";
 import getRoadmap from "~/data/getRoadmap.server";
@@ -37,5 +38,11 @@ export const headers = () => {
     "Cache-Control": "max-age=3600, stale-while-revalidate=60", // 1 hour, 1 minute
   };
 };
+
+export const meta = getMeta({
+  title: "Roadmap",
+  description: "Upcoming features and tasks we aim to work on next",
+  img: "/images/logo.png",
+});
 
 export default RoadmapPage;
