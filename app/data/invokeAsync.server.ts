@@ -20,6 +20,18 @@ const invokeAsync =
             Payload: Buffer.from(JSON.stringify(data)),
           })
           .then(() => true)
+    : process.env.NODE_ENV === "test"
+    ? <T extends Record<string, unknown>>({
+        path,
+        data,
+      }: {
+        path: string;
+        data: T;
+      }) =>
+        // TODO: we might actually want this done in a child process
+        import(`../../api/${path}`)
+          .then((mod) => mod.handler(data))
+          .then(() => true)
     : <T extends Record<string, unknown>>({
         path,
         data,

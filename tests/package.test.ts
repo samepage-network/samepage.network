@@ -162,7 +162,6 @@ test("Full integration test of sharing pages", async () => {
           attributes: { level: 1, viewType: "document" },
         },
       ],
-      contentType: "application/vnd.atjson+samepage; version=2022-08-17",
     }));
 
   const [, notification] = await test.step("Share page", () =>
@@ -220,7 +219,6 @@ test("Full integration test of sharing pages", async () => {
           attributes: { level: 1, viewType: "document" },
         },
       ],
-      contentType: "application/vnd.atjson+samepage; version=2022-08-17",
     }));
 
   await test.step("Client 2 disconnects", () =>
@@ -246,7 +244,6 @@ test("Full integration test of sharing pages", async () => {
           attributes: { level: 1, viewType: "document" },
         },
       ],
-      contentType: "application/vnd.atjson+samepage; version=2022-08-17",
     }));
 
   await test.step("Client 2 reconnects", () =>
@@ -282,7 +279,6 @@ test("Full integration test of sharing pages", async () => {
           attributes: { level: 1, viewType: "document" },
         },
       ],
-      contentType: "application/vnd.atjson+samepage; version=2022-08-17",
     }));
 
   await test.step("Client 2 loads missed updates while broken", () =>
@@ -315,7 +311,6 @@ test("Full integration test of sharing pages", async () => {
           attributes: { level: 1, viewType: "document" },
         },
       ],
-      contentType: "application/vnd.atjson+samepage; version=2022-08-17",
     }));
 
   await test.step("Client 2 loads correct state", () =>
