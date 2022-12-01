@@ -33,8 +33,8 @@ jobs:
         run: |
           sudo systemctl start mysql.service
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
-          mysql -e "INSERT INTO samepage_network.quotas (uuid, value, field) VALUES (UUID(), 100, 0), (UUID(), 3, 1)" -uroot -proot
           npx fuego plan --sql
           npx fuego apply --sql --bare
+          mysql -e "INSERT INTO samepage_network.quotas (uuid, value, field) VALUES (UUID(), 100, 0), (UUID(), 3, 1)" -uroot -proot
       - name: tests
         run: npm t
