@@ -1,6 +1,6 @@
 import Title from "@dvargas92495/app/components/Title";
 import Textarea from "@dvargas92495/app/components/Textarea";
-import { useFetcher } from "@remix-run/react";
+import { useFetcher, Link } from "@remix-run/react";
 import { useRef, useEffect } from "react";
 import Subtitle from "@dvargas92495/app/components/Subtitle";
 import TextInput from "@dvargas92495/app/components/TextInput";
@@ -113,6 +113,15 @@ const FeedbackPage = () => {
             </ExternalLink>
           ))}
         </div>
+        <p className="my-4">
+          Visit our live{" "}
+          <Link
+            to={"/roadmap"}
+            className={`text-sky-500 underline hover:no-underline active:text-sky-600 active:no-underline`}
+          >
+            Roadmap!
+          </Link>
+        </p>
       </div>
     </div>
   );
