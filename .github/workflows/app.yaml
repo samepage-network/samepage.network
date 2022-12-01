@@ -21,6 +21,7 @@ env:
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
   IS_PRODUCTION: 1
   ORIGIN: https://samepage.network
+  ROADMAP_ROAM_TOKEN: ${{ secrets.ROADMAP_ROAM_TOKEN }}
   STRIPE_PUBLIC_KEY: ${{ secrets.STRIPE_PUBLIC_KEY }}
   STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
   WEB_SOCKET_URL: https://ws.samepage.network
