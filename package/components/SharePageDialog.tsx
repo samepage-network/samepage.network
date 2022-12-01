@@ -1,6 +1,7 @@
 import type { AppId, Notebook } from "../internal/types";
 import React from "react";
 import {
+  AnchorButton,
   Button,
   Classes,
   Dialog,
@@ -101,7 +102,6 @@ const SharePageDialog = ({
       setRecents(recents.filter((r) => !currentNotebookUuids.has(r.uuid)));
     }
   };
-  // const appSelectRef = React.useRef<Select<AppId>>(null);
 
   React.useEffect(() => {
     if (isOpen) {
@@ -271,12 +271,20 @@ const SharePageDialog = ({
               )
             }
           />
-          <Button
-            minimal
-            icon={"plus"}
-            disabled={!currentNotebooks.length}
-            onClick={onInvite}
-          />
+          <Tooltip
+            content={
+              currentNotebooks.length
+                ? "Invite"
+                : "Must add notebooks before inviting"
+            }
+          >
+            <AnchorButton
+              minimal
+              icon={"plus"}
+              disabled={!currentNotebooks.length}
+              onClick={onInvite}
+            />
+          </Tooltip>
         </div>
         <span className="text-red-700">{error}</span>
         {loading && <Spinner size={16} />}

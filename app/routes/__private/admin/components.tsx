@@ -5,11 +5,11 @@ export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultEr
 import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
 import blueprintcss from "@blueprintjs/core/lib/css/blueprint.css";
 import blueprinticonscss from "@blueprintjs/icons/lib/css/blueprint-icons.css";
-import listNotebooks from "~/data/listNotebooks.server";
 import { RemixAppLoaderCallback } from "@dvargas92495/app/backend/remixAppLoader.server";
 import Select from "@dvargas92495/app/components/Select";
 import { getSetting, setSetting } from "package/internal/registry";
 import { useMemo } from "react";
+import listAllNotebooks from "~/data/listAllNotebooks.server";
 
 const ComponentsPage = () => {
   const { components, notebooks } =
@@ -73,7 +73,7 @@ const ComponentsPage = () => {
 const loaderFunction = ({
   context: { requestId },
 }: Parameters<RemixAppLoaderCallback>[0]) =>
-  listNotebooks(requestId).then(({ data }) => ({
+  listAllNotebooks(requestId).then(({ notebooks }) => ({
     components: [
       "AtJsonRendered",
       "NotificationContainer",
@@ -82,7 +82,7 @@ const loaderFunction = ({
       "UsageChart",
       "ViewSharedPages",
     ],
-    notebooks: data,
+    notebooks,
   }));
 
 export const loader: LoaderFunction = (args) => {

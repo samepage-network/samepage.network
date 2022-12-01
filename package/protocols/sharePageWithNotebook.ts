@@ -582,45 +582,48 @@ const setupSharePageWithNotebook = ({
         callback: () => {
           return getCurrentNotebookPageId()
             .then((notebookPageId) =>
-              calculateState(notebookPageId).then((docInit) => {
-                const doc = Automerge.from<Schema>(
-                  {
-                    content: new Automerge.Text(docInit.content),
-                    annotations: docInit.annotations,
-                    contentType:
-                      "application/vnd.atjson+samepage; version=2022-08-17",
-                  },
-                  { actorId: getActorId() }
-                );
-                const state = Automerge.save(doc);
-                return apiClient<{ id: string; created: boolean }>({
-                  method: "init-shared-page",
-                  notebookPageId,
-                  state: binaryToBase64(state),
-                }).then(async (r) => {
-                  if (r.created) {
-                    initPage({
+              notebookPageId
+                ? calculateState(notebookPageId).then((docInit) => {
+                    const doc = Automerge.from<Schema>(
+                      {
+                        content: new Automerge.Text(docInit.content),
+                        annotations: docInit.annotations,
+                        contentType:
+                          "application/vnd.atjson+samepage; version=2022-08-17",
+                      },
+                      { actorId: getActorId() }
+                    );
+                    const state = Automerge.save(doc);
+                    return apiClient<{ id: string; created: boolean }>({
+                      method: "init-shared-page",
                       notebookPageId,
-                      created: true,
-                      doc,
+                      state: binaryToBase64(state),
+                    }).then(async (r) => {
+                      if (r.created) {
+                        initPage({
+                          notebookPageId,
+                          created: true,
+                          doc,
+                        });
+                        dispatchAppEvent({
+                          type: "log",
+                          id: "init-page-success",
+                          content: `Successfully initialized shared page! Click on the invite button below to share the page with other notebooks!`,
+                          intent: "info",
+                        });
+                      } else {
+                        dispatchAppEvent({
+                          type: "log",
+                          id: "samepage-warning",
+                          content:
+                            "This page is already shared from this notebook",
+                          intent: "warning",
+                        });
+                        return Promise.resolve();
+                      }
                     });
-                    dispatchAppEvent({
-                      type: "log",
-                      id: "init-page-success",
-                      content: `Successfully initialized shared page! Click on the invite button below to share the page with other notebooks!`,
-                      intent: "info",
-                    });
-                  } else {
-                    dispatchAppEvent({
-                      type: "log",
-                      id: "samepage-warning",
-                      content: "This page is already shared from this notebook",
-                      intent: "warning",
-                    });
-                    return Promise.resolve();
-                  }
-                });
-              })
+                  })
+                : Promise.reject(new Error(`Failed to detect a page to share`))
             )
             .catch((e) => {
               dispatchAppEvent({

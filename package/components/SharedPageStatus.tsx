@@ -1,5 +1,5 @@
 import {
-  Button,
+  AnchorButton,
   Classes,
   Dialog,
   Drawer,
@@ -230,7 +230,7 @@ const TooltipButtonOverlay = ({
   return (
     <>
       <Tooltip content={tooltipContent} portalContainer={portalContainer}>
-        <Button
+        <AnchorButton
           icon={icon}
           minimal
           disabled={isOpen}
@@ -344,7 +344,7 @@ const SharedPageStatus = ({
           content={"Disconnect Shared Page"}
           portalContainer={portalContainer}
         >
-          <Button
+          <AnchorButton
             disabled={loading}
             icon={"th-disconnect"}
             minimal
@@ -378,7 +378,7 @@ const SharedPageStatus = ({
           />
         </Tooltip>
         <Tooltip content={"Manual Sync"} portalContainer={portalContainer}>
-          <Button
+          <AnchorButton
             disabled={loading}
             icon={"warning-sign"}
             minimal
@@ -411,7 +411,7 @@ const SharedPageStatus = ({
           />
         </Tooltip>
         <Tooltip content={"Copy IPFS Link"} portalContainer={portalContainer}>
-          <Button
+          <AnchorButton
             style={{ width: 30 }}
             disabled={loading}
             icon={
