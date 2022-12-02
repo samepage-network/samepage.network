@@ -61,7 +61,7 @@ const renderAtJson = ({
             ? -annotatedContent.length
             : 0);
         a.annotation.end +=
-          (a.annotation.end >= c.annotation.start
+          (a.annotation.end > c.annotation.start
             ? appliedAnnotation.prefix.length
             : 0) +
           (a.annotation.end > c.annotation.end
