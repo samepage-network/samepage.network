@@ -2,6 +2,7 @@ import { Lambda } from "@aws-sdk/client-lambda";
 import { domain } from "@dvargas92495/app/backend/constants.server";
 import axios from "axios";
 import { v4 } from "uuid";
+import { handler as uploadToIpfs } from "../../api/upload-to-ipfs";
 
 const lambda = new Lambda({ region: process.env.AWS_REGION });
 
@@ -31,10 +32,8 @@ const invokeAsync =
       }) =>
         // TODO: we might actually want this done in a child process
         path === "upload-to-ipfs"
-          ? import(`../../api/upload-to-ipfs`)
-              // @ts-ignore
-              .then((mod) => mod.handler(data, { awsRequestId: v4() }))
-              .then(() => true)
+          ? // @ts-ignore
+            uploadToIpfs(data, { awsRequestId: v4() }).then(() => true)
           : Promise.reject(new Error(`Unknown path: ${path}`))
     : <T extends Record<string, unknown>>({
         path,
