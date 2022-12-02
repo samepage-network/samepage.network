@@ -1,5 +1,5 @@
-import { appsById } from "package/internal/apps";
-import { app } from "package/internal/registry";
+import { appsById } from "../internal/apps";
+import { app } from "../internal/registry";
 import type { Annotation, InitialSchema } from "../internal/types";
 
 type AppliedAnnotation = {
