@@ -3,7 +3,7 @@ title: Installing on Obsidian
 description: Install SamePage into your Obsidian Vault
 ---
 
-The SamePage Roam extension allows you to connect your Obsidian Vault to other notebooks using the SamePage Network.
+The SamePage Obsidian extension allows you to connect your Obsidian Vault to other notebooks using the SamePage Network.
 
 A **Notebook** in Obsidian is a vault. Your personal vault is an example of a **Notebook**.
 
@@ -13,7 +13,7 @@ The Live version of the SamePage extension is still under review for the Obsidia
 
 ## Installing the Development version
 
-Click [this link](https://samepage.network/extensions/obsidian.zip) to download the latest development version of the SamePage extension for Roam.
+Click [this link](https://samepage.network/extensions/obsidian.zip) to download the latest development version of the SamePage extension for Obsidian.
 
 After downloading the extension from SamePage, extract the zip into a folder. You then have to move that folder within the folder that represents your vault, within the `.obsidian/plugins` directory:
 
@@ -28,8 +28,6 @@ Once you do, you should see SamePage appear in your community plugins section. C
 ![](/images/install/obsidian-4.png)
 
 The extension should automatically load and connect to SamePage!
-
-Because Roam is used in the browser, everytime you load Roam you will need to reload the extension so that it could read it from your file system. This will not be an issue during the **Live** version.
 
 ### Demo
 
