@@ -101,9 +101,27 @@ const useMarkdownComponent = (code: string) =>
                   className={"text-2xl my-4 font-medium"}
                 />
               ),
-              h4: (props) => <Header h={4} {...props} />,
-              h5: (props) => <Header h={5} {...props} />,
-              h6: (props) => <Header h={6} {...props} />,
+              h4: (props) => (
+                <Header
+                  h={4}
+                  {...props}
+                  className={"text-xl my-3 font-medium"}
+                />
+              ),
+              h5: (props) => (
+                <Header
+                  h={5}
+                  {...props}
+                  className={"text-lg my-2 font-medium"}
+                />
+              ),
+              h6: (props) => (
+                <Header
+                  h={6}
+                  {...props}
+                  className={"text-lg my-3 font-normal"}
+                />
+              ),
               p: { props: { className: "mb-2" } },
               pre: CodeBlock,
               li: { props: { className: "list-disc ml-4" } },
