@@ -8,11 +8,11 @@ import getMysql from "fuegojs/utils/mysql";
 import deleteNotebook from "~/data/deleteNotebook.server";
 import binaryToBase64 from "../../package/internal/binaryToBase64";
 import Automerge from "automerge";
-import { Notebook, Schema } from "../../package/internal/types";
+import { Notebook, RequestBody, Schema } from "../../package/internal/types";
 import QUOTAS from "~/data/quotas.server";
 import issueRandomInvite from "../utils/issueRandomInvite";
 
-const mockLambda = async (body: Record<string, unknown>) => {
+const mockLambda = async (body: RequestBody) => {
   const requestId = v4();
   const res = handler(
     {
@@ -229,6 +229,7 @@ const mockState = (s: string) =>
   );
 
 // TODO: need to isolate this test, causes too much ~flake~
+// Injecting global context pattern with functions for getters - nice!
 test.skip("Reaching the page limit should throw on init and accept page", async () => {
   const { notebookUuid, token } = await mockRandomNotebook();
   await getMysql().then((cxn) =>
@@ -327,6 +328,44 @@ test("Sharing a page that is already shared locally should return a readable err
   });
   expect(response2.created).toEqual(false);
   expect(response2.id).toEqual(response.id);
+});
+
+test("Inviting someone to a page they already have shared should return a readable error", async () => {
+  const { notebookUuid, token } = await mockRandomNotebook();
+  const {
+    notebookUuid: otherNotebook, //token: otherToken
+  } = await mockRandomNotebook();
+  const notebookPageId = await getRandomNotebookPage();
+  await mockLambda({
+    method: "init-shared-page",
+    notebookUuid,
+    token,
+    notebookPageId,
+    state: mockState("hello"),
+  });
+  const response = await mockLambda({
+    method: "invite-notebook-to-page",
+    notebookUuid: notebookUuid,
+    token,
+    targetUuid: otherNotebook,
+    notebookPageId,
+  })
+    .then(() => ({ success: true, e: undefined }))
+    .catch((e) => ({ success: false, e: e as string }));
+  expect(response.success).toEqual(true);
+  const response2 = await mockLambda({
+    method: "invite-notebook-to-page",
+    notebookUuid: notebookUuid,
+    token,
+    targetUuid: otherNotebook,
+    notebookPageId,
+  })
+    .then(() => ({ success: true, e: undefined }))
+    .catch((e) => ({ success: false, e: e as string }));
+  expect(response2.success).toEqual(false);
+  expect(response2.e).toEqual(
+    `Attempted to invite a notebook to a page that was already shared with it.`
+  );
 });
 
 test.afterAll(async () => {

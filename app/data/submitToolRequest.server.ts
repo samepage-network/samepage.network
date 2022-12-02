@@ -10,6 +10,9 @@ const submitToolRequest = ({
   tool: string;
   message: string;
 }): Promise<{ success: boolean }> => {
+  if (!tool) {
+    throw new BadRequestError("tool input is required");
+  }
   if (tool.includes("@")) {
     throw new BadRequestError("Message blocked due to spam detected");
   }

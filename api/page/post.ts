@@ -596,6 +596,7 @@ const logic = async (req: Record<string, unknown>) => {
             notebookUuid: targetNotebookUuid,
             notebookPageId,
             safe: true,
+            open: null,
             requestId,
           }),
         ]).then(async ([page, targetPage]) => {
@@ -606,7 +607,7 @@ const logic = async (req: Record<string, unknown>) => {
           }
           if (targetPage) {
             throw new MethodNotAllowedError(
-              `Attempted to invite a notebook to a page that was already shared with it`
+              `Attempted to invite a notebook to a page that was already shared with it.`
             );
           }
           const { uuid: pageUuid } = page;
