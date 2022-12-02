@@ -5,7 +5,7 @@ import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server"
 import Button from "@dvargas92495/app/components/Button";
 import TextInput from "@dvargas92495/app/components/TextInput";
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
-import { Form, useLoaderData } from "@remix-run/react";
+import { Form, useLoaderData, Link } from "@remix-run/react";
 import getInviteInfo from "~/data/getInviteInfo.server";
 import updateInviteInfo from "~/data/updateInviteInfo.server";
 import deleteInvite from "~/data/deleteInvite.server";
@@ -15,10 +15,12 @@ const SingleInvitePage = () => {
   return (
     <div className={"flex gap-4 flex-col h-full"}>
       <div>
-        <code>{data.code} ({data.links} tokens)</code>
+        <code>
+          {data.code} ({data.links} tokens)
+        </code>
       </div>
       {data.notebooks.map((n) => (
-        <div key={n.uuid}>
+        <Link key={n.uuid} to={`/admin/notebooks/${n.uuid}`}>
           <div>
             <b>App: </b>
             <span>{n.app}</span>
@@ -27,7 +29,7 @@ const SingleInvitePage = () => {
             <b>Workspace: </b>
             <span>{n.workspace}</span>
           </div>
-        </div>
+        </Link>
       ))}
       <Form method={"put"} className={"flex items-center gap-8"}>
         <TextInput

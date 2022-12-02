@@ -1,3 +1,5 @@
+import { appsById } from "package/internal/apps";
+import { app } from "package/internal/registry";
 import type { Annotation, InitialSchema } from "../internal/types";
 
 type AppliedAnnotation = {
@@ -14,7 +16,11 @@ const renderAtJson = ({
   applyAnnotation: {
     [t in Annotation as t["type"]]?:
       | AppliedAnnotation
-      | ((attributes: t["attributes"], content: string) => AppliedAnnotation);
+      | ((
+          attributes: t["attributes"],
+          content: string,
+          appAttributes: Record<string, string>
+        ) => AppliedAnnotation);
   };
 }) => {
   return state.annotations
@@ -32,8 +38,12 @@ const renderAtJson = ({
         typeof appliedAnnotationData === "object"
           ? appliedAnnotationData
           : typeof appliedAnnotationData === "function"
-          ? // @ts-ignore
-            appliedAnnotationData(c.attributes || {}, annotatedContent)
+          ? appliedAnnotationData(
+              // @ts-ignore
+              c.attributes || {},
+              annotatedContent,
+              c.appAttributes?.[appsById[app].name.toLowerCase()] || {}
+            )
           : { prefix: "", suffix: "" };
       all.slice(index + 1).forEach((a) => {
         a.start +=
