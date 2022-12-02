@@ -6,6 +6,7 @@ type SharedPageInput = {
   notebookPageId: string;
   requestId: string;
   notebookUuid: string;
+  open?: 0 | 1 | null;
 };
 type GetSharedPage<T> = T extends SharedPageInput & { safe: true }
   ? Promise<SharedPage | undefined>
@@ -15,6 +16,7 @@ const getSharedPage = <T extends SharedPageInput & { safe?: true }>({
   safe,
   requestId,
   notebookUuid,
+  open = 0,
 }: T): GetSharedPage<T> =>
   getMysql(requestId).then((cxn) =>
     cxn
@@ -22,8 +24,12 @@ const getSharedPage = <T extends SharedPageInput & { safe?: true }>({
         `SELECT p.uuid, l.cid
         FROM page_notebook_links l 
         INNER JOIN pages p ON p.uuid = l.page_uuid
-        WHERE notebook_uuid = ? AND notebook_page_id = ? AND open = 0`,
-        [notebookUuid, notebookPageId]
+        WHERE notebook_uuid = ? AND notebook_page_id = ?${
+          open === null ? "" : " AND open = ?"
+        }`,
+        ([notebookUuid, notebookPageId] as (string | number)[]).concat(
+          open === null ? [] : [open]
+        )
       )
       .then(([results]) => {
         const [link] = results as SharedPage[];
