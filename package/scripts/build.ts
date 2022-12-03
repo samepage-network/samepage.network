@@ -27,7 +27,10 @@ const publish = async ({
   process.chdir("dist");
   execSync(`zip -qr ${destPath}.zip .`);
   execSync(
-    `aws s3 cp ${destPath}.zip s3://${domain}/${destPath.replace(/-samepage$/, "")}/${version}.zip`
+    `aws s3 cp ${destPath}.zip s3://${domain}/${destPath.replace(
+      /-samepage$/,
+      ""
+    )}/${version}.zip`
   );
 
   const token = process.env.GITHUB_TOKEN;
@@ -98,7 +101,9 @@ const publish = async ({
   return 0;
 };
 
-const build = (args: CliArgs & { dry?: boolean; review?: string } = {}) => {
+const build = (
+  args: CliArgs & { dry?: boolean; review?: string; domain?: string } = {}
+) => {
   process.env.NODE_ENV = process.env.NODE_ENV || "production";
   const version = toVersion();
   const envExisting = fs.existsSync(".env")
@@ -110,7 +115,9 @@ const build = (args: CliArgs & { dry?: boolean; review?: string } = {}) => {
   );
   return compile({ ...args, opts: { minify: true } })
     .then(() =>
-      args.dry ? Promise.resolve(0) : publish({ review: args.review, version })
+      args.dry
+        ? Promise.resolve(0)
+        : publish({ review: args.review, version, domain: args.domain })
     )
     .then((exitCode) => {
       console.log("done");
