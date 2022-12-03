@@ -1,9 +1,7 @@
 import fs from "fs";
 import axios from "axios";
-// import { bundleMDX } from "mdx-bundler";
 import grayMatter from "gray-matter";
 
-// Temporary solution until I figure out how to get MDX working without esbuild
 const bundleMDX = async ({ source }: { source: string }) => {
   const { data, content } = grayMatter(source);
   return { frontmatter: data, code: content };

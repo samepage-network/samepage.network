@@ -23,6 +23,11 @@ const zBody = z.discriminatedUnion("method", [
     path: z.string(),
     stack: z.string(),
   }),
+  z.object({
+    method: z.literal("notification-action"),
+    label: z.string(),
+    stack: z.string(),
+  }),
 ]);
 
 const logic = async (body: Record<string, unknown>) => {
@@ -66,6 +71,15 @@ const logic = async (body: Record<string, unknown>) => {
       await sendEmail({
         to: "support@samepage.network",
         subject: `SamePage webapp path failed: /${path}`,
+        body: stack,
+      });
+      return { success: true };
+    }
+    case "notification-action": {
+      const { label, stack } = args;
+      await sendEmail({
+        to: "support@samepage.network",
+        subject: `SamePage webapp path failed: /${label}`,
         body: stack,
       });
       return { success: true };

@@ -11,7 +11,7 @@ import Automerge from "automerge";
 import { Notebook, RequestBody, Schema } from "../../package/internal/types";
 import QUOTAS from "~/data/quotas.server";
 import issueRandomInvite from "../utils/issueRandomInvite";
-import getRandomNotebookPageId from "tests/utils/getRandomNotebookPageId";
+import getRandomNotebookPageId from "../utils/getRandomNotebookPageId";
 
 const mockLambda = async (body: RequestBody) => {
   const requestId = v4();

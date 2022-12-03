@@ -169,6 +169,7 @@ const compile = ({
     })
     .then(async (r) => {
       if (r.metafile) {
+        // TODO - parse metafile instead
         const text = await esbuild.analyzeMetafile(r.metafile);
         const files = text
           .trim()

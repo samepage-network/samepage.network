@@ -1,5 +1,4 @@
 import React, { useMemo } from "react";
-// import { getMDXComponent } from "mdx-bundler/client";
 import Markdown from "markdown-to-jsx";
 import Highlight, { defaultProps, Language } from "prism-react-renderer";
 import { Link } from "@remix-run/react";
