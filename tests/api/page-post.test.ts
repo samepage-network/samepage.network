@@ -11,6 +11,7 @@ import Automerge from "automerge";
 import { Notebook, RequestBody, Schema } from "../../package/internal/types";
 import QUOTAS from "~/data/quotas.server";
 import issueRandomInvite from "../utils/issueRandomInvite";
+import getRandomNotebookPageId from "package/testing/getRandomNotebookPageId";
 
 const mockLambda = async (body: RequestBody) => {
   const requestId = v4();
@@ -96,12 +97,6 @@ const mockLambda = async (body: RequestBody) => {
 
 const getRandomWorkspace = async () =>
   `test-${await randomString({
-    length: 4,
-    encoding: "hex",
-  })}`;
-
-const getRandomNotebookPage = async () =>
-  `page-${await randomString({
     length: 4,
     encoding: "hex",
   })}`;
@@ -242,12 +237,12 @@ test.skip("Reaching the page limit should throw on init and accept page", async 
     method: "init-shared-page",
     notebookUuid,
     token,
-    notebookPageId: await getRandomNotebookPage(),
+    notebookPageId: await getRandomNotebookPageId(),
     state: mockState("hello"),
   });
   expect(created).toEqual(true);
 
-  const notebookPageId = await getRandomNotebookPage();
+  const notebookPageId = await getRandomNotebookPageId();
   const response = await mockLambda({
     method: "init-shared-page",
     notebookUuid,
@@ -308,7 +303,7 @@ test("Initing a shared page without a page id should fail", async () => {
 
 test("Sharing a page that is already shared locally should return a readable error", async () => {
   const { notebookUuid, token } = await mockRandomNotebook();
-  const notebookPageId = await getRandomNotebookPage();
+  const notebookPageId = await getRandomNotebookPageId();
 
   const response = await mockLambda({
     method: "init-shared-page",
@@ -335,7 +330,7 @@ test("Inviting someone to a page they already have shared should return a readab
   const {
     notebookUuid: otherNotebook, //token: otherToken
   } = await mockRandomNotebook();
-  const notebookPageId = await getRandomNotebookPage();
+  const notebookPageId = await getRandomNotebookPageId();
   await mockLambda({
     method: "init-shared-page",
     notebookUuid,

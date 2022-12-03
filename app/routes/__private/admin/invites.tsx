@@ -19,6 +19,15 @@ const InvitesPage = () => {
   return (
     <div className="flex gap-8 items-start">
       <div className="max-w-3xl">
+        <Form method="get" className="flex items-center max-w-lg gap-8">
+          <TextInput
+            label={"Search"}
+            name={"search"}
+            placeholder={"Search by email"}
+            className={"flex-grow"}
+          />
+          <Button>Search</Button>
+        </Form>
         <Form method={"post"} className={"flex items-center gap-8"}>
           <TextInput name={"email"} label={"Email"} />
           <Button>New</Button>

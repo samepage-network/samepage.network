@@ -8,7 +8,6 @@ const searchPageNotebookLinks = async ({
   context: { requestId: string };
 }) => {
   const search = data["search"]?.[0];
-  console.log(data, search);
   const cxn = await getMysql(requestId);
   const results = await cxn
     .execute(
@@ -18,7 +17,6 @@ const searchPageNotebookLinks = async ({
       [search]
     )
     .then(([a]) => a as { uuid: string; notebook_page_id: string }[]);
-  console.log(results.length);
   return {
     results,
   };

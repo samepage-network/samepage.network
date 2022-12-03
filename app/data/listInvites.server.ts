@@ -6,6 +6,11 @@ const listIssuedTokens = async (
 ) => {
   const index = Number(searchParams["index"] || "1") - 1;
   const size = Number(searchParams["size"]) || 10;
+  const search = searchParams["search"] || "";
+  const pagination = [size, index * size];
+  const args = search
+    ? ([search] as (string | number)[]).concat(pagination)
+    : pagination;
   const cxn = await getMysqlConnection(requestId);
   const data = await cxn
     .execute(
@@ -16,9 +21,13 @@ const listIssuedTokens = async (
         ELSE "EXPIRED" 
       END as status
     FROM invitations i
+    ${search ? `WHERE i.email LIKE CONCAT("%",?,"%")` : ""}
     ORDER BY status DESC, date DESC
     LIMIT ? OFFSET ?`,
-      [size, index * size]
+      // TODO: this is insane
+      process.env.NODE_ENV === "development"
+        ? args.map((a) => a.toString())
+        : args
     )
     .then(
       ([r]) =>

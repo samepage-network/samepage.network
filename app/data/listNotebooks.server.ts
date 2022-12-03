@@ -8,7 +8,12 @@ const listNotebooks = async (
 ) => {
   const index = Number(searchParams["index"] || "1") - 1;
   const size = Number(searchParams["size"]) || 10;
+  const search = searchParams["search"] || "";
   const cxn = await getMysqlConnection(requestId);
+  const pagination = [size, index * size];
+  const args = search
+    ? ([search] as (string | number)[]).concat(pagination)
+    : pagination;
   const data = await cxn
     .execute(
       `SELECT n.uuid, n.app as app, n.workspace as workspace, MAX(c.created_date) as created_date, MAX(i.created_date) as invited_date, MAX(t.value) as token
@@ -17,10 +22,14 @@ const listNotebooks = async (
   LEFT JOIN token_notebook_links l ON n.uuid = l.notebook_uuid
   LEFT JOIN tokens t ON t.uuid = l.token_uuid
   LEFT JOIN invitations i ON i.token_uuid = l.token_uuid
+  ${search ? `WHERE n.workspace LIKE CONCAT("%",?,"%")` : ""}
   GROUP BY n.uuid
   ORDER BY created_date DESC, invited_date DESC, app, workspace
   LIMIT ? OFFSET ?`,
-      [size, index * size]
+      // TODO: this is insane
+      process.env.NODE_ENV === "development"
+        ? args.map((a) => a.toString())
+        : args
     )
     .then(
       ([r]) =>

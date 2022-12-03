@@ -19,11 +19,12 @@ const defaultRenderOverlay: RenderOverlay = ({
   props = {},
   path = "body",
 } = {}) => {
+  let onClose: () => void;
+  if (typeof document === "undefined") return undefined;
   const parent = document.createElement("div");
   parent.id = id.replace(/^\d*/, "");
   const pathElement =
     typeof path === "string" ? document.querySelector(path) : path;
-  let onClose: () => void;
   if (pathElement && !pathElement.querySelector(`#${parent.id}`)) {
     // dynamic render so that React17 tfts could still use the registry
     import("react-dom/client")

@@ -19,7 +19,15 @@ const ConnectionsPage = () => {
   return (
     <div className={"flex gap-8 items-start"}>
       <div className="max-w-3xl w-full">
-        <StatPanels stats={stats} order={ORDER} />
+        <Form method="get" className="flex items-center max-w-lg gap-8">
+          <TextInput
+            label={"Search"}
+            name={"search"}
+            placeholder={"Search by workspace"}
+            className={"flex-grow"}
+          />
+          <Button>Search</Button>
+        </Form>
         <Table
           onRowClick={(r) => navigate(r.uuid as string)}
           renderCell={{
@@ -33,6 +41,7 @@ const ConnectionsPage = () => {
                 : (v as string),
           }}
         />
+        <StatPanels stats={stats} order={ORDER} />
         <Form method={"post"} className={"mt-12"}>
           <h3 className="text-base font-normal mb-4">
             Create SamePage Test Notebook
