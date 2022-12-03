@@ -167,7 +167,104 @@ const compile = ({
       metafile: analyze,
       ...opts,
     })
-    .then((r) => {
+    .then(async (r) => {
+      if (r.metafile) {
+        const text = await esbuild.analyzeMetafile(r.metafile);
+        const files = text
+          .trim()
+          .split(/\n/)
+          .filter((s) => !!s.trim())
+          .map((s) => {
+            const file = s.trim();
+            const args = /([├└])?\s*([^\s]+)\s*(\d+(?:\.\d)?[kmg]?b)\s*/.exec(
+              file
+            );
+            if (!args) throw new Error(`Failed to parse ${file} from metadata`);
+            const [_, isFile, fileName, size] = args;
+            if (!fileName)
+              throw new Error(
+                `Failed to parse filename from ${file} in metadata`
+              );
+            return { isFile, fileName, size };
+          });
+        type TreeNode = {
+          fileName: string;
+          size: number;
+          children: TreeNode[];
+        };
+        const parseSize = (s: string) => {
+          const [_, value, unit] = /(\d+(?:\.\d)?)([kmg]?b)/.exec(s) || [
+            "0",
+            "b",
+          ];
+          const mult =
+            unit === "gb"
+              ? 1000000000
+              : unit === "mb"
+              ? 1000000
+              : unit === "kb"
+              ? 1000
+              : 1;
+          return mult * Number(value);
+        };
+        const tree: TreeNode[] = [];
+        let maxLength = 0;
+        files.forEach((file) => {
+          maxLength = Math.max(maxLength, file.fileName.length);
+          if (file.isFile) {
+            let root = tree.slice(-1)[0];
+            const parts = file.fileName.split("/");
+            parts.forEach((_, index, all) => {
+              const fileName = all.slice(0, index + 1).join("/");
+              const size = parseSize(file.size);
+              const treeNode = root.children.find(
+                (c) => c.fileName === fileName
+              );
+              if (treeNode) {
+                treeNode.size += size;
+                root = treeNode;
+              } else {
+                const newRoot = { children: [], fileName, size };
+                root.children.push(newRoot);
+                root = newRoot;
+              }
+            });
+          } else {
+            tree.push({
+              children: [],
+              fileName: file.fileName,
+              size: parseSize(file.size),
+            });
+          }
+        });
+        const calcSize = (t: TreeNode) => {
+          if (t.children.length) {
+            t.size = t.children.reduce((p, c) => p + calcSize(c), 0);
+          }
+          return t.size;
+        };
+        tree.forEach(calcSize);
+        const printTree = (t: TreeNode[], level = 0): string[] =>
+          t
+            .sort((a, b) => b.size - a.size)
+            .flatMap((tn) => {
+              const indent = "".padStart(level * 2, " ");
+              return [
+                `${indent}${level ? "├ " : ""}${tn.fileName.padEnd(
+                  maxLength + (level ? 6 : 8) - indent.length
+                )}${(tn.size >= 1000000000
+                  ? `${(tn.size / 1000000000).toFixed(1)}gb`
+                  : tn.size >= 1000000
+                  ? `${(tn.size / 1000000).toFixed(1)}mb`
+                  : tn.size >= 1000
+                  ? `${(tn.size / 1000).toFixed(1)}kb`
+                  : `${tn.size}b `
+                ).padStart(7, " ")}`,
+                ...printTree(tn.children, level + 1),
+              ];
+            });
+        fs.writeFileSync("./analyze.txt", printTree(tree).join("\n"));
+      }
       const finish = () => {
         DEFAULT_FILES_INCLUDED.concat(
           typeof include === "string" ? [include] : include || []
