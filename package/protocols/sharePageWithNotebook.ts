@@ -91,16 +91,18 @@ export const changeAutomergeDoc = async (
         string | number
       >;
       Object.keys(oldAttrs).forEach((key) => {
-        if (oldAttrs[key] !== newAttrs[key]) {
-          oldAttrs[key] = newAttrs[key];
-        }
+        if (!newAttrs[key]) delete oldAttrs[key];
+      });
+      Object.keys(newAttrs).forEach((key) => {
+        oldAttrs[key] = newAttrs[key];
       });
       const oldCustomAttrs = annotation.appAttributes?.[app] || {};
       const newCustomAttrs = newAnnotation.appAttributes?.[app] || {};
       Object.keys(oldCustomAttrs).forEach((key) => {
-        if (oldCustomAttrs[key] !== newCustomAttrs[key]) {
-          oldCustomAttrs[key] = newCustomAttrs[key];
-        }
+        if (!oldCustomAttrs[key]) delete oldCustomAttrs[key];
+      });
+      Object.keys(newCustomAttrs).forEach((key) => {
+        oldCustomAttrs[key] = newCustomAttrs[key];
       });
     });
   if (oldDoc.annotations.length > doc.annotations.length)
