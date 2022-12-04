@@ -4,11 +4,12 @@ import { appsById } from "package/internal/apps";
 import { z } from "zod";
 import getMysql from "fuegojs/utils/mysql";
 import { Notebook } from "package/internal/types";
+import AtJsonParserErrorEmail from "~/components/AtJsonParserErrorEmail";
 
 const zBody = z.discriminatedUnion("method", [
   z.object({
     method: z.literal("at-json-parser"),
-    results: z.any(),
+    results: z.unknown().array(),
     input: z.string(),
     app: z.number(),
   }),
@@ -44,7 +45,7 @@ const logic = async (body: Record<string, unknown>) => {
         subject: `New AtJsonParser error in app ${
           appsById[app]?.name || "Unknown"
         }`,
-        body: `Input: ${input}\n\nResults: ${JSON.stringify(results, null, 4)}`,
+        body: AtJsonParserErrorEmail({ input, results }),
       });
       return { success: true };
     }
