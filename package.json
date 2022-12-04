@@ -49,6 +49,7 @@
     "@types/moo": "^0.5.5",
     "@types/nearley": "^2.11.2",
     "automerge": "^1.0.1-preview.7",
+    "c8": "^7.12.0",
     "diff": "^5.1.0",
     "gray-matter": "^4.0.3",
     "nearley": "^2.20.1",
@@ -62,7 +63,6 @@
     "@types/diff": "^5.0.2",
     "@types/jsdom": "^20.0.0",
     "@types/mime-types": "^2.1.1",
-    "c8": "^7.12.0",
     "jsdom": "^20.0.0"
   },
   "fuego": {
@@ -82,6 +82,7 @@
         "automerge": "^1.0.1-preview.7",
         "axios": ">=0.27.2",
         "chokidar": ">=3.5.3",
+        "c8": "^7.12.0",
         "dotenv": "10.0.0",
         "esbuild": ">=0.13.15",
         "jsdom": "^20.0.0",
@@ -132,6 +133,7 @@
           "description": "Utilities that help with testing SamePage-compatible extensions",
           "peerDependencies": {
             "@playwright/test": "^1.25.2",
+            "c8": "^7.12.0",
             "dotenv": "10.0.0"
           }
         }

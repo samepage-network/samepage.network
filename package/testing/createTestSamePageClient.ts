@@ -5,6 +5,7 @@ import setupSharePageWithNotebook, {
 } from "../protocols/sharePageWithNotebook";
 import setupNotebookQuerying from "../protocols/notebookQuerying";
 import {
+  Annotation,
   atJsonInitialSchema,
   InitialSchema,
   Notification,
@@ -22,8 +23,8 @@ import base64ToBinary from "../internal/base64ToBinary";
 import type { default as defaultSettings } from "../utils/defaultSettings";
 import { callNotificationAction } from "../internal/messages";
 import fromAtJson from "./fromAtJson";
-import { load, set } from "package/utils/localAutomergeDb";
-import binaryToBase64 from "package/internal/binaryToBase64";
+import { load, set } from "../utils/localAutomergeDb";
+import binaryToBase64 from "../internal/binaryToBase64";
 import { v4 } from "uuid";
 
 const SUPPORTED_TAGS = ["SPAN", "DIV", "A", "LI"] as const;
@@ -164,8 +165,19 @@ const createTestSamePageClient = async ({
   const commands: Record<string, () => unknown> = {};
 
   const defaultApplyState = async (id: string, data: Schema) => {
-    console.log("Applied", JSON.stringify(data));
-    appClientState[id] = new JSDOM(fromAtJson(data));
+    appClientState[id] = new JSDOM(
+      fromAtJson({
+        content: data.content.toString(),
+        annotations: data.annotations.map(
+          (a) =>
+            ({
+              ...a,
+              start: a.start.value,
+              end: a.end.value,
+            } as Annotation)
+        ),
+      })
+    );
   };
   let applyState = defaultApplyState;
   const calculateState = async (id: string): Promise<InitialSchema> => {
