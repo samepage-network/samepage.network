@@ -9,9 +9,31 @@ A **Notebook** in Obsidian is a vault. Your personal vault is an example of a **
 
 ## Installing the Live Version
 
-The Live version of the SamePage extension is still under review for the Obsidian Community Marketplace. Subscribe to our newsletter to be notified when the extension is live!
+The Live version of the SamePage extension is available in th Obsidian Community Plugins Store!
+
+First, open your Obsidian Settings by clicking on the settings gear on the bottom left:
+
+![](/images/install/obsidian-live-1.png)
+
+Next, on the `Community plugins` tab, click the Browse button towards the right:
+
+![](/images/install/obsidian-live-2.png)
+
+Finally, search for "SamePage" and when you arrive to the extension's page, click on the Install and Enable buttons!
+
+![](/images/install/obsidian-live-3.png)
+
+Once installed and enabled, the extension should automatically kick off the onboarding flow behind the settings pages.
+
+### Demo
+
+<div style="position: relative; padding-bottom: 64.5933014354067%; height: 0; margin-bottom:32px;"><iframe src="https://www.loom.com/embed/b2212189827b48e6810807810a188e50" frameborder="0" webkitallowfullscreen="true" mozallowfullscreen="true" allowfullscreen="true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+
+For help with onboarding, check out our [Onboarding docs.](../getting_started/install#onboarding)
 
 ## Installing the Development version
+
+Note that this version is only intended for contributors to SamePage. Most users will never need to install the development version.
 
 Click [this link](https://samepage.network/extensions/obsidian.zip) to download the latest development version of the SamePage extension for Obsidian.
 

@@ -43,7 +43,7 @@ const Instruction = ({
             <h2 className="font-semibold text-xl mb-4">
               {i + 1}. {s.title}
             </h2>
-            <div className="flex-grow flex flex-col justify-center">
+            <div className="flex-grow flex flex-col justify-center items-center">
               {s.children === "link" ? (
                 <a
                   className={
@@ -118,7 +118,7 @@ const INSTRUCTIONS: Record<string, { steps: InstructionSteps; live: boolean }> =
           children: "image",
         },
         {
-          title: `Search SamePage`,
+          title: `Search SamePage!`,
           children: "image",
         },
       ],
@@ -127,23 +127,19 @@ const INSTRUCTIONS: Record<string, { steps: InstructionSteps; live: boolean }> =
     obsidian: {
       steps: [
         {
-          title: `Download & Unzip`,
-          children: "link",
-        },
-        {
-          title: `Copy to .obsidian/plugins`,
+          title: `Go to Settings`,
           children: "image",
         },
         {
-          title: `Open Community Plugins`,
+          title: `Browse Community Plugins`,
           children: "image",
         },
         {
-          title: `Enable obsidian-samepage!`,
+          title: `Enable SamePage!`,
           children: "image",
         },
       ],
-      live: false,
+      live: true,
     },
   };
 
@@ -187,14 +183,13 @@ const InstallPage = () => {
           support@samepage.network
         </ExternalLink>
         . SamePage extensions are currently under{" "}
-        <b className="font-bold">heavy</b> development and these links will
-        update frequently with the latest version. Do not use for any sensitive
-        data.
+        <b className="font-bold">heavy</b> development and these extensions will
+        update frequently. Do not use with sensitive data.
       </div>
       <div className="italic text-sm mb-2 w-full">
         A more in depth guide on how to install SamePage is available{" "}
         <Link
-          to={"/docs/getting_started/install"}
+          to={`/docs/${selectedApp}/install`}
           className={`text-sky-500 underline hover:no-underline active:text-sky-600 active:no-underline`}
         >
           in our docs.
