@@ -31,11 +31,11 @@ const forkSamePageClient = ({
   inviteCode: string;
 }) => {
   let expectedToClose = false;
-  const client = fork(
-    "./package/testing/createTestSamePageClient",
-    ["--forked", workspace, inviteCode]
-    // { execArgv: ["--inspect-brk=127.0.0.1:9323"] }
-  );
+  const client = fork("./package/testing/createTestSamePageClient", [
+    "--forked",
+    workspace,
+    inviteCode,
+  ]);
   const pendingRequests: Record<string, (data: unknown) => void> = {};
   const api = {
     send: (m: MessageSchema) => {
@@ -105,7 +105,10 @@ test("Full integration test of sharing pages", async () => {
   const apiReady = new Promise<void>((resolve) =>
     spawnCallbacks.push({ test: /API server listening/, callback: resolve })
   );
-  api.stderr.on("data", (s) => console.error(`API Error: ${s as string}`));
+  api.stderr.on("data", (s) => {
+    if (/Warning: got packets out of order/.test(s)) return;
+    console.error(`API Error: ${s as string}`);
+  });
 
   cleanup = async () => {
     api.kill();

@@ -9,3 +9,4 @@ SamePage.pem
 /public/data
 /package/testing/*.js
 playwright-report
+coverage

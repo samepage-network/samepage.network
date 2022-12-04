@@ -25,6 +25,13 @@ const test = ({
         : [];
       // TODO - add a way to proc with debugger
       const args = [
+        "c8",
+        "--all",
+        "--include",
+        "src",
+        "--exclude",
+        "node_modules",
+        "--exclude-after-remap",
         "playwright",
         "test",
         ...config

@@ -20,8 +20,8 @@
     "start": "concurrently \"npm:api\" \"npm:dev\" \"npm:tailwind\"",
     "ssh": "ssh -i SamePage.pem ubuntu@35.173.242.123",
     "tailwind": "npm run generate:css -- --watch",
-    "pretest": "esbuild ./package/testing/createTestSamePageClient.ts --outfile=./package/testing/createTestSamePageClient.js --bundle --platform=node \"--external:./node_modules/jsdom/*\"",
-    "test": "playwright test --config=package/testing/playwright.config.ts",
+    "pretest": "node scripts/pretest.js",
+    "test": "c8 --all --include app --include api --include package --exclude app/server/build --exclude node_modules --exclude-after-remap playwright test --config=package/testing/playwright.config.ts",
     "db": "mysql --host vargas-arts.c2sjnb5f4d57.us-east-1.rds.amazonaws.com --port 5432 --database samepage_network --user dvargas92495 -p$RDS_MASTER_PASSWORD",
     "db:dev": "mysql --database samepage_network"
   },
@@ -62,7 +62,7 @@
     "@types/diff": "^5.0.2",
     "@types/jsdom": "^20.0.0",
     "@types/mime-types": "^2.1.1",
-    "babel-plugin-istanbul": "^6.1.1",
+    "c8": "^7.12.0",
     "jsdom": "^20.0.0"
   },
   "fuego": {

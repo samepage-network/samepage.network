@@ -64,9 +64,7 @@ export const handler = async (
             `UPDATE page_notebook_links SET cid = ?, version = ? WHERE uuid = ?`,
             [cid, newHistory.slice(-1)[0]?.change?.time, uuid]
           );
-        } else {
-          // a race condition, don't set the notebook link cid!
-        }
+        } // else a race condition, don't set the notebook link cid!
       }
     }),
   ]);
