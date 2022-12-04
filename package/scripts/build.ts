@@ -71,13 +71,12 @@ const publish = async ({
     );
 
     console.log(`Successfully created github release for version ${tag_name}`);
+    process.chdir("..");
   } else {
     console.warn(
       "No GitHub token set - please set one to create a Github release"
     );
   }
-
-  process.chdir("..");
 
   if (review && fs.existsSync(`${process.cwd()}/${review}`)) {
     await import(`${process.cwd()}/${review.replace(/\.[jt]s$/, "")}`)
