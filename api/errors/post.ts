@@ -5,6 +5,8 @@ import { z } from "zod";
 import getMysql from "fuegojs/utils/mysql";
 import { Notebook } from "package/internal/types";
 import AtJsonParserErrorEmail from "~/components/AtJsonParserErrorEmail";
+import { v4 } from "uuid";
+import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
 
 const zBody = z.discriminatedUnion("method", [
   z.object({
@@ -40,12 +42,20 @@ const logic = async (body: Record<string, unknown>) => {
   switch (args.method) {
     case "at-json-parser": {
       const { app, input, results } = args;
+      const uuid = v4();
+      await uploadFile({
+        Key: `data/errors/${uuid}.json`,
+        Body: JSON.stringify({
+          input,
+          results,
+        }),
+      });
       await sendEmail({
         to: "support@samepage.network",
         subject: `New AtJsonParser error in app ${
           appsById[app]?.name || "Unknown"
         }`,
-        body: AtJsonParserErrorEmail({ input, results }),
+        body: AtJsonParserErrorEmail({ uuid }),
       });
       return { success: true };
     }

@@ -1,21 +1,11 @@
 import EmailLayout from "./EmailLayout";
 
-const AtJsonParserErrorEmail = ({
-  input,
-  results,
-}: {
-  input: string;
-  results: unknown[];
-}) => (
+const AtJsonParserErrorEmail = ({ uuid }: { uuid: string }) => (
   <EmailLayout>
-    <div>Input:</div>
-    <pre>
-      <code>{input}</code>
-    </pre>
-    <div>Results:</div>
-    <pre>
-      <code>{JSON.stringify(results, null, 4)}</code>
-    </pre>
+    <div>
+      File containing error data could be found{" "}
+      <a href={`https://samepage.network/data/errors/${uuid}.json`}>here.</a>
+    </div>
   </EmailLayout>
 );
 
