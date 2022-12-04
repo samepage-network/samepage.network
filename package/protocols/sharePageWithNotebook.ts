@@ -5,9 +5,10 @@ import {
   removeCommand,
   renderOverlay,
   appRoot,
+  app,
 } from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
-import type { InitialSchema, Schema } from "../internal/types";
+import type { Annotation, InitialSchema, Schema } from "../internal/types";
 import Automerge from "automerge";
 import {
   addNotebookListener,
@@ -31,9 +32,87 @@ import base64ToBinary from "../internal/base64ToBinary";
 import { clear, has, deleteId, load, set } from "../utils/localAutomergeDb";
 import messageToNotification from "../internal/messageToNotification";
 import { registerNotificationActions } from "../internal/messages";
+import { diffChars } from "diff";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
+
+const convertAnnotations = (annotations: Annotation[]) =>
+  annotations.map((a) => ({
+    ...a,
+    start: new Automerge.Counter(a.start),
+    end: new Automerge.Counter(a.end),
+  }));
+
+export const changeAutomergeDoc = async (
+  oldDoc: Schema,
+  doc: InitialSchema
+) => {
+  const changes = diffChars(oldDoc.content.toString(), doc.content);
+  let contentIndex = 0;
+  changes.forEach((change) => {
+    if (change.removed) {
+      oldDoc.content.deleteAt?.(contentIndex, change.value.length);
+    } else {
+      if (change.added)
+        oldDoc.content.insertAt?.(
+          contentIndex,
+          ...new Automerge.Text(change.value)
+        );
+      contentIndex += change.value.length;
+    }
+  });
+  if (!oldDoc.annotations) oldDoc.annotations = [];
+  oldDoc.annotations
+    .slice(0, doc.annotations.length)
+    .forEach((annotation, index) => {
+      const newAnnotation = doc.annotations[index];
+      if (annotation.type !== newAnnotation.type) {
+        annotation.type = newAnnotation.type;
+      }
+      const startDiff = newAnnotation.start - annotation.start.value;
+      if (startDiff > 0) {
+        annotation.start.increment(startDiff);
+      } else if (startDiff < 0) {
+        annotation.start.decrement(-startDiff);
+      }
+      const endDiff = newAnnotation.end - annotation.end.value;
+      if (endDiff > 0) {
+        annotation.end.increment(endDiff);
+      } else if (endDiff < 0) {
+        annotation.end.decrement(-endDiff);
+      }
+      const oldAttrs = (annotation.attributes || {}) as Record<
+        string,
+        string | number
+      >;
+      const newAttrs = (newAnnotation.attributes || {}) as Record<
+        string,
+        string | number
+      >;
+      Object.keys(oldAttrs).forEach((key) => {
+        if (oldAttrs[key] !== newAttrs[key]) {
+          oldAttrs[key] = newAttrs[key];
+        }
+      });
+      const oldCustomAttrs = annotation.appAttributes?.[app] || {};
+      const newCustomAttrs = newAnnotation.appAttributes?.[app] || {};
+      Object.keys(oldCustomAttrs).forEach((key) => {
+        if (oldCustomAttrs[key] !== newCustomAttrs[key]) {
+          oldCustomAttrs[key] = newCustomAttrs[key];
+        }
+      });
+    });
+  if (oldDoc.annotations.length > doc.annotations.length)
+    oldDoc.annotations.splice(
+      doc.annotations.length,
+      oldDoc.annotations.length - doc.annotations.length
+    );
+  else if (oldDoc.annotations.length < doc.annotations.length)
+    convertAnnotations(
+      doc.annotations.slice(oldDoc.annotations.length)
+    ).forEach((a) => oldDoc.annotations.push(a));
+};
 
 const setupSharePageWithNotebook = ({
   overlayProps = {},
@@ -277,8 +356,8 @@ const setupSharePageWithNotebook = ({
                           oldDoc.annotations.push(
                             ...preExistingDoc.annotations.map((a) => ({
                               ...a,
-                              start: a.start + offset,
-                              end: a.end + offset,
+                              start: new Automerge.Counter(a.start + offset),
+                              end: new Automerge.Counter(a.end + offset),
                             }))
                           );
                         }
@@ -587,7 +666,7 @@ const setupSharePageWithNotebook = ({
                     const doc = Automerge.from<Schema>(
                       {
                         content: new Automerge.Text(docInit.content),
-                        annotations: docInit.annotations,
+                        annotations: convertAnnotations(docInit.annotations),
                         contentType:
                           "application/vnd.atjson+samepage; version=2022-08-17",
                       },
@@ -687,72 +766,6 @@ const setupSharePageWithNotebook = ({
     });
   };
 
-  const insertContent = ({
-    notebookPageId,
-    content,
-    index,
-  }: {
-    notebookPageId: string;
-    content: string;
-    index: number;
-  }) =>
-    updatePage({
-      notebookPageId,
-      label: `Insert: ${content} at ${index}`,
-      callback: (schema) => {
-        schema.content.insertAt?.(index, ...content.split(""));
-        schema.annotations.forEach((annotation) => {
-          if (annotation.start > index) {
-            annotation.start += content.length;
-          }
-          if (annotation.end >= index) {
-            annotation.end += content.length;
-          }
-        });
-      },
-    });
-
-  const deleteContent = ({
-    notebookPageId,
-    count: _count,
-    index,
-  }: {
-    notebookPageId: string;
-    count: number;
-    index: number;
-  }) =>
-    updatePage({
-      notebookPageId,
-      label: `Delete: ${_count} at ${index}`,
-      callback: (schema) => {
-        const count = Math.min(schema.content.length - index, _count);
-        if (count < _count) {
-          console.error(
-            `Out of bounds deletion: deleting ${_count} characters at index ${index} for content \`${schema.content.toString()}\`. Deleting ${count} instead...`
-          );
-        }
-        schema.content.deleteAt?.(index, count);
-        const elementsToDelete = schema.annotations
-          .map((annotation, index) => ({ annotation, index }))
-          .filter((el) => {
-            if (el.annotation.start > index) {
-              el.annotation.start -= count;
-            }
-            if (el.annotation.end >= index) {
-              el.annotation.end -= count;
-              if (el.annotation.start > el.annotation.end) {
-                return true;
-              }
-            }
-            return false;
-          })
-          .reverse();
-        elementsToDelete.forEach((el) =>
-          schema.annotations.deleteAt?.(el.index)
-        );
-      },
-    });
-
   const refreshContent = async ({
     notebookPageId,
   }: {
@@ -763,11 +776,7 @@ const setupSharePageWithNotebook = ({
       notebookPageId,
       label: "Refresh",
       callback: async (oldDoc) => {
-        oldDoc.content.deleteAt?.(0, oldDoc.content.length);
-        oldDoc.content.insertAt?.(0, ...new Automerge.Text(doc.content));
-        if (!oldDoc.annotations) oldDoc.annotations = [];
-        oldDoc.annotations.splice(0, oldDoc.annotations.length);
-        doc.annotations.forEach((a) => oldDoc.annotations.push(a));
+        changeAutomergeDoc(oldDoc, doc);
       },
     });
   };
@@ -775,8 +784,6 @@ const setupSharePageWithNotebook = ({
   return {
     unload,
     updatePage,
-    insertContent,
-    deleteContent,
     refreshContent,
     isShared: (notebookPageId: string) => has(notebookPageId),
   };

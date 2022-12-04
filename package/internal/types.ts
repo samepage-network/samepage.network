@@ -112,10 +112,14 @@ export const annotationSchema = z.discriminatedUnion("type", [
   customAnnotation,
 ]);
 export type Annotation = z.infer<typeof annotationSchema>;
+type SafeAnnotation = Omit<Annotation, "start" | "end"> & {
+  start: Automerge.Counter;
+  end: Automerge.Counter;
+};
 export type Schema = {
   contentType: `application/vnd.atjson+samepage; version=${Version}`;
   content: Automerge.Text;
-  annotations: Automerge.List<Annotation>;
+  annotations: Automerge.List<SafeAnnotation>;
 };
 export const atJsonInitialSchema = z.object({
   content: z.string(),

@@ -1,6 +1,8 @@
 import { onAppEvent } from "../internal/registerAppEventListener";
 import setupSamePageClient from "../protocols/setupSamePageClient";
-import setupSharePageWithNotebook from "../protocols/sharePageWithNotebook";
+import setupSharePageWithNotebook, {
+  changeAutomergeDoc,
+} from "../protocols/sharePageWithNotebook";
 import setupNotebookQuerying from "../protocols/notebookQuerying";
 import {
   atJsonInitialSchema,
@@ -20,6 +22,9 @@ import base64ToBinary from "../internal/base64ToBinary";
 import type { default as defaultSettings } from "../utils/defaultSettings";
 import { callNotificationAction } from "../internal/messages";
 import fromAtJson from "./fromAtJson";
+import { load, set } from "package/utils/localAutomergeDb";
+import binaryToBase64 from "package/internal/binaryToBase64";
+import { v4 } from "uuid";
 
 const SUPPORTED_TAGS = ["SPAN", "DIV", "A", "LI"] as const;
 const TAG_SET = new Set<string>(SUPPORTED_TAGS);
@@ -51,6 +56,7 @@ const processMessageSchema = z.discriminatedUnion("type", [
     content: z.string(),
     index: z.number().or(z.string()),
     path: z.string(),
+    delay: z.literal(true).optional(),
   }),
   z.object({
     type: z.literal("delete"),
@@ -89,6 +95,11 @@ const processMessageSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("waitForNotification"),
+  }),
+  z.object({
+    type: z.literal("resume"),
+    notebookPageId: z.string(),
+    update: z.string(),
   }),
 ]);
 export const responseMessageSchema = z.discriminatedUnion("type", [
@@ -227,6 +238,7 @@ const createTestSamePageClient = async ({
   );
   await awaitLog("samepage-success");
   onMessage({ type: "ready", uuid: settings.uuid });
+  const updatesToSend: Record<string, any> = {};
   return {
     send: async (m: unknown) => {
       try {
@@ -332,7 +344,34 @@ const createTestSamePageClient = async ({
               message.content
             }${oldContent.slice(message.index)}`;
           }
-          if (el)
+          if (el) {
+            if (message.delay) {
+              const newDoc = await calculateState(message.notebookPageId);
+              return load(message.notebookPageId).then((oldDoc) => {
+                const doc = Automerge.change(
+                  oldDoc,
+                  "refresh",
+                  async (oldDoc) => {
+                    changeAutomergeDoc(oldDoc, newDoc);
+                  }
+                );
+                set(message.notebookPageId, doc);
+                const updateUuid = v4();
+                updatesToSend[updateUuid] = {
+                  method: "update-shared-page",
+                  changes: Automerge.getChanges(oldDoc, doc).map(
+                    binaryToBase64
+                  ),
+                  notebookPageId: message.notebookPageId,
+                  state: binaryToBase64(Automerge.save(doc)),
+                };
+                onMessage({
+                  type: "response",
+                  uuid: message.uuid,
+                  data: { success: true, delayed: updateUuid },
+                });
+              });
+            }
             await refreshContent({
               notebookPageId: message.notebookPageId,
             }).then(() =>
@@ -342,6 +381,7 @@ const createTestSamePageClient = async ({
                 data: { success: true },
               })
             );
+          }
         } else if (message.type === "delete") {
           const dom = appClientState[message.notebookPageId];
           const el = dom.window.document.body.querySelector(message.path);
@@ -368,6 +408,22 @@ const createTestSamePageClient = async ({
             onMessage({
               type: "error",
               data: `Failed to delete: cannot find ${message.path}`,
+            });
+          }
+        } else if (message.type === "resume") {
+          const body = updatesToSend[message.update];
+          if (body) {
+            await apiClient(body);
+            onMessage({
+              type: "response",
+              uuid: message.uuid,
+              data: { success: true },
+            });
+          } else {
+            onMessage({
+              type: "response",
+              uuid: message.uuid,
+              data: { success: false },
             });
           }
         } else if (message.type === "disconnect") {
@@ -412,7 +468,11 @@ const createTestSamePageClient = async ({
         } else if (message.type === "refresh") {
           await applyState(message.notebookPageId, {
             content: new Automerge.Text(message.data.content),
-            annotations: message.data.annotations,
+            annotations: message.data.annotations.map((a) => ({
+              ...a,
+              start: new Automerge.Counter(a.start),
+              end: new Automerge.Counter(a.end),
+            })),
             contentType: "application/vnd.atjson+samepage; version=2022-08-17",
           });
           await refreshContent({ notebookPageId: message.notebookPageId });

@@ -10,6 +10,7 @@ import { Notification } from "../package/internal/types";
 import deleteNotebook from "~/data/deleteNotebook.server";
 import deleteInvite from "~/data/deleteInvite.server";
 import issueRandomInvite from "./utils/issueRandomInvite";
+import { JSDOM } from "jsdom";
 
 let cleanup: () => Promise<unknown>;
 const inviteCodes: string[] = [];
@@ -151,6 +152,7 @@ test("Full integration test of sharing pages", async () => {
   await test.step("Init Page", async () => client1.send({ type: "share" }));
 
   const client1Ipfs = () => client1.send({ type: "ipfs", notebookPageId });
+  const client2Ipfs = () => client2.send({ type: "ipfs", notebookPageId });
   await test.step("Client 1 loads intial data correctly from IPFS", () =>
     expect.poll(client1Ipfs).toEqual({
       content: "First entry in page\n",
@@ -197,17 +199,6 @@ test("Full integration test of sharing pages", async () => {
       path: "div",
     }));
 
-  const client1Read = () =>
-    client1
-      .send({ type: "read", notebookPageId })
-      .then((data) => (data as { html: string }).html);
-
-  await test.step("Client 1 receives the insert update", () =>
-    expect
-      .poll(client1Read)
-      .toEqual(
-        '<div style="margin-left:16px" class="my-2">First super entry in page</div>'
-      ));
   await test.step("Client 1 loads data post insert correctly from IPFS", () =>
     expect.poll(client1Ipfs).toEqual({
       content: "First super entry in page\n",
@@ -314,11 +305,91 @@ test("Full integration test of sharing pages", async () => {
     }));
 
   await test.step("Client 2 loads correct state", () =>
-    expect
-      .poll(client2Read)
-      .toEqual(
-        '<div style="margin-left:16px" class="my-2">First super page alphabet</div>'
-      ));
+    expect.poll(client2Ipfs).toEqual({
+      content: "First super page alphabet\n",
+      annotations: [
+        {
+          type: "block",
+          start: 0,
+          end: 26,
+          attributes: { level: 1, viewType: "document" },
+        },
+      ],
+    }));
+
+  await test.step("Handle concurrent applies", async () => {
+    const insert1Response = await client1.send({
+      type: "insert",
+      notebookPageId,
+      content: " soup is great!",
+      index: 25,
+      path: "div",
+      delay: true,
+    });
+    await client2.send({
+      type: "insert",
+      notebookPageId,
+      content: "and only ",
+      index: 6,
+      path: "div",
+    });
+    await client1.send({
+      type: "resume",
+      notebookPageId,
+      update: (insert1Response as { delayed: string }).delayed,
+    });
+    await expect.poll(client1Ipfs).toEqual({
+      content: "First and only super page alphabet soup is great!\n",
+      annotations: [
+        {
+          type: "block",
+          start: 0,
+          end: 50,
+          attributes: { level: 1, viewType: "document" },
+        },
+      ],
+    });
+    await client1.send({
+      type: "delete",
+      notebookPageId,
+      index: 34,
+      count: 15,
+      path: "div",
+    });
+    const mid = {
+      content: "First and only super page alphabet\n",
+      annotations: [
+        {
+          type: "block",
+          start: 0,
+          end: 35,
+          attributes: { level: 1, viewType: "document" },
+        },
+      ],
+    };
+    await expect.poll(client1Ipfs).toEqual(mid);
+    await expect.poll(client2Ipfs).toEqual(mid);
+    await client1.send({
+      type: "delete",
+      notebookPageId,
+      index: 6,
+      count: 9,
+      path: "div",
+    });
+    const out = {
+      content: "First super page alphabet\n",
+      annotations: [
+        {
+          type: "block",
+          start: 0,
+          end: 26,
+          attributes: { level: 1, viewType: "document" },
+        },
+      ],
+    };
+    await expect.poll(client2Ipfs).toEqual(out);
+    await expect.poll(client1Ipfs).toEqual(out);
+  });
 
   const referencedNotebookPageId = v4();
   await test.step("Client 1 has other content", () =>
@@ -358,10 +429,14 @@ test("Full integration test of sharing pages", async () => {
 
   await test.step("Client 2 loads state with external reference", () =>
     expect
-      .poll(client2Read)
-      .toEqual(
-        `<div style="margin-left:16px" class="my-2">First super page alphabet<span class="cursor underline samepage-reference" title="${client1.uuid}:${referencedNotebookPageId}"></span></div>`
-      ));
+      .poll(() =>
+        client2Read().then((html) =>
+          new JSDOM(html).window.document
+            .querySelector("span")
+            ?.getAttribute("title")
+        )
+      )
+      .toEqual(`${client1.uuid}:${referencedNotebookPageId}`));
 
   await test.step("Client 2 queries the reference on their end and should not be found", () =>
     expect
@@ -383,9 +458,13 @@ test("Full integration test of sharing pages", async () => {
             type: "read",
             notebookPageId: `${client1.uuid}:${referencedNotebookPageId}`,
           })
-          .then((data) => (data as { html: string }).html)
+          .then((data) => {
+            const html = (data as { html: string }).html;
+            const doc = new JSDOM(html).window.document;
+            return doc.querySelector("div")?.textContent;
+          })
       )
-      .toEqual(`<div style="margin-left:16px" class="my-2">Hello</div>`));
+      .toEqual(`Hello`));
 
   await test.step("Unload first client", () =>
     client1.send({ type: "unload" }));

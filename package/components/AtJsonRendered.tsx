@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import type { Annotation, InitialSchema, Schema } from "../internal/types";
+import type { Annotation, InitialSchema } from "../internal/types";
 import { getSetting } from "../internal/registry";
 
 type AnnotationTree = (Annotation & { children: AnnotationTree })[];
@@ -115,7 +115,7 @@ const AtJsonRendered = ({
   content,
   annotations,
   classNames,
-}: (Schema | InitialSchema) & { classNames?: ClassNames }) => {
+}: (InitialSchema) & { classNames?: ClassNames }) => {
   const selectedSnapshotTree = useMemo(() => {
     const tree: AnnotationTree = [];
     annotations.forEach((anno) => {

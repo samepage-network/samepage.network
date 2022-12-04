@@ -13,7 +13,7 @@ import {
 import { appsById } from "../internal/apps";
 import React from "react";
 import SharePageDialog from "./SharePageDialog";
-import { Notebook, OverlayProps, Schema } from "../internal/types";
+import { Annotation, Notebook, OverlayProps, Schema } from "../internal/types";
 import Automerge from "automerge";
 import apiClient from "../internal/apiClient";
 import { app, workspace } from "../internal/registry";
@@ -202,7 +202,19 @@ const HistoryContent = ({
           {/* selectedChange?.change.ops.slice(0, 50).map((op) => {
             return <pre>{JSON.stringify(op)}</pre>;
           }) */}
-          {selectedChange && <AtJsonRendered {...selectedChange.snapshot} />}
+          {selectedChange && (
+            <AtJsonRendered
+              content={selectedChange.snapshot.content.toString()}
+              annotations={selectedChange.snapshot.annotations.map(
+                (a) =>
+                  ({
+                    ...a,
+                    start: a.start.value,
+                    end: a.end.value,
+                  } as Annotation)
+              )}
+            />
+          )}
         </div>
       </Dialog>
     </div>
