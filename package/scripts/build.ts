@@ -1,40 +1,29 @@
 import fs from "fs";
 import compile, { CliArgs } from "./internal/compile";
 import toVersion from "./internal/toVersion";
-import { execSync } from "child_process";
 import getPackageName from "./internal/getPackageName";
 import axios from "axios";
 import mimeTypes from "mime-types";
 
 const publish = async ({
   path: destPath = getPackageName(),
-  domain = "samepage.network/extensions",
   review,
   version,
 }: {
   path?: string;
-  domain?: string;
   review?: string;
   version?: string;
 } = {}): Promise<number> => {
-  if (!destPath) {
-    return Promise.reject(new Error("`path` argument is required."));
-  }
-
-  console.log(
-    `Preparing to publish zip to destination ${destPath} as version ${version}`
-  );
-  process.chdir("dist");
-  execSync(`zip -qr ${destPath}.zip .`);
-  execSync(
-    `aws s3 cp ${destPath}.zip s3://${domain}/${destPath.replace(
-      /-samepage$/,
-      ""
-    )}/${version}.zip`
-  );
-
   const token = process.env.GITHUB_TOKEN;
   if (token) {
+    if (!destPath) {
+      return Promise.reject(new Error("`path` argument is required."));
+    }
+
+    console.log(
+      `Preparing to publish zip to destination ${destPath} as version ${version}`
+    );
+    process.chdir("dist");
     const opts = {
       headers: {
         Authorization: `token ${token}`,
@@ -115,9 +104,7 @@ const build = (
   );
   return compile({ ...args, opts: { minify: true } })
     .then(() =>
-      args.dry
-        ? Promise.resolve(0)
-        : publish({ review: args.review, version, domain: args.domain })
+      args.dry ? Promise.resolve(0) : publish({ review: args.review, version })
     )
     .then((exitCode) => {
       console.log("done");
