@@ -5,10 +5,9 @@ import {
   removeCommand,
   renderOverlay,
   appRoot,
-  app,
 } from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
-import type { Annotation, InitialSchema, Schema } from "../internal/types";
+import type { InitialSchema, Schema } from "../internal/types";
 import Automerge from "automerge";
 import {
   addNotebookListener,
@@ -32,89 +31,11 @@ import base64ToBinary from "../internal/base64ToBinary";
 import { clear, has, deleteId, load, set } from "../utils/localAutomergeDb";
 import messageToNotification from "../internal/messageToNotification";
 import { registerNotificationActions } from "../internal/messages";
-import { diffChars } from "diff";
+import convertAnnotations from "../utils/convertAnnotations";
+import changeAutomergeDoc from "../utils/changeAutomergeDoc";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
-
-const convertAnnotations = (annotations: Annotation[]) =>
-  annotations.map((a) => ({
-    ...a,
-    start: new Automerge.Counter(a.start),
-    end: new Automerge.Counter(a.end),
-  }));
-
-export const changeAutomergeDoc = async (
-  oldDoc: Schema,
-  doc: InitialSchema
-) => {
-  const changes = diffChars(oldDoc.content.toString(), doc.content);
-  let contentIndex = 0;
-  changes.forEach((change) => {
-    if (change.removed) {
-      oldDoc.content.deleteAt?.(contentIndex, change.value.length);
-    } else {
-      if (change.added)
-        oldDoc.content.insertAt?.(
-          contentIndex,
-          ...new Automerge.Text(change.value)
-        );
-      contentIndex += change.value.length;
-    }
-  });
-  if (!oldDoc.annotations) oldDoc.annotations = [];
-  oldDoc.annotations
-    .slice(0, doc.annotations.length)
-    .forEach((annotation, index) => {
-      const newAnnotation = doc.annotations[index];
-      if (annotation.type !== newAnnotation.type) {
-        annotation.type = newAnnotation.type;
-      }
-      const startDiff = newAnnotation.start - annotation.start.value;
-      if (startDiff > 0) {
-        annotation.start.increment(startDiff);
-      } else if (startDiff < 0) {
-        annotation.start.decrement(-startDiff);
-      }
-      const endDiff = newAnnotation.end - annotation.end.value;
-      if (endDiff > 0) {
-        annotation.end.increment(endDiff);
-      } else if (endDiff < 0) {
-        annotation.end.decrement(-endDiff);
-      }
-      const oldAttrs = (annotation.attributes || {}) as Record<
-        string,
-        string | number
-      >;
-      const newAttrs = (newAnnotation.attributes || {}) as Record<
-        string,
-        string | number
-      >;
-      Object.keys(oldAttrs).forEach((key) => {
-        if (!newAttrs[key]) delete oldAttrs[key];
-      });
-      Object.keys(newAttrs).forEach((key) => {
-        oldAttrs[key] = newAttrs[key];
-      });
-      const oldCustomAttrs = annotation.appAttributes?.[app] || {};
-      const newCustomAttrs = newAnnotation.appAttributes?.[app] || {};
-      Object.keys(oldCustomAttrs).forEach((key) => {
-        if (!oldCustomAttrs[key]) delete oldCustomAttrs[key];
-      });
-      Object.keys(newCustomAttrs).forEach((key) => {
-        oldCustomAttrs[key] = newCustomAttrs[key];
-      });
-    });
-  if (oldDoc.annotations.length > doc.annotations.length)
-    oldDoc.annotations.splice(
-      doc.annotations.length,
-      oldDoc.annotations.length - doc.annotations.length
-    );
-  else if (oldDoc.annotations.length < doc.annotations.length)
-    convertAnnotations(
-      doc.annotations.slice(oldDoc.annotations.length)
-    ).forEach((a) => oldDoc.annotations.push(a));
-};
 
 const setupSharePageWithNotebook = ({
   overlayProps = {},

@@ -1,8 +1,6 @@
 import { onAppEvent } from "../internal/registerAppEventListener";
 import setupSamePageClient from "../protocols/setupSamePageClient";
-import setupSharePageWithNotebook, {
-  changeAutomergeDoc,
-} from "../protocols/sharePageWithNotebook";
+import setupSharePageWithNotebook from "../protocols/sharePageWithNotebook";
 import setupNotebookQuerying from "../protocols/notebookQuerying";
 import {
   Annotation,
@@ -26,6 +24,7 @@ import fromAtJson from "./fromAtJson";
 import { load, set } from "../utils/localAutomergeDb";
 import binaryToBase64 from "../internal/binaryToBase64";
 import { v4 } from "uuid";
+import changeAutomergeDoc from "../utils/changeAutomergeDoc";
 
 const SUPPORTED_TAGS = ["SPAN", "DIV", "A", "LI"] as const;
 const TAG_SET = new Set<string>(SUPPORTED_TAGS);
