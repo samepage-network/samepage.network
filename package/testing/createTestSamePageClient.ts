@@ -24,7 +24,7 @@ import { load, set } from "../utils/localAutomergeDb";
 import binaryToBase64 from "../internal/binaryToBase64";
 import { v4 } from "uuid";
 import changeAutomergeDoc from "../utils/changeAutomergeDoc";
-import unwrapSchema from "package/utils/unwrapSchema";
+import unwrapSchema from "../utils/unwrapSchema";
 
 const SUPPORTED_TAGS = ["SPAN", "DIV", "A", "LI"] as const;
 const TAG_SET = new Set<string>(SUPPORTED_TAGS);

@@ -23,7 +23,7 @@ import { parseAndFormatActorId } from "../internal/parseActorId";
 import AtJsonRendered from "./AtJsonRendered";
 import { load, deleteId, get } from "../utils/localAutomergeDb";
 import binaryToBase64 from "../internal/binaryToBase64";
-import unwrapSchema from "package/utils/unwrapSchema";
+import unwrapSchema from "../utils/unwrapSchema";
 
 type GetLocalHistory = (
   notebookPageId: string

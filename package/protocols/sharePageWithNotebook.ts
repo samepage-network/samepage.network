@@ -37,8 +37,8 @@ import messageToNotification from "../internal/messageToNotification";
 import { registerNotificationActions } from "../internal/messages";
 import changeAutomergeDoc from "../utils/changeAutomergeDoc";
 import unwrapSchema from "../utils/unwrapSchema";
-import wrapSchema from "package/utils/wrapSchema";
-import convertAnnotations from "package/utils/convertAnnotations";
+import wrapSchema from "../utils/wrapSchema";
+import convertAnnotations from "../utils/convertAnnotations";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
