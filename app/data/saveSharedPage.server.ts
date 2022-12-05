@@ -1,5 +1,5 @@
 import Automerge from "automerge";
-import type { Memo, Schema } from "package/internal/types";
+import type { LatestSchema, Memo } from "package/internal/types";
 import { encode } from "@ipld/dag-cbor";
 import { CID } from "multiformats";
 import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
@@ -12,7 +12,7 @@ const saveSharedPage = async ({
 }: {
   uuid: string;
   cid?: string;
-  doc: Automerge.FreezeObject<Schema> | string | Automerge.BinaryDocument;
+  doc: Automerge.FreezeObject<LatestSchema> | string | Automerge.BinaryDocument;
 }) => {
   const body =
     typeof doc === "string"

@@ -3,6 +3,7 @@ import { Schema } from "../internal/types";
 import Automerge from "automerge";
 import base64ToBinary from "../internal/base64ToBinary";
 import getActorId from "../internal/getActorId";
+import wrapSchema from "./wrapSchema";
 
 const notebookPageIds: Record<string, Automerge.FreezeObject<Schema> | null> =
   {};
@@ -13,11 +14,7 @@ export const load = async (
   id: string
 ): Promise<Automerge.FreezeObject<Schema>> => {
   if (typeof notebookPageIds[id] === "undefined") {
-    return Automerge.from({
-      content: new Automerge.Text(""),
-      contentType: "application/vnd.atjson+samepage; version=2022-08-17",
-      annotations: [],
-    });
+    return Automerge.from(wrapSchema({ content: "", annotations: [] }));
   }
   const doc = notebookPageIds[id];
   if (doc === null)

@@ -1,10 +1,10 @@
 import { diffChars } from "diff";
 import { app } from "../internal/registry";
-import { Schema, InitialSchema } from "../internal/types";
+import { Schema, InitialSchema, LatestSchema } from "../internal/types";
 import convertAnnotations from "./convertAnnotations";
 import Automerge from "automerge";
 
-const changeAutomergeDoc = (oldDoc: Schema, doc: InitialSchema) => {
+const changeLatestAutomergeDoc = (oldDoc: LatestSchema, doc: InitialSchema) => {
   const changes = diffChars(oldDoc.content.toString(), doc.content);
   let contentIndex = 0;
   changes.forEach((change) => {
@@ -24,17 +24,17 @@ const changeAutomergeDoc = (oldDoc: Schema, doc: InitialSchema) => {
     .slice(0, doc.annotations.length)
     .forEach((annotation, index) => {
       const newAnnotation = doc.annotations[index];
-      const startDiff = newAnnotation.start - annotation.start.value;
+      const startDiff = newAnnotation.start - annotation.startIndex.value;
       if (startDiff > 0) {
-        annotation.start.increment(startDiff);
+        annotation.startIndex.increment(startDiff);
       } else if (startDiff < 0) {
-        annotation.start.decrement(-startDiff);
+        annotation.startIndex.decrement(-startDiff);
       }
-      const endDiff = newAnnotation.end - annotation.end.value;
+      const endDiff = newAnnotation.end - annotation.endIndex.value;
       if (endDiff > 0) {
-        annotation.end.increment(endDiff);
+        annotation.endIndex.increment(endDiff);
       } else if (endDiff < 0) {
-        annotation.end.decrement(-endDiff);
+        annotation.endIndex.decrement(-endDiff);
       }
       const oldAttrs = (annotation.attributes || {}) as Record<
         string,
@@ -80,6 +80,27 @@ const changeAutomergeDoc = (oldDoc: Schema, doc: InitialSchema) => {
     convertAnnotations(
       doc.annotations.slice(oldDoc.annotations.length)
     ).forEach((a) => oldDoc.annotations.push(a));
+};
+
+const changeAutomergeDoc = (oldDoc: Schema, doc: InitialSchema) => {
+  switch (oldDoc.contentType) {
+    case "application/vnd.atjson+samepage; version=2022-08-17": {
+      (oldDoc as Schema as LatestSchema).contentType =
+        "application/vnd.atjson+samepage; version=2022-12-05";
+      oldDoc.annotations.forEach((a) => {
+        // @ts-ignore
+        delete a.start;
+        // @ts-ignore
+        delete a.end;
+        // @ts-ignore
+        a.startIndex = new Automerge.Counter(a.start);
+        // @ts-ignore
+        a.endIndex = new Automerge.Counter(a.end);
+      });
+    }
+  }
+  console.log("a", typeof new Automerge.Counter(4));
+  changeLatestAutomergeDoc(oldDoc as LatestSchema, doc);
 };
 
 export default changeAutomergeDoc;

@@ -1,11 +1,11 @@
-import type { Annotation } from "../internal/types";
+import type { Annotation, AutomergeAnnotation } from "../internal/types";
 import Automerge from "automerge";
 
-const convertAnnotations = (annotations: Annotation[]) =>
-  annotations.map((a) => ({
+const convertAnnotations = (annotations: Annotation[]): AutomergeAnnotation[] =>
+  annotations.map(({ start, end, ...a }) => ({
     ...a,
-    start: new Automerge.Counter(a.start),
-    end: new Automerge.Counter(a.end),
+    startIndex: new Automerge.Counter(start),
+    endIndex: new Automerge.Counter(end),
   }));
 
 export default convertAnnotations;

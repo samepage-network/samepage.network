@@ -12,6 +12,7 @@ import { Notebook, RequestBody, Schema } from "../../package/internal/types";
 import QUOTAS from "~/data/quotas.server";
 import issueRandomInvite from "../utils/issueRandomInvite";
 import getRandomNotebookPageId from "../utils/getRandomNotebookPageId";
+import wrapSchema from "package/utils/wrapSchema";
 
 const mockLambda = async (body: RequestBody) => {
   const requestId = v4();
@@ -215,11 +216,7 @@ test("Messages from deleted notebooks should return Unknown", async () => {
 const mockState = (s: string) =>
   binaryToBase64(
     Automerge.save(
-      Automerge.from<Schema>({
-        content: new Automerge.Text(s),
-        annotations: [],
-        contentType: "application/vnd.atjson+samepage; version=2022-08-17",
-      })
+      Automerge.from<Schema>(wrapSchema({ content: s, annotations: [] }))
     )
   );
 

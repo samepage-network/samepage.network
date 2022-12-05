@@ -20,8 +20,6 @@ export const zNotebook = z.object({
 });
 export type Notebook = z.infer<typeof zNotebook>;
 
-// Add future versions in this union
-type Version = "2022-08-17";
 const annotationBase = z.object({
   start: z.number(),
   end: z.number(),
@@ -112,20 +110,26 @@ export const annotationSchema = z.discriminatedUnion("type", [
   customAnnotation,
 ]);
 export type Annotation = z.infer<typeof annotationSchema>;
-type SafeAnnotation = Omit<Annotation, "start" | "end"> & {
-  start: Automerge.Counter;
-  end: Automerge.Counter;
+export type AutomergeAnnotation = Omit<Annotation, "start" | "end"> & {
+  startIndex: Automerge.Counter;
+  endIndex: Automerge.Counter;
 };
-export type Schema = {
-  contentType: `application/vnd.atjson+samepage; version=${Version}`;
+export type V1Schema = {
+  contentType: `application/vnd.atjson+samepage; version=2022-08-17`;
   content: Automerge.Text;
-  annotations: Automerge.List<SafeAnnotation>;
+  annotations: Automerge.List<Annotation>;
 };
-export const atJsonInitialSchema = z.object({
+export type LatestSchema = {
+  contentType: `application/vnd.atjson+samepage; version=2022-12-05`;
+  content: Automerge.Text;
+  annotations: Automerge.List<AutomergeAnnotation>;
+};
+export type Schema = LatestSchema | V1Schema;
+export const zInitialSchema = z.object({
   content: z.string(),
   annotations: annotationSchema.array(),
 });
-export type InitialSchema = z.infer<typeof atJsonInitialSchema>;
+export type InitialSchema = z.infer<typeof zInitialSchema>;
 
 export type json =
   | string

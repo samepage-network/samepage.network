@@ -12,6 +12,7 @@ import { useMemo } from "react";
 import base64ToBinary from "package/internal/base64ToBinary";
 import { parseAndFormatActorId } from "package/internal/parseActorId";
 import { decode } from "@ipld/dag-cbor";
+import unwrapSchema from "package/utils/unwrapSchema";
 
 const ViewCidPage = () => {
   const data = useLoaderData<
@@ -84,16 +85,15 @@ const ViewCidPage = () => {
 export const loader: LoaderFunction = ({ params }) => {
   const cid = params["cid"];
   if (!cid) {
-    return { content: new Automerge.Text(""), annotations: [], parent: null };
+    return { content: "", annotations: [], parent: null };
   }
   return downloadIpfsFile({ cid }).then((bytes) => {
     const memo = decode<Memo>(bytes);
     const doc = Automerge.load<Schema>(memo.body);
     return {
       parent: memo.parent?.toString() || null,
-      content: doc.content.toString(),
-      annotations: doc.annotations,
       raw: binaryToBase64(memo.body),
+      ...unwrapSchema(doc),
     };
   });
 };

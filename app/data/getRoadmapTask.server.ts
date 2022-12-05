@@ -1,6 +1,6 @@
 import queryRoam from "./queryRoam.server";
 import { z } from "zod";
-import { InitialSchema, Schema } from "package/internal/types";
+import { InitialSchema } from "package/internal/types";
 
 type Block = {
   ":block/uid": string;
@@ -34,7 +34,7 @@ const toAtJson = ({
     .map((n) => (index: number) => {
       const content = `${n[":block/string"]}\n`;
       const end = content.length + index;
-      const blockAnnotation: Schema["annotations"] = [
+      const blockAnnotation: InitialSchema["annotations"] = [
         {
           start: index,
           end,
@@ -66,7 +66,7 @@ const toAtJson = ({
       },
       {
         content: "",
-        annotations: [] as Schema["annotations"],
+        annotations: [] as InitialSchema["annotations"],
       }
     );
 

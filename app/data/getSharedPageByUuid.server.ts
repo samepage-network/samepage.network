@@ -3,6 +3,7 @@ import type { AppId, InitialSchema, Schema } from "package/internal/types";
 import Automerge from "automerge";
 import downloadSharedPage from "./downloadSharedPage.server";
 import { NotFoundError } from "@dvargas92495/app/backend/errors.server";
+import unwrapSchema from "package/utils/unwrapSchema";
 
 const DEFAULT_SCHEMA: InitialSchema = {
   content: "",
@@ -41,10 +42,7 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
               return { data: DEFAULT_SCHEMA, history: [], cid: n.cid };
             const data = Automerge.load<Schema>(d.body);
             return {
-              data: {
-                content: data.content.toString(),
-                annotations: data.annotations,
-              },
+              data: unwrapSchema(data),
               history: Automerge.getHistory(data),
               cid: n.cid,
             };

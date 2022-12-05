@@ -133,13 +133,13 @@ The `appAttributes` field is an excape hatch for applications to enter data that
 
 ## Content Type
 
-This is the last field used in the data schema, to help identify what version of the schema the given page is using. The following is the only supported value at the moment:
+This is the last field used in the data schema, to help identify what version of the schema the given page is using. The following is the latest supported value at the moment:
 
 ```javascript
-`application/vnd.atjson+samepage; version=2022-08-17`;
+`application/vnd.atjson+samepage; version=2022-12-05`;
 ```
 
-The version field at the end is subject to change as we iterate on the schema. This will make it easier for extensions to detect data and migrate accordingly.
+The version field at the end is subject to change as we iterate on the schema. This makes it possible for extensions to detect data and migrate accordingly if it detects older schemas.
 
 Putting our `Hello &&World&&` example together, it would have the following final data representation:
 
@@ -158,6 +158,14 @@ Putting our `Hello &&World&&` example together, it would have the following fina
       }
     }
   ],
-  "contentType": "application/vnd.atjson+samepage; version=2022-08-17"
+  "contentType": "application/vnd.atjson+samepage; version=2022-12-05"
 }
 ```
+
+### Differentiating Content Types
+
+There are few important types to become familiar with:
+- `InitialSchema` - An intemediary representation used by extensions to actually calculate and apply the related data. This type only contains the `content` and `annotations` fields.
+- `LatestSchema` - This is the latest version of the schema that is actually stored in IPFS. The data is wrapped by [Automerge](https://automerge.org/docs/types/values/) utilities to assist in conflict resolution and history management.
+- `V*Schema` - Previous versions of `LatestSchema` that can be found stored in IPFS.
+- `Schema` - Conjuction of `LatestSchema` and all `V*Schema`s. This data type represents all of the possibilities stored in IPFS - the `unwrapSchema` utility helps convert this data into the `InitialSchema` intermediate data type.

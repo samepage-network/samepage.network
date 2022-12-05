@@ -3,7 +3,7 @@ import setupSamePageClient from "../protocols/setupSamePageClient";
 import setupSharePageWithNotebook from "../protocols/sharePageWithNotebook";
 import setupNotebookQuerying from "../protocols/notebookQuerying";
 import {
-  atJsonInitialSchema,
+  zInitialSchema,
   InitialSchema,
   Notification,
   Schema,
@@ -24,6 +24,7 @@ import { load, set } from "../utils/localAutomergeDb";
 import binaryToBase64 from "../internal/binaryToBase64";
 import { v4 } from "uuid";
 import changeAutomergeDoc from "../utils/changeAutomergeDoc";
+import unwrapSchema from "package/utils/unwrapSchema";
 
 const SUPPORTED_TAGS = ["SPAN", "DIV", "A", "LI"] as const;
 const TAG_SET = new Set<string>(SUPPORTED_TAGS);
@@ -90,7 +91,7 @@ const processMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("refresh"),
     notebookPageId: z.string(),
-    data: atJsonInitialSchema,
+    data: zInitialSchema,
   }),
   z.object({
     type: z.literal("waitForNotification"),
@@ -457,10 +458,7 @@ const createTestSamePageClient = async ({
             onMessage({
               type: "response",
               uuid: message.uuid,
-              data: {
-                content: data.content.toString(),
-                annotations: data.annotations,
-              },
+              data: unwrapSchema(data),
             });
           });
         } else if (message.type === "refresh") {

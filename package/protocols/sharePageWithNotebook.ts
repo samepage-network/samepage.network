@@ -7,7 +7,11 @@ import {
   appRoot,
 } from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
-import type { InitialSchema, Schema } from "../internal/types";
+import type {
+  InitialSchema,
+  AutomergeAnnotation,
+  Schema,
+} from "../internal/types";
 import Automerge from "automerge";
 import {
   addNotebookListener,
@@ -31,9 +35,10 @@ import base64ToBinary from "../internal/base64ToBinary";
 import { clear, has, deleteId, load, set } from "../utils/localAutomergeDb";
 import messageToNotification from "../internal/messageToNotification";
 import { registerNotificationActions } from "../internal/messages";
-import convertAnnotations from "../utils/convertAnnotations";
 import changeAutomergeDoc from "../utils/changeAutomergeDoc";
 import unwrapSchema from "../utils/unwrapSchema";
+import wrapSchema from "package/utils/wrapSchema";
+import convertAnnotations from "package/utils/convertAnnotations";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
@@ -281,12 +286,16 @@ const setupSharePageWithNotebook = ({
                             offset,
                             ...preExistingDoc.content
                           );
-                          oldDoc.annotations.push(
-                            ...preExistingDoc.annotations.map((a) => ({
-                              ...a,
-                              start: new Automerge.Counter(a.start + offset),
-                              end: new Automerge.Counter(a.end + offset),
-                            }))
+                          const merged = convertAnnotations(
+                            preExistingDoc.annotations
+                          );
+                          merged.forEach((a) => {
+                            a.startIndex.increment(offset);
+                            a.endIndex.increment(offset);
+                          });
+                          // why do we have to do this cast?
+                          (oldDoc.annotations as AutomergeAnnotation[]).push(
+                            ...merged
                           );
                         }
                       );
@@ -591,15 +600,9 @@ const setupSharePageWithNotebook = ({
             .then((notebookPageId) =>
               notebookPageId
                 ? calculateState(notebookPageId).then((docInit) => {
-                    const doc = Automerge.from<Schema>(
-                      {
-                        content: new Automerge.Text(docInit.content),
-                        annotations: convertAnnotations(docInit.annotations),
-                        contentType:
-                          "application/vnd.atjson+samepage; version=2022-08-17",
-                      },
-                      { actorId: getActorId() }
-                    );
+                    const doc = Automerge.from<Schema>(wrapSchema(docInit), {
+                      actorId: getActorId(),
+                    });
                     const state = Automerge.save(doc);
                     return apiClient<{ id: string; created: boolean }>({
                       method: "init-shared-page",
@@ -698,7 +701,7 @@ const setupSharePageWithNotebook = ({
     label = "Refresh",
     notebookPageId,
   }: {
-    label?: string,
+    label?: string;
     notebookPageId: string;
   }) => {
     const doc = await calculateState(notebookPageId);
