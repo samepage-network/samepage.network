@@ -1,6 +1,7 @@
 import EmailLayout from "./EmailLayout";
+import React from "react";
 
-const InviteCodeEmail = ({ code }: { code: string }) => (
+const InviteCodeEmail = ({ code }: { code: string }): React.ReactElement => (
   <EmailLayout>
     <div style={{ marginBottom: 16 }}>Welcome to SamePage!</div>
     <div>
