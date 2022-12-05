@@ -1,4 +1,4 @@
-import { Annotation, InitialSchema, Schema } from "package/internal/types";
+import type { Annotation, InitialSchema, Schema } from "../internal/types";
 
 const unwrapSchema = (doc: Schema): InitialSchema => ({
   content: doc.content.toString(),

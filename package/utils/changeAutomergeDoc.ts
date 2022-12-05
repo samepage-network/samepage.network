@@ -1,6 +1,6 @@
 import { diffChars } from "diff";
-import { app } from "package/internal/registry";
-import { Schema, InitialSchema } from "package/internal/types";
+import { app } from "../internal/registry";
+import { Schema, InitialSchema } from "../internal/types";
 import convertAnnotations from "./convertAnnotations";
 import Automerge from "automerge";
 
