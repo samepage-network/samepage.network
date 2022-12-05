@@ -33,6 +33,7 @@ import messageToNotification from "../internal/messageToNotification";
 import { registerNotificationActions } from "../internal/messages";
 import convertAnnotations from "../utils/convertAnnotations";
 import changeAutomergeDoc from "../utils/changeAutomergeDoc";
+import unwrapSchema from "../utils/unwrapSchema";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
@@ -57,6 +58,7 @@ const setupSharePageWithNotebook = ({
       getNotebookPageId?: (element: Node) => Promise<string | null>;
       getPath: (el: Node) => string | null;
       onCopy?: SharedPageStatusProps["onCopy"];
+      ignoreObserver?: boolean;
     };
   };
   getCurrentNotebookPageId?: () => Promise<string>;
@@ -64,7 +66,10 @@ const setupSharePageWithNotebook = ({
   openPage?: (notebookPageId: string) => Promise<unknown>;
   deletePage?: (notebookPageId: string) => Promise<unknown>;
   doesPageExist?: (notebookPageId: string) => Promise<boolean>;
-  applyState?: (notebookPageId: string, state: Schema) => Promise<unknown>;
+  applyState?: (
+    notebookPageId: string,
+    state: InitialSchema
+  ) => Promise<unknown>;
   calculateState?: (notebookPageId: string) => Promise<InitialSchema>;
 } = {}) => {
   const { viewSharedPageProps, sharedPageStatusProps } = overlayProps;
@@ -152,7 +157,7 @@ const setupSharePageWithNotebook = ({
     doc: Automerge.FreezeObject<Schema>
   ) => {
     set(notebookPageId, doc);
-    return applyState(notebookPageId, doc)
+    return applyState(notebookPageId, unwrapSchema(doc))
       .then(() => {
         return apiClient({
           method: "save-page-version",
@@ -207,7 +212,7 @@ const setupSharePageWithNotebook = ({
 
   onAppEvent("connection", (e) => {
     if (e.status === "CONNECTED") {
-      if (sharedPageStatusProps) {
+      if (sharedPageStatusProps && !sharedPageStatusProps.ignoreObserver) {
         const sharedPageObserver = createHTMLObserver({
           selector: sharedPageStatusProps.selector || "body",
           callback: (el) => {
@@ -690,14 +695,16 @@ const setupSharePageWithNotebook = ({
   };
 
   const refreshContent = async ({
+    label = "Refresh",
     notebookPageId,
   }: {
+    label?: string,
     notebookPageId: string;
   }) => {
     const doc = await calculateState(notebookPageId);
     return updatePage({
       notebookPageId,
-      label: "Refresh",
+      label,
       callback: async (oldDoc) => {
         changeAutomergeDoc(oldDoc, doc);
       },

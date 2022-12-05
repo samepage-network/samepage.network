@@ -3,7 +3,6 @@ import setupSamePageClient from "../protocols/setupSamePageClient";
 import setupSharePageWithNotebook from "../protocols/sharePageWithNotebook";
 import setupNotebookQuerying from "../protocols/notebookQuerying";
 import {
-  Annotation,
   atJsonInitialSchema,
   InitialSchema,
   Notification,
@@ -163,20 +162,8 @@ const createTestSamePageClient = async ({
   const appClientState: Record<string, JSDOM> = {};
   const commands: Record<string, () => unknown> = {};
 
-  const defaultApplyState = async (id: string, data: Schema) => {
-    appClientState[id] = new JSDOM(
-      fromAtJson({
-        content: data.content.toString(),
-        annotations: data.annotations.map(
-          (a) =>
-            ({
-              ...a,
-              start: a.start.value,
-              end: a.end.value,
-            } as Annotation)
-        ),
-      })
-    );
+  const defaultApplyState = async (id: string, data: InitialSchema) => {
+    appClientState[id] = new JSDOM(fromAtJson(data));
   };
   let applyState = defaultApplyState;
   const calculateState = async (id: string): Promise<InitialSchema> => {
@@ -221,7 +208,7 @@ const createTestSamePageClient = async ({
       (appClientState[notebookPageId] = new JSDOM()),
     deletePage: async (notebookPageId) => delete appClientState[notebookPageId],
     calculateState,
-    applyState: async (id: string, data: Schema) => applyState(id, data),
+    applyState: async (id: string, data: InitialSchema) => applyState(id, data),
   });
   const { unload: unloadNotebookQuerying, query } = setupNotebookQuerying({
     onQuery: async (notebookPageId) => {
@@ -477,15 +464,7 @@ const createTestSamePageClient = async ({
             });
           });
         } else if (message.type === "refresh") {
-          await applyState(message.notebookPageId, {
-            content: new Automerge.Text(message.data.content),
-            annotations: message.data.annotations.map((a) => ({
-              ...a,
-              start: new Automerge.Counter(a.start),
-              end: new Automerge.Counter(a.end),
-            })),
-            contentType: "application/vnd.atjson+samepage; version=2022-08-17",
-          });
+          await applyState(message.notebookPageId, message.data);
           await refreshContent({ notebookPageId: message.notebookPageId });
           onMessage({
             type: "response",
