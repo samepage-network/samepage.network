@@ -1,4 +1,4 @@
-import { Annotation } from "package/internal/types";
+import type { Annotation } from "../internal/types";
 import Automerge from "automerge";
 
 const convertAnnotations = (annotations: Annotation[]) =>
