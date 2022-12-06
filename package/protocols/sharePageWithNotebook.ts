@@ -43,6 +43,14 @@ import convertAnnotations from "../utils/convertAnnotations";
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
 
+type SharedPageObserver = ({
+  onload,
+  onunload,
+}: {
+  onload: (notebookPageId: string) => void;
+  onunload: (notebookPageId: string) => void;
+}) => void;
+
 const setupSharePageWithNotebook = ({
   overlayProps = {},
   getCurrentNotebookPageId = () => Promise.resolve(v4()),
@@ -56,14 +64,11 @@ const setupSharePageWithNotebook = ({
   overlayProps?: {
     viewSharedPageProps?: ViewSharedPagesProps;
     sharedPageStatusProps?: {
-      getHtmlElement?: (
-        notebookPageId: string
-      ) => Promise<HTMLElement | undefined>;
       selector?: string;
       getNotebookPageId?: (element: Node) => Promise<string | null>;
-      getPath: (el: Node) => string | null;
       onCopy?: SharedPageStatusProps["onCopy"];
-      ignoreObserver?: boolean;
+      getPaths: (notebookPageId: string) => string[];
+      observer?: SharedPageObserver;
     };
   };
   getCurrentNotebookPageId?: () => Promise<string>;
@@ -83,10 +88,10 @@ const setupSharePageWithNotebook = ({
   const renderSharedPageStatus = ({
     notebookPageId,
     created = false,
-    el,
+    path,
   }: {
     notebookPageId: string;
-    el: Node;
+    path: string;
     created?: boolean;
   }) => {
     const unmount = renderOverlay({
@@ -98,9 +103,12 @@ const setupSharePageWithNotebook = ({
         portalContainer: appRoot,
         onCopy: sharedPageStatusProps?.onCopy,
       },
-      path: sharedPageStatusProps?.getPath(el),
+      path,
     });
-    if (unmount) componentUnmounts[notebookPageId] = unmount;
+    componentUnmounts[notebookPageId] = () => {
+      delete componentUnmounts[`samepage-shared-${notebookPageId}`];
+      unmount?.();
+    };
   };
 
   const initPage = ({
@@ -115,9 +123,9 @@ const setupSharePageWithNotebook = ({
     set(notebookPageId, doc);
     if (sharedPageStatusProps) {
       sharedPageStatusProps
-        .getHtmlElement?.(notebookPageId)
-        .then(
-          (el) => el && renderSharedPageStatus({ notebookPageId, created, el })
+        .getPaths(notebookPageId)
+        .forEach((path) =>
+          renderSharedPageStatus({ notebookPageId, created, path })
         );
     }
   };
@@ -217,30 +225,40 @@ const setupSharePageWithNotebook = ({
 
   onAppEvent("connection", (e) => {
     if (e.status === "CONNECTED") {
-      if (sharedPageStatusProps && !sharedPageStatusProps.ignoreObserver) {
-        const sharedPageObserver = createHTMLObserver({
-          selector: sharedPageStatusProps.selector || "body",
-          callback: (el) => {
-            sharedPageStatusProps
-              .getNotebookPageId?.(el)
-              .then((notebookPageId) => {
-                if (has(notebookPageId)) {
-                  renderSharedPageStatus({ el, notebookPageId });
-                }
-              });
+      if (sharedPageStatusProps) {
+        const observerProps: Parameters<SharedPageObserver>[0] = {
+          onload: (notebookPageId) => {
+            if (has(notebookPageId)) {
+              sharedPageStatusProps
+                .getPaths(notebookPageId)
+                .forEach((path) =>
+                  renderSharedPageStatus({ path, notebookPageId })
+                );
+            }
           },
-          onRemove: (el) =>
-            sharedPageStatusProps
-              .getNotebookPageId?.(el)
-              .then((notebookPageId) => {
-                if (notebookPageId) {
-                  componentUnmounts[notebookPageId]?.();
-                  delete componentUnmounts[notebookPageId];
-                }
-              }),
-        });
-        componentUnmounts["shared-page-observer"] = () =>
-          sharedPageObserver.disconnect();
+          onunload: (notebookPageId) => {
+            if (notebookPageId) {
+              componentUnmounts[notebookPageId]?.();
+            }
+          },
+        };
+        if (sharedPageStatusProps.observer) {
+          sharedPageStatusProps.observer(observerProps);
+        } else {
+          const sharedPageObserver = createHTMLObserver({
+            selector: sharedPageStatusProps.selector || "body",
+            callback: (el) =>
+              sharedPageStatusProps
+                .getNotebookPageId?.(el)
+                .then((s) => s && observerProps.onload(s)),
+            onRemove: (el) =>
+              sharedPageStatusProps
+                .getNotebookPageId?.(el)
+                .then((s) => s && observerProps.onunload(s)),
+          });
+          componentUnmounts["shared-page-observer"] = () =>
+            sharedPageObserver.disconnect();
+        }
       }
       registerNotificationActions({
         operation: "SHARE_PAGE",
