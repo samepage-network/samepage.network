@@ -1,6 +1,7 @@
 import fs from "fs";
 import compile, { CliArgs } from "./internal/compile";
 import toVersion from "./internal/toVersion";
+import { execSync } from "child_process";
 import getPackageName from "./internal/getPackageName";
 import axios from "axios";
 import mimeTypes from "mime-types";
@@ -24,6 +25,7 @@ const publish = async ({
       `Preparing to publish zip to destination ${destPath} as version ${version}`
     );
     process.chdir("dist");
+    execSync(`zip -qr ${destPath}.zip .`);
     const opts = {
       headers: {
         Authorization: `token ${token}`,

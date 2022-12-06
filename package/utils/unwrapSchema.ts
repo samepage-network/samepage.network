@@ -27,7 +27,7 @@ const unwrapSchema = (doc: Schema): InitialSchema => {
       };
     default:
       throw new Error(
-        `We don't recognize the document's schema version and therefore don't know how to unwrap it.`
+        `We don't recognize the document's schema version ${doc["contentType"]} and therefore don't know how to unwrap it.`
       );
   }
 };

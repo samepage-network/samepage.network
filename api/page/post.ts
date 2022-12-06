@@ -35,6 +35,12 @@ import createNotebook from "~/data/createNotebook.server";
 import QUOTAS from "~/data/quotas.server";
 import { ZodError } from "zod";
 
+export const globalContext: {
+  quotas: { [k in typeof QUOTAS[number]]?: number };
+} = {
+  quotas: {},
+};
+
 const zMethod = zUnauthenticatedBody
   .and(zBaseHeaders)
   .or(zAuthenticatedBody.and(zAuthHeaders).and(zBaseHeaders));
@@ -64,6 +70,8 @@ const getQuota = async ({
   requestId: string;
   field: typeof QUOTAS[number];
 }) => {
+  const storedValue = globalContext.quotas[field];
+  if (typeof storedValue !== "undefined") return storedValue;
   const cxn = await getMysql(requestId);
   return cxn
     .execute(`SELECT value FROM quotas WHERE field = ? AND stripe_id IS NULL`, [

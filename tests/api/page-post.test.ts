@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { handler } from "../../api/page/post";
+import { globalContext, handler } from "../../api/page/post";
 import { v4 } from "uuid";
 import randomString from "~/data/randomString.server";
 import messageNotebook from "~/data/messageNotebook.server";
@@ -9,7 +9,6 @@ import deleteNotebook from "~/data/deleteNotebook.server";
 import binaryToBase64 from "../../package/internal/binaryToBase64";
 import Automerge from "automerge";
 import { Notebook, RequestBody, Schema } from "../../package/internal/types";
-import QUOTAS from "~/data/quotas.server";
 import issueRandomInvite from "../utils/issueRandomInvite";
 import getRandomNotebookPageId from "../utils/getRandomNotebookPageId";
 import wrapSchema from "package/utils/wrapSchema";
@@ -220,16 +219,9 @@ const mockState = (s: string) =>
     )
   );
 
-// TODO: need to isolate this test, causes too much ~flake~
-// Injecting global context pattern with functions for getters - nice!
-test.skip("Reaching the page limit should throw on init and accept page", async () => {
+test("Reaching the page limit should throw on init and accept page", async () => {
   const { notebookUuid, token } = await mockRandomNotebook();
-  await getMysql().then((cxn) =>
-    cxn.execute("UPDATE quotas SET value = ? where field = ?", [
-      1,
-      QUOTAS.indexOf("Pages"),
-    ])
-  );
+  globalContext.quotas["Pages"] = 1;
   const { created } = await mockLambda({
     method: "init-shared-page",
     notebookUuid,
@@ -373,9 +365,5 @@ test.afterAll(async () => {
     await Promise.all(
       data.map((n) => deleteNotebook({ uuid: n.uuid, requestId: v4() }))
     );
-    // await cxn.execute("UPDATE quotas SET value = ? where field = ?", [
-    //   100,
-    //   QUOTAS.indexOf("Pages"),
-    // ]);
   });
 });

@@ -195,7 +195,7 @@ const HistoryContent = ({
         autoFocus={false}
         portalContainer={portalContainer}
       >
-        <div className={Classes.DIALOG_BODY}>
+        <div className={`${Classes.DIALOG_BODY} text-black`}>
           <p>
             There are {selectedChange?.change.ops.length} operations in this
             change. Snapshot at this version:
