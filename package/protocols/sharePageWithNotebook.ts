@@ -49,7 +49,7 @@ type SharedPageObserver = ({
 }: {
   onload: (notebookPageId: string) => void;
   onunload: (notebookPageId: string) => void;
-}) => void;
+}) => () => void;
 
 const setupSharePageWithNotebook = ({
   overlayProps = {},
@@ -242,23 +242,23 @@ const setupSharePageWithNotebook = ({
             }
           },
         };
-        if (sharedPageStatusProps.observer) {
-          sharedPageStatusProps.observer(observerProps);
-        } else {
-          const sharedPageObserver = createHTMLObserver({
-            selector: sharedPageStatusProps.selector || "body",
-            callback: (el) =>
-              sharedPageStatusProps
-                .getNotebookPageId?.(el)
-                .then((s) => s && observerProps.onload(s)),
-            onRemove: (el) =>
-              sharedPageStatusProps
-                .getNotebookPageId?.(el)
-                .then((s) => s && observerProps.onunload(s)),
-          });
-          componentUnmounts["shared-page-observer"] = () =>
-            sharedPageObserver.disconnect();
-        }
+        const sharedPageObserver = sharedPageStatusProps.observer
+          ? { disconnect: sharedPageStatusProps.observer(observerProps) }
+          : createHTMLObserver({
+              selector: sharedPageStatusProps.selector || "body",
+              callback: (el) =>
+                sharedPageStatusProps
+                  .getNotebookPageId?.(el)
+                  .then((s) => s && observerProps.onload(s)),
+              onRemove: (el) =>
+                sharedPageStatusProps
+                  .getNotebookPageId?.(el)
+                  .then((s) => s && observerProps.onunload(s)),
+            });
+        componentUnmounts["shared-page-observer"] = () => {
+          delete componentUnmounts["shared-page-observer"];
+          sharedPageObserver.disconnect();
+        };
       }
       registerNotificationActions({
         operation: "SHARE_PAGE",
