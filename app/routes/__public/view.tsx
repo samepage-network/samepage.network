@@ -6,7 +6,6 @@ export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCa
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 
 const ViewPage = () => {
-  // https://bafkreielmmjvxijw37qb4w76j5dqccex5x7gceedmddq4tu7xgrbuahohq.ipfs.w3s.link
   const params = useParams();
   const [cidOrLink, setCidOrLink] = useState(params.cid || "");
   const cid = cidOrLink
@@ -22,7 +21,8 @@ const ViewPage = () => {
         they are accessible by any notebook you'd like to connect the data to.
         <br />
         <br />
-        To view the data stored on a page, paste in the page's CID.
+        To view the data stored on a page, paste in the page's CID. Each link
+        maps to a fixed version of the shared page.
       </div>
       <div className="flex items-center gap-8 w-full">
         <TextInput

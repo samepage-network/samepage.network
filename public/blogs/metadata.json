@@ -5,5 +5,12 @@
     "date": "2022-11-29",
     "author": "Vargas",
     "type": "Announcement"
+  },
+  "why_does_samepage_use_web3.md": {
+    "title": "Why does SamePage use Web3?",
+    "description": "A core feature of SamePage, but not one users have to think about until they have to.",
+    "date": "2022-12-06",
+    "author": "Vargas",
+    "type": "Product"
   }
 }

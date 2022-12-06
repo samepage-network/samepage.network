@@ -17,7 +17,8 @@ const listBlogPosts = () => {
     return {
       directory: r
         .filter((f) => f.name !== "metadata.json")
-        .map((r) => ({ path: r.name, ...meta[r.name] })),
+        .map((r) => ({ path: r.name, ...meta[r.name] }))
+        .reverse(),
     };
   });
 };

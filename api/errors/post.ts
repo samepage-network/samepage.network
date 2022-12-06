@@ -90,7 +90,7 @@ const logic = async (body: Record<string, unknown>) => {
       const { label, stack } = args;
       await sendEmail({
         to: "support@samepage.network",
-        subject: `SamePage webapp path failed: /${label}`,
+        subject: `SamePage notification action failed: ${label}`,
         body: stack,
       });
       return { success: true };
