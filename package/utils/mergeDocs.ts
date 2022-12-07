@@ -1,4 +1,4 @@
-import { Schema, InitialSchema } from "package/internal/types";
+import type { Schema, InitialSchema } from "../internal/types";
 import convertAnnotations from "./convertAnnotations";
 import migrateDocToLatest from "./migrateDocToLatest";
 import Automerge from "automerge";

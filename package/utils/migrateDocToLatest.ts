@@ -1,4 +1,4 @@
-import { LatestSchema, Schema } from "package/internal/types";
+import type { LatestSchema, Schema } from "../internal/types";
 import Automerge from "automerge";
 
 const migrateDocToLatest = (oldDoc: Schema): LatestSchema => {
