@@ -15,6 +15,7 @@ const zBody = z.discriminatedUnion("method", [
     results: z.unknown().array(),
     input: z.string(),
     app: z.number(),
+    version: z.string().optional(),
   }),
   z.object({
     method: z.literal("message-handler-failed"),
@@ -22,6 +23,7 @@ const zBody = z.discriminatedUnion("method", [
     message: z.string(),
     data: z.record(z.unknown()),
     stack: z.string().optional(),
+    version: z.string().optional(),
   }),
   z.object({
     method: z.literal("web-app-error"),
@@ -32,6 +34,8 @@ const zBody = z.discriminatedUnion("method", [
     method: z.literal("notification-action"),
     label: z.string(),
     stack: z.string(),
+    app: z.number().optional(),
+    version: z.string().optional(),
   }),
 ]);
 
@@ -43,7 +47,7 @@ const logic = async (body: Record<string, unknown>) => {
   }
   switch (args.method) {
     case "at-json-parser": {
-      const { app, input, results } = args;
+      const { app, input, results, version } = args;
       const uuid = v4();
       await uploadFile({
         Key: `data/errors/${uuid}.json`,
@@ -56,13 +60,19 @@ const logic = async (body: Record<string, unknown>) => {
         to: "support@samepage.network",
         subject: `New AtJsonParser error in app ${
           appsById[app]?.name || "Unknown"
-        }`,
+        }, Version: ${version}`,
         body: AtJsonParserErrorEmail({ uuid }),
       });
       return { success: true };
     }
     case "message-handler-failed": {
-      const { notebookUuid, data, message, stack = "" } = args;
+      const {
+        notebookUuid,
+        data,
+        message,
+        stack = "",
+        version = "stale",
+      } = args;
       const cxn = await getMysql();
       const [notebook] = await cxn
         .execute(
@@ -77,6 +87,7 @@ const logic = async (body: Record<string, unknown>) => {
           ...notebook,
           data,
           stack,
+          version,
         }),
       });
       return { success: true };
@@ -91,10 +102,10 @@ const logic = async (body: Record<string, unknown>) => {
       return { success: true };
     }
     case "notification-action": {
-      const { label, stack } = args;
+      const { label, stack, app = 0, version = "stale" } = args;
       await sendEmail({
         to: "support@samepage.network",
-        subject: `SamePage notification action failed: ${label}`,
+        subject: `SamePage notification failed. Action: ${label}, App: ${appsById[app].name}, Version: ${version}`,
         body: stack,
       });
       return { success: true };

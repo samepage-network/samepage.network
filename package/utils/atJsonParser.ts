@@ -33,6 +33,7 @@ const atJsonParser = (
           results,
           input: text,
           app,
+          version: process.env.VERSION,
         },
       });
     } else {
@@ -55,6 +56,7 @@ const atJsonParser = (
           results,
           input: text,
           app,
+          version: process.env.VERSION,
         },
       });
     } else {

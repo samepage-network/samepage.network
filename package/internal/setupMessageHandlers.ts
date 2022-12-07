@@ -47,6 +47,7 @@ export const handleMessage = ({
               : e,
           message: e instanceof Error ? e.message : "Unknown data thrown",
           stack: e instanceof Error ? e.stack : "Unknown stacktrace",
+          version: process.env.VERSION,
         },
       });
     }

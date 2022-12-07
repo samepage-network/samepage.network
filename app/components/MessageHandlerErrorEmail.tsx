@@ -8,13 +8,18 @@ const MessageHandlerErrorEmail = ({
   workspace,
   data,
   stack,
+  version,
 }: {
   app: AppId;
   workspace: string;
   data: Record<string, unknown>;
   stack: string;
+  version: string;
 }): React.ReactElement => (
   <EmailLayout>
+    <div>
+      Version: <code>{version}</code>
+    </div>
     <div>
       App: <code>{appsById[app].name}</code>
     </div>

@@ -7,6 +7,7 @@ import Markdown from "markdown-to-jsx";
 import { callNotificationAction } from "../internal/messages";
 import apiClient from "../internal/apiClient";
 import { apiPost } from "../internal/apiClient";
+import { app } from "package/internal/registry";
 
 const ActionButtons = ({
   actions,
@@ -37,6 +38,8 @@ const ActionButtons = ({
                       method: "notification-action",
                       label: action.label,
                       stack: (e as Error).stack,
+                      version: process.env.VERSION,
+                      app,
                     },
                   });
                   dispatchAppEvent({
