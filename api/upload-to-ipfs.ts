@@ -31,15 +31,20 @@ export const handler = async (
     (resolve) => (rootReadyResolve = resolve)
   );
   const [cid] = await Promise.all([
-    client.put([new File([encoded], "data.json")], {
-      wrapWithDirectory: false,
-      onRootCidReady(cid) {
-        uploadFile({
-          Key: `data/ipfs/${cid}`,
-          Body: encoded,
-        }).then(() => rootReadyResolve(cid));
-      },
-    }),
+    client
+      .put([new File([encoded], "data.json")], {
+        wrapWithDirectory: false,
+        onRootCidReady(cid) {
+          uploadFile({
+            Key: `data/ipfs/${cid}`,
+            Body: encoded,
+          }).then(() => {
+            rootReadyResolve(cid);
+          });
+        },
+      })
+      // test would fail without it?
+      .then(() => {}),
     s3upload.then(async (cid) => {
       if (type === "pages") {
         const cxn = await getMysql(context?.awsRequestId || v4());

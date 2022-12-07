@@ -456,7 +456,7 @@ const logic = async (req: Record<string, unknown>) => {
         const { notebookPageId } = args;
         await cxn.execute(
           `UPDATE page_notebook_links SET open = 1 WHERE notebook_page_id = ? AND notebook_uuid = ? AND open = 0`,
-          [notebookUuid, notebookPageId]
+          [notebookPageId, notebookUuid]
         );
         cxn.destroy();
         return {

@@ -3,6 +3,7 @@ import { app } from "../internal/registry";
 import { Schema, InitialSchema, LatestSchema } from "../internal/types";
 import convertAnnotations from "./convertAnnotations";
 import Automerge from "automerge";
+import migrateDocToLatest from "./migrateDocToLatest";
 
 const changeLatestAutomergeDoc = (oldDoc: LatestSchema, doc: InitialSchema) => {
   const changes = diffChars(oldDoc.content.toString(), doc.content);
@@ -83,24 +84,8 @@ const changeLatestAutomergeDoc = (oldDoc: LatestSchema, doc: InitialSchema) => {
 };
 
 const changeAutomergeDoc = (oldDoc: Schema, doc: InitialSchema) => {
-  switch (oldDoc.contentType) {
-    case "application/vnd.atjson+samepage; version=2022-08-17": {
-      (oldDoc as Schema as LatestSchema).contentType =
-        "application/vnd.atjson+samepage; version=2022-12-05";
-      oldDoc.annotations.forEach((a) => {
-        // @ts-ignore
-        delete a.start;
-        // @ts-ignore
-        delete a.end;
-        // @ts-ignore
-        a.startIndex = new Automerge.Counter(a.start);
-        // @ts-ignore
-        a.endIndex = new Automerge.Counter(a.end);
-      });
-    }
-  }
-  console.log("a", typeof new Automerge.Counter(4));
-  changeLatestAutomergeDoc(oldDoc as LatestSchema, doc);
+  const latestDoc = migrateDocToLatest(oldDoc);
+  changeLatestAutomergeDoc(latestDoc, doc);
 };
 
 export default changeAutomergeDoc;

@@ -208,6 +208,7 @@ const createTestSamePageClient = async ({
     createPage: async (notebookPageId) =>
       (appClientState[notebookPageId] = new JSDOM()),
     deletePage: async (notebookPageId) => delete appClientState[notebookPageId],
+    doesPageExist: async (notebookPageId) => !!appClientState[notebookPageId],
     calculateState,
     applyState: async (id: string, data: InitialSchema) => applyState(id, data),
   });
@@ -451,16 +452,24 @@ const createTestSamePageClient = async ({
           await apiClient<{ state: string }>({
             method: "get-shared-page",
             notebookPageId: message.notebookPageId,
-          }).then(({ state }) => {
-            const data = Automerge.load<Schema>(
-              base64ToBinary(state) as Automerge.BinaryDocument
-            );
-            onMessage({
-              type: "response",
-              uuid: message.uuid,
-              data: unwrapSchema(data),
+          })
+            .then(({ state }) => {
+              const data = Automerge.load<Schema>(
+                base64ToBinary(state) as Automerge.BinaryDocument
+              );
+              onMessage({
+                type: "response",
+                uuid: message.uuid,
+                data: unwrapSchema(data),
+              });
+            })
+            .catch((e) => {
+              return {
+                type: "response",
+                uuid: message.uuid,
+                data: e.message,
+              };
             });
-          });
         } else if (message.type === "refresh") {
           await applyState(message.notebookPageId, message.data);
           await refreshContent({ notebookPageId: message.notebookPageId });

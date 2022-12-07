@@ -7,11 +7,7 @@ import {
   appRoot,
 } from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
-import type {
-  InitialSchema,
-  AutomergeAnnotation,
-  Schema,
-} from "../internal/types";
+import type { InitialSchema, Schema } from "../internal/types";
 import Automerge from "automerge";
 import {
   addNotebookListener,
@@ -38,7 +34,7 @@ import { registerNotificationActions } from "../internal/messages";
 import changeAutomergeDoc from "../utils/changeAutomergeDoc";
 import unwrapSchema from "../utils/unwrapSchema";
 import wrapSchema from "../utils/wrapSchema";
-import convertAnnotations from "../utils/convertAnnotations";
+import mergeDocs from "../utils/mergeDocs";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
@@ -296,28 +292,7 @@ const setupSharePageWithNotebook = ({
                     // THIS IS COMPLETELY BORKED
                     if (preexisted) {
                       const preExistingDoc = await calculateState(title);
-                      const mergedDoc = Automerge.change(
-                        doc,
-                        "Merged",
-                        (oldDoc) => {
-                          const offset = oldDoc.content.length;
-                          oldDoc.content.insertAt?.(
-                            offset,
-                            ...preExistingDoc.content
-                          );
-                          const merged = convertAnnotations(
-                            preExistingDoc.annotations
-                          );
-                          merged.forEach((a) => {
-                            a.startIndex.increment(offset);
-                            a.endIndex.increment(offset);
-                          });
-                          // why do we have to do this cast?
-                          (oldDoc.annotations as AutomergeAnnotation[]).push(
-                            ...merged
-                          );
-                        }
-                      );
+                      const mergedDoc = mergeDocs(doc, preExistingDoc);
                       await apiClient({
                         method: "update-shared-page",
                         changes: Automerge.getChanges(doc, mergedDoc).map(

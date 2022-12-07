@@ -352,6 +352,51 @@ test("Inviting someone to a page they already have shared should return a readab
   );
 });
 
+test("Reverting a page invite should make it acceptable again", async () => {
+  const { notebookUuid, token } = await mockRandomNotebook();
+  const notebookPageId = await getRandomNotebookPageId();
+  const state = mockState("hello");
+  const { created } = await mockLambda({
+    method: "init-shared-page",
+    notebookUuid,
+    token,
+    notebookPageId,
+    state,
+  });
+  expect(created).toEqual(true);
+  const { notebookUuid: targetUuid, token: targetToken } =
+    await mockRandomNotebook();
+  const r1 = await mockLambda({
+    method: "invite-notebook-to-page",
+    notebookUuid,
+    token,
+    notebookPageId,
+    targetUuid,
+  });
+  expect(r1).toEqual({ success: true });
+  const r2 = await mockLambda({
+    method: "join-shared-page",
+    notebookUuid: targetUuid,
+    token: targetToken,
+    notebookPageId,
+  });
+  expect(r2).toEqual({ found: true, state });
+  const r3 = await mockLambda({
+    method: "revert-page-join",
+    notebookUuid: targetUuid,
+    token: targetToken,
+    notebookPageId,
+  });
+  expect(r3).toEqual({ success: true });
+  const r4 = await mockLambda({
+    method: "join-shared-page",
+    notebookUuid: targetUuid,
+    token: targetToken,
+    notebookPageId,
+  });
+  expect(r4).toEqual({ found: true, state });
+});
+
 test.afterAll(async () => {
   await getMysql().then(async (cxn) => {
     const data = await cxn

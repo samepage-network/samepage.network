@@ -11,6 +11,7 @@ import deleteNotebook from "~/data/deleteNotebook.server";
 import deleteInvite from "~/data/deleteInvite.server";
 import issueRandomInvite from "./utils/issueRandomInvite";
 import { JSDOM } from "jsdom";
+import getRandomNotebookPageId from "./utils/getRandomNotebookPageId";
 
 let cleanup: () => Promise<unknown>;
 const inviteCodes: string[] = [];
@@ -32,6 +33,7 @@ const forkSamePageClient = ({
 }) => {
   let expectedToClose = false;
   const client = fork("./package/testing/createTestSamePageClient", [
+    "--inspect=9323",
     "--forked",
     workspace,
     inviteCode,
@@ -116,7 +118,7 @@ test("Full integration test of sharing pages", async () => {
   await test.step("Wait for local network to be ready", () =>
     Promise.all([wsReady, apiReady]));
 
-  const notebookPageId = v4();
+  const notebookPageId = await getRandomNotebookPageId();
 
   const [client1, client2] =
     await test.step("Wait for SamePage clients to be ready", () =>
@@ -154,8 +156,10 @@ test("Full integration test of sharing pages", async () => {
 
   await test.step("Init Page", async () => client1.send({ type: "share" }));
 
-  const client1Ipfs = () => client1.send({ type: "ipfs", notebookPageId });
-  const client2Ipfs = () => client2.send({ type: "ipfs", notebookPageId });
+  const client1Ipfs = (n = notebookPageId) =>
+    client1.send({ type: "ipfs", notebookPageId: n });
+  const client2Ipfs = (n = notebookPageId) =>
+    client2.send({ type: "ipfs", notebookPageId: n });
   await test.step("Client 1 loads intial data correctly from IPFS", () =>
     expect.poll(client1Ipfs).toEqual({
       content: "First entry in page\n",
@@ -245,10 +249,12 @@ test("Full integration test of sharing pages", async () => {
 
   await test.step("Client 2 loads missed updates while offline", () =>
     expect
-      .poll(client2Read)
-      .toEqual(
-        '<div style="margin-left:16px" class="my-2">First super page</div>'
-      ));
+      .poll(() =>
+        client2Read().then(
+          (s) => new JSDOM(s).window.document.querySelector("div")?.textContent
+        )
+      )
+      .toEqual("First super page"));
 
   await test.step("Break client 2 save and apply", () =>
     client2.send({ type: "break" }));
@@ -468,6 +474,79 @@ test("Full integration test of sharing pages", async () => {
           })
       )
       .toEqual(`Hello`));
+
+  await test.step("Client 1 shares a page that merges with an existing Client 2 page", async () => {
+    const notebookPageId = await getRandomNotebookPageId();
+
+    await client1.send({
+      type: "setCurrentNotebookPageId",
+      notebookPageId,
+    });
+
+    await client1.send({
+      type: "setAppClientState",
+      notebookPageId,
+      data: '<div style="margin-left:16px" class="my-2">Top Block</div>',
+    });
+
+    await client1.send({ type: "share" });
+
+    await expect
+      .poll(() => client1Ipfs(notebookPageId))
+      .toEqual({
+        content: "Top Block\n",
+        annotations: [
+          {
+            type: "block",
+            start: 0,
+            end: 10,
+            attributes: { level: 1, viewType: "document" },
+          },
+        ],
+      });
+
+    await client2.send({
+      type: "setCurrentNotebookPageId",
+      notebookPageId,
+    });
+
+    await client2.send({
+      type: "setAppClientState",
+      notebookPageId,
+      data: '<div style="margin-left:16px" class="my-2">Bottom Block</div>',
+    });
+
+    const [, notification] = await Promise.all([
+      client1.send({ type: "invite", notebookUuid: client2.uuid }),
+      client2.send({ type: "waitForNotification" }),
+    ]);
+
+    await client2.send({
+      type: "accept",
+      notebookPageId,
+      notificationUuid: (notification as Notification).uuid,
+    });
+
+    await expect
+      .poll(() => client2Ipfs(notebookPageId))
+      .toEqual({
+        content: "Top Block\nBottom Block\n",
+        annotations: [
+          {
+            type: "block",
+            start: 0,
+            end: 10,
+            attributes: { viewType: "document", level: 1 },
+          },
+          {
+            type: "block",
+            start: 10,
+            end: 23,
+            attributes: { viewType: "document", level: 1 },
+          },
+        ],
+      });
+  });
 
   await test.step("Unload first client", () =>
     client1.send({ type: "unload" }));
