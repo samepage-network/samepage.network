@@ -248,6 +248,7 @@ const SharePageDialog = ({
                   width: "unset",
                 },
                 autoFocus: true,
+                className: "text-black",
               },
               className: "mt-2 text-black",
               rightElement: currentNotebookUuids.size ? (

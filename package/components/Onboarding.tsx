@@ -292,11 +292,12 @@ const Onboarding = ({
               <div className="border-gray-400 rounded-lg border p-8 flex flex-col gap-2 items-center h-full flex-1">
                 <Icon icon={"import"} size={32} />
                 <p className="font-bold text-lg">
-                  No, I already have a connected Notebook
+                  No, I already have another connected Notebook
                 </p>
                 <p className="text-gray-700 flex-grow">
                   Use your existing notebook to generate a new Notebook
-                  Universal Id for this notebook.
+                  Universal Id for this {appsById[app].name}{" "}
+                  {appsById[app].workspaceLabel}.
                 </p>
                 <Button
                   text={"Use Existing Notebook"}

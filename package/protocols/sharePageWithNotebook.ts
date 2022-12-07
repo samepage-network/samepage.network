@@ -293,6 +293,7 @@ const setupSharePageWithNotebook = ({
                           }).then(() => Promise.reject(e))
                         );
                     const doc = loadAutomergeFromBase64(res.state);
+                    // THIS IS COMPLETELY BORKED
                     if (preexisted) {
                       const preExistingDoc = await calculateState(title);
                       const mergedDoc = Automerge.change(

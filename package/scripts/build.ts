@@ -37,7 +37,7 @@ const publish = async ({
         `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/commits/${process.env.GITHUB_SHA}`,
         opts
       )
-      .then((r) => r.data.commit.message as string);
+      .then((r) => r.data.commit?.message || version);
     const release = await axios.post(
       `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/releases`,
       {
