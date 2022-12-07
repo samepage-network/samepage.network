@@ -46,6 +46,7 @@ export const handleMessage = ({
               ? { message: e.message }
               : e,
           message: e instanceof Error ? e.message : "Unknown data thrown",
+          stack: e instanceof Error ? e.stack : "Unknown stacktrace",
         },
       });
     }

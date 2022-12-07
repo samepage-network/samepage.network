@@ -47,6 +47,28 @@ const listIssuedTokens = async (
         `SELECT COUNT(code) as today FROM invitations WHERE created_date > DATE_SUB(NOW(), INTERVAL 1 DAY)`
       )
       .then(([a]) => ["today", (a as { today: number }[])[0].today] as const),
+    cxn
+      .execute(
+        `SELECT COUNT(code) as accepted FROM invitations WHERE token_uuid IS NOT NULL`
+      )
+      .then(
+        ([a]) =>
+          ["accepted", (a as { accepted: number }[])[0].accepted] as const
+      ),
+    cxn
+      .execute(
+        `SELECT COUNT(code) as expired FROM invitations WHERE token_uuid IS NULL && NOW() >= expiration_date`
+      )
+      .then(
+        ([a]) => ["expired", (a as { expired: number }[])[0].expired] as const
+      ),
+    cxn
+      .execute(
+        `SELECT COUNT(code) as pending FROM invitations WHERE token_uuid IS NULL && NOW() < expiration_date`
+      )
+      .then(
+        ([a]) => ["pending", (a as { pending: number }[])[0].pending] as const
+      ),
   ]).then((entries) => Object.fromEntries(entries));
   stats["total"] = count.total;
   cxn.destroy();

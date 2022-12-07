@@ -5,6 +5,7 @@ import { z } from "zod";
 import getMysql from "fuegojs/utils/mysql";
 import { Notebook } from "package/internal/types";
 import AtJsonParserErrorEmail from "~/components/AtJsonParserErrorEmail";
+import MessageHandlerErrorEmail from "~/components/MessageHandlerErrorEmail";
 import { v4 } from "uuid";
 import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
 
@@ -20,6 +21,7 @@ const zBody = z.discriminatedUnion("method", [
     notebookUuid: z.string(),
     message: z.string(),
     data: z.record(z.unknown()),
+    stack: z.string().optional(),
   }),
   z.object({
     method: z.literal("web-app-error"),
@@ -60,7 +62,7 @@ const logic = async (body: Record<string, unknown>) => {
       return { success: true };
     }
     case "message-handler-failed": {
-      const { notebookUuid, data, message } = args;
+      const { notebookUuid, data, message, stack = "" } = args;
       const cxn = await getMysql();
       const [notebook] = await cxn
         .execute(
@@ -71,9 +73,11 @@ const logic = async (body: Record<string, unknown>) => {
       await sendEmail({
         to: "support@samepage.network",
         subject: `SamePage message handler failed: ${message}`,
-        body: `App: ${appsById[notebook.app]}\n\nWorkspace: ${
-          notebook.workspace
-        }\n\nContext: ${JSON.stringify(data, null, 4)}`,
+        body: MessageHandlerErrorEmail({
+          ...notebook,
+          data,
+          stack,
+        }),
       });
       return { success: true };
     }
