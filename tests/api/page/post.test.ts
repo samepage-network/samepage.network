@@ -16,6 +16,8 @@ import getRandomNotebookPageId from "../../utils/getRandomNotebookPageId";
 import wrapSchema from "../../../package/utils/wrapSchema";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
 
+// test.describe.configure({ mode: 'parallel' }); TODO
+
 const mockLambdaContext = ({ requestId = v4(), path = "page" }) => ({
   awsRequestId: requestId,
   callbackWaitsForEmptyEventLoop: true,

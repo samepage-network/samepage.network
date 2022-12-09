@@ -7,7 +7,7 @@ import Markdown from "markdown-to-jsx";
 import { callNotificationAction } from "../internal/messages";
 import apiClient from "../internal/apiClient";
 import { apiPost } from "../internal/apiClient";
-import { app } from "package/internal/registry";
+import { app } from "../internal/registry";
 
 const ActionButtons = ({
   actions,
