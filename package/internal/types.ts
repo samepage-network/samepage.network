@@ -250,7 +250,7 @@ export const zUnauthenticatedBody = z.discriminatedUnion("method", [
   z
     .object({ method: z.literal("create-notebook"), inviteCode: z.string() })
     .merge(zNotebook),
-  z.object({ method: z.literal("ping"), inviteCode: z.string() }),
+  z.object({ method: z.literal("ping") }),
 ]);
 
 export const zAuthenticatedBody = z.discriminatedUnion("method", [

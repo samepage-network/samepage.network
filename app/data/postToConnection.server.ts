@@ -25,8 +25,10 @@ const getSender = (ConnectionId: string) => {
           Data: new Uint8Array(Buffer.from(data)),
         })
         .then(() => Promise.resolve());
+  } else if (process.env.NODE_ENV === "test") {
+    return (_data: string) => Promise.resolve();
   } else {
-    return (Data: string): Promise<void> => {
+    return (Data: string) => {
       return axios
         .post<{ success: boolean }>("http://localhost:3003/ws", {
           ConnectionId,

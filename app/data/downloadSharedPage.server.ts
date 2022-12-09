@@ -9,7 +9,9 @@ const downloadSharedPage = async ({ cid }: { cid: string }): Promise<Memo> => {
     return {
       headers: {},
       body: Automerge.save(
-        Automerge.from<LatestSchema>(wrapSchema({ content: "", annotations: [] }))
+        Automerge.from<LatestSchema>(
+          wrapSchema({ content: "", annotations: [] })
+        )
       ),
       parent: null,
     };

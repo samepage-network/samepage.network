@@ -6,7 +6,8 @@
     "data_schema.md",
     "share_page_protocol.md",
     "npm_api.md",
-    "global_api.md"
+    "global_api.md",
+    "network_architecture.md"
   ],
   "names": {
     "global_api.md": "Global API",

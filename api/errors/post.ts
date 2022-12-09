@@ -47,7 +47,7 @@ const logic = async (body: Record<string, unknown>) => {
   }
   switch (args.method) {
     case "at-json-parser": {
-      const { app, input, results, version } = args;
+      const { app, input, results, version = "stale" } = args;
       const uuid = v4();
       await uploadFile({
         Key: `data/errors/${uuid}.json`,

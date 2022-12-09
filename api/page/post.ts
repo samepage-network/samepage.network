@@ -20,7 +20,6 @@ import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
 import { v4 } from "uuid";
 import messageNotebook from "~/data/messageNotebook.server";
 import differenceInMinutes from "date-fns/differenceInMinutes";
-import format from "date-fns/format";
 import crypto from "crypto";
 import getSharedPage from "~/data/getSharedPage.server";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
@@ -46,22 +45,22 @@ const zMethod = zUnauthenticatedBody
   .or(zAuthenticatedBody.and(zAuthHeaders).and(zBaseHeaders));
 
 const parseZodError = (e: ZodError, indentation = 0): string =>
-  e.issues
+  `${"".padStart(indentation * 2, " ")}${e.issues
     .map((i) =>
       i.code === "invalid_type"
         ? `Expected \`${i.path.join(".")}\` to be of type \`${
             i.expected
           }\` but received type \`${i.received}\``
         : i.code === "invalid_union"
-        ? `Path ${i.path.join(
+        ? `Path \`${i.path.join(
             "."
-          )} had the following union errors:\n${i.unionErrors
+          )}\` had the following union errors:\n${i.unionErrors
             .map((e) => parseZodError(e, indentation + 1))
-            .join("\n")}`
+            .join("")}`
         : `${i.message} (${i.code})`
     )
     .map((s) => `- ${s}\n`)
-    .join("");
+    .join("")}`;
 
 const getQuota = async ({
   requestId,
@@ -77,7 +76,7 @@ const getQuota = async ({
     .execute(`SELECT value FROM quotas WHERE field = ? AND stripe_id IS NULL`, [
       QUOTAS.indexOf(field),
     ])
-    .then(([q]) => (q as { value: number }[])[0]?.value);
+    .then(([q]) => (q as { value: number }[])[0].value);
 };
 
 const validatePageQuota = async ({
@@ -94,7 +93,7 @@ const validatePageQuota = async ({
       `SELECT COUNT(page_uuid) as total FROM page_notebook_links WHERE notebook_uuid = ? AND open = 0`,
       [notebookUuid]
     )
-    .then(([t]) => (t as { total: number }[])[0]?.total);
+    .then(([t]) => (t as { total: number }[])[0].total);
   if (totalPages >= pageQuota) {
     throw new ConflictError(
       `Maximum number of pages allowed to be connected to this notebook on this plan is ${pageQuota}.`
@@ -106,7 +105,7 @@ const logic = async (req: Record<string, unknown>) => {
   const result = zMethod.safeParse(req);
   if (!result.success)
     throw new BadRequestError(
-      `Failed to parse request. Errors:\n${parseZodError(result.error)}`
+      `Failed to parse request. Errors:\n${parseZodError(result.error).trim()}`
     );
   const { requestId, ...args } = result.data;
   console.log("Received method:", args.method);
@@ -153,12 +152,6 @@ const logic = async (req: Record<string, unknown>) => {
       return { success: true };
     }
     const { notebookUuid, token } = args;
-    if (!notebookUuid)
-      throw new BadRequestError(
-        `Notebook Universal ID is required to use SamePage`
-      );
-    if (!token)
-      throw new BadRequestError(`Notebook Token is required to use SamePage`);
     const tokenUuid = await authenticateNotebook({
       requestId,
       notebookUuid,
@@ -199,12 +192,7 @@ const logic = async (req: Record<string, unknown>) => {
         if (existingTokenLink) {
           return { notebookUuid: existingTokenLink.notebook_uuid };
         }
-        const notebookQuota = await cxn
-          .execute(
-            `SELECT value FROM quotas WHERE field = ? AND stripe_id IS NULL`,
-            [QUOTAS.indexOf("Notebooks")]
-          )
-          .then(([q]) => (q as { value: number }[])?.[0].value);
+        const notebookQuota = await getQuota({ requestId, field: "Notebooks" });
         if (tokenLinks.length >= notebookQuota) {
           throw new ConflictError(
             `Maximum number of notebooks allowed to be connected to this token with this plan is ${notebookQuota}.`
@@ -227,11 +215,6 @@ const logic = async (req: Record<string, unknown>) => {
         const currentDate = new Date();
         const currentMonth = currentDate.getMonth();
         const currentYear = currentDate.getFullYear();
-        const endDate = new Date(
-          currentMonth === 11 ? currentYear + 1 : currentYear,
-          currentMonth === 11 ? 0 : currentMonth + 1,
-          1
-        );
         const startDate = new Date(currentYear, currentMonth, 1).toJSON();
 
         return getMysql(requestId)
@@ -288,12 +271,10 @@ const logic = async (req: Record<string, unknown>) => {
             cxn.destroy();
             return {
               minutes: sessions.reduce(
-                (p, c) =>
-                  differenceInMinutes(c.end_date, c.created_date) / 5 + p,
+                (p, c) => differenceInMinutes(c.end_date, c.created_date) + p,
                 0
               ),
               messages: messages.length,
-              date: format(endDate, "MMMM do, yyyy"),
               notebooks,
               quotas: Object.fromEntries(
                 (quotas as { field: number; value: number }[]).map(
@@ -309,10 +290,7 @@ const logic = async (req: Record<string, unknown>) => {
         return Promise.all([
           downloadFileContent({
             Key: `data/messages/${messageUuid}.json`,
-          }).catch(() => {
-            console.error(`Could not load message ${messageUuid}`);
-            return JSON.stringify("{}");
-          }),
+          }).then((r) => r || "{}"),
           getMysql(requestId).then((cxn) => {
             return cxn
               .execute(
@@ -406,6 +384,7 @@ const logic = async (req: Record<string, unknown>) => {
           cxn.destroy();
           return {
             found: false,
+            reason: "Failed to find invite",
           };
         }
         const { uuid, page_uuid, invited_by } = results[0];
@@ -424,6 +403,7 @@ const logic = async (req: Record<string, unknown>) => {
           cxn.destroy();
           return {
             found: false,
+            reason: "Invited by notebook no longer connected to page",
           };
         }
         await validatePageQuota({ requestId, notebookUuid });
@@ -472,7 +452,7 @@ const logic = async (req: Record<string, unknown>) => {
         });
         if (!changes.length) {
           cxn.destroy();
-          return {};
+          return { success: false };
         }
         await cxn
           .execute(
@@ -608,11 +588,6 @@ const logic = async (req: Record<string, unknown>) => {
             requestId,
           }),
         ]).then(async ([page, targetPage]) => {
-          if (!page) {
-            throw new NotFoundError(
-              `Attempted to invite a notebook to a page that isn't shared.`
-            );
-          }
           if (targetPage) {
             throw new MethodNotAllowedError(
               `Attempted to invite a notebook to a page that was already shared with it.`
@@ -653,30 +628,29 @@ const logic = async (req: Record<string, unknown>) => {
                 [notebookUuid, notebookPageId]
               )
               .then(async ([link]) => {
-                const { uuid, invited_by } =
-                  (link as { uuid: string; invited_by: string }[])[0] || {};
+                const { uuid, invited_by } = (
+                  link as { uuid: string; invited_by: string }[]
+                )[0];
                 return { linkUuid: uuid, invitedBy: invited_by };
               }));
         if (!linkUuid) {
           throw new NotFoundError(`Could not find valid invite to remove.`);
         }
+        console.log("invitedBy", invitedBy, "target", target);
         return cxn
           .execute(`DELETE FROM page_notebook_links WHERE uuid = ?`, [linkUuid])
-          .then(
-            () =>
-              invitedBy
-                ? messageNotebook({
-                    source: notebookUuid,
-                    target: invitedBy,
-                    data: {
-                      title: notebookPageId,
-                      rejected: !target,
-                      success: false,
-                    },
-                    operation: "SHARE_PAGE_RESPONSE",
-                    requestId,
-                  })
-                : Promise.resolve() // TODO - send us an email of this error
+          .then(() =>
+            messageNotebook({
+              source: notebookUuid,
+              target: invitedBy,
+              data: {
+                title: notebookPageId,
+                rejected: !target,
+                success: false,
+              },
+              operation: "SHARE_PAGE_RESPONSE",
+              requestId,
+            })
           )
           .then(() => ({ success: true }))
           .catch(catchError("Failed to remove a shared page"))
@@ -695,7 +669,8 @@ const logic = async (req: Record<string, unknown>) => {
               .execute(
                 `SELECT n.app, n.workspace, n.uuid, l.version, l.open FROM page_notebook_links l 
                 INNER JOIN notebooks n ON n.uuid = l.notebook_uuid 
-                WHERE l.page_uuid = ?`,
+                WHERE l.page_uuid = ?
+                ORDER BY l.invited_date`,
                 [pageUuid]
               )
               .then(
@@ -924,8 +899,6 @@ const logic = async (req: Record<string, unknown>) => {
         cxn.destroy();
         return { success: true };
       }
-      default:
-        throw new NotFoundError(`Unknown method: ${JSON.stringify(args)}`);
     }
   } catch (e) {
     cxn.destroy();
