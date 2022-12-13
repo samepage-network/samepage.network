@@ -9,7 +9,7 @@ const dev = (args: CliArgs) => {
     chokidar
       .watch(["src"])
       .on("add", (file) => {
-        if (/src\/[a-z]+.tsx?$/.test(file)) {
+        if (/src[\\/][a-z]+.tsx?$/.test(file)) {
           console.log(`building ${file}...`);
           compile({ ...args, opts: { incremental: true } }).then((r) => {
             const { rebuild } = r;
