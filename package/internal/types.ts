@@ -100,9 +100,9 @@ const customAnnotation = annotationBase.merge(
 const codeAnnotation = annotationBase.merge(
   z.object({
     type: z.literal("code"),
-    attibutes: z.object({
+    attributes: z.object({
       language: z.string(),
-    })
+    }),
   })
 );
 export const annotationSchema = z.discriminatedUnion("type", [
