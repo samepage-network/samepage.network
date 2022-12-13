@@ -6,10 +6,11 @@ import apiClient from "../internal/apiClient";
 import { InitialSchema } from "../internal/types";
 
 // In the future, I could see this becoming rows of data.
-type QueryResult = InitialSchema;
+type QueryResult = InitialSchema & { alias: string };
 
 const setupNotebookQuerying = ({
-  onQuery = () => Promise.resolve({ content: "", annotations: [] }),
+  onQuery = () =>
+    Promise.resolve({ content: "", annotations: [], alias: "" }),
   onQueryResponse = () => Promise.resolve(),
 }: {
   onQuery?: (notebookPageId: string) => Promise<QueryResult>;
@@ -38,7 +39,7 @@ const setupNotebookQuerying = ({
       onQueryResponse(
         e as {
           found: boolean;
-          data: InitialSchema;
+          data: QueryResult;
           request: string;
         }
       );
@@ -52,7 +53,7 @@ const setupNotebookQuerying = ({
     query: (request: string) =>
       apiClient<{
         found: boolean;
-        data: InitialSchema;
+        data: QueryResult;
       }>({
         method: "query",
         request,

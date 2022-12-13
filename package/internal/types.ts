@@ -97,6 +97,14 @@ const customAnnotation = annotationBase.merge(
     }),
   })
 );
+const codeAnnotation = annotationBase.merge(
+  z.object({
+    type: z.literal("code"),
+    attibutes: z.object({
+      language: z.string(),
+    })
+  })
+);
 export const annotationSchema = z.discriminatedUnion("type", [
   blockAnnotation,
   metadataAnnotation,
@@ -108,6 +116,7 @@ export const annotationSchema = z.discriminatedUnion("type", [
   referenceAnnotation,
   imageAnnotation,
   customAnnotation,
+  codeAnnotation,
 ]);
 export type Annotation = z.infer<typeof annotationSchema>;
 export type AutomergeAnnotation = Omit<Annotation, "start" | "end"> & {
