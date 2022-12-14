@@ -12,12 +12,9 @@ const changeLatestAutomergeDoc = (oldDoc: LatestSchema, doc: InitialSchema) => {
     if (change.removed) {
       oldDoc.content.deleteAt?.(contentIndex, change.value.length);
     } else {
-      if (change.added)
-        oldDoc.content.insertAt?.(
-          contentIndex,
-          ...new Automerge.Text(change.value)
-        );
-      contentIndex += change.value.length;
+      const text = new Automerge.Text(change.value);
+      if (change.added) oldDoc.content.insertAt?.(contentIndex, ...text);
+      contentIndex += text.length;
     }
   });
   if (!oldDoc.annotations) oldDoc.annotations = [];

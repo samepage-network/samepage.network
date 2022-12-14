@@ -225,3 +225,15 @@ test("merge docs", async () => {
     ],
   });
 });
+
+test("Change handles eol diffs with emojis", async () =>
+  runChangeAutomergeDocTest(
+    {
+      content: "😁 Hello",
+      annotations: [],
+    },
+    {
+      content: "😁 Hello World",
+      annotations: [],
+    }
+  ));
