@@ -29,16 +29,11 @@ import { Operation } from "package/internal/messages";
 import messageToNotification from "package/internal/messageToNotification";
 import inviteNotebookToPage from "~/data/inviteNotebookToPage.server";
 import getNotebookUuids from "~/data/getNotebookUuids.server";
-import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
 import createNotebook from "~/data/createNotebook.server";
 import QUOTAS from "~/data/quotas.server";
 import { ZodError } from "zod";
-
-export const globalContext: {
-  quotas: { [k in typeof QUOTAS[number]]?: number };
-} = {
-  quotas: {},
-};
+import connectNotebook from "~/data/connectNotebook.server";
+import getQuota from "~/data/getQuota.server";
 
 const zMethod = zUnauthenticatedBody
   .and(zBaseHeaders)
@@ -61,23 +56,6 @@ const parseZodError = (e: ZodError, indentation = 0): string =>
     )
     .map((s) => `- ${s}\n`)
     .join("")}`;
-
-const getQuota = async ({
-  requestId,
-  field,
-}: {
-  requestId: string;
-  field: typeof QUOTAS[number];
-}) => {
-  const storedValue = globalContext.quotas[field];
-  if (typeof storedValue !== "undefined") return storedValue;
-  const cxn = await getMysql(requestId);
-  return cxn
-    .execute(`SELECT value FROM quotas WHERE field = ? AND stripe_id IS NULL`, [
-      QUOTAS.indexOf(field),
-    ])
-    .then(([q]) => (q as { value: number }[])[0].value);
-};
 
 const validatePageQuota = async ({
   requestId,
@@ -176,40 +154,14 @@ const logic = async (req: Record<string, unknown>) => {
         ) {
           return { notebookUuid };
         }
-        const [results] = await cxn.execute(
-          `SELECT l.uuid, l.notebook_uuid, n.app, n.workspace FROM token_notebook_links l
-          LEFT JOIN notebooks n ON n.uuid = l.notebook_uuid
-          where l.token_uuid = ?`,
-          [tokenUuid]
-        );
-        const tokenLinks = results as ({
-          uuid: string;
-          notebook_uuid: string;
-        } & Notebook)[];
-        const existingTokenLink = tokenLinks.find(
-          (tl) => tl.app === app && tl.workspace === workspace
-        );
-        if (existingTokenLink) {
-          return { notebookUuid: existingTokenLink.notebook_uuid };
-        }
-        const notebookQuota = await getQuota({ requestId, field: "Notebooks" });
-        if (tokenLinks.length >= notebookQuota) {
-          throw new ConflictError(
-            `Maximum number of notebooks allowed to be connected to this token with this plan is ${notebookQuota}.`
-          );
-        }
-        const newNotebookUuid = await getOrGenerateNotebookUuid({
+        const response = await connectNotebook({
           requestId,
+          tokenUuid,
           app,
           workspace,
         });
-        await cxn.execute(
-          `INSERT INTO token_notebook_links (uuid, token_uuid, notebook_uuid)
-          VALUES (UUID(), ?, ?)`,
-          [tokenUuid, newNotebookUuid]
-        );
         cxn.destroy();
-        return { notebookUuid: newNotebookUuid };
+        return response;
       }
       case "usage": {
         const currentDate = new Date();

@@ -5,7 +5,7 @@ export { default as loader } from "@dvargas92495/app/backend/isAdminLoader.serve
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 
-const TABS = ["page", "tab", "hello"];
+const TABS = ["notebooks"];
 
 const UserPage: React.FunctionComponent = () => {
   return <UserDashboard tabs={TABS} title={"Samepage"} />;

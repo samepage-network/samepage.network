@@ -1,34 +1,37 @@
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
 import { Outlet, useNavigate, Form, useLoaderData } from "@remix-run/react";
 import Table from "@dvargas92495/app/components/Table";
-import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
-import listNotebooks from "~/data/listNotebooks.server";
+import listNotebooksForUser from "~/data/listNotebooksForUser.server";
 import TextInput from "@dvargas92495/app/components/TextInput";
 import Button from "@dvargas92495/app/components/Button";
-import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
-import createNotebook from "~/data/createNotebook.server";
-import StatPanels from "~/components/StatPanels";
+import createUserNotebook from "~/data/createUserNotebook.server";
+import remixAppAction from "@dvargas92495/app/backend/remixAppAction.server";
+import remixAppLoader from "@dvargas92495/app/backend/remixAppLoader.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 
-const ORDER = ["total", "accepted", "online", "sessions", "messages"];
-
 const NotebooksPage = () => {
   const navigate = useNavigate();
-  const { stats } = useLoaderData<Awaited<ReturnType<typeof listNotebooks>>>();
+  const { error } =
+    useLoaderData<Awaited<ReturnType<typeof listNotebooksForUser>>>();
   return (
-    <div className={"flex gap-8 items-start"}>
-      <div className="max-w-3xl w-full">
-        <Form method="get" className="flex items-center max-w-lg gap-8">
-          <TextInput
-            label={"Search"}
-            name={"search"}
-            placeholder={"Search by workspace"}
-            className={"flex-grow"}
-          />
-          <Button>Search</Button>
-        </Form>
+    <div className={"flex gap-8 items-start h-full"}>
+      <div className="max-w-3xl w-full flex flex-col h-full">
+        {error ? (
+          <span className="text-red-900 formal-normal mb-4">{error}</span>
+        ) : (
+          <Form method="get" className="flex items-center max-w-lg gap-8">
+            <TextInput
+              label={"Search"}
+              name={"search"}
+              placeholder={"Search by workspace"}
+              className={"flex-grow"}
+            />
+            <Button>Search</Button>
+          </Form>
+        )}
         <Table
+          className="flex-grow"
           onRowClick={(r) => navigate(r.uuid as string)}
           renderCell={{
             connected: (v) =>
@@ -41,10 +44,9 @@ const NotebooksPage = () => {
                 : (v as string),
           }}
         />
-        <StatPanels stats={stats} order={ORDER} />
         <Form method={"post"} className={"mt-12"}>
           <h3 className="text-base font-normal mb-4">
-            Create SamePage Test Notebook
+            Create SamePage Notebook
           </h3>
           <TextInput name={"workspace"} />
           <Button>Create</Button>
@@ -58,20 +60,18 @@ const NotebooksPage = () => {
 };
 
 export const loader: LoaderFunction = (args) => {
-  return remixAdminLoader(args, ({ context: { requestId }, searchParams }) =>
-    listNotebooks(requestId, searchParams)
-  );
+  return remixAppLoader(args, listNotebooksForUser);
 };
 
 export const action: ActionFunction = (args) => {
-  return remixAdminAction(args, {
-    POST: ({ context: { requestId }, data }) =>
-      createNotebook({
+  return remixAppAction(args, {
+    POST: ({ context: { requestId }, data, userId }) =>
+      createUserNotebook({
         requestId,
-        app: 0,
         workspace: data["workspace"]?.[0] || "",
+        userId,
       }).then(({ notebookUuid }) =>
-        redirect(`/admin/notebooks/${notebookUuid}`)
+        redirect(`/user/notebooks/${notebookUuid}`)
       ),
   });
 };
