@@ -27,7 +27,7 @@ const getQuota = async ({
         .getUser(userId)
         .then((u) => {
           const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-            apiVersion: "2020-08-27",
+            apiVersion: "2022-11-15",
           });
           return stripe.subscriptions.list({
             customer: u.privateMetadata.stripeCustomerId as string,

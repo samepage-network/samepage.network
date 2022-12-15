@@ -7,18 +7,25 @@ import Button from "@dvargas92495/app/components/Button";
 import createUserNotebook from "~/data/createUserNotebook.server";
 import remixAppAction from "@dvargas92495/app/backend/remixAppAction.server";
 import remixAppLoader from "@dvargas92495/app/backend/remixAppLoader.server";
+import migrateNotebooksForUser from "~/data/migrateNotebooksForUser.server";
 export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
 
 const NotebooksPage = () => {
   const navigate = useNavigate();
-  const { error } =
+  const { count } =
     useLoaderData<Awaited<ReturnType<typeof listNotebooksForUser>>>();
   return (
     <div className={"flex gap-8 items-start h-full"}>
-      <div className="max-w-3xl w-full flex flex-col h-full">
-        {error ? (
-          <span className="text-red-900 formal-normal mb-4">{error}</span>
+      <div className="max-w-3xl w-full flex flex-col h-full gap-4">
+        {count === 0 ? (
+          <Form method="put" className="flex items-center max-w-lg gap-8">
+            <span>
+              No notebooks found. Click the claim button to migrate the
+              notebooks associated with your email to your account.
+            </span>
+            <Button>Claim</Button>
+          </Form>
         ) : (
           <Form method="get" className="flex items-center max-w-lg gap-8">
             <TextInput
@@ -31,7 +38,7 @@ const NotebooksPage = () => {
           </Form>
         )}
         <Table
-          className="flex-grow"
+          className={`flex-grow ${count === 0 ? "hidden" : ""}`}
           onRowClick={(r) => navigate(r.uuid as string)}
           renderCell={{
             connected: (v) =>
@@ -44,13 +51,15 @@ const NotebooksPage = () => {
                 : (v as string),
           }}
         />
-        <Form method={"post"} className={"mt-12"}>
-          <h3 className="text-base font-normal mb-4">
-            Create SamePage Notebook
-          </h3>
-          <TextInput name={"workspace"} />
-          <Button>Create</Button>
-        </Form>
+        {count > 0 && (
+          <Form method={"post"} className={"mt-12"}>
+            <h3 className="text-base font-normal mb-4">
+              Create SamePage Notebook
+            </h3>
+            <TextInput name={"workspace"} />
+            <Button>Create</Button>
+          </Form>
+        )}
       </div>
       <div className={"flex-grow-1 overflow-auto"}>
         <Outlet />
@@ -73,6 +82,7 @@ export const action: ActionFunction = (args) => {
       }).then(({ notebookUuid }) =>
         redirect(`/user/notebooks/${notebookUuid}`)
       ),
+    PUT: migrateNotebooksForUser,
   });
 };
 
