@@ -10,7 +10,7 @@ const TABS = [
   "install",
   "docs",
   "blog",
-  "view",
+  "pricing",
   { id: "community", href: "https://discord.gg/UpKAfUvUPd" },
 ].map((p) => (typeof p === "string" ? { id: p, href: `/${p}` } : p));
 

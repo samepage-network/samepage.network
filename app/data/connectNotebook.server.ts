@@ -30,7 +30,11 @@ const connectNotebook = async ({
   if (existingTokenLink) {
     return { notebookUuid: existingTokenLink.notebook_uuid };
   }
-  const notebookQuota = await getQuota({ requestId, field: "Notebooks" });
+  const notebookQuota = await getQuota({
+    requestId,
+    field: "Notebooks",
+    tokenUuid,
+  });
   if (tokenLinks.length >= notebookQuota) {
     throw new ConflictError(
       `Maximum number of notebooks allowed to be connected to this token with this plan is ${notebookQuota}.`

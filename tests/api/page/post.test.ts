@@ -230,7 +230,7 @@ test("Messages from deleted notebooks should return Unknown", async () => {
 
 test("Reaching the page limit should throw on init and accept page", async () => {
   const { notebookUuid, token } = await mockRandomNotebook();
-  globalContext.quotas["Pages"] = 1;
+  globalContext.quotas[""] = { Pages: 1 };
   const { created } = await mockLambda({
     method: "init-shared-page",
     notebookUuid,
@@ -1327,7 +1327,7 @@ test("Grabbing usage data", async () => {
 });
 
 test("Reaching the notebook limit should throw on create", async () => {
-  globalContext.quotas["Notebooks"] = 1;
+  globalContext.quotas[""] = { Notebooks: 1 };
 
   const { notebookUuid, token } = await mockRandomNotebook();
   const r = await mockLambda({

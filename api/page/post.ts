@@ -60,12 +60,14 @@ const parseZodError = (e: ZodError, indentation = 0): string =>
 const validatePageQuota = async ({
   requestId,
   notebookUuid,
+  tokenUuid,
 }: {
   requestId: string;
   notebookUuid: string;
+  tokenUuid: string;
 }) => {
   const cxn = await getMysql(requestId);
-  const pageQuota = await getQuota({ requestId, field: "Pages" });
+  const pageQuota = await getQuota({ requestId, field: "Pages", tokenUuid });
   const totalPages = await cxn
     .execute(
       `SELECT COUNT(page_uuid) as total FROM page_notebook_links WHERE notebook_uuid = ? AND open = 0`,
@@ -285,7 +287,7 @@ const logic = async (req: Record<string, unknown>) => {
             );
             const [link] = results as { page_uuid: string }[];
             if (link) return { id: link.page_uuid, created: false };
-            await validatePageQuota({ requestId, notebookUuid });
+            await validatePageQuota({ requestId, notebookUuid, tokenUuid });
 
             const pageUuid = v4();
             await cxn.execute(
@@ -358,7 +360,7 @@ const logic = async (req: Record<string, unknown>) => {
             reason: "Invited by notebook no longer connected to page",
           };
         }
-        await validatePageQuota({ requestId, notebookUuid });
+        await validatePageQuota({ requestId, notebookUuid, tokenUuid });
         await cxn.execute(
           `UPDATE page_notebook_links SET open = 0 WHERE uuid = ?`,
           [uuid]
