@@ -5,7 +5,7 @@ export const migrate = async (args: MigrationProps) => {
   const PAGES = QUOTAS.indexOf("Pages");
   const NOTEBOOKS = QUOTAS.indexOf("Notebooks");
   return args.connection.execute(
-    `INSERT INTO quotas (uuid, field, value) 
+    `INSERT INTO quotas (uuid, field, value, stripe_id) 
      VALUES (UUID(), ?, ?, ?), (UUID(), ?, ?, ?), (UUID(), ?, ?, ?), (UUID(), ?, ?, ?)`,
     [
       PAGES,
