@@ -29,7 +29,7 @@ const getUserNotebookProfile = async ({
   const pages = await cxn
     .execute(
       `SELECT p.page_uuid, p.notebook_page_id FROM page_notebook_links p
-    WHERE p.notebook_uuid = ? ORDER BY p.invited_date DESC LIMIT 10`,
+    WHERE p.notebook_uuid = ? AND p.open = 0 ORDER BY p.invited_date DESC LIMIT 10`,
       [uuid]
     )
     .then(([a]) =>

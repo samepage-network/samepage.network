@@ -52,7 +52,7 @@ const setupSamePageClient = ({
   });
   const unloadWS = setupWsFeatures({ notificationContainerPath });
   const unloadP2P = setupP2PFeatures();
-  onAppEvent("log", onAppLog);
+  const offAppEvent = onAppEvent("log", onAppLog);
 
   if (typeof window !== "undefined") {
     window.samepage = {
@@ -65,6 +65,7 @@ const setupSamePageClient = ({
 
   return {
     unload: () => {
+      offAppEvent();
       unloadP2P();
       unloadWS();
     },

@@ -101,7 +101,7 @@ const setupSharePageWithNotebook = ({
       },
       path,
     });
-    componentUnmounts[notebookPageId] = () => {
+    componentUnmounts[`samepage-shared-${notebookPageId}`] = () => {
       delete componentUnmounts[`samepage-shared-${notebookPageId}`];
       unmount?.();
     };
@@ -204,22 +204,7 @@ const setupSharePageWithNotebook = ({
       actorId: getActorId(),
     });
 
-  const unload = () => {
-    clear();
-    Object.values(componentUnmounts).forEach((u) => u());
-    removeNotebookListener({ operation: "SHARE_PAGE_RESPONSE" });
-    removeNotebookListener({ operation: "SHARE_PAGE_UPDATE" });
-    removeNotebookListener({ operation: "SHARE_PAGE" });
-    removeNotebookListener({ operation: "REQUEST_PAGE_UPDATE" });
-    removeCommand({
-      label: COMMAND_PALETTE_LABEL,
-    });
-    removeCommand({
-      label: VIEW_COMMAND_PALETTE_LABEL,
-    });
-  };
-
-  onAppEvent("connection", (e) => {
+  const offAppEvent = onAppEvent("connection", (e) => {
     if (e.status === "CONNECTED") {
       if (sharedPageStatusProps) {
         const observerProps: Parameters<SharedPageObserver>[0] = {
@@ -234,7 +219,7 @@ const setupSharePageWithNotebook = ({
           },
           onunload: (notebookPageId) => {
             if (notebookPageId) {
-              componentUnmounts[notebookPageId]?.();
+              componentUnmounts[`samepage-shared-${notebookPageId}`]?.();
             }
           },
         };
@@ -668,6 +653,22 @@ const setupSharePageWithNotebook = ({
       unload();
     }
   });
+
+  const unload = () => {
+    clear();
+    offAppEvent();
+    Object.values(componentUnmounts).forEach((u) => u());
+    removeNotebookListener({ operation: "SHARE_PAGE_RESPONSE" });
+    removeNotebookListener({ operation: "SHARE_PAGE_UPDATE" });
+    removeNotebookListener({ operation: "SHARE_PAGE" });
+    removeNotebookListener({ operation: "REQUEST_PAGE_UPDATE" });
+    removeCommand({
+      label: COMMAND_PALETTE_LABEL,
+    });
+    removeCommand({
+      label: VIEW_COMMAND_PALETTE_LABEL,
+    });
+  };
 
   const updatePage = ({
     notebookPageId,

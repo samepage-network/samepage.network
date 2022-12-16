@@ -75,7 +75,7 @@ const Dashboard = ({
                   <div
                     className={`p-2 min-h-full flex items-center ${
                       activeTab === tab.id ? "bg-sky-900 rounded-md" : ""
-                    } capitalize hover:bg-sky-800`}
+                    } capitalize hover:bg-sky-800 text-white`}
                   >
                     <Icon className="h-6 w-6" />
                     <span className={"ml-2"}>{tab.id}</span>

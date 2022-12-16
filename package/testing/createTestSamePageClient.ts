@@ -186,11 +186,12 @@ const createTestSamePageClient = async ({
       : initOptions;
   const initializingPromise =
     "inviteCode" in initOptions
-      ? new Promise<void>((resolve) =>
-          onAppEvent("prompt-invite-code", (e) => {
+      ? new Promise<void>((resolve) => {
+          const offAppEvent = onAppEvent("prompt-invite-code", (e) => {
+            offAppEvent();
             e.respond(initOptions.inviteCode).then(resolve);
-          })
-        )
+          });
+        })
       : Promise.resolve();
   const { unload } = setupSamePageClient({
     getSetting: (s) => settings[s],

@@ -78,7 +78,7 @@ const NotificationContainer = () => {
   );
 
   React.useEffect(() => {
-    onAppEvent("notification", (evt) => {
+    const offAppEvent = onAppEvent("notification", (evt) => {
       if (
         notificationsRef.current.every((n) => n.uuid !== evt.notification.uuid)
       ) {
@@ -86,6 +86,7 @@ const NotificationContainer = () => {
         setNotifications([...notificationsRef.current]);
       }
     });
+    return offAppEvent;
   }, [setNotifications, notificationsRef]);
   return (
     <div

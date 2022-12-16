@@ -383,7 +383,7 @@ const setupWsFeatures = ({
 
   addNotebookListener({ operation: "PONG", handler: () => {} });
 
-  onAppEvent("connection", (evt) => {
+  const offAppEvent = onAppEvent("connection", (evt) => {
     if (typeof window !== "undefined") {
       if (evt.status === "PENDING") {
         const unmountLoadingComponent = renderOverlay({
@@ -424,6 +424,7 @@ const setupWsFeatures = ({
     if (typeof window !== "undefined") {
       window.removeEventListener("focus", windowFocusListener);
     }
+    offAppEvent();
     removeCommand({ label: USAGE_LABEL });
     removeNotebookListener({ operation: "AUTHENTICATION" });
     removeNotebookListener({ operation: "ERROR" });

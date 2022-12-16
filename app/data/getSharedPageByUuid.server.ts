@@ -32,6 +32,7 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
         }[]
     );
   if (!notebooks.length) {
+    cxn.destroy();
     throw new NotFoundError(`No notebooks connected to page ${uuid}`);
   }
   const pages = await Promise.all(
