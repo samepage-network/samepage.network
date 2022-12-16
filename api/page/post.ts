@@ -7,6 +7,7 @@ import {
   zBaseHeaders,
 } from "package/internal/types";
 import { appsById } from "package/internal/apps";
+import parseZodError from "package/utils/parseZodError";
 import {
   BadRequestError,
   ConflictError,
@@ -31,31 +32,12 @@ import inviteNotebookToPage from "~/data/inviteNotebookToPage.server";
 import getNotebookUuids from "~/data/getNotebookUuids.server";
 import createNotebook from "~/data/createNotebook.server";
 import QUOTAS from "~/data/quotas.server";
-import { ZodError } from "zod";
 import connectNotebook from "~/data/connectNotebook.server";
 import getQuota from "~/data/getQuota.server";
 
 const zMethod = zUnauthenticatedBody
   .and(zBaseHeaders)
   .or(zAuthenticatedBody.and(zAuthHeaders).and(zBaseHeaders));
-
-const parseZodError = (e: ZodError, indentation = 0): string =>
-  `${"".padStart(indentation * 2, " ")}${e.issues
-    .map((i) =>
-      i.code === "invalid_type"
-        ? `Expected \`${i.path.join(".")}\` to be of type \`${
-            i.expected
-          }\` but received type \`${i.received}\``
-        : i.code === "invalid_union"
-        ? `Path \`${i.path.join(
-            "."
-          )}\` had the following union errors:\n${i.unionErrors
-            .map((e) => parseZodError(e, indentation + 1))
-            .join("")}`
-        : `${i.message} (${i.code})`
-    )
-    .map((s) => `- ${s}\n`)
-    .join("")}`;
 
 const validatePageQuota = async ({
   requestId,
@@ -85,7 +67,7 @@ const logic = async (req: Record<string, unknown>) => {
   const result = zMethod.safeParse(req);
   if (!result.success)
     throw new BadRequestError(
-      `Failed to parse request. Errors:\n${parseZodError(result.error).trim()}`
+      `Failed to parse request. Errors:\n${parseZodError(result.error)}`
     );
   const { requestId, ...args } = result.data;
   console.log("Received method:", args.method);

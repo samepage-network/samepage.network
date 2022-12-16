@@ -8,7 +8,7 @@ import {
   getSetting,
 } from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
-import type { InitialSchema, Schema } from "../internal/types";
+import { InitialSchema, Schema, zInitialSchema } from "../internal/types";
 import Automerge from "automerge";
 import {
   addNotebookListener,
@@ -36,6 +36,7 @@ import changeAutomergeDoc from "../utils/changeAutomergeDoc";
 import unwrapSchema from "../utils/unwrapSchema";
 import wrapSchema from "../utils/wrapSchema";
 import mergeDocs from "../utils/mergeDocs";
+import parseZodError from "../utils/parseZodError";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
@@ -166,8 +167,21 @@ const setupSharePageWithNotebook = ({
     notebookPageId: string,
     doc: Automerge.FreezeObject<Schema>
   ) => {
-    set(notebookPageId, doc);
-    return applyState(notebookPageId, unwrapSchema(doc))
+    const docToApply = unwrapSchema(doc);
+    return zInitialSchema
+      .safeParseAsync(docToApply)
+      .then((parseResult) => {
+        if (parseResult.success) {
+          set(notebookPageId, doc);
+          return applyState(notebookPageId, parseResult.data);
+        } else {
+          throw new Error(
+            `State received from other notebook was corrupted:\n${parseZodError(
+              parseResult.error
+            )}`
+          );
+        }
+      })
       .then(() => {
         return apiClient({
           method: "save-page-version",
@@ -211,7 +225,9 @@ const setupSharePageWithNotebook = ({
         dispatchAppEvent({
           type: "log",
           id: "update-failure",
-          content: `Failed to apply new change: ${e.message}`,
+          content: `Failed to apply new change: ${e.message.slice(0, 50)}${
+            e.message.length > 50 ? "..." : ""
+          }`,
           intent: "warning",
         });
       });
