@@ -23,7 +23,7 @@ import {
 import getUserNotebookProfile from "~/data/getUserNotebookProfile.server";
 import { useEffect, useRef } from "react";
 import setupSamePageClient from "package/protocols/setupSamePageClient";
-import { AddCommand } from "package/internal/types";
+import { AddCommand, InitialSchema } from "package/internal/types";
 import loadSharePageWithNotebook from "package/protocols/sharePageWithNotebook";
 import { createRoot } from "react-dom/client";
 import getPageUuidByNotebook from "~/data/getPageUuidByNotebook.server";
@@ -47,6 +47,8 @@ const SingleNotebookPage = () => {
         notebookPageId: string;
       }) => Promise<Record<string, unknown>>
     >();
+  const applyStateRef = useRef<(id: string, state: InitialSchema) => void>();
+  const calcStateRef = useRef<(id: string) => InitialSchema>();
   const submit = useSubmit();
   useEffect(
     () => {
@@ -118,11 +120,16 @@ const SingleNotebookPage = () => {
               submit({ title }, { method: "delete" }),
             doesPageExist: async (notebookPageId) =>
               data.pages.some((p) => p.title === notebookPageId),
-            applyState: async () => `notebookPageId, setState(state)`,
-            calculateState: async () => ({
-              content: `getState(notebookPageId)`,
-              annotations: [],
-            }),
+            applyState: async (notebookPageId, state) =>
+              applyStateRef.current?.(notebookPageId, state),
+            calculateState: async (notebookPageId) => {
+              if (!calcStateRef.current) {
+                throw new Error(
+                  `Calculate state wasn't set for page: ${notebookPageId}`
+                );
+              }
+              return calcStateRef.current(notebookPageId);
+            },
             overlayProps: {
               sharedPageStatusProps: {
                 getPaths: (notebookPageId) => {
@@ -194,7 +201,7 @@ const SingleNotebookPage = () => {
         )}
       </div>
       <div className="flex-grow h-full">
-        <Outlet />
+        <Outlet context={{ applyStateRef, calcStateRef, refreshContentRef }} />
       </div>
       <div className="absolute top-4 right-4 samepage-notifications" />
     </div>

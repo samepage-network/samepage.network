@@ -64,21 +64,21 @@ const AnnotationRendered = ({
     return annotation.attributes.viewType === "bullet" ? (
       <li
         style={{ marginLeft: annotation.attributes.level * 16 }}
-        className={classNames.blockLi || "my-2"}
+        className={classNames.blockLi || "my-2 whitespace-pre"}
       >
         {trimChildren}
       </li>
     ) : annotation.attributes.viewType === "numbered" ? (
       <li
         style={{ marginLeft: annotation.attributes.level * 16 }}
-        className={"my-2 list-decimal"}
+        className={"my-2 list-decimal whitespace-pre"}
       >
         {trimChildren}
       </li>
     ) : (
       <div
         style={{ marginLeft: annotation.attributes.level * 16 }}
-        className={"my-2"}
+        className={"my-2 whitespace-pre"}
       >
         {trimChildren}
       </div>
