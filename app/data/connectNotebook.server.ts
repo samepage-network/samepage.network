@@ -15,9 +15,8 @@ const connectNotebook = async ({
 } & Notebook) => {
   const cxn = await getMysql(requestId);
   const [results] = await cxn.execute(
-    `SELECT l.uuid, l.notebook_uuid, n.app, n.workspace, t.user_id FROM token_notebook_links l
+    `SELECT l.uuid, l.notebook_uuid, n.app, n.workspace FROM token_notebook_links l
         LEFT JOIN notebooks n ON n.uuid = l.notebook_uuid
-        LEFT JOIN tokens t ON t.uuid = l.token_uuid
         where l.token_uuid = ?`,
     [tokenUuid]
   );
@@ -47,11 +46,10 @@ const connectNotebook = async ({
     app,
     workspace,
   });
-  const userId = Array.from(new Set(tokenLinks.map((t) => t.user_id)))[0];
   await cxn.execute(
-    `INSERT INTO token_notebook_links (uuid, token_uuid, notebook_uuid, user_id)
-        VALUES (UUID(), ?, ?, ?)`,
-    [tokenUuid, newNotebookUuid, userId]
+    `INSERT INTO token_notebook_links (uuid, token_uuid, notebook_uuid)
+        VALUES (UUID(), ?, ?)`,
+    [tokenUuid, newNotebookUuid]
   );
   return { notebookUuid: newNotebookUuid };
 };
