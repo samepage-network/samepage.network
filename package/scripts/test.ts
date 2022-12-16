@@ -61,7 +61,8 @@ const test = ({
       return 1;
     })
     .finally(() => {
-      if (process.env.CI) {
+      // TODO - integrate with codecov, then we no longer need to block on AWS_REGION
+      if (process.env.CI && process.env.AWS_REGION) {
         const s3 = new S3({});
         const report = fs.createReadStream("playwright-report/index.html");
         const reportData = fs.existsSync("playwright-report/data")

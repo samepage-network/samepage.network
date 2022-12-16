@@ -1,10 +1,11 @@
-import apiClient from "../internal/apiClient";
+import apiClient, { apiPost } from "../internal/apiClient";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import {
   addCommand,
   removeCommand,
   renderOverlay,
   appRoot,
+  getSetting,
 } from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
 import type { InitialSchema, Schema } from "../internal/types";
@@ -190,6 +191,23 @@ const setupSharePageWithNotebook = ({
         });
       })
       .catch((e) => {
+        apiPost({
+          path: "errors",
+          data: {
+            method: "extension-error",
+            type: "Failed to Apply Change",
+            notebookUuid: getSetting("uuid"),
+            data:
+              e instanceof HandlerError
+                ? e.data
+                : e instanceof Error
+                ? { message: e.message }
+                : e,
+            message: e instanceof Error ? e.message : "Unknown data thrown",
+            stack: e instanceof Error ? e.stack : "Unknown stacktrace",
+            version: process.env.VERSION,
+          },
+        });
         dispatchAppEvent({
           type: "log",
           id: "update-failure",

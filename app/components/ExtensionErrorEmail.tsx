@@ -3,20 +3,23 @@ import React from "react";
 import { appsById } from "package/internal/apps";
 import { AppId } from "package/internal/types";
 
-const MessageHandlerErrorEmail = ({
+const ExtensionErrorEmail = ({
   app,
   workspace,
   data,
   stack,
   version,
+  type,
 }: {
   app: AppId;
   workspace: string;
   data: Record<string, unknown>;
   stack: string;
   version: string;
+  type: string;
 }): React.ReactElement => (
   <EmailLayout>
+    <h1 style={{ fontSize: 32, marginBottom: 32 }}>{type}</h1>
     <div>
       Version: <code>{version}</code>
     </div>
@@ -41,4 +44,4 @@ const MessageHandlerErrorEmail = ({
   </EmailLayout>
 );
 
-export default MessageHandlerErrorEmail;
+export default ExtensionErrorEmail;

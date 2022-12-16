@@ -5,7 +5,7 @@ import { z } from "zod";
 import getMysql from "fuegojs/utils/mysql";
 import { Notebook } from "package/internal/types";
 import AtJsonParserErrorEmail from "~/components/AtJsonParserErrorEmail";
-import MessageHandlerErrorEmail from "~/components/MessageHandlerErrorEmail";
+import ExtensionErrorEmail from "~/components/ExtensionErrorEmail";
 import { v4 } from "uuid";
 import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
 
@@ -18,12 +18,13 @@ const zBody = z.discriminatedUnion("method", [
     version: z.string().optional(),
   }),
   z.object({
-    method: z.literal("message-handler-failed"),
-    notebookUuid: z.string(),
-    message: z.string(),
-    data: z.record(z.unknown()),
-    stack: z.string().optional(),
-    version: z.string().optional(),
+    method: z.literal("extension-error"),
+    type: z.string().optional().default("Unknown error extension error type"),
+    notebookUuid: z.string().optional().default("Unknown notebook"),
+    message: z.string().optional().default("Unknown error"),
+    data: z.record(z.unknown()).optional().default({}),
+    stack: z.string().optional().default(""),
+    version: z.string().optional().default("stale"),
   }),
   z.object({
     method: z.literal("web-app-error"),
@@ -65,13 +66,14 @@ const logic = async (body: Record<string, unknown>) => {
       });
       return { success: true };
     }
-    case "message-handler-failed": {
+    case "extension-error": {
       const {
         notebookUuid,
         data,
         message,
-        stack = "",
-        version = "stale",
+        stack,
+        version,
+        type,
       } = args;
       const cxn = await getMysql();
       const [notebook] = await cxn
@@ -83,11 +85,12 @@ const logic = async (body: Record<string, unknown>) => {
       await sendEmail({
         to: "support@samepage.network",
         subject: `SamePage message handler failed: ${message}`,
-        body: MessageHandlerErrorEmail({
+        body: ExtensionErrorEmail({
           ...notebook,
           data,
           stack,
           version,
+          type,
         }),
       });
       return { success: true };

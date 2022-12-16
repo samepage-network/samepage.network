@@ -37,7 +37,8 @@ export const handleMessage = ({
       apiPost({
         path: "errors",
         data: {
-          method: "message-handler-failed",
+          method: "extension-error",
+          type: "Message Handler Failed",
           notebookUuid: getSetting("uuid"),
           data:
             e instanceof HandlerError
