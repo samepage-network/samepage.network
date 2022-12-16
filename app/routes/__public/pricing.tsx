@@ -1,16 +1,20 @@
 import ExternalLink from "@dvargas92495/app/components/ExternalLink";
 import CheckIcon from "@heroicons/react/solid/CheckIcon";
+import ArrowRightIcon from "@heroicons/react/outline/ArrowRightIcon";
+import { Link } from "@remix-run/react";
 
 const Plan = ({
   title,
   base,
   description,
   features = [],
+  link,
 }: {
   title: string;
   base: number;
   description: string;
   features: string[];
+  link: string;
 }) => {
   return (
     <div className="bg-sky-100 rounded shadow-md flex-1">
@@ -38,6 +42,14 @@ const Plan = ({
           </div>
         ))}
       </div>
+      <div className="flex py-8 justify-center items-center">
+        <Link
+          className="rounded-full border cursor-pointer py-3 px-6 border-black hover:bg-sky-300 active:bg-sky-500"
+          to={link}
+        >
+          Get started <ArrowRightIcon className="h-6 w-6 inline-block" />
+        </Link>
+      </div>
     </div>
   );
 };
@@ -54,12 +66,14 @@ const PricingPage = () => {
           base={0}
           description={"For individuals curious about SamePage"}
           features={["3 Notebooks", "100 Shared Pages"]}
+          link={"/install"}
         />
         <Plan
           title={"Professional"}
           base={10}
           description={"For professionals managing several workspaces"}
           features={["5 Notebooks", "1K Shared Pages"]}
+          link={"/signup"}
         />
         <Plan
           title={"Team"}
@@ -68,6 +82,7 @@ const PricingPage = () => {
             "For organizations building decentralized knowledge bases"
           }
           features={["8 Notebooks", "10K Shared Pages"]}
+          link={"/signup"}
         />
       </div>
       {/* <div className="text-sm italic text-center mb-8">
@@ -75,8 +90,8 @@ const PricingPage = () => {
         additional notebook, $1 per 100 additional shared pages
       </div> */}
       <div className="text-sm italic text-center">
-        Pricing plans are under development. To inquire about upgrading
-        your account, please reach out to{" "}
+        Pricing plans are under development. To inquire about upgrading your
+        account, please reach out to{" "}
         <ExternalLink href="mailto:support@samepage.network">
           support@samepage.network
         </ExternalLink>

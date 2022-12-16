@@ -28,7 +28,9 @@ const getPageUuidByNotebook = async ({
     );
   cxn.destroy();
   if (!pageUuid) {
-    throw new NotFoundError(`No notebooks connected to page ${uuid}`);
+    throw new NotFoundError(
+      `Notebook ${uuid} not connected to page ${notebookPageId}`
+    );
   }
   return {
     pageUuid,

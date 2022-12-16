@@ -12,10 +12,17 @@ import PencilIcon from "@heroicons/react/outline/PencilIcon";
 import Textarea from "@dvargas92495/app/components/Textarea";
 import NumberInput from "@dvargas92495/app/components/NumberInput";
 import Select from "@dvargas92495/app/components/Select";
-import { Annotation, InitialSchema } from "package/internal/types";
+import {
+  Annotation,
+  InitialSchema,
+  annotationSchema,
+} from "package/internal/types";
 import Button from "@dvargas92495/app/components/Button";
 import ChevronRightIcon from "@heroicons/react/solid/ChevronRightIcon";
 import ChevronDownIcon from "@heroicons/react/solid/ChevronDownIcon";
+import { getSetting } from "package/internal/registry";
+
+const OPTIONS = Array.from(annotationSchema._def.options.keys()) as string[];
 
 const EditAnnotation = ({
   setAnnotation,
@@ -28,19 +35,23 @@ const EditAnnotation = ({
       <div>
         <Chevron
           className="h-4 w-4 inline-block cursor-pointer"
-          onClick={() => setIsOpen(!isOpen)}
+          onClick={() => {
+            setIsOpen(!isOpen);
+          }}
         />{" "}
         {a.type}
       </div>
       {isOpen && (
-        <div>
+        <div className="pl-2">
           <div className="flex items-center gap-4">
             <NumberInput
               value={a.start}
               onChange={(e) =>
                 setAnnotation({
                   ...a,
-                  start: e.target.valueAsNumber,
+                  start: isNaN(e.target.valueAsNumber)
+                    ? 0
+                    : e.target.valueAsNumber,
                 })
               }
               label={"Start"}
@@ -51,7 +62,9 @@ const EditAnnotation = ({
               onChange={(e) =>
                 setAnnotation({
                   ...a,
-                  end: e.target.valueAsNumber,
+                  end: isNaN(e.target.valueAsNumber)
+                    ? 0
+                    : e.target.valueAsNumber,
                 })
               }
               label={"End"}
@@ -61,12 +74,79 @@ const EditAnnotation = ({
               className={"flex-grow"}
               label="Type"
               defaultValue={a.type}
-              options={[a.type]}
-              onChange={(_e) => {
-                // setAnnotation({
-                //   ...a,
-                //   type: e as Annotation["type"],
-                // })
+              options={OPTIONS}
+              onChange={(e) => {
+                if (e !== a.type) {
+                  const type = e as Annotation["type"];
+                  switch (type) {
+                    case "block": {
+                      setAnnotation({
+                        ...a,
+                        type,
+                        attributes: { viewType: "bullet", level: 1 },
+                      });
+                      break;
+                    }
+                    case "code": {
+                      setAnnotation({
+                        ...a,
+                        type,
+                        attributes: { language: "javascript" },
+                      });
+                      break;
+                    }
+                    case "image": {
+                      setAnnotation({
+                        ...a,
+                        type,
+                        attributes: {
+                          src: "https://samepage.network/images/logo.png",
+                        },
+                      });
+                      break;
+                    }
+                    case "reference": {
+                      setAnnotation({
+                        ...a,
+                        type,
+                        attributes: {
+                          notebookPageId: "title",
+                          notebookUuid: getSetting("uuid"),
+                        },
+                      });
+                      break;
+                    }
+                    case "link": {
+                      setAnnotation({
+                        ...a,
+                        type,
+                        attributes: {
+                          href: "https://samepage.network",
+                        },
+                      });
+                      break;
+                    }
+                    case "metadata": {
+                      setAnnotation({
+                        ...a,
+                        type,
+                        attributes: { title: "title", parent: "parent" },
+                      });
+                      break;
+                    }
+                    case "custom": {
+                      setAnnotation({
+                        ...a,
+                        type,
+                        attributes: { name: "annotation" },
+                      });
+                      break;
+                    }
+                    default: {
+                      setAnnotation({ ...a, type });
+                    }
+                  }
+                }
               }}
             />
           </div>
@@ -80,6 +160,7 @@ const SingleNotebookPagePage = () => {
   const data =
     useLoaderData<Awaited<ReturnType<typeof getSharedPageByUuidForUser>>>();
   const [pageData, setPageData] = useState(data.data);
+  const [pageDataTitle, setPageDataTitle] = useState(data.title);
   const currentContentRef = useRef(pageData.content);
   const [currentContent, _setCurrentContent] = useState(pageData.content);
   const currentAnnotationsRef = useRef(pageData.annotations);
@@ -97,7 +178,13 @@ const SingleNotebookPagePage = () => {
   const parentData = matches[3].data as Awaited<
     ReturnType<typeof getUserNotebookProfile>
   >;
-  const { applyStateRef, calcStateRef, refreshContentRef } = useOutletContext<{
+  const {
+    applyStateRef,
+    calcStateRef,
+    refreshContentRef,
+    onloadRef,
+    onunloadRef,
+  } = useOutletContext<{
     applyStateRef: React.MutableRefObject<
       (id: string, state: InitialSchema) => void
     >;
@@ -108,6 +195,8 @@ const SingleNotebookPagePage = () => {
         notebookPageId: string;
       }) => Promise<Record<string, unknown>>
     >;
+    onloadRef: React.MutableRefObject<(id: string) => void>;
+    onunloadRef: React.MutableRefObject<(id: string) => void>;
   }>();
   useEffect(() => {
     applyStateRef.current = (id, state) => {
@@ -121,15 +210,19 @@ const SingleNotebookPagePage = () => {
         };
       else throw new Error(`Page ${id} not loaded`);
     };
-    window.dispatchEvent(
-      new CustomEvent("page-change", { detail: data.title })
-    );
+    onloadRef.current?.(data.title);
     return () => {
-      window.dispatchEvent(
-        new CustomEvent("page-remove", { detail: data.title })
-      );
+      onunloadRef.current?.(data.title);
     };
-  }, [data.title, applyStateRef, setPageData]);
+  }, [data.title]);
+  useEffect(() => {
+    if (data.title !== pageDataTitle) {
+      setPageData(data.data);
+      setCurrentContent(data.data.content);
+      setCurrentAnnotations(data.data.annotations);
+      setPageDataTitle(data.title);
+    }
+  }, [data.title]);
   const [isContentEditing, setIsContentEditing] = useState(false);
   const [isAnnotationsEditing, setIsAnnotationsEditing] = useState(false);
   return (
