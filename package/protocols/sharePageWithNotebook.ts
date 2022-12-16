@@ -175,11 +175,31 @@ const setupSharePageWithNotebook = ({
           set(notebookPageId, doc);
           return applyState(notebookPageId, parseResult.data);
         } else {
-          throw new Error(
-            `State received from other notebook was corrupted:\n${parseZodError(
-              parseResult.error
-            )}`
-          );
+          // let's not throw yet - let's see how many emails this generates first - can revisit this in a few months
+          // throw new Error(
+          //   `State received from other notebook was corrupted:\n${parseZodError(
+          //     parseResult.error
+          //   )}`
+          // );
+          //
+          // This is the previous behavior
+          apiPost({
+            path: "errors",
+            data: {
+              method: "extension-error",
+              type: "Failed to Parse doc",
+              notebookUuid: getSetting("uuid"),
+              data: {
+                error: parseResult.error,
+                message: parseZodError(parseResult.error),
+              },
+              message: `State received from other notebook was corrupted`,
+              stack: "Unknown stacktrace",
+              version: process.env.VERSION,
+            },
+          });
+          set(notebookPageId, doc);
+          return applyState(notebookPageId, docToApply);
         }
       })
       .then(() => {
