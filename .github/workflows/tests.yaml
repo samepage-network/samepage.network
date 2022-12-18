@@ -26,11 +26,10 @@ jobs:
       - uses: actions/checkout@v3
       - name: install
         run: npm install
-      - name: Install playwright
-        run: npx playwright install
-      # TODO - replace this step with a seed database
-      - name: setup mysql
+      # TODO - replace this step with a seed database and in the setup step
+      - name: setup mysql + playwright
         run: |
+          npx playwright install
           sudo systemctl start mysql.service
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
           npx fuego plan --sql
@@ -38,5 +37,6 @@ jobs:
           mysql -e "INSERT INTO samepage_network.quotas (uuid, value, field) VALUES (UUID(), 100, 0), (UUID(), 3, 1)" -uroot -proot
       - name: tests
         run: npm t
+      # TODO - wondering if this could be built into test somehow
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3

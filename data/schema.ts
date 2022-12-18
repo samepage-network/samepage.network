@@ -35,8 +35,10 @@ const pageNotebookLink = z
     uuid,
     pageUuid: z.string().uuid(),
     notebookPageId: z.string(),
-    version: z.number(), // possibly redundant with cid, though it saves a download
-    open: z.boolean(), // .default(true), need to update fuego to handle defaults
+    // possibly redundant with cid, though it saves a download
+    version: z.number(), 
+    // .default(true), need to update fuego to handle defaults
+    open: z.boolean(), 
     invitedBy: z.string().uuid(),
     invitedDate: z.date(),
     notebookUuid: uuidField,
@@ -81,9 +83,7 @@ const ongoingMessage = z
     chunk: z.number(),
     messageUuid: z.string().uuid(),
   })
-  .describe(
-    JSON.stringify({ uniques: [["chunk", "message_uuid"]] })
-  );
+  .describe(JSON.stringify({ uniques: [["chunk", "message_uuid"]] }));
 
 const quota = z.object({
   uuid,
