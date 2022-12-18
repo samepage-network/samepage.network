@@ -192,10 +192,13 @@ test("Full integration test of sharing pages", async () => {
 
   await test.step("Validate initial page data", () =>
     expect
-      .poll(client2Read)
-      .toEqual(
-        '<div style="margin-left:16px" class="my-2">First entry in page</div>'
-      ));
+      .poll(() =>
+        client2Read().then(
+          (html) =>
+            new JSDOM(html).window.document.querySelector("div")?.textContent
+        )
+      )
+      .toEqual("First entry in page"));
 
   await test.step("Client 2 sends an insert update", () =>
     client2.send({

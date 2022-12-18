@@ -19,9 +19,11 @@ const getQuota = async ({
   tokenUuid: string;
 }) => {
   const cxn = await getMysql(requestId);
+  console.log("globalContext", JSON.stringify(globalContext));
   const userId = await cxn
     .execute(`SELECT user_id FROM tokens WHERE uuid = ?`, [tokenUuid])
     .then(([r]) => (r as { user_id: string }[])[0]?.user_id);
+  console.log("userId", JSON.stringify(userId));
   const stripeId = userId
     ? await users
         .getUser(userId)
@@ -39,8 +41,11 @@ const getQuota = async ({
           return "";
         })
     : "";
+  console.log("stripeId", JSON.stringify(stripeId));
   const quotasInThisPlan = globalContext.quotas[stripeId];
+  console.log("quotasInThisPlan", JSON.stringify(quotasInThisPlan));
   const storedValue = quotasInThisPlan?.[field];
+  console.log("storedValue", JSON.stringify(storedValue || "NULL"));
   if (typeof storedValue !== "undefined") return storedValue;
   return cxn
     .execute(
