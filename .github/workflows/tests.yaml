@@ -40,3 +40,4 @@ jobs:
       # TODO - wondering if this could be built into test somehow
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
+        if: always()
