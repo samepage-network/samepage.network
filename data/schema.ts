@@ -30,17 +30,21 @@ const notebook = z.object({
   app: z.number().max(Math.pow(2, 8)).min(0),
 });
 
-const pageNotebookLink = z.object({
-  uuid,
-  pageUuid: z.string().uuid(),
-  notebookPageId: z.string().describe("unique"),
-  version: z.number(), // possibly redundant with cid, though it saves a download
-  open: z.boolean(), // .default(true), need to update fuego to handle defaults
-  invitedBy: z.string().uuid(),
-  invitedDate: z.date(),
-  notebookUuid: uuidField.describe("unique"),
-  cid: z.string(),
-});
+const pageNotebookLink = z
+  .object({
+    uuid,
+    pageUuid: z.string().uuid(),
+    notebookPageId: z.string(),
+    version: z.number(), // possibly redundant with cid, though it saves a download
+    open: z.boolean(), // .default(true), need to update fuego to handle defaults
+    invitedBy: z.string().uuid(),
+    invitedDate: z.date(),
+    notebookUuid: uuidField,
+    cid: z.string(),
+  })
+  .describe(
+    JSON.stringify({ uniques: [["notebook_page_id", "notebook_uuid"]] })
+  );
 
 const page = z.object({
   uuid,
@@ -71,11 +75,15 @@ const message = z.object({
   metadata: z.object({}).optional(),
 });
 
-const ongoingMessage = z.object({
-  uuid,
-  chunk: z.number().describe("unique"),
-  messageUuid: z.string().uuid().describe("unique"),
-});
+const ongoingMessage = z
+  .object({
+    uuid,
+    chunk: z.number(),
+    messageUuid: z.string().uuid(),
+  })
+  .describe(
+    JSON.stringify({ uniques: [["chunk", "message_uuid"]] })
+  );
 
 const quota = z.object({
   uuid,

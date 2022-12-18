@@ -3,11 +3,14 @@ import getMysql from "fuegojs/utils/mysql";
 import { users } from "@clerk/clerk-sdk-node";
 import Stripe from "stripe";
 
-export const globalContext: {
+type BackendContext = {
   quotas: { [p: string]: { [k in typeof QUOTAS[number]]?: number } };
-} = {
-  quotas: {},
 };
+
+export const globalContext: Record<string, BackendContext> = {};
+
+const getBackendContext = (requestId: string): BackendContext =>
+  globalContext[requestId] || (globalContext[requestId] = { quotas: {} });
 
 const getQuota = async ({
   requestId,
@@ -43,7 +46,8 @@ const getQuota = async ({
           return "";
         })
     : "";
-  const quotasInThisPlan = globalContext.quotas[stripeId];
+  const context = getBackendContext(requestId);
+  const quotasInThisPlan = context.quotas[stripeId];
   const storedValue = quotasInThisPlan?.[field];
   if (typeof storedValue !== "undefined") return storedValue;
   return cxn
@@ -58,7 +62,7 @@ const getQuota = async ({
     .then(([q]) => {
       const { value } = (q as { value: number }[])[0];
       if (quotasInThisPlan) quotasInThisPlan[field] = value;
-      else globalContext.quotas[stripeId] = { [field]: value };
+      else context.quotas[stripeId] = { [field]: value };
       return value;
     });
 };

@@ -710,7 +710,6 @@ const setupSharePageWithNotebook = ({
 
   const unload = () => {
     clear();
-    offAppEvent();
     Object.values(componentUnmounts).forEach((u) => u());
     removeNotebookListener({ operation: "SHARE_PAGE_RESPONSE" });
     removeNotebookListener({ operation: "SHARE_PAGE_UPDATE" });
@@ -763,7 +762,10 @@ const setupSharePageWithNotebook = ({
   };
 
   return {
-    unload,
+    unload: () => {
+      offAppEvent();
+      unload();
+    },
     updatePage,
     refreshContent,
     isShared: (notebookPageId: string) => has(notebookPageId),

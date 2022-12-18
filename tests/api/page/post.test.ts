@@ -11,13 +11,13 @@ import getMysql from "fuegojs/utils/mysql";
 import deleteNotebook from "~/data/deleteNotebook.server";
 import binaryToBase64 from "../../../package/internal/binaryToBase64";
 import Automerge from "automerge";
-import { Notebook, RequestBody, Schema } from "../../../package/internal/types";
+import { RequestBody, Schema } from "../../../package/internal/types";
 import issueRandomInvite from "../../utils/issueRandomInvite";
 import getRandomNotebookPageId from "../../utils/getRandomNotebookPageId";
 import wrapSchema from "../../../package/utils/wrapSchema";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
 
-// test.describe.configure({ mode: 'parallel' }); TODO
+test.describe.configure({ mode: "parallel" });
 
 const mockLambdaContext = ({ requestId = v4(), path = "page" }) => ({
   awsRequestId: requestId,
@@ -39,9 +39,8 @@ const mockLambdaContext = ({ requestId = v4(), path = "page" }) => ({
   succeed: () => ({}),
 });
 
-const mockLambda = async (body: RequestBody) => {
+const mockLambda = async (body: RequestBody, requestId = v4()) => {
   const path = "page";
-  const requestId = v4();
   const res = handler(
     {
       headers: {},
@@ -110,16 +109,21 @@ const getRandomWorkspace = async () =>
     encoding: "hex",
   })}`;
 
+const mockedNotebooks = new Set<string>();
+
 const mockRandomNotebook = async () => {
   const workspace = await getRandomWorkspace();
   return createNotebook({
     requestId: v4(),
     app: 0,
     workspace,
-  }).then((n) => ({
-    ...n,
-    workspace,
-  }));
+  }).then((n) => {
+    mockedNotebooks.add(n.notebookUuid);
+    return {
+      ...n,
+      workspace,
+    };
+  });
 };
 
 const mockState = (s: string) =>
@@ -128,6 +132,53 @@ const mockState = (s: string) =>
       Automerge.from<Schema>(wrapSchema({ content: s, annotations: [] }))
     )
   );
+
+let oldConsole: Partial<typeof console>;
+const logsCaught = [
+  {
+    label: "mysql2 packets out of order",
+    type: "error",
+    regex: /^Warning: got packets out of order\. Expected/,
+    count: 0,
+  },
+  {
+    label: "receiving method",
+    type: "log",
+    regex: /^Received method:/,
+    count: 0,
+  },
+  {
+    label: "Authenticating notebook",
+    type: "log",
+    regex: /^authenticated notebook as/,
+    count: 0,
+  },
+  {
+    label: "messaging",
+    type: "log",
+    regex: /^messaging/,
+    count: 0,
+  },
+];
+
+const logTypes = ["error", "log", "warn"] as const;
+test.beforeAll(() => {
+  oldConsole = Object.fromEntries(logTypes.map((t) => [t, console[t]]));
+  logTypes.forEach((t) => {
+    console[t] = (...data) => {
+      const log = logsCaught.find(
+        (l) =>
+          l.type === t &&
+          l.regex.test(data.map((d = "") => d.toString()).join(" "))
+      );
+      if (log) {
+        log.count++;
+      } else {
+        oldConsole[t]?.(...data);
+      }
+    };
+  });
+});
 
 test("Connect Notebook with same app/workspace returns same notebook uuid", async () => {
   const { code } = await issueRandomInvite();
@@ -230,7 +281,6 @@ test("Messages from deleted notebooks should return Unknown", async () => {
 
 test("Reaching the page limit should throw on init and accept page", async () => {
   const { notebookUuid, token } = await mockRandomNotebook();
-  globalContext.quotas[""] = { Pages: 1 };
   const { created } = await mockLambda({
     method: "init-shared-page",
     notebookUuid,
@@ -241,13 +291,18 @@ test("Reaching the page limit should throw on init and accept page", async () =>
   expect(created).toEqual(true);
 
   const notebookPageId = await getRandomNotebookPageId();
-  const response = await mockLambda({
-    method: "init-shared-page",
-    notebookUuid,
-    token,
-    notebookPageId,
-    state: mockState("world"),
-  })
+  const requestId = v4();
+  globalContext[requestId] = { quotas: { [""]: { Pages: 1 } } };
+  const response = await mockLambda(
+    {
+      method: "init-shared-page",
+      notebookUuid,
+      token,
+      notebookPageId,
+      state: mockState("world"),
+    },
+    requestId
+  )
     .then(() => ({ success: true, e: undefined }))
     .catch((e) => ({ success: false, e: e as string }));
   expect(response.success).toEqual(false);
@@ -271,19 +326,23 @@ test("Reaching the page limit should throw on init and accept page", async () =>
     targetUuid: notebookUuid,
     notebookPageId,
   });
-  const response2 = await mockLambda({
-    method: "join-shared-page",
-    notebookUuid,
-    token,
-    notebookPageId,
-  })
+  const requestId2 = v4();
+  globalContext[requestId2] = { quotas: { [""]: { Pages: 1 } } };
+  const response2 = await mockLambda(
+    {
+      method: "join-shared-page",
+      notebookUuid,
+      token,
+      notebookPageId,
+    },
+    requestId2
+  )
     .then(() => ({ success: true, e: undefined }))
     .catch((e) => ({ success: false, e: e as string }));
   expect(response2.success).toEqual(false);
   expect(response2.e).toEqual(
     "Error: Maximum number of pages allowed to be connected to this notebook on this plan is 1."
   );
-  delete globalContext.quotas["Pages"];
 });
 
 test("Initing a shared page without a page id should fail", async () => {
@@ -1327,24 +1386,26 @@ test("Grabbing usage data", async () => {
 });
 
 test("Reaching the notebook limit should throw on create", async () => {
-  globalContext.quotas[""] = { Notebooks: 1 };
+  const requestId = v4();
+  globalContext[requestId] = { quotas: { [""]: { Notebooks: 1 } } };
 
   const { notebookUuid, token } = await mockRandomNotebook();
-  const r = await mockLambda({
-    method: "connect-notebook",
-    notebookUuid,
-    token,
-    app: 0,
-    workspace: await getRandomWorkspace(),
-  })
+  const r = await mockLambda(
+    {
+      method: "connect-notebook",
+      notebookUuid,
+      token,
+      app: 0,
+      workspace: await getRandomWorkspace(),
+    },
+    requestId
+  )
     .then(() => ({ success: true, e: undefined }))
     .catch((e) => ({ success: false, e: e as string }));
   expect(r).toEqual({
     success: false,
     e: `Error: Maximum number of notebooks allowed to be connected to this token with this plan is 1.`,
   });
-
-  delete globalContext.quotas["Notebooks"];
 });
 
 test("Ping pong", async () => {
@@ -1432,17 +1493,16 @@ test("Attempt to claim an expired invite", async () => {
 });
 
 test.afterAll(async () => {
-  await getMysql().then(async (cxn) => {
-    const data = await cxn
-      .execute(
-        `SELECT n.uuid
-  FROM notebooks n
-  WHERE app = 0 AND workspace LIKE "test-%"`,
-        []
-      )
-      .then(([r]) => r as ({ uuid: string } & Notebook)[]);
-    await Promise.all(
-      data.map((n) => deleteNotebook({ uuid: n.uuid, requestId: v4() }))
-    );
+  await Promise.all(
+    Array.from(mockedNotebooks).map((n) =>
+      deleteNotebook({ uuid: n, requestId: v4() })
+    )
+  );
+  logTypes.forEach((t) => {
+    const old = oldConsole[t];
+    if (old) console[t] = old;
+  });
+  logsCaught.forEach((l) => {
+    console.log("For log", l.label, "we", l.type, l.count, "times");
   });
 });

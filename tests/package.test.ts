@@ -286,10 +286,12 @@ test("Full integration test of sharing pages", async () => {
 
   await test.step("Client 2 loads missed updates while broken", () =>
     expect
-      .poll(client2Read)
-      .toEqual(
-        '<div style="margin-left:16px" class="my-2">First super page</div>'
-      ));
+      .poll(() =>
+        client2Read().then(
+          (s) => new JSDOM(s).window.document.querySelector("div")?.textContent
+        )
+      )
+      .toEqual("First super page"));
 
   await test.step("Fix client 2 save and apply", () =>
     client2.send({ type: "fix" }));

@@ -164,6 +164,7 @@ const createTestSamePageClient = async ({
   const commands: Record<string, () => unknown> = {};
 
   const defaultApplyState = async (id: string, data: InitialSchema) => {
+    console.log("applyState", JSON.stringify(data));
     appClientState[id] = new JSDOM(fromAtJson(data));
   };
   let applyState = defaultApplyState;
