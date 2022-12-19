@@ -10,7 +10,7 @@ import {
 } from "@blueprintjs/core";
 import apiClient from "../internal/apiClient";
 import { OverlayProps } from "../internal/types";
-import React from "react";
+import React, { Fragment, useCallback } from "react";
 import { app, appRoot, workspace } from "../internal/registry";
 import { appsById } from "../internal/apps";
 
@@ -35,7 +35,8 @@ const ConnectNotebookPage = ({
   const [termsOfUse, setTermsOfUse] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
-  const onConnect = React.useCallback(() => {
+  const disabled = !termsOfUse || !notebookUuid || !token;
+  const onConnect = useCallback(() => {
     setLoading(true);
     apiClient<{ notebookUuid: string }>({
       method: "connect-notebook",
@@ -54,7 +55,7 @@ const ConnectNotebookPage = ({
       });
   }, [setError, setLoading, setPage, setNotebookUuid, token, notebookUuid]);
   return (
-    <>
+    <Fragment>
       {loading && (
         <div className="flex flex-col items-center absolute inset-0 bg-opacity-25 z-50">
           <Spinner size={32} />
@@ -69,6 +70,8 @@ const ConnectNotebookPage = ({
           value={notebookUuid}
           onChange={(e) => setNotebookUuid(e.target.value)}
           autoFocus
+          type={"text"}
+          name={"uuid"}
         />
       </Label>
       <Label className={"w-1/2"}>
@@ -77,6 +80,7 @@ const ConnectNotebookPage = ({
           value={token}
           onChange={(e) => setToken(e.target.value)}
           type={"password"}
+          name={"token"}
         />
       </Label>
       <Checkbox
@@ -98,7 +102,7 @@ const ConnectNotebookPage = ({
       />
       <div className="flex items-center gap-8">
         <Button
-          disabled={!termsOfUse || !notebookUuid || !token}
+          disabled={disabled}
           text={"Connect"}
           intent={"primary"}
           onClick={onConnect}
@@ -110,7 +114,7 @@ const ConnectNotebookPage = ({
         />
         <span className="text-red-800">{error}</span>
       </div>
-    </>
+    </Fragment>
   );
 };
 
@@ -143,7 +147,7 @@ const CreateNotebookPage = ({
       });
   }, [setError, setLoading, setPage, onSuccess, inviteCode]);
   return (
-    <>
+    <Fragment>
       {loading && (
         <div className="flex flex-col items-center absolute inset-0 bg-opacity-25 z-50">
           <Spinner size={32} />
@@ -158,6 +162,8 @@ const CreateNotebookPage = ({
           value={inviteCode}
           onChange={(e) => setInviteCode(e.target.value)}
           autoFocus
+          type={"text"}
+          name={"inviteCode"}
         />
       </Label>
       <Checkbox
@@ -192,13 +198,13 @@ const CreateNotebookPage = ({
         />
         <span className="text-red-800">{error}</span>
       </div>
-    </>
+    </Fragment>
   );
 };
 
 const CompletePage = ({ onClose }: { onClose: () => void }) => {
   return (
-    <>
+    <Fragment>
       <h1 className="text-lg font-normal">Congratulations! 🎉</h1>
       <p className="mb-4">
         Each time you log onto your notebook, you should be automatically
@@ -225,7 +231,7 @@ const CompletePage = ({ onClose }: { onClose: () => void }) => {
         command!
       </p>
       <Button text={"All Done"} intent={"primary"} onClick={onClose} />
-    </>
+    </Fragment>
   );
 };
 
@@ -261,11 +267,11 @@ const Onboarding = ({
         className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center text-black`}
       >
         {page === "WELCOME" && (
-          <>
+          <Fragment>
             <div className="w-40 h-40">
               <img src="https://samepage.network/images/logo.png" />
             </div>
-            <h1 className="text-xl font-semibold mb-4">Welcome to SamePage</h1>
+            <h1 className="text-xl font-semibold mb-4">Welcome to SamePage!</h1>
             <div className="mb-4 flex-grow max-w-sm m-auto">
               <p>
                 You're about to connect your notebook to SamePage - the
@@ -283,10 +289,10 @@ const Onboarding = ({
               onClick={() => setPage("SETUP")}
               intent={"primary"}
             />
-          </>
+          </Fragment>
         )}
         {page === "SETUP" && (
-          <>
+          <Fragment>
             <h1 className="text-lg font-normal">New to SamePage?</h1>
             <div className="flex gap-4 items-center h-full">
               <div className="border-gray-400 rounded-lg border p-8 flex flex-col gap-2 items-center h-full flex-1">
@@ -321,7 +327,7 @@ const Onboarding = ({
                 />
               </div>
             </div>
-          </>
+          </Fragment>
         )}
         {page === "CONNECT" && (
           <ConnectNotebookPage setPage={setPage} onSuccess={onSuccess} />

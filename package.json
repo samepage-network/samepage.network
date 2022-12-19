@@ -15,13 +15,13 @@
     "dev": "fuego dev",
     "format": "prettier --write \"**/*.tsx\"",
     "generate:css": "tailwindcss -o ./app/tailwind.css",
-    "postinstall": "fuego postinstall",
+    "postinstall": "fuego postinstall && patch-package",
     "lint": "eslint . --ext .ts,.tsx",
     "start": "concurrently \"npm:api\" \"npm:dev\" \"npm:tailwind\"",
     "ssh": "ssh -i SamePage.pem ubuntu@35.173.242.123",
     "tailwind": "npm run generate:css -- --watch",
     "pretest": "node scripts/pretest.js",
-    "test": "c8  --reporter=lcov --all --include app --include api --include package --exclude app/routes --exclude app/components --exclude app/server/build --exclude node_modules --exclude package/testing/createTestSamePageClient.js --exclude-after-remap playwright test --config=package/testing/playwright.config.ts",
+    "test": "c8  --reporter=lcov --reporter=text --all --include app --include api --include package --exclude app/routes --exclude app/components --exclude app/server/build --exclude node_modules --exclude package/testing/createTestSamePageClient.js --exclude-after-remap playwright test --config=package/testing/playwright.config.ts",
     "db": "mysql --host vargas-arts.c2sjnb5f4d57.us-east-1.rds.amazonaws.com --port 5432 --database samepage_network --user dvargas92495 -p$RDS_MASTER_PASSWORD",
     "db:dev": "mysql --database samepage_network"
   },
@@ -41,6 +41,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-apigatewaymanagementapi": "^3.218.0",
+    "@babel/preset-react": "^7.18.6",
     "@blueprintjs/core": "^4.10.1",
     "@blueprintjs/select": "^4.6.6",
     "@docsearch/react": "^3.3.0",
@@ -61,10 +62,13 @@
     "web3.storage": "^4.4.0"
   },
   "devDependencies": {
+    "@testing-library/react": "^13.4.0",
+    "@testing-library/user-event": "^14.4.3",
     "@types/diff": "^5.0.2",
     "@types/jsdom": "^20.0.0",
     "@types/mime-types": "^2.1.1",
-    "jsdom": "^20.0.0"
+    "jsdom": "^20.0.0",
+    "patch-package": "^6.5.0"
   },
   "fuego": {
     "package": {

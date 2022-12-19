@@ -37,6 +37,7 @@ import unwrapSchema from "../utils/unwrapSchema";
 import wrapSchema from "../utils/wrapSchema";
 import mergeDocs from "../utils/mergeDocs";
 import parseZodError from "../utils/parseZodError";
+import sendExtensionError from "../internal/sendExtensionError";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
@@ -183,20 +184,17 @@ const setupSharePageWithNotebook = ({
           // );
           //
           // This is the previous behavior
-          apiPost({
-            path: "errors",
+          const error = new Error(
+            `State received from other notebook was corrupted`
+          );
+          error.stack = "Unknown stacktrace";
+          sendExtensionError({
+            type: "Failed to Parse doc",
             data: {
-              method: "extension-error",
-              type: "Failed to Parse doc",
-              notebookUuid: getSetting("uuid"),
-              data: {
-                error: parseResult.error,
-                message: parseZodError(parseResult.error),
-              },
-              message: `State received from other notebook was corrupted`,
-              stack: "Unknown stacktrace",
-              version: process.env.VERSION,
+              error: parseResult.error,
+              message: parseZodError(parseResult.error),
             },
+            error,
           });
           set(notebookPageId, doc);
           return applyState(notebookPageId, docToApply);

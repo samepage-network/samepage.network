@@ -1,5 +1,5 @@
 import { useState } from "react";
-import Onboarding from "package/components/Onboarding";
+import Onboarding from "../../../../../package/components/Onboarding";
 import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
 import type { LoaderFunction } from "@remix-run/node";
 
@@ -14,8 +14,11 @@ const OnboardingPage = () => {
       <Onboarding
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        setNotebookUuid={setNotebookUuid}
-        setToken={setToken}
+        onSuccess={({ notebookUuid, token }) => {
+          setNotebookUuid(notebookUuid);
+          setToken(token);
+        }}
+        onCancel={() => setIsOpen(false)}
       />
     </>
   );
