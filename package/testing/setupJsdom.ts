@@ -1,5 +1,5 @@
 // This file needs to be the first import so that it runs before react dom does its global variable setting
-import setupRegistry from "package/internal/registry";
+import setupRegistry from "../internal/registry";
 import { JSDOM } from "jsdom";
 
 const dom = new JSDOM("<!DOCTYPE html>", {

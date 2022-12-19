@@ -837,14 +837,22 @@ test("Invitee can remove invite from invitee's notebook", async () => {
   });
   expect(r).toEqual({ success: true });
 
+  await expect
+    .poll(() =>
+      mockLambda({
+        method: "list-page-notebooks",
+        notebookUuid,
+        token,
+        notebookPageId,
+      }).then((r) => r.notebooks[0].version)
+    )
+    .toBeGreaterThan(1);
   const r2 = await mockLambda({
     method: "list-page-notebooks",
     notebookUuid,
     token,
     notebookPageId,
   });
-  // separate out the version checks
-  expect(r2.notebooks[0].version).toBeGreaterThan(1);
   delete r2.notebooks[0].version;
   expect(r2.notebooks).toEqual([
     {
@@ -869,6 +877,16 @@ test("Invitee can remove invite from invitee's notebook", async () => {
     method: "remove-page-invite",
   });
   expect(r3).toEqual({ success: true });
+  await expect
+    .poll(() =>
+      mockLambda({
+        method: "list-page-notebooks",
+        notebookUuid,
+        token,
+        notebookPageId,
+      }).then((r) => r.notebooks[0].version)
+    )
+    .toBeGreaterThan(1);
 
   const r4 = await mockLambda({
     method: "list-page-notebooks",
@@ -876,8 +894,6 @@ test("Invitee can remove invite from invitee's notebook", async () => {
     token,
     notebookPageId,
   });
-  // separate out the version checks
-  expect(r4.notebooks[0].version).toBeGreaterThan(1);
   delete r4.notebooks[0].version;
   expect(r4.notebooks).toEqual([
     {
@@ -911,6 +927,16 @@ test("Inviter can remove invite from invitee's notebook", async () => {
     method: "invite-notebook-to-page",
   });
   expect(r).toEqual({ success: true });
+  await expect
+    .poll(() =>
+      mockLambda({
+        method: "list-page-notebooks",
+        notebookUuid,
+        token,
+        notebookPageId,
+      }).then((r) => r.notebooks[0].version)
+    )
+    .toBeGreaterThan(1);
 
   const r2 = await mockLambda({
     method: "list-page-notebooks",
@@ -918,8 +944,6 @@ test("Inviter can remove invite from invitee's notebook", async () => {
     token,
     notebookPageId,
   });
-  // separate out the version checks
-  expect(r2.notebooks[0].version).toBeGreaterThan(1);
   delete r2.notebooks[0].version;
   expect(r2.notebooks).toEqual([
     {
@@ -949,6 +973,16 @@ test("Inviter can remove invite from invitee's notebook", async () => {
     },
   });
   expect(r3).toEqual({ success: true });
+  await expect
+    .poll(() =>
+      mockLambda({
+        method: "list-page-notebooks",
+        notebookUuid,
+        token,
+        notebookPageId,
+      }).then((r) => r.notebooks[0].version)
+    )
+    .toBeGreaterThan(1);
 
   const r4 = await mockLambda({
     method: "list-page-notebooks",
@@ -956,8 +990,6 @@ test("Inviter can remove invite from invitee's notebook", async () => {
     token,
     notebookPageId,
   });
-  // separate out the version checks
-  expect(r4.notebooks[0].version).toBeGreaterThan(1);
   delete r4.notebooks[0].version;
   expect(r4.notebooks).toEqual([
     {
@@ -991,6 +1023,16 @@ test("Unrelated notebook can't remove invite from invitee's notebook", async () 
     method: "invite-notebook-to-page",
   });
   expect(r).toEqual({ success: true });
+  await expect
+    .poll(() =>
+      mockLambda({
+        method: "list-page-notebooks",
+        notebookUuid,
+        token,
+        notebookPageId,
+      }).then((r) => r.notebooks[0].version)
+    )
+    .toBeGreaterThan(1);
 
   const r2 = await mockLambda({
     method: "list-page-notebooks",
@@ -998,8 +1040,6 @@ test("Unrelated notebook can't remove invite from invitee's notebook", async () 
     token,
     notebookPageId,
   });
-  // separate out the version checks
-  expect(r2.notebooks[0].version).toBeGreaterThan(1);
   delete r2.notebooks[0].version;
   expect(r2.notebooks).toEqual([
     {
@@ -1035,6 +1075,16 @@ test("Unrelated notebook can't remove invite from invitee's notebook", async () 
     success: false,
     e: `Error: Could not find valid invite to remove.`,
   });
+  await expect
+    .poll(() =>
+      mockLambda({
+        method: "list-page-notebooks",
+        notebookUuid,
+        token,
+        notebookPageId,
+      }).then((r) => r.notebooks[0].version)
+    )
+    .toBeGreaterThan(1);
 
   const r4 = await mockLambda({
     method: "list-page-notebooks",
@@ -1042,8 +1092,6 @@ test("Unrelated notebook can't remove invite from invitee's notebook", async () 
     token,
     notebookPageId,
   });
-  // separate out the version checks
-  expect(r4.notebooks[0].version).toBeGreaterThan(1);
   delete r4.notebooks[0].version;
   expect(r4.notebooks).toEqual([
     {

@@ -1,5 +1,5 @@
-import { apiPost } from "package/internal/apiClient";
-import { getSetting } from "package/internal/registry";
+import { apiPost } from "./apiClient";
+import { getSetting } from "./registry";
 
 const sendExtensionError = ({
   type,

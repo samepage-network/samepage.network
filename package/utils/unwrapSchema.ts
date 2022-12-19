@@ -1,5 +1,5 @@
-import binaryToBase64 from "package/internal/binaryToBase64";
-import sendExtensionError from "package/internal/sendExtensionError";
+import binaryToBase64 from "../internal/binaryToBase64";
+import sendExtensionError from "../internal/sendExtensionError";
 import type { Annotation, InitialSchema, Schema } from "../internal/types";
 import Automerge from "automerge";
 
