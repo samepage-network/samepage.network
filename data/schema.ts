@@ -10,11 +10,13 @@ const token = z.object({
   userId: z.string().optional(),
 });
 
-const tokenNotebookLink = z.object({
-  uuid,
-  notebookUuid: uuidField,
-  tokenUuid: uuidField,
-});
+const tokenNotebookLink = z
+  .object({
+    uuid,
+    notebookUuid: uuidField.describe("index"),
+    tokenUuid: uuidField.describe("index"),
+  })
+  .describe(JSON.stringify({ uniques: [["notebook_uuid", "token_uuid"]] }));
 
 const invitation = z.object({
   code: z.string().describe("primary"),
@@ -33,19 +35,24 @@ const notebook = z.object({
 const pageNotebookLink = z
   .object({
     uuid,
-    pageUuid: z.string().uuid(),
+    pageUuid: z.string().uuid().describe("index"),
     notebookPageId: z.string(),
     // possibly redundant with cid, though it saves a download
-    version: z.number(), 
+    version: z.number(),
     // .default(true), need to update fuego to handle defaults
-    open: z.boolean(), 
-    invitedBy: z.string().uuid(),
+    open: z.boolean(),
+    invitedBy: z.string().uuid().describe("index"),
     invitedDate: z.date(),
-    notebookUuid: uuidField,
+    notebookUuid: uuidField.describe("index"),
     cid: z.string(),
   })
   .describe(
-    JSON.stringify({ uniques: [["notebook_page_id", "notebook_uuid"]] })
+    JSON.stringify({
+      uniques: [
+        ["notebook_page_id", "notebook_uuid"],
+        ["page_uuid", "notebook_uuid"],
+      ],
+    })
   );
 
 const page = z.object({
@@ -56,7 +63,7 @@ const page = z.object({
 const onlineClient = z.object({
   id: z.string().describe("primary"),
   createdDate: z.date(),
-  notebookUuid: optionalUuid,
+  notebookUuid: optionalUuid.describe("index"),
 });
 
 const clientSession = z.object({
@@ -64,7 +71,7 @@ const clientSession = z.object({
   createdDate: z.date(),
   endDate: z.date(),
   disconnectedBy: z.string(),
-  notebookUuid: optionalUuid,
+  notebookUuid: optionalUuid.describe("index"),
 });
 
 const message = z.object({
