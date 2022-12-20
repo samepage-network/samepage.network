@@ -17,7 +17,8 @@ import getRandomNotebookPageId from "../../utils/getRandomNotebookPageId";
 import wrapSchema from "../../../package/utils/wrapSchema";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
 
-test.describe.configure({ mode: "parallel" });
+// upload to ipfs loses out on a core to run in the background
+// test.describe.configure({ mode: "parallel", });
 
 const mockLambdaContext = ({ requestId = v4(), path = "page" }) => ({
   awsRequestId: requestId,
@@ -41,66 +42,68 @@ const mockLambdaContext = ({ requestId = v4(), path = "page" }) => ({
 
 const mockLambda = async (body: RequestBody, requestId = v4()) => {
   const path = "page";
-  const res = handler(
-    {
-      headers: {},
-      multiValueHeaders: {},
-      httpMethod: "POST",
-      body: JSON.stringify(body),
-      path,
-      isBase64Encoded: false,
-      pathParameters: {},
-      queryStringParameters: {},
-      multiValueQueryStringParameters: {},
-      stageVariables: {},
-      resource: "",
-      requestContext: {
-        apiId: "",
-        accountId: "",
-        authorizer: {},
-        protocol: "",
+  return test.step(`Mock Lambda: ${body.method}`, async () => {
+    const res = handler(
+      {
+        headers: {},
+        multiValueHeaders: {},
         httpMethod: "POST",
-        stage: "test",
-        requestId,
+        body: JSON.stringify(body),
         path,
-        resourceId: "",
-        requestTimeEpoch: new Date().valueOf(),
-        resourcePath: "",
-        identity: {
-          accessKey: null,
-          accountId: null,
-          apiKey: null,
-          apiKeyId: null,
-          caller: null,
-          clientCert: null,
-          cognitoAuthenticationProvider: null,
-          cognitoAuthenticationType: null,
-          cognitoIdentityId: null,
-          cognitoIdentityPoolId: null,
-          principalOrgId: null,
-          sourceIp: "",
-          user: null,
-          userAgent: null,
-          userArn: null,
+        isBase64Encoded: false,
+        pathParameters: {},
+        queryStringParameters: {},
+        multiValueQueryStringParameters: {},
+        stageVariables: {},
+        resource: "",
+        requestContext: {
+          apiId: "",
+          accountId: "",
+          authorizer: {},
+          protocol: "",
+          httpMethod: "POST",
+          stage: "test",
+          requestId,
+          path,
+          resourceId: "",
+          requestTimeEpoch: new Date().valueOf(),
+          resourcePath: "",
+          identity: {
+            accessKey: null,
+            accountId: null,
+            apiKey: null,
+            apiKeyId: null,
+            caller: null,
+            clientCert: null,
+            cognitoAuthenticationProvider: null,
+            cognitoAuthenticationType: null,
+            cognitoIdentityId: null,
+            cognitoIdentityPoolId: null,
+            principalOrgId: null,
+            sourceIp: "",
+            user: null,
+            userAgent: null,
+            userArn: null,
+          },
         },
       },
-    },
-    mockLambdaContext({ requestId, path }),
-    () => {}
-  );
-  return res
-    ? res.then((r) => {
-        try {
-          if (r.statusCode < 300) {
-            return JSON.parse(r.body);
-          } else {
-            return Promise.reject(r.body);
+      mockLambdaContext({ requestId, path }),
+      () => {}
+    );
+    return res
+      ? res.then((r) => {
+          try {
+            if (r.statusCode < 300) {
+              return JSON.parse(r.body);
+            } else {
+              return Promise.reject(r.body);
+            }
+          } catch (e) {
+            throw new Error(`Failed to handle response: ${r.body}`);
           }
-        } catch (e) {
-          throw new Error(`Failed to handle response: ${r.body}`);
-        }
-      })
-    : {};
+        })
+      : {};
+  });
 };
 
 const getRandomWorkspace = async () =>
@@ -433,6 +436,19 @@ test("Reverting a page invite should make it acceptable again", async () => {
     state,
   });
   expect(created).toEqual(true);
+  await expect
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r) => r.state),
+      { timeout: 10000 }
+    )
+    .toEqual(state);
+
   const { notebookUuid: targetUuid, token: targetToken } =
     await mockRandomNotebook();
   const r1 = await mockLambda({
@@ -547,6 +563,17 @@ test("Sharing pages should be available in file system", async () => {
     state,
   });
   expect(created).toEqual(true);
+  await expect
+    .poll(() =>
+      mockLambda({
+        method: "get-shared-page",
+        notebookUuid,
+        token,
+        notebookPageId,
+      }).then((r) => r.state),
+      { timeout: 10000 }
+    )
+    .toEqual(state);
 
   const r = await mockLambda({
     method: "get-shared-page",
@@ -581,6 +608,18 @@ test("Shared pages should be receptive to updates", async () => {
     state,
   });
   expect(created).toEqual(true);
+  await expect
+    .poll(() =>
+      mockLambda({
+        method: "get-shared-page",
+        notebookUuid,
+        token,
+        notebookPageId,
+      }).then((r) => r.state),
+      { timeout: 10000 }
+    )
+    .toEqual(state);
+
   const { notebookUuid: targetUuid, token: targetToken } =
     await mockRandomNotebook();
   const r1 = await mockLambda({
@@ -612,7 +651,6 @@ test("Shared pages should be receptive to updates", async () => {
     state: updatedState,
   });
   expect(r3).toEqual({ success: true });
-
   await expect
     .poll(() =>
       mockLambda({
@@ -620,9 +658,11 @@ test("Shared pages should be receptive to updates", async () => {
         notebookUuid,
         token,
         notebookPageId,
-      }).then((r4) => r4.state)
+      }).then((r4) => r4.state),
+      { timeout: 10000 }
     )
     .toEqual(updatedState);
+
   const r7 = await mockLambda({
     method: "get-shared-page",
     notebookUuid: targetUuid,
@@ -647,7 +687,8 @@ test("Shared pages should be receptive to updates", async () => {
         notebookUuid: targetUuid,
         token: targetToken,
         notebookPageId,
-      }).then((r6) => r6.state)
+      }).then((r6) => r6.state),
+      { timeout: 10000 }
     )
     .toEqual(updatedState);
 });
@@ -664,6 +705,18 @@ test("Sending updates with no changes should return with success false", async (
     state,
   });
   expect(created).toEqual(true);
+  await expect
+    .poll(() =>
+      mockLambda({
+        method: "get-shared-page",
+        notebookUuid,
+        token,
+        notebookPageId,
+      }).then((r) => r.state),
+      { timeout: 10000 }
+    )
+    .toEqual(state);
+
   const { notebookUuid: targetUuid, token: targetToken } =
     await mockRandomNotebook();
   const r1 = await mockLambda({
@@ -715,13 +768,17 @@ test("Relink new pages after sharing", async () => {
     oldNotebookPageId: notebookPageId,
   });
   expect(r).toEqual({ success: true });
-  const r2 = await mockLambda({
-    method: "get-shared-page",
-    notebookUuid,
-    token,
-    notebookPageId: newNotebookPageId,
-  });
-  expect(r2.state).toEqual(state);
+  await expect
+    .poll(() =>
+      mockLambda({
+        method: "get-shared-page",
+        notebookUuid,
+        token,
+        notebookPageId: newNotebookPageId,
+      }).then((r2) => r2.state),
+      { timeout: 10000 }
+    )
+    .toEqual(state);
 });
 
 test("Relinking non-existent page should error", async () => {
@@ -814,13 +871,25 @@ test("Disconnecting a page should remove it from list", async () => {
 test("Invitee can remove invite from invitee's notebook", async () => {
   const { notebookUuid, token, workspace } = await mockRandomNotebook();
   const notebookPageId = await getRandomNotebookPageId();
+  const state = mockState("hello");
   const { created } = await mockLambda({
     notebookPageId,
     notebookUuid,
     token,
     method: "init-shared-page",
-    state: mockState("hello"),
+    state,
   });
+  await expect
+    .poll(() =>
+      mockLambda({
+        method: "get-shared-page",
+        notebookUuid,
+        token,
+        notebookPageId,
+      }).then((r) => r.state),
+      { timeout: 10000 }
+    )
+    .toEqual(state);
   expect(created).toEqual(true);
 
   const {
@@ -908,13 +977,25 @@ test("Invitee can remove invite from invitee's notebook", async () => {
 test("Inviter can remove invite from invitee's notebook", async () => {
   const { notebookUuid, token, workspace } = await mockRandomNotebook();
   const notebookPageId = await getRandomNotebookPageId();
+  const state = mockState("hello");
   const { created } = await mockLambda({
     notebookPageId,
     notebookUuid,
     token,
     method: "init-shared-page",
-    state: mockState("hello"),
+    state,
   });
+  await expect
+    .poll(() =>
+      mockLambda({
+        method: "get-shared-page",
+        notebookUuid,
+        token,
+        notebookPageId,
+      }).then((r) => r.state),
+      { timeout: 10000 }
+    )
+    .toEqual(state);
   expect(created).toEqual(true);
 
   const { notebookUuid: targetUuid, workspace: targetWorkspace } =
@@ -1226,6 +1307,18 @@ test("Shared pages should be receptive to force pushes", async () => {
     state,
   });
   expect(created).toEqual(true);
+  await expect
+    .poll(() =>
+      mockLambda({
+        method: "get-shared-page",
+        notebookUuid,
+        token,
+        notebookPageId,
+      }).then((r) => r.state),
+      { timeout: 10000 }
+    )
+    .toEqual(state);
+
   const { notebookUuid: targetUuid, token: targetToken } =
     await mockRandomNotebook();
   const r1 = await mockLambda({
@@ -1265,7 +1358,8 @@ test("Shared pages should be receptive to force pushes", async () => {
         notebookUuid,
         token,
         notebookPageId,
-      }).then((r4) => r4.state)
+      }).then((r4) => r4.state),
+      { timeout: 10000 }
     )
     .toEqual(updatedState);
   // TODO - verify some way that we received the message with the related force push
@@ -1292,7 +1386,8 @@ test("Shared pages should be receptive to force pushes", async () => {
         notebookUuid,
         token,
         notebookPageId,
-      }).then((r4) => r4.state)
+      }).then((r4) => r4.state),
+      { timeout: 10000 }
     )
     .toEqual(updatedState2);
 
@@ -1311,7 +1406,8 @@ test("Shared pages should be receptive to force pushes", async () => {
         notebookUuid,
         token,
         notebookPageId,
-      }).then((r4) => r4.state)
+      }).then((r4) => r4.state),
+      { timeout: 10000 }
     )
     .toEqual(updatedState2);
   // TODO - verify some way that we received the message with the related force push

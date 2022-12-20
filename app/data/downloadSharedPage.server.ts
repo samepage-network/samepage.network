@@ -1,8 +1,8 @@
 import { decode } from "@ipld/dag-cbor";
-import { LatestSchema, Memo } from "package/internal/types";
+import { LatestSchema, Memo } from "../../package/internal/types";
 import { downloadFileBuffer } from "@dvargas92495/app/backend/downloadFile.server";
 import Automerge from "automerge";
-import wrapSchema from "package/utils/wrapSchema";
+import wrapSchema from "../../package/utils/wrapSchema";
 
 const downloadSharedPage = async ({ cid }: { cid: string }): Promise<Memo> => {
   if (!cid) {

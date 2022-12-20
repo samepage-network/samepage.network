@@ -2,6 +2,10 @@
 import setupRegistry from "../internal/registry";
 import { JSDOM } from "jsdom";
 
+Object.keys(require.cache)
+  .filter((k) => /react/.test(k))
+  .forEach((k) => delete require.cache[k]);
+
 const dom = new JSDOM("<!DOCTYPE html>", {
   pretendToBeVisual: true,
   runScripts: "dangerously",

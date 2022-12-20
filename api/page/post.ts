@@ -70,8 +70,8 @@ const logic = async (req: Record<string, unknown>) => {
       `Failed to parse request. Errors:\n${parseZodError(result.error)}`
     );
   const { requestId, ...args } = result.data;
-  console.log("Received method:", args.method);
   const cxn = await getMysql(requestId);
+  console.log("Received method:", args.method);
   try {
     if (args.method === "create-notebook") {
       const { inviteCode, app, workspace } = args;
@@ -261,45 +261,41 @@ const logic = async (req: Record<string, unknown>) => {
       }
       case "init-shared-page": {
         const { notebookPageId, state } = args;
-        return getMysql(requestId)
-          .then(async (cxn) => {
-            const [results] = await cxn.execute(
-              `SELECT page_uuid FROM page_notebook_links WHERE notebook_uuid = ? AND notebook_page_id = ?`,
-              [notebookUuid, notebookPageId]
-            );
-            const [link] = results as { page_uuid: string }[];
-            if (link) return { id: link.page_uuid, created: false };
-            await validatePageQuota({ requestId, notebookUuid, tokenUuid });
+        const [results] = await cxn.execute(
+          `SELECT page_uuid FROM page_notebook_links WHERE notebook_uuid = ? AND notebook_page_id = ?`,
+          [notebookUuid, notebookPageId]
+        );
+        const [link] = results as { page_uuid: string }[];
+        if (link) return { id: link.page_uuid, created: false };
+        await validatePageQuota({ requestId, notebookUuid, tokenUuid });
 
-            const pageUuid = v4();
-            await cxn.execute(
-              `INSERT INTO pages (uuid)
+        const pageUuid = v4();
+        await cxn.execute(
+          `INSERT INTO pages (uuid)
             VALUES (?)`,
-              [pageUuid]
-            );
-            const linkUuid = v4();
-            await cxn.execute(
-              `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, version, open, invited_by, invited_date, notebook_uuid, cid)
+          [pageUuid]
+        );
+        const linkUuid = v4();
+        await cxn.execute(
+          `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, version, open, invited_by, invited_date, notebook_uuid, cid)
             VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)`,
-              [
-                linkUuid,
-                pageUuid,
-                notebookPageId,
-                0,
-                notebookUuid,
-                new Date(),
-                notebookUuid,
-                "",
-              ]
-            );
-            await saveSharedPage({
-              uuid: linkUuid,
-              doc: state,
-            });
-            cxn.destroy();
-            return { created: true, id: pageUuid };
-          })
-          .catch(catchError("Failed to init a shared page"));
+          [
+            linkUuid,
+            pageUuid,
+            notebookPageId,
+            0,
+            notebookUuid,
+            new Date(),
+            notebookUuid,
+            "",
+          ]
+        );
+        await saveSharedPage({
+          uuid: linkUuid,
+          doc: state,
+        });
+        cxn.destroy();
+        return { created: true, id: pageUuid };
       }
       case "join-shared-page": {
         const { notebookPageId } = args;
@@ -646,23 +642,18 @@ const logic = async (req: Record<string, unknown>) => {
           .catch(catchError("Failed to retrieve page notebooks"));
       }
       case "list-shared-pages": {
-        return getMysql(requestId)
-          .then(async (cxn) => {
-            const entries = await cxn
-              .execute(
-                `SELECT l.notebook_page_id 
+        const notebookPageIds = await cxn
+          .execute(
+            `SELECT l.notebook_page_id 
               FROM page_notebook_links l
               INNER JOIN pages p ON l.page_uuid = p.uuid
           WHERE l.notebook_uuid = ? AND l.open = 0`,
-                [notebookUuid]
-              )
-              .then(([r]) => r as { notebook_page_id: string }[])
-              .then((r) => r.map(({ notebook_page_id }) => notebook_page_id));
-            cxn.destroy();
-            return entries;
-          })
-          .then((notebookPageIds) => ({ notebookPageIds }))
-          .catch(catchError("Failed to retrieve shared pages"));
+            [notebookUuid]
+          )
+          .then(([r]) => r as { notebook_page_id: string }[])
+          .then((r) => r.map(({ notebook_page_id }) => notebook_page_id));
+        cxn.destroy();
+        return { notebookPageIds };
       }
       case "disconnect-shared-page": {
         const { notebookPageId } = args;

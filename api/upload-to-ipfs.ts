@@ -5,9 +5,11 @@ import getMysql from "fuegojs/utils/mysql";
 import type { Context } from "aws-lambda";
 import { v4 } from "uuid";
 import Automerge from "automerge";
-import { Memo } from "package/internal/types";
+import type { Memo } from "../package/internal/types";
 import { decode } from "@ipld/dag-cbor";
-import downloadSharedPage from "~/data/downloadSharedPage.server";
+import downloadSharedPage from "../app/data/downloadSharedPage.server";
+import fs from "fs";
+import dotenv from "dotenv";
 
 export const handler = async (
   {
@@ -17,7 +19,7 @@ export const handler = async (
     uuid: string;
     type: "pages";
   },
-  context: Context
+  context: Pick<Context, "awsRequestId">
 ) => {
   const client = new Web3Storage({
     token: process.env.WEB3_STORAGE_API_KEY || "",
@@ -70,6 +72,7 @@ export const handler = async (
             [cid, newHistory.slice(-1)[0]?.change?.time, uuid]
           );
         } // else a race condition, don't set the notebook link cid!
+        cxn.destroy();
       }
     }),
   ]);
@@ -78,3 +81,12 @@ export const handler = async (
     cid,
   };
 };
+
+if (require.main === module) {
+  dotenv.config();
+  const requestId = process.argv[2];
+  const data = JSON.parse(
+    fs.readFileSync(`/tmp/${requestId}.json`).toString()
+  ) as Parameters<typeof handler>[0];
+  handler(data, { awsRequestId: requestId });
+}
