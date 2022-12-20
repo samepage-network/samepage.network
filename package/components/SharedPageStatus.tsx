@@ -265,6 +265,7 @@ const SharedPageStatus = ({
         <img
           src={"https://samepage.network/images/logo.png"}
           className={"h-8 w-8"}
+          alt={"SamePage"}
         />
         <TooltipButtonOverlay
           defaultIsOpen={defaultOpenInviteDialog}
