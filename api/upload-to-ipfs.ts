@@ -7,17 +7,32 @@ import { v4 } from "uuid";
 import Automerge from "automerge";
 import type { Memo } from "../package/internal/types";
 import { decode } from "@ipld/dag-cbor";
+import { MemoryBlockStore } from "ipfs-car/blockstore/memory";
+import { pack } from "ipfs-car/pack";
 import downloadSharedPage from "../app/data/downloadSharedPage.server";
 import fs from "fs";
 import dotenv from "dotenv";
+
+function toImportCandidate(file: File) {
+  let stream: ReadableStream;
+  return {
+    path: file.name,
+    get content() {
+      stream = stream || file.stream();
+      return stream;
+    },
+  };
+}
 
 export const handler = async (
   {
     uuid,
     type,
+    dry,
   }: {
     uuid: string;
     type: "pages";
+    dry?: boolean;
   },
   context: Pick<Context, "awsRequestId">
 ) => {
@@ -29,25 +44,31 @@ export const handler = async (
   const encoded = await downloadFileBuffer({ Key });
 
   let rootReadyResolve: (s: string) => void;
-  const s3upload = new Promise<string>(
+  const ipfsUpload = new Promise<string>(
     (resolve) => (rootReadyResolve = resolve)
   );
+  const files = [new File([encoded], "data")];
   const [cid] = await Promise.all([
-    client
-      .put([new File([encoded], "data.json")], {
-        wrapWithDirectory: false,
-        onRootCidReady(cid) {
-          uploadFile({
-            Key: `data/ipfs/${cid}`,
-            Body: encoded,
-          }).then(() => {
-            rootReadyResolve(cid);
-          });
-        },
-      })
-      // test would fail without it?
-      .then(() => {}),
-    s3upload.then(async (cid) => {
+    dry
+      ? pack({
+          input: files.map(toImportCandidate),
+          blockstore: new MemoryBlockStore(),
+          wrapWithDirectory: false,
+          maxChunkSize: 1048576,
+          maxChildrenPerNode: 1024,
+        }).then((a) => rootReadyResolve(a.root.toString()))
+      : client
+          .put(files, {
+            wrapWithDirectory: false,
+            onRootCidReady: (cid) => rootReadyResolve(cid),
+          })
+          // test would fail without it?
+          .then(() => {}),
+    ipfsUpload.then(async (cid) => {
+      await uploadFile({
+        Key: `data/ipfs/${cid}`,
+        Body: encoded,
+      });
       if (type === "pages") {
         const cxn = await getMysql(context?.awsRequestId || v4());
         const [cids] = await cxn.execute(
@@ -88,5 +109,5 @@ if (require.main === module) {
   const data = JSON.parse(
     fs.readFileSync(`/tmp/${requestId}.json`).toString()
   ) as Parameters<typeof handler>[0];
-  handler(data, { awsRequestId: requestId });
+  handler({ ...data, dry: true }, { awsRequestId: requestId });
 }

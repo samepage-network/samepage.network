@@ -590,56 +590,56 @@ const logic = async (req: Record<string, unknown>) => {
       }
       case "list-page-notebooks": {
         const { notebookPageId } = args;
-        return getMysql(requestId)
-          .then(async (cxn) => {
-            const { uuid: pageUuid } = await getSharedPage({
-              notebookUuid,
-              notebookPageId,
-              requestId: requestId,
-            });
-            const clients = await cxn
-              .execute(
-                `SELECT n.app, n.workspace, n.uuid, l.version, l.open FROM page_notebook_links l 
+
+        const { uuid: pageUuid } = await getSharedPage({
+          notebookUuid,
+          notebookPageId,
+          requestId,
+        });
+        const clients = await cxn
+          .execute(
+            `SELECT n.app, n.workspace, n.uuid, l.version, l.open, CASE 
+            WHEN l.notebook_uuid = l.invited_by THEN 1
+            ELSE 2 
+          END as priority FROM page_notebook_links l 
                 INNER JOIN notebooks n ON n.uuid = l.notebook_uuid 
                 WHERE l.page_uuid = ?
-                ORDER BY l.invited_date`,
-                [pageUuid]
-              )
-              .then(
-                ([res]) =>
-                  res as (Notebook & {
-                    version: number;
-                    open: 0 | 1;
-                    uuid: string;
-                  })[]
-              );
-            const clientUuids = new Set(clients.map((c) => c.uuid));
-            const recents = await cxn
-              // TODO - create better hueristics here for recent notebooks, prob its own LRU cache table
-              .execute(
-                `SELECT n.* FROM notebooks n 
+                ORDER BY priority, l.invited_date`,
+            [pageUuid]
+          )
+          .then(
+            ([res]) =>
+              res as (Notebook & {
+                version: number;
+                open: 0 | 1;
+                uuid: string;
+              })[]
+          );
+        const clientUuids = new Set(clients.map((c) => c.uuid));
+        const recents = await cxn
+          // TODO - create better hueristics here for recent notebooks, prob its own LRU cache table
+          .execute(
+            `SELECT n.* FROM notebooks n 
               INNER JOIN token_notebook_links l on l.notebook_uuid = n.uuid`
-              )
-              .then(([a]) => a as ({ uuid: string } & Notebook)[]);
-            cxn.destroy();
-            return {
-              notebooks: clients.map((c) => ({
-                uuid: c.uuid,
-                workspace: c.workspace,
-                app: appsById[c.app].name,
-                version: c.version,
-                openInvite: !!c.open,
-              })),
-              recents: Object.values(
-                Object.fromEntries(
-                  recents
-                    .filter((r) => !clientUuids.has(r.uuid))
-                    .map((r) => [r.uuid, r])
-                )
-              ),
-            };
-          })
-          .catch(catchError("Failed to retrieve page notebooks"));
+          )
+          .then(([a]) => a as ({ uuid: string } & Notebook)[]);
+        cxn.destroy();
+        return {
+          notebooks: clients.map((c) => ({
+            uuid: c.uuid,
+            workspace: c.workspace,
+            app: appsById[c.app].name,
+            version: c.version,
+            openInvite: !!c.open,
+          })),
+          recents: Object.values(
+            Object.fromEntries(
+              recents
+                .filter((r) => !clientUuids.has(r.uuid))
+                .map((r) => [r.uuid, r])
+            )
+          ),
+        };
       }
       case "list-shared-pages": {
         const notebookPageIds = await cxn

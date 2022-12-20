@@ -564,13 +564,14 @@ test("Sharing pages should be available in file system", async () => {
   });
   expect(created).toEqual(true);
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "get-shared-page",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r) => r.state),
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r) => r.state),
       { timeout: 20000 }
     )
     .toEqual(state);
@@ -609,13 +610,14 @@ test("Shared pages should be receptive to updates", async () => {
   });
   expect(created).toEqual(true);
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "get-shared-page",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r) => r.state),
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r) => r.state),
       { timeout: 20000 }
     )
     .toEqual(state);
@@ -652,13 +654,14 @@ test("Shared pages should be receptive to updates", async () => {
   });
   expect(r3).toEqual({ success: true });
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "get-shared-page",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r4) => r4.state),
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r4) => r4.state),
       { timeout: 20000 }
     )
     .toEqual(updatedState);
@@ -681,13 +684,14 @@ test("Shared pages should be receptive to updates", async () => {
   });
   expect(r5).toEqual({ success: true });
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "get-shared-page",
-        notebookUuid: targetUuid,
-        token: targetToken,
-        notebookPageId,
-      }).then((r6) => r6.state),
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid: targetUuid,
+          token: targetToken,
+          notebookPageId,
+        }).then((r6) => r6.state),
       { timeout: 20000 }
     )
     .toEqual(updatedState);
@@ -706,13 +710,14 @@ test("Sending updates with no changes should return with success false", async (
   });
   expect(created).toEqual(true);
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "get-shared-page",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r) => r.state),
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r) => r.state),
       { timeout: 20000 }
     )
     .toEqual(state);
@@ -769,13 +774,14 @@ test("Relink new pages after sharing", async () => {
   });
   expect(r).toEqual({ success: true });
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "get-shared-page",
-        notebookUuid,
-        token,
-        notebookPageId: newNotebookPageId,
-      }).then((r2) => r2.state),
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId: newNotebookPageId,
+        }).then((r2) => r2.state),
       { timeout: 20000 }
     )
     .toEqual(state);
@@ -880,13 +886,14 @@ test("Invitee can remove invite from invitee's notebook", async () => {
     state,
   });
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "get-shared-page",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r) => r.state),
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r) => r.state),
       { timeout: 20000 }
     )
     .toEqual(state);
@@ -907,13 +914,14 @@ test("Invitee can remove invite from invitee's notebook", async () => {
   expect(r).toEqual({ success: true });
 
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "list-page-notebooks",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r) => r.notebooks[0].version),
+    .poll(
+      () =>
+        mockLambda({
+          method: "list-page-notebooks",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r) => r.notebooks[0].version),
       { timeout: 20000 }
     )
     .toBeGreaterThan(1);
@@ -948,13 +956,14 @@ test("Invitee can remove invite from invitee's notebook", async () => {
   });
   expect(r3).toEqual({ success: true });
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "list-page-notebooks",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r) => r.notebooks[0].version),
+    .poll(
+      () =>
+        mockLambda({
+          method: "list-page-notebooks",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r) => r.notebooks[0].version),
       { timeout: 20000 }
     )
     .toBeGreaterThan(1);
@@ -988,13 +997,14 @@ test("Inviter can remove invite from invitee's notebook", async () => {
     state,
   });
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "get-shared-page",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r) => r.state),
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r) => r.state),
       { timeout: 20000 }
     )
     .toEqual(state);
@@ -1011,13 +1021,14 @@ test("Inviter can remove invite from invitee's notebook", async () => {
   });
   expect(r).toEqual({ success: true });
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "list-page-notebooks",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r) => r.notebooks[0].version),
+    .poll(
+      () =>
+        mockLambda({
+          method: "list-page-notebooks",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r) => r.notebooks[0].version),
       { timeout: 20000 }
     )
     .toBeGreaterThan(1);
@@ -1058,13 +1069,14 @@ test("Inviter can remove invite from invitee's notebook", async () => {
   });
   expect(r3).toEqual({ success: true });
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "list-page-notebooks",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r) => r.notebooks[0].version),
+    .poll(
+      () =>
+        mockLambda({
+          method: "list-page-notebooks",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r) => r.notebooks[0].version),
       { timeout: 20000 }
     )
     .toBeGreaterThan(1);
@@ -1089,13 +1101,27 @@ test("Inviter can remove invite from invitee's notebook", async () => {
 test("Unrelated notebook can't remove invite from invitee's notebook", async () => {
   const { notebookUuid, token, workspace } = await mockRandomNotebook();
   const notebookPageId = await getRandomNotebookPageId();
+  const state = mockState("hello");
   const { created } = await mockLambda({
     notebookPageId,
     notebookUuid,
     token,
     method: "init-shared-page",
-    state: mockState("hello"),
+    state,
   });
+  expect(created).toEqual(true);
+  await expect
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r) => r.state),
+      { timeout: 20000 }
+    )
+    .toEqual(state);
   expect(created).toEqual(true);
 
   const { notebookUuid: targetUuid, workspace: targetWorkspace } =
@@ -1109,13 +1135,14 @@ test("Unrelated notebook can't remove invite from invitee's notebook", async () 
   });
   expect(r).toEqual({ success: true });
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "list-page-notebooks",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r) => r.notebooks[0].version),
+    .poll(
+      () =>
+        mockLambda({
+          method: "list-page-notebooks",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r) => r.notebooks[0].version),
       { timeout: 20000 }
     )
     .toBeGreaterThan(1);
@@ -1162,13 +1189,14 @@ test("Unrelated notebook can't remove invite from invitee's notebook", async () 
     e: `Error: Could not find valid invite to remove.`,
   });
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "list-page-notebooks",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r) => r.notebooks[0].version),
+    .poll(
+      () =>
+        mockLambda({
+          method: "list-page-notebooks",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r) => r.notebooks[0].version),
       { timeout: 20000 }
     )
     .toBeGreaterThan(1);
@@ -1314,13 +1342,14 @@ test("Shared pages should be receptive to force pushes", async () => {
   });
   expect(created).toEqual(true);
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "get-shared-page",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r) => r.state),
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r) => r.state),
       { timeout: 20000 }
     )
     .toEqual(state);
@@ -1358,13 +1387,14 @@ test("Shared pages should be receptive to force pushes", async () => {
   expect(r3).toEqual({ success: true });
 
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "get-shared-page",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r4) => r4.state),
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r4) => r4.state),
       { timeout: 20000 }
     )
     .toEqual(updatedState);
@@ -1386,13 +1416,14 @@ test("Shared pages should be receptive to force pushes", async () => {
   expect(r4).toEqual({ success: true });
 
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "get-shared-page",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r4) => r4.state),
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r4) => r4.state),
       { timeout: 20000 }
     )
     .toEqual(updatedState2);
@@ -1406,13 +1437,14 @@ test("Shared pages should be receptive to force pushes", async () => {
   expect(r5).toEqual({ success: true });
 
   await expect
-    .poll(() =>
-      mockLambda({
-        method: "get-shared-page",
-        notebookUuid,
-        token,
-        notebookPageId,
-      }).then((r4) => r4.state),
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r4) => r4.state),
       { timeout: 20000 }
     )
     .toEqual(updatedState2);
