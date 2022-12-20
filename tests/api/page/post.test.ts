@@ -445,7 +445,7 @@ test("Reverting a page invite should make it acceptable again", async () => {
           token,
           notebookPageId,
         }).then((r) => r.state),
-      { timeout: 10000 }
+      { timeout: 20000 }
     )
     .toEqual(state);
 
@@ -571,7 +571,7 @@ test("Sharing pages should be available in file system", async () => {
         token,
         notebookPageId,
       }).then((r) => r.state),
-      { timeout: 10000 }
+      { timeout: 20000 }
     )
     .toEqual(state);
 
@@ -616,7 +616,7 @@ test("Shared pages should be receptive to updates", async () => {
         token,
         notebookPageId,
       }).then((r) => r.state),
-      { timeout: 10000 }
+      { timeout: 20000 }
     )
     .toEqual(state);
 
@@ -659,7 +659,7 @@ test("Shared pages should be receptive to updates", async () => {
         token,
         notebookPageId,
       }).then((r4) => r4.state),
-      { timeout: 10000 }
+      { timeout: 20000 }
     )
     .toEqual(updatedState);
 
@@ -688,7 +688,7 @@ test("Shared pages should be receptive to updates", async () => {
         token: targetToken,
         notebookPageId,
       }).then((r6) => r6.state),
-      { timeout: 10000 }
+      { timeout: 20000 }
     )
     .toEqual(updatedState);
 });
@@ -713,7 +713,7 @@ test("Sending updates with no changes should return with success false", async (
         token,
         notebookPageId,
       }).then((r) => r.state),
-      { timeout: 10000 }
+      { timeout: 20000 }
     )
     .toEqual(state);
 
@@ -776,7 +776,7 @@ test("Relink new pages after sharing", async () => {
         token,
         notebookPageId: newNotebookPageId,
       }).then((r2) => r2.state),
-      { timeout: 10000 }
+      { timeout: 20000 }
     )
     .toEqual(state);
 });
@@ -887,7 +887,7 @@ test("Invitee can remove invite from invitee's notebook", async () => {
         token,
         notebookPageId,
       }).then((r) => r.state),
-      { timeout: 10000 }
+      { timeout: 20000 }
     )
     .toEqual(state);
   expect(created).toEqual(true);
@@ -913,7 +913,8 @@ test("Invitee can remove invite from invitee's notebook", async () => {
         notebookUuid,
         token,
         notebookPageId,
-      }).then((r) => r.notebooks[0].version)
+      }).then((r) => r.notebooks[0].version),
+      { timeout: 20000 }
     )
     .toBeGreaterThan(1);
   const r2 = await mockLambda({
@@ -953,7 +954,8 @@ test("Invitee can remove invite from invitee's notebook", async () => {
         notebookUuid,
         token,
         notebookPageId,
-      }).then((r) => r.notebooks[0].version)
+      }).then((r) => r.notebooks[0].version),
+      { timeout: 20000 }
     )
     .toBeGreaterThan(1);
 
@@ -993,7 +995,7 @@ test("Inviter can remove invite from invitee's notebook", async () => {
         token,
         notebookPageId,
       }).then((r) => r.state),
-      { timeout: 10000 }
+      { timeout: 20000 }
     )
     .toEqual(state);
   expect(created).toEqual(true);
@@ -1015,7 +1017,8 @@ test("Inviter can remove invite from invitee's notebook", async () => {
         notebookUuid,
         token,
         notebookPageId,
-      }).then((r) => r.notebooks[0].version)
+      }).then((r) => r.notebooks[0].version),
+      { timeout: 20000 }
     )
     .toBeGreaterThan(1);
 
@@ -1061,7 +1064,8 @@ test("Inviter can remove invite from invitee's notebook", async () => {
         notebookUuid,
         token,
         notebookPageId,
-      }).then((r) => r.notebooks[0].version)
+      }).then((r) => r.notebooks[0].version),
+      { timeout: 20000 }
     )
     .toBeGreaterThan(1);
 
@@ -1111,7 +1115,8 @@ test("Unrelated notebook can't remove invite from invitee's notebook", async () 
         notebookUuid,
         token,
         notebookPageId,
-      }).then((r) => r.notebooks[0].version)
+      }).then((r) => r.notebooks[0].version),
+      { timeout: 20000 }
     )
     .toBeGreaterThan(1);
 
@@ -1163,7 +1168,8 @@ test("Unrelated notebook can't remove invite from invitee's notebook", async () 
         notebookUuid,
         token,
         notebookPageId,
-      }).then((r) => r.notebooks[0].version)
+      }).then((r) => r.notebooks[0].version),
+      { timeout: 20000 }
     )
     .toBeGreaterThan(1);
 
@@ -1315,7 +1321,7 @@ test("Shared pages should be receptive to force pushes", async () => {
         token,
         notebookPageId,
       }).then((r) => r.state),
-      { timeout: 10000 }
+      { timeout: 20000 }
     )
     .toEqual(state);
 
@@ -1359,7 +1365,7 @@ test("Shared pages should be receptive to force pushes", async () => {
         token,
         notebookPageId,
       }).then((r4) => r4.state),
-      { timeout: 10000 }
+      { timeout: 20000 }
     )
     .toEqual(updatedState);
   // TODO - verify some way that we received the message with the related force push
@@ -1387,7 +1393,7 @@ test("Shared pages should be receptive to force pushes", async () => {
         token,
         notebookPageId,
       }).then((r4) => r4.state),
-      { timeout: 10000 }
+      { timeout: 20000 }
     )
     .toEqual(updatedState2);
 
@@ -1407,7 +1413,7 @@ test("Shared pages should be receptive to force pushes", async () => {
         token,
         notebookPageId,
       }).then((r4) => r4.state),
-      { timeout: 10000 }
+      { timeout: 20000 }
     )
     .toEqual(updatedState2);
   // TODO - verify some way that we received the message with the related force push
