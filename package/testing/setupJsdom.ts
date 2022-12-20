@@ -21,10 +21,12 @@ Object.getOwnPropertyNames(dom.window)
   // @ts-ignore
   .forEach((key) => (global[key] = window[key]));
 window.console = global.console;
+global.addEventListener = window.addEventListener;
 global.DocumentFragment = window.DocumentFragment;
 global.Element = window.Element;
 global.KeyboardEvent = window.KeyboardEvent;
 global.Node = window.Node;
 global.MouseEvent = window.MouseEvent;
 global.MutationObserver = window.MutationObserver;
+global.SVGElement = window.SVGElement;
 setupRegistry({ appRoot: document.body });

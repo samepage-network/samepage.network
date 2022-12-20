@@ -1,16 +1,16 @@
 import "package/testing/setupJsdom";
 import { test, expect } from "@playwright/test";
-// import userEvent from "@testing-library/user-event";
+import userEvent from "@testing-library/user-event";
 import { render, waitFor, cleanup } from "@testing-library/react";
 import SharedPageStatus from "../../../package/components/SharedPageStatus";
 import { v4 } from "uuid";
 import React from "react";
-// import { Response } from "@remix-run/node";
+import { Response } from "@remix-run/node";
 
 test.afterEach(cleanup);
 
 test("Render Shared Page Status", async () => {
-//   const user = userEvent.setup({ document });
+  const user = userEvent.setup({ document });
   const screen = render(
     (
       <SharedPageStatus
@@ -27,4 +27,12 @@ test("Render Shared Page Status", async () => {
     }
   );
   expect(home).toBeTruthy();
+
+  global.fetch = (_) =>
+    Promise.resolve(
+      new Response(JSON.stringify({ cid: "abcdef" }), { status: 200 })
+    );
+  const ipfsButton = screen.getByRole("button", { name: "ipfs" });
+  await user.click(ipfsButton);
+  expect(await navigator.clipboard.readText()).toEqual(`https://abcdef.ipfs.w3s.link`)
 });

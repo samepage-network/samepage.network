@@ -416,6 +416,7 @@ const SharedPageStatus = ({
         </Tooltip>
         <Tooltip content={"Copy IPFS Link"} portalContainer={portalContainer}>
           <AnchorButton
+            aria-label="ipfs"
             style={{ width: 30 }}
             disabled={loading}
             icon={
