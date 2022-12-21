@@ -22,6 +22,7 @@ Object.getOwnPropertyNames(dom.window)
   .forEach((key) => (global[key] = window[key]));
 window.console = global.console;
 global.addEventListener = window.addEventListener;
+global.removeEventListener = window.removeEventListener;
 global.DocumentFragment = window.DocumentFragment;
 global.Element = window.Element;
 global.KeyboardEvent = window.KeyboardEvent;

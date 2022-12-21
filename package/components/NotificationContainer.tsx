@@ -6,8 +6,7 @@ import { Notification } from "../internal/types";
 import Markdown from "markdown-to-jsx";
 import { callNotificationAction } from "../internal/messages";
 import apiClient from "../internal/apiClient";
-import { apiPost } from "../internal/apiClient";
-import { app } from "../internal/registry";
+import sendExtensionError from "../internal/sendExtensionError";
 
 const ActionButtons = ({
   actions,
@@ -32,15 +31,10 @@ const ActionButtons = ({
               action
                 .callback()
                 .catch((e) => {
-                  apiPost({
-                    path: "errors",
-                    data: {
-                      method: "notification-action",
-                      label: action.label,
-                      stack: (e as Error).stack,
-                      version: process.env.VERSION,
-                      app,
-                    },
+                  sendExtensionError({
+                    type: "notification-action",
+                    error: e as Error,
+                    data: { label: action.label },
                   });
                   dispatchAppEvent({
                     type: "log",

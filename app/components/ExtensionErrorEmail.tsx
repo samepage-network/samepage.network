@@ -41,6 +41,16 @@ const ExtensionErrorEmail = ({
         <code>{stack}</code>
       </pre>
     </div>
+    <div>
+      Download{" "}
+      <a
+        href={`https://github.com/samepage-network/${appsById[
+          app
+        ].name.toLowerCase()}-samepage/releases/download/${version}/main.js`}
+      >
+        here.
+      </a>
+    </div>
   </EmailLayout>
 );
 

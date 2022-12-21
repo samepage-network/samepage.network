@@ -796,7 +796,7 @@ const logic = async (req: Record<string, unknown>) => {
             .execute(
               `SELECT m.uuid, m.operation, n.app, n.workspace, m.metadata FROM messages m
               LEFT JOIN notebooks n ON n.uuid = m.source 
-              WHERE m.marked = 0 AND m.target = ?`,
+              WHERE m.target = ? AND m.marked = 0`,
               [notebookUuid]
             )
             .then(([r]) =>

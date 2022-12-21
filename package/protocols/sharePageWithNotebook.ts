@@ -301,7 +301,7 @@ const setupSharePageWithNotebook = ({
             doesPageExist(title).then(async (preexisted) => {
               if (!preexisted) await createPage(title);
               return apiClient<
-                | { found: false }
+                | { found: false; reason: string }
                 | {
                     state: string;
                     found: true;
@@ -341,11 +341,7 @@ const setupSharePageWithNotebook = ({
                     }
                     return saveDoc(doc);
                   } else {
-                    return Promise.reject(
-                      new Error(
-                        `Could not find open invite for Notebook Page: ${title}`
-                      )
-                    );
+                    return Promise.reject(new Error(res.reason));
                   }
                 })
                 .then(() => {

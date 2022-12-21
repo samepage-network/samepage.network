@@ -3,6 +3,7 @@ import { z } from "zod";
 const uuidField = z.string().uuid();
 const uuid = uuidField.describe("primary");
 const optionalUuid = uuidField.optional();
+const uuidIndex = uuidField.describe("index");
 
 const token = z.object({
   uuid,
@@ -13,8 +14,8 @@ const token = z.object({
 const tokenNotebookLink = z
   .object({
     uuid,
-    notebookUuid: uuidField.describe("index"),
-    tokenUuid: uuidField.describe("index"),
+    notebookUuid: uuidIndex,
+    tokenUuid: uuidIndex,
   })
   .describe(JSON.stringify({ uniques: [["notebook_uuid", "token_uuid"]] }));
 
@@ -43,7 +44,7 @@ const pageNotebookLink = z
     open: z.boolean(),
     invitedBy: z.string().uuid().describe("index"),
     invitedDate: z.date(),
-    notebookUuid: uuidField.describe("index"),
+    notebookUuid: uuidIndex,
     cid: z.string(),
   })
   .describe(
@@ -78,8 +79,8 @@ const message = z.object({
   uuid,
   createdDate: z.date(),
   marked: z.boolean(),
-  source: optionalUuid,
-  target: optionalUuid,
+  source: uuidIndex,
+  target: uuidIndex,
   operation: z.string(),
   metadata: z.object({}).optional(),
 });
