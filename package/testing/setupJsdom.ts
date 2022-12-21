@@ -2,8 +2,10 @@
 import setupRegistry from "../internal/registry";
 import { JSDOM } from "jsdom";
 
+const cacheBusters = [/react/, /@blueprintjs/, /@juggle/];
+
 Object.keys(require.cache)
-  .filter((k) => /react/.test(k))
+  .filter((k) => cacheBusters.some((r) => r.test(k)))
   .forEach((k) => delete require.cache[k]);
 
 const dom = new JSDOM("<!DOCTYPE html>", {

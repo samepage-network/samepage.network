@@ -162,6 +162,12 @@ const logsCaught = [
     regex: /^messaging/,
     count: 0,
   },
+  {
+    regex: /^Failed to process method:/,
+    count: 0,
+    type: "error",
+    label: "API error catching",
+  },
 ];
 
 const logTypes = ["error", "log", "warn"] as const;
@@ -1655,10 +1661,12 @@ test("Attempt to claim an expired invite", async () => {
   const expirationDate = new Date();
   expirationDate.setHours(expirationDate.getHours() - 1);
   await getMysql().then((cxn) =>
-    cxn.execute(`UPDATE invitations SET expiration_date = ? WHERE code = ?`, [
-      expirationDate,
-      code,
-    ])
+    cxn
+      .execute(`UPDATE invitations SET expiration_date = ? WHERE code = ?`, [
+        expirationDate,
+        code,
+      ])
+      .then(() => cxn.destroy())
   );
   const r2 = await mockLambda({
     method: "create-notebook",
@@ -1674,12 +1682,14 @@ test("Attempt to claim an expired invite", async () => {
   });
 });
 
+test.afterEach(async () => {
+  await Array.from(mockedNotebooks)
+    .map((n) => () => deleteNotebook({ uuid: n, requestId: v4() }))
+    .reduce((p, c) => p.then(c), Promise.resolve({ success: true }));
+  mockedNotebooks.clear();
+});
+
 test.afterAll(async () => {
-  await Promise.all(
-    Array.from(mockedNotebooks).map((n) =>
-      deleteNotebook({ uuid: n, requestId: v4() })
-    )
-  );
   logTypes.forEach((t) => {
     const old = oldConsole[t];
     if (old) console[t] = old;
