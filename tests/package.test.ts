@@ -1,10 +1,10 @@
 import { fork, spawn } from "child_process";
 import { v4 } from "uuid";
 import { test, expect } from "@playwright/test";
-import {
+import type {
   MessageSchema,
-  responseMessageSchema,
   ResponseSchema,
+  // responseMessageSchema,
 } from "../package/testing/createTestSamePageClient";
 import { Notification } from "../package/internal/types";
 import deleteNotebook from "~/data/deleteNotebook.server";
@@ -22,7 +22,8 @@ test.beforeAll(async () => {
 });
 
 const log = (...args: Parameters<typeof console.log>) =>
-  process.env.DEBUG && console.log(...args);
+  //process.env.DEBUG && 
+  console.log(...args);
 
 const forkSamePageClient = ({
   workspace,
@@ -32,12 +33,11 @@ const forkSamePageClient = ({
   inviteCode: string;
 }) => {
   let expectedToClose = false;
-  const client = fork("./package/testing/createTestSamePageClient", [
-    "--inspect=9323",
-    "--forked",
-    workspace,
-    inviteCode,
-  ]);
+  const client = fork(
+    "./package/testing/createTestSamePageClient",
+    ["--inspect=9323", "--forked", workspace, inviteCode],
+    { execPath: "./node_modules/.bin/ts-node", stdio: "inherit" }
+  );
   const pendingRequests: Record<string, (data: unknown) => void> = {};
   const api = {
     send: (m: MessageSchema) => {
@@ -77,7 +77,9 @@ const forkSamePageClient = ({
       },
     };
     client.on("message", (_data) => {
-      const { type, ...data } = responseMessageSchema.parse(_data);
+      // const { type, ...data } = responseMessageSchema.parse(_data);
+      // @ts-ignore
+      const { type, ...data } = _data;
       // @ts-ignore same problem I always have about discriminated unions...
       clientCallbacks[type]?.(data);
     });

@@ -56,8 +56,8 @@ test("Shared Page Status View History", async () => {
 
   const drawerTitle = await waitFor(() => screen.getByText("Page History"));
   expect(drawerTitle).toBeTruthy();
-  const els = screen.queryAllByText(`SamePage / ${workspace}`);
-  expect(els).toHaveLength(1);
+  const el = await waitFor(() => screen.getByText(`SamePage / ${workspace}`));
+  expect(el).toBeTruthy();
   clear();
 });
 
