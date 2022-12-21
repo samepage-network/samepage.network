@@ -84,7 +84,7 @@ const forkSamePageClient = ({
       clientCallbacks[type]?.(data);
     });
     client.on("exit", (e) => {
-      log(`Client ${workspace}: exited (${e})`);
+      console.log(`Client ${workspace}: exited (${e})`);
       if (!expectedToClose) {
         throw new Error(`Client ${workspace} closed before we expected it to.`);
       }
@@ -123,7 +123,6 @@ test("Full integration test of sharing pages", async () => {
 
   const notebookPageId = await getRandomNotebookPageId();
 
-  console.log("Start the wait", new Date().valueOf());
   const [client1, client2] =
     await test.step("Wait for SamePage clients to be ready", () =>
       Promise.all([
@@ -136,7 +135,6 @@ test("Full integration test of sharing pages", async () => {
           inviteCode: inviteCodes[1],
         }),
       ]));
-  console.log("ended the wait", new Date().valueOf());
   cleanup = async () => {
     client1.kill();
     await deleteNotebook({ uuid: client1.uuid, requestId: v4() });
@@ -565,4 +563,6 @@ test.afterAll(async () => {
   await cleanup?.();
   await deleteInvite({ code: inviteCodes[0], requestId: v4() });
   await deleteInvite({ code: inviteCodes[1], requestId: v4() });
+  // hack to ensure proper exit of forks.
+  await new Promise((resolve) => setTimeout(resolve, 3000));
 });
