@@ -33,7 +33,7 @@ jobs:
         run: |
           npx playwright install
           brew install mysql
-          brew services restart mysql
+          /usr/local/opt/mysql/bin/mysql.server start
           mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'" -uroot
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
           npx fuego plan --sql
