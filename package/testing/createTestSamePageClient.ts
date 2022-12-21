@@ -527,7 +527,6 @@ if (forked >= 0 && typeof process.send !== "undefined") {
       type: "error",
       data: `Error: 3 arguments required for --forked (workspace, notebook id, token)\nFound: ${process.argv}`,
     });
-    // process.exit(1);
   }
 }
 

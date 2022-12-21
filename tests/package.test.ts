@@ -22,8 +22,7 @@ test.beforeAll(async () => {
 });
 
 const log = (...args: Parameters<typeof console.log>) =>
-  //process.env.DEBUG && 
-  console.log(...args);
+  process.env.DEBUG && console.log(...args);
 
 const forkSamePageClient = ({
   workspace,
@@ -39,16 +38,17 @@ const forkSamePageClient = ({
     { execPath: "./node_modules/.bin/ts-node", stdio: "inherit" }
   );
   const pendingRequests: Record<string, (data: unknown) => void> = {};
+  const send = (m: MessageSchema) => {
+    const uuid = v4();
+    log(`Client ${workspace}: Sending ${m.type} request (${uuid})`);
+    return new Promise<unknown>((resolve) => {
+      pendingRequests[uuid] = resolve;
+      client.send({ ...m, uuid });
+    });
+  };
   const api = {
-    send: (m: MessageSchema) => {
-      const uuid = v4();
-      log(`Client ${workspace}: Sending ${m.type} request (${uuid})`);
-      return new Promise<unknown>((resolve) => {
-        pendingRequests[uuid] = resolve;
-        client.send({ ...m, uuid });
-      });
-    },
-    kill: () => client.kill(),
+    send,
+    kill: () => send({ type: "unload" }),
     prepare: () => (expectedToClose = true),
     uuid: "",
   };
@@ -93,6 +93,7 @@ const forkSamePageClient = ({
 };
 
 test("Full integration test of sharing pages", async () => {
+  test.setTimeout(60000);
   const api = spawn("node", ["./node_modules/.bin/fuego", "api"], {
     env: { ...process.env, NODE_ENV: "development", DEBUG: undefined },
   });
@@ -122,6 +123,7 @@ test("Full integration test of sharing pages", async () => {
 
   const notebookPageId = await getRandomNotebookPageId();
 
+  console.log("Start the wait", new Date().valueOf());
   const [client1, client2] =
     await test.step("Wait for SamePage clients to be ready", () =>
       Promise.all([
@@ -134,6 +136,7 @@ test("Full integration test of sharing pages", async () => {
           inviteCode: inviteCodes[1],
         }),
       ]));
+  console.log("ended the wait", new Date().valueOf());
   cleanup = async () => {
     client1.kill();
     await deleteNotebook({ uuid: client1.uuid, requestId: v4() });
@@ -554,13 +557,7 @@ test("Full integration test of sharing pages", async () => {
         ],
       });
   });
-
-  await test.step("Unload first client", () =>
-    client1.send({ type: "unload" }));
   client1.prepare();
-
-  await test.step("Unload second client", () =>
-    client2.send({ type: "unload" }));
   client2.prepare();
 });
 

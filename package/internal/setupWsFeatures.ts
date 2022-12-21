@@ -230,12 +230,12 @@ const onboard = () =>
           }).then(onSuccessOnboarding),
       });
 
-const unloads: Record<string, () => void> = {};
 const setupWsFeatures = ({
   notificationContainerPath,
 }: {
   notificationContainerPath?: string;
 }) => {
+  const unloads: Record<string, () => void> = {};
   const notebookUuid = getSetting("uuid");
   if (!notebookUuid) {
     onboard();
@@ -317,7 +317,7 @@ const setupWsFeatures = ({
         await apiClient<{ messages: Notification[] }>({
           method: "get-unmarked-messages",
         }).then(async (r) => {
-          const messages = await Promise.all(
+          await Promise.all(
             r.messages.map((msg) =>
               apiClient<{
                 data: string;
@@ -341,7 +341,6 @@ const setupWsFeatures = ({
               })
             )
           );
-          messages.filter((m): m is Notification => !!m);
           unloads["samepage-connection-loading"]?.();
           const pingInterval = setInterval(
             () => sendToBackend({ operation: "PING" }),
@@ -384,24 +383,22 @@ const setupWsFeatures = ({
   addNotebookListener({ operation: "PONG", handler: () => {} });
 
   const offAppEvent = onAppEvent("connection", (evt) => {
-    if (typeof window !== "undefined") {
-      if (evt.status === "PENDING") {
-        const unmountLoadingComponent = renderOverlay({
-          id: "samepage-connection-loading",
-          Overlay: () =>
-            React.createElement(Spinner, {
-              size: SpinnerSize.SMALL,
-              className: "top-4 right-4 z-50 absolute",
-            }),
-        });
-        if (unmountLoadingComponent)
-          unloads["samepage-connection-loading"] = () => {
-            unmountLoadingComponent?.();
-            delete unloads["samepage-connection-loading"];
-          };
-      } else if (evt.status === "DISCONNECTED") {
-        Object.values(unloads).forEach((u) => u());
-      }
+    if (evt.status === "PENDING") {
+      const unmountLoadingComponent = renderOverlay({
+        id: "samepage-connection-loading",
+        Overlay: () =>
+          React.createElement(Spinner, {
+            size: SpinnerSize.SMALL,
+            className: "top-4 right-4 z-50 absolute",
+          }),
+      });
+      if (unmountLoadingComponent)
+        unloads["samepage-connection-loading"] = () => {
+          unmountLoadingComponent?.();
+          delete unloads["samepage-connection-loading"];
+        };
+    } else if (evt.status === "DISCONNECTED") {
+      Object.values(unloads).forEach((u) => u());
     }
   });
 
@@ -424,12 +421,13 @@ const setupWsFeatures = ({
     if (typeof window !== "undefined") {
       window.removeEventListener("focus", windowFocusListener);
     }
-    offAppEvent();
+    unloads["offAppEvent"] = offAppEvent;
     removeCommand({ label: USAGE_LABEL });
     removeNotebookListener({ operation: "AUTHENTICATION" });
     removeNotebookListener({ operation: "ERROR" });
-    if (samePageBackend.channel)
+    if (samePageBackend.channel) {
       samePageBackend.channel.close(1000, "Unloaded Extension");
+    }
   };
 };
 

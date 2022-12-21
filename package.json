@@ -67,7 +67,8 @@
     "@types/jsdom": "^20.0.0",
     "@types/mime-types": "^2.1.1",
     "jsdom": "^20.0.0",
-    "patch-package": "^6.5.0"
+    "patch-package": "^6.5.0",
+    "wtfnode": "^0.9.1"
   },
   "fuego": {
     "package": {
