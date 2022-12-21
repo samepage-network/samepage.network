@@ -28,10 +28,12 @@ jobs:
       - name: install
         run: npm install
       # TODO - replace this step with a seed database and in the setup step
+      # sudo systemctl start mysql.service
       - name: setup mysql + playwright
         run: |
           npx playwright install
-          sudo systemctl start mysql.service
+          brew install mysql
+          mysql -e ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
           npx fuego plan --sql
           npx fuego apply --sql --bare
