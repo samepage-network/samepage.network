@@ -8,6 +8,10 @@ import React from "react";
 import { Response } from "@remix-run/node";
 import { onAppEvent } from "../../../package/internal/registerAppEventListener";
 import { LogEvent } from "../../../package/internal/types";
+import { clear, set } from "../../../package/utils/localAutomergeDb";
+import mockSchema from "../../utils/mockSchema";
+import setupRegistry from "../../../package/internal/registry";
+import getRandomWorkspace from "../../utils/getRandomWorkspace";
 
 test.afterEach(cleanup);
 
@@ -35,22 +39,26 @@ const setupSharedPageStatus = async ({
   return { user, screen };
 };
 
-test("Shared Page Status Disconnect failed", async () => {
+test("Shared Page Status View History", async () => {
   const notebookPageId = v4();
-  const { user, screen } = await setupSharedPageStatus({ notebookPageId });
+  const workspace = await getRandomWorkspace();
+  setupRegistry({ workspace });
 
-  global.fetch = (_) =>
-    Promise.resolve(new Response("Not found", { status: 404 }));
+  const { user, screen } = await setupSharedPageStatus({
+    notebookPageId,
+  });
+
+  set(notebookPageId, mockSchema("hello"));
   const events: LogEvent[] = [];
   onAppEvent("log", (e) => events.push(e));
-  const button = screen.getByRole("button", { name: "disconnect" });
+  const button = screen.getByRole("button", { name: "history" });
   await user.click(button);
-  expect(events).toHaveLength(1);
-  expect(events[0]).toHaveProperty("intent", "error");
-  expect(events[0]).toHaveProperty(
-    "content",
-    `Failed to disconnect page ${notebookPageId}: Not found`
-  );
+
+  const drawerTitle = await waitFor(() => screen.getByText("Page History"));
+  expect(drawerTitle).toBeTruthy();
+  const els = screen.queryAllByText(`SamePage / ${workspace}`);
+  expect(els).toHaveLength(1);
+  clear();
 });
 
 test("Shared Page Status Disconnect from page", async () => {
@@ -78,6 +86,24 @@ test("Shared Page Status Disconnect from page", async () => {
     `Successfully disconnected ${notebookPageId} from being shared.`
   );
   expect(onClose).toEqual(true);
+});
+
+test("Shared Page Status Disconnect failed", async () => {
+  const notebookPageId = v4();
+  const { user, screen } = await setupSharedPageStatus({ notebookPageId });
+
+  global.fetch = (_) =>
+    Promise.resolve(new Response("Not found", { status: 404 }));
+  const events: LogEvent[] = [];
+  onAppEvent("log", (e) => events.push(e));
+  const button = screen.getByRole("button", { name: "disconnect" });
+  await user.click(button);
+  expect(events).toHaveLength(1);
+  expect(events[0]).toHaveProperty("intent", "error");
+  expect(events[0]).toHaveProperty(
+    "content",
+    `Failed to disconnect page ${notebookPageId}: Not found`
+  );
 });
 
 test("Shared Page Status Manual sync pages", async () => {

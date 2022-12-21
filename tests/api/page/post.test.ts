@@ -4,7 +4,6 @@ import { globalContext } from "../../../app/data/getQuota.server";
 import { handler as wsHandler } from "../../../api/ws/sendmessage";
 import { handler as discHandler } from "../../../api/ws/ondisconnect";
 import { v4 } from "uuid";
-import randomString from "~/data/randomString.server";
 import messageNotebook from "~/data/messageNotebook.server";
 import createNotebook from "~/data/createNotebook.server";
 import getMysql from "fuegojs/utils/mysql";
@@ -16,6 +15,8 @@ import issueRandomInvite from "../../utils/issueRandomInvite";
 import getRandomNotebookPageId from "../../utils/getRandomNotebookPageId";
 import wrapSchema from "../../../package/utils/wrapSchema";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
+import mockState from "../../utils/mockState";
+import getRandomWorkspace from "../../utils/getRandomWorkspace";
 
 // upload to ipfs loses out on a core to run in the background
 // test.describe.configure({ mode: "parallel", });
@@ -106,12 +107,6 @@ const mockLambda = async (body: RequestBody, requestId = v4()) => {
   });
 };
 
-const getRandomWorkspace = async () =>
-  `test-${await randomString({
-    length: 4,
-    encoding: "hex",
-  })}`;
-
 const mockedNotebooks = new Set<string>();
 
 const mockRandomNotebook = async () => {
@@ -128,13 +123,6 @@ const mockRandomNotebook = async () => {
     };
   });
 };
-
-const mockState = (s: string) =>
-  binaryToBase64(
-    Automerge.save(
-      Automerge.from<Schema>(wrapSchema({ content: s, annotations: [] }))
-    )
-  );
 
 let oldConsole: Partial<typeof console>;
 const logsCaught = [

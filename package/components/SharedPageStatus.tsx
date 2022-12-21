@@ -7,7 +7,6 @@ import {
   Icon,
   IconName,
   IconSize,
-  MaybeElement,
   Tooltip,
 } from "@blueprintjs/core";
 import { appsById } from "../internal/apps";
@@ -224,7 +223,7 @@ const TooltipButtonOverlay = ({
     onClose: () => void;
     portalContainer?: HTMLElement;
   }) => React.ReactElement;
-  icon?: IconName | MaybeElement;
+  icon?: IconName;
   portalContainer?: HTMLElement;
   tooltipContent?: string | JSX.Element | undefined;
   defaultIsOpen?: boolean;
@@ -234,6 +233,7 @@ const TooltipButtonOverlay = ({
     <>
       <Tooltip content={tooltipContent} portalContainer={portalContainer}>
         <AnchorButton
+          aria-label={icon}
           icon={icon}
           minimal
           disabled={isOpen}
