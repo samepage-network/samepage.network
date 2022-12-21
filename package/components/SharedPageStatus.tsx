@@ -349,6 +349,7 @@ const SharedPageStatus = ({
           portalContainer={portalContainer}
         >
           <AnchorButton
+            aria-label="disconnect"
             disabled={loading}
             icon={"th-disconnect"}
             minimal
@@ -376,13 +377,13 @@ const SharedPageStatus = ({
                     id: "disconnect-shared-page",
                     intent: "error",
                   });
-                  return Promise.reject(e);
                 });
             }}
           />
         </Tooltip>
         <Tooltip content={"Manual Sync"} portalContainer={portalContainer}>
           <AnchorButton
+            aria-label="manual-sync"
             disabled={loading}
             icon={"warning-sign"}
             minimal
