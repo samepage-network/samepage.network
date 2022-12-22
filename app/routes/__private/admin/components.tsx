@@ -76,6 +76,7 @@ const loaderFunction = ({
   listAllNotebooks(requestId).then(({ notebooks }) => ({
     components: [
       "AtJsonRendered",
+      "CreateUsername",
       "NotificationContainer",
       "Onboarding",
       "SharedPageStatus",

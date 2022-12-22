@@ -31,6 +31,8 @@ import {
 } from "./setupMessageHandlers";
 import MESSAGES, { Operation } from "./messages";
 import NotificationContainer from "../components/NotificationContainer";
+import * as webnative from "webnative";
+import CreateUsername from "../components/CreateUsername";
 
 const USAGE_LABEL = "View SamePage Usage";
 
@@ -276,9 +278,10 @@ const setupWsFeatures = ({
   addNotebookListener({
     operation: "AUTHENTICATION",
     handler: async (props) => {
-      const { success, reason } = props as {
+      const { success, reason, username } = props as {
         success: boolean;
         reason?: string;
+        username?: string;
       };
       if (success) {
         samePageBackend.status = "CONNECTED";
@@ -358,6 +361,20 @@ const setupWsFeatures = ({
             });
           }
         });
+        if (!username) {
+          addCommand({
+            label: "Create Username",
+            callback: () => {
+              renderOverlay({
+                id: "samepage-register-username",
+                Overlay: CreateUsername,
+                props: {},
+              })
+            }
+          })
+        } else {
+          await webnative.dataRoot.lookup(username);
+        }
       } else {
         samePageBackend.status = "DISCONNECTED";
         dispatchAppEvent({
