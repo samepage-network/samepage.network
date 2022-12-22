@@ -9,6 +9,9 @@ import apiClient from "../internal/apiClient";
 import sendExtensionError from "../internal/sendExtensionError";
 import { getSetting } from "../internal/registry";
 
+//   NotificationContainer.tsx         |   35.97 |       50 |      40 |   35.97 | 13-55,67-71,78-82,96,101-167
+//   NotificationContainer.tsx         |   13.08 |    84.21 |   54.54 |   13.08 | 15-30,36-108,110-112,116-189
+
 const ActionButtons = ({
   actions,
 }: {

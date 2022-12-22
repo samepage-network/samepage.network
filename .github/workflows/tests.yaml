@@ -41,8 +41,6 @@ jobs:
           mysql -e "INSERT INTO samepage_network.quotas (uuid, value, field) VALUES (UUID(), 100, 0), (UUID(), 3, 1)" -uroot -proot
       - name: tests
         run: npm t
-      - name: debug
-        run: cat coverage/lcov.info | grep package/components
       # TODO - wondering if this could be built into test somehow
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3

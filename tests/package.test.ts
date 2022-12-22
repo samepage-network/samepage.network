@@ -12,6 +12,7 @@ import deleteInvite from "~/data/deleteInvite.server";
 import issueRandomInvite from "./utils/issueRandomInvite";
 import { JSDOM } from "jsdom";
 import getRandomNotebookPageId from "./utils/getRandomNotebookPageId";
+// import axios from "axios";
 
 let cleanup: () => Promise<unknown>;
 const inviteCodes: string[] = [];
@@ -89,8 +90,19 @@ const forkSamePageClient = ({
         throw new Error(`Client ${workspace} closed before we expected it to.`);
       }
     });
+    client.on("close", (e) => {
+      console.log(`Client ${workspace}: closed (${e})`);
+    });
+    client.on("disconnect", () => {
+      console.log(`Client ${workspace}: disconnected`);
+    });
   });
 };
+
+// const apiKill = () =>
+//   axios
+//     .post("http://localhost:3003/close")
+//     .then((r) => console.log("api kill", r.data));
 
 test("Full integration test of sharing pages", async () => {
   test.setTimeout(60000);
@@ -564,5 +576,5 @@ test.afterAll(async () => {
   await deleteInvite({ code: inviteCodes[0], requestId: v4() });
   await deleteInvite({ code: inviteCodes[1], requestId: v4() });
   // hack to ensure proper exit of forks.
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+  await new Promise((resolve) => setTimeout(resolve, 5000));
 });

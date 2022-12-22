@@ -18,6 +18,10 @@ const config: PlaywrightTestConfig = {
         ? "retry-with-video"
         : "off",
   },
+  projects: [
+    { name: "integration", testMatch: /^integration\// },
+    { name: "unit", testMatch: /^(?!integration)/ },
+  ],
 };
 
 export default config;
