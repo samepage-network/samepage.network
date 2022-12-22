@@ -7,7 +7,7 @@ import Markdown from "markdown-to-jsx";
 import { callNotificationAction } from "../internal/messages";
 import apiClient from "../internal/apiClient";
 import sendExtensionError from "../internal/sendExtensionError";
-import { getSetting } from "package/internal/registry";
+import { getSetting } from "../internal/registry";
 
 const ActionButtons = ({
   actions,
