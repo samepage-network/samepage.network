@@ -39,11 +39,12 @@ jobs:
           npx fuego plan --sql
           npx fuego apply --sql --bare
           mysql -e "INSERT INTO samepage_network.quotas (uuid, value, field) VALUES (UUID(), 100, 0), (UUID(), 3, 1)" -uroot -proot
-      - name: tests
+      # We separated unit tests and integration tests because c8 was having a hard time consolidating reports - but code cov wasn't!
+      - name: Unit Tests
         run: npm t -- --project=unit
-      - name: Upload coverage to Codecov
+      - name: Upload Unit Test Coverage to Codecov
         uses: codecov/codecov-action@v3      
-      - name: tests
+      - name: Integration Tests
         run: npm t -- --project=integration
-      - name: Upload coverage to Codecov
+      - name: Upload Integration Test Coverage to Codecov
         uses: codecov/codecov-action@v3

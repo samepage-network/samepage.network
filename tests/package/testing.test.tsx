@@ -1,8 +1,11 @@
+import "../../package/testing/setupJsdom";
 import { expect, test } from "@playwright/test";
 import { JSDOM } from "jsdom";
 import toAtJson from "../../package/testing/toAtJson";
 import { InitialSchema } from "../../package/internal/types";
-// import AtJsonRendered from "../../package/components/AtJsonRendered";
+import AtJsonRendered from "../../package/components/AtJsonRendered";
+import React from "react";
+import { render } from "@testing-library/react";
 
 test("toAtJson basic div", () => {
   const html =
@@ -25,7 +28,7 @@ test("toAtJson basic div", () => {
   });
 });
 
-test.skip("toAtJson and fromAtJson parity", async () => {
+test("toAtJson and fromAtJson parity", async () => {
   const data: InitialSchema = {
     content: `This is an automated test with my ref: ${String.fromCharCode(
       0
@@ -60,11 +63,7 @@ test.skip("toAtJson and fromAtJson parity", async () => {
       },
     ],
   };
-  // const html = await mount(<AtJsonRendered {...data} />).then((r) =>
-  //   r.locator("..").innerHTML()
-  // );
-  const html = "";
-  const el = new JSDOM(html);
-  const outdata = toAtJson(el.window.document.body);
+  const screen = render((<AtJsonRendered {...data} />) as React.ReactElement);
+  const outdata = toAtJson(screen.container.firstElementChild!);
   expect(outdata).toEqual(data);
 });

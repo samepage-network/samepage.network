@@ -27,6 +27,7 @@ const readDir = (s: string): string[] =>
     : [];
 
 export type CliArgs = {
+  root?: string;
   out?: string;
   external?: string | string[];
   include?: string | string[];
@@ -95,9 +96,11 @@ const compile = ({
   analyze,
   opts = {},
   finish: onFinishFile,
+  root = ".",
 }: CliArgs & { opts?: esbuild.BuildOptions }) => {
+  const srcRoot = path.join(root, "src");
   const rootDir = fs
-    .readdirSync("./src", { withFileTypes: true })
+    .readdirSync(srcRoot, { withFileTypes: true })
     .filter((f) => f.isFile())
     .map((f) => f.name);
   const rootTs = rootDir.filter((f) => /\.ts$/.test(f));
@@ -125,10 +128,10 @@ const compile = ({
     .build({
       absWorkingDir: process.cwd(),
       entryPoints: [
-        `./src/${entryTs}`,
-        ...(entryCss ? [`./src/${entryCss}`] : []),
+        path.join(srcRoot, entryTs),
+        ...(entryCss ? [path.join(srcRoot, entryCss)] : []),
       ],
-      outdir: "dist",
+      outdir: path.join(root, "dist"),
       bundle: true,
       define: {
         "process.env.BLUEPRINT_NAMESPACE": '"bp4"',

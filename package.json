@@ -20,7 +20,7 @@
     "start": "concurrently \"npm:api\" \"npm:dev\" \"npm:tailwind\"",
     "ssh": "ssh -i SamePage.pem ubuntu@35.173.242.123",
     "tailwind": "npm run generate:css -- --watch",
-    "test": "c8  --reporter=lcov --reporter=text --all --include app --include api --include package --exclude app/routes --exclude app/components --exclude app/server/build --exclude node_modules --exclude-after-remap playwright test --config=package/testing/playwright.config.ts",
+    "test": "c8  --reporter=lcov --reporter=text --all --include app --include api --include package --exclude app/server/build --exclude node_modules --exclude-after-remap playwright test --config=package/testing/playwright.config.ts",
     "db": "mysql --host vargas-arts.c2sjnb5f4d57.us-east-1.rds.amazonaws.com --port 5432 --database samepage_network --user dvargas92495 -p$RDS_MASTER_PASSWORD",
     "db:dev": "mysql --database samepage_network -uroot -proot"
   },
@@ -51,6 +51,7 @@
     "automerge": "^1.0.1-preview.7",
     "c8": "^7.12.0",
     "diff": "^5.1.0",
+    "fuegojs": "^0.40.2",
     "gray-matter": "^4.0.3",
     "nearley": "^2.20.1",
     "prism-react-renderer": "^1.3.5",
@@ -58,7 +59,8 @@
     "remix-lambda-at-edge": "^0.4.4",
     "stripe": "^11.4.0",
     "typed.js": "^2.0.12",
-    "web3.storage": "^4.4.0"
+    "web3.storage": "^4.4.0",
+    "webnative": "^0.34.2"
   },
   "devDependencies": {
     "@testing-library/react": "^13.4.0",
