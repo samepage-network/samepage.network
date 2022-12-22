@@ -75,15 +75,17 @@ const clientSession = z.object({
   notebookUuid: optionalUuid.describe("index"),
 });
 
-const message = z.object({
-  uuid,
-  createdDate: z.date(),
-  marked: z.boolean(),
-  source: uuidIndex,
-  target: uuidIndex,
-  operation: z.string(),
-  metadata: z.object({}).optional(),
-});
+const message = z
+  .object({
+    uuid,
+    createdDate: z.date(),
+    marked: z.boolean(),
+    source: uuidIndex,
+    target: uuidIndex,
+    operation: z.string(),
+    metadata: z.object({}).optional(),
+  })
+  .describe(JSON.stringify({ indices: [["target", "marked"]] }));
 
 const ongoingMessage = z
   .object({
