@@ -40,7 +40,10 @@ jobs:
           npx fuego apply --sql --bare
           mysql -e "INSERT INTO samepage_network.quotas (uuid, value, field) VALUES (UUID(), 100, 0), (UUID(), 3, 1)" -uroot -proot
       - name: tests
-        run: npm t
-      # TODO - wondering if this could be built into test somehow
+        run: npm t -- --project=unit
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3      
+      - name: tests
+        run: npm t -- --project=integration
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3

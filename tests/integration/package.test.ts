@@ -5,13 +5,13 @@ import type {
   MessageSchema,
   ResponseSchema,
   // responseMessageSchema,
-} from "../package/testing/createTestSamePageClient";
-import { Notification } from "../package/internal/types";
+} from "../../package/testing/createTestSamePageClient";
+import { Notification } from "../../package/internal/types";
 import deleteNotebook from "~/data/deleteNotebook.server";
 import deleteInvite from "~/data/deleteInvite.server";
-import issueRandomInvite from "./utils/issueRandomInvite";
+import issueRandomInvite from "../utils/issueRandomInvite";
 import { JSDOM } from "jsdom";
-import getRandomNotebookPageId from "./utils/getRandomNotebookPageId";
+import getRandomNotebookPageId from "../utils/getRandomNotebookPageId";
 // import axios from "axios";
 
 let cleanup: () => Promise<unknown>;

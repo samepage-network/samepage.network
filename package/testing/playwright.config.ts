@@ -19,8 +19,10 @@ const config: PlaywrightTestConfig = {
         : "off",
   },
   projects: [
-    { name: "integration", testMatch: /^integration\// },
-    { name: "unit", testMatch: /^(?!integration)/ },
+    // integration - your code is run as a separate process for black box testing
+    { name: "integration", testMatch: /integration/ },
+    // unit - your code is run in the same process for granular logic testing
+    { name: "unit", testMatch: /^((?!integration).)*$/ },
   ],
 };
 
