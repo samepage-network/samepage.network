@@ -218,8 +218,8 @@ const createTestSamePageClient = async ({
     onQuery: async (notebookPageId) => {
       const dom = appClientState[notebookPageId];
       return dom
-        ? { ...toAtJson(dom.window.document.body), alias: notebookPageId }
-        : { content: "", annotations: [], alias: notebookPageId };
+        ? { ...toAtJson(dom.window.document.body) }
+        : { content: "", annotations: [] };
     },
     onQueryResponse: async (response) => {
       if (response.data.content) {

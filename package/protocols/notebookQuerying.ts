@@ -6,11 +6,11 @@ import apiClient from "../internal/apiClient";
 import { InitialSchema } from "../internal/types";
 
 // In the future, I could see this becoming rows of data.
-type QueryResult = InitialSchema & { alias: string };
+type QueryResult = InitialSchema;
 
 const setupNotebookQuerying = ({
   onQuery = () =>
-    Promise.resolve({ content: "", annotations: [], alias: "" }),
+    Promise.resolve({ content: "", annotations: []}),
   onQueryResponse = () => Promise.resolve(),
 }: {
   onQuery?: (notebookPageId: string) => Promise<QueryResult>;
