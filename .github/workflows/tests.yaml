@@ -21,7 +21,7 @@ env:
 
 jobs:
   deploy:
-    # runs-on: ubuntu-20.04
+    # runs-on: ubuntu-22.04
     # c8 was not picking up coverage on package/components in 20.04 - maybe try in the future with 22.04
     runs-on: macos-latest
     steps:
