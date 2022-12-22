@@ -103,8 +103,9 @@ const forkSamePageClient = ({
 //   axios
 //     .post("http://localhost:3003/close")
 //     .then((r) => console.log("api kill", r.data));
-
-test("Full integration test of sharing pages", async () => {
+//
+// TODO: spawn dev 
+test("Full integration test of extensions", async () => {
   test.setTimeout(60000);
   const api = spawn("node", ["./node_modules/.bin/fuego", "api"], {
     env: { ...process.env, NODE_ENV: "development", DEBUG: undefined },
