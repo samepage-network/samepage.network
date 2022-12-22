@@ -255,6 +255,7 @@ const Onboarding = ({
       style={{ width: "100%", maxWidth: 800, height: "100%", maxHeight: 600 }}
       portalClassName={"samepage-onboarding-portal"}
       portalContainer={appRoot}
+      enforceFocus={false}
     >
       <style>{`.samepage-onboarding-portal .bp4-dialog-container,
 .samepage-onboarding-portal .bp3-dialog-container {

@@ -246,19 +246,12 @@ const setupWsFeatures = ({
     onboard();
   }
 
-  if (notificationContainerPath) {
-    const notificationUnmount = renderOverlay({
+  const notificationUnmount = notificationContainerPath ?
+    renderOverlay({
       id: "samepage-notification-container",
       Overlay: NotificationContainer,
       path: notificationContainerPath,
-    });
-    if (notificationUnmount) {
-      unloads["samepage-notification-container"] = () => {
-        notificationUnmount?.();
-        delete unloads["samepage-notification-container"];
-      };
-    }
-  }
+    }) : undefined;
 
   addNotebookListener({
     operation: "ERROR",
@@ -427,6 +420,7 @@ const setupWsFeatures = ({
     if (typeof window !== "undefined") {
       window.removeEventListener("focus", windowFocusListener);
     }
+    notificationUnmount?.();
     unloads["offAppEvent"] = offAppEvent;
     removeCommand({ label: USAGE_LABEL });
     removeNotebookListener({ operation: "AUTHENTICATION" });
