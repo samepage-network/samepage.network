@@ -1,4 +1,4 @@
-import type { Status, Notebook } from "./types";
+import type { ConnectionStatus, Notebook } from "./types";
 import { v4 } from "uuid";
 import {
   addNotebookListener,
@@ -14,7 +14,7 @@ const connectedGraphs: {
   [notebook: string]: {
     connection: RTCPeerConnection;
     channel: RTCDataChannel;
-    status: Status;
+    status: ConnectionStatus;
   };
 } = {};
 

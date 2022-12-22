@@ -2,11 +2,12 @@ import { Button, Spinner } from "@blueprintjs/core";
 import React from "react";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { onAppEvent } from "../internal/registerAppEventListener";
-import { Notification } from "../internal/types";
+import { ConnectionStatus, Notification } from "../internal/types";
 import Markdown from "markdown-to-jsx";
 import { callNotificationAction } from "../internal/messages";
 import apiClient from "../internal/apiClient";
 import sendExtensionError from "../internal/sendExtensionError";
+import { getSetting } from "package/internal/registry";
 
 const ActionButtons = ({
   actions,
@@ -60,6 +61,7 @@ const NotificationContainer = () => {
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const notificationsRef = React.useRef<Notification[]>(notifications);
   const [isOpen, setIsOpen] = React.useState(false);
+  const [status, setStatus] = React.useState<ConnectionStatus>("DISCONNECTED");
   const removeNotification = React.useCallback(
     (not: Notification) => {
       notificationsRef.current = notificationsRef.current.filter(
@@ -80,6 +82,7 @@ const NotificationContainer = () => {
         setNotifications([...notificationsRef.current]);
       }
     });
+    onAppEvent("connection", (evt) => setStatus(evt.status));
     return offAppEvent;
   }, [setNotifications, notificationsRef]);
   return (
@@ -101,75 +104,83 @@ const NotificationContainer = () => {
           }
         >
           <div className="flex items-center justify-between py-2 px-4 bg-slate-100 bg-opacity-50 border-b border-b-black border-solid">
-            <h4 className="font-normal text-lg">Notifications</h4>
-            <Button
-              onClick={() => setIsOpen(false)}
-              icon={"cross"}
-              minimal
-              className=""
-            />
+            <h4 className="font-normal text-lg">
+              {status === "CONNECTED" ? "Notifications" : "Disconnected"}
+            </h4>
+            <Button onClick={() => setIsOpen(false)} icon={"cross"} minimal />
           </div>
           <div>
-            {!notifications.length && (
-              <div className="px-4 py-2 text-sm">
-                All caught up on notifications!
+            {!getSetting("uuid") ? (
+              <div className="px-4 py-2">
+                We still need to onboard this notebook before connecting to
+                SamePage. Enter the "Onboard to SamePage" command to get
+                started!
               </div>
-            )}
-            {notifications.map((not) => (
-              <div key={not.uuid} className={"py-2 px-4"}>
-                <h5 className="font-base text-base mb-1">{not.title}</h5>
-                <div className="text-sm whitespace-pre-wrap">
-                  <Markdown
-                    options={{
-                      overrides: {
-                        code: {
-                          props: {
-                            className:
-                              "bg-gray-100 px-2 py-1 rounded-full font-base",
+            ) : status !== "CONNECTED" ? (
+              <div className="px-4 py-2">
+                Enter the "Connect to SamePage Network" command to connect!
+              </div>
+            ) : !notifications.length ? (
+              <div className="px-4 py-2">All caught up on notifications!</div>
+            ) : (
+              notifications.map((not) => (
+                <div key={not.uuid} className={"py-2 px-4"}>
+                  <h5 className="font-base text-base mb-1">{not.title}</h5>
+                  <div className="text-sm whitespace-pre-wrap">
+                    <Markdown
+                      options={{
+                        overrides: {
+                          code: {
+                            props: {
+                              className:
+                                "bg-gray-100 px-2 py-1 rounded-full font-base",
+                            },
                           },
                         },
-                      },
-                    }}
-                  >
-                    {not.description}
-                  </Markdown>
-                </div>
-                <div className={"flex gap-2 mt-2 justify-between"}>
-                  <ActionButtons
-                    actions={not.buttons.map((label) => ({
-                      label,
-                      callback: () => {
-                        return callNotificationAction({
-                          operation: not.operation,
-                          label,
-                          data: not.data,
+                      }}
+                    >
+                      {not.description}
+                    </Markdown>
+                  </div>
+                  <div className={"flex gap-2 mt-2 justify-between"}>
+                    <ActionButtons
+                      actions={not.buttons.map((label) => ({
+                        label,
+                        callback: () => {
+                          return callNotificationAction({
+                            operation: not.operation,
+                            label,
+                            data: not.data,
+                            messageUuid: not.uuid,
+                          }).then(() => removeNotification(not));
+                        },
+                      }))}
+                    />
+                    <Button
+                      icon={"trash"}
+                      minimal
+                      small
+                      onClick={() => {
+                        removeNotification(not);
+                        apiClient({
+                          method: "mark-message-read",
                           messageUuid: not.uuid,
-                        }).then(() => removeNotification(not));
-                      },
-                    }))}
-                  />
-                  <Button
-                    icon={"trash"}
-                    minimal
-                    small
-                    onClick={() => {
-                      removeNotification(not);
-                      apiClient({
-                        method: "mark-message-read",
-                        messageUuid: not.uuid,
-                      });
-                    }}
-                  />
+                        });
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
       )}
       <img
         onClick={() => setIsOpen(true)}
         src={"https://samepage.network/images/logo.png"}
-        className={"rounded-full h-6 w-6 cursor-pointer shadow-xl"}
+        className={`rounded-full h-6 w-6 cursor-pointer shadow-xl ${
+          status === "CONNECTED" ? "" : "bg-opacity-50"
+        }`}
       />
     </div>
   );

@@ -169,7 +169,7 @@ type SettingId = typeof defaultSettings[number]["id"];
 export type GetSetting = (s: SettingId) => string;
 export type SetSetting = (s: SettingId, v: string) => void;
 
-export type Status = "DISCONNECTED" | "PENDING" | "CONNECTED";
+export type ConnectionStatus = "DISCONNECTED" | "PENDING" | "CONNECTED";
 
 export type LogEvent = {
   type: "log";
@@ -187,7 +187,7 @@ type SharePageEvent = {
 
 type ConnectionEvent = {
   type: "connection";
-  status: Status;
+  status: ConnectionStatus;
 };
 
 type PromptInviteCodeEvent = {

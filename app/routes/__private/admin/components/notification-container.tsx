@@ -1,7 +1,4 @@
 import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
-// import Button from "@dvargas92495/app/components/Button";
-// import TextInput from "@dvargas92495/app/components/TextInput";
-// import dispatchAppEvent from "package/internal/dispatchAppEvent";
 import NotificationContainer from "package/components/NotificationContainer";
 import listNotebooks from "~/data/listNotebooks.server";
 import type { LoaderFunction } from "@remix-run/node";
@@ -10,6 +7,8 @@ import Select from "@dvargas92495/app/components/Select";
 import { getSetting, setSetting } from "package/internal/registry";
 import TextInput from "@dvargas92495/app/components/TextInput";
 import React from "react";
+import Button from "@dvargas92495/app/components/Button";
+import dispatchAppEvent from "package/internal/dispatchAppEvent";
 
 const NotificationContainerPage = () => {
   const { data } = useLoaderData<Awaited<ReturnType<typeof listNotebooks>>>();
@@ -22,11 +21,14 @@ const NotificationContainerPage = () => {
       <div className={"mb-8"}>
         <Select
           name={"notebookUuid"}
-          options={data.map((d) => ({
-            id: d.uuid,
-            label: `${d.app} / ${d.workspace}`,
-          }))}
+          options={data
+            .map((d) => ({
+              id: d.uuid,
+              label: `${d.app} / ${d.workspace}`,
+            }))
+            .concat({ id: "", label: "None" })}
           onChange={(e) => setSetting("uuid", e as string)}
+          defaultValue={""}
         />
         <TextInput
           name={"token"}
@@ -34,12 +36,17 @@ const NotificationContainerPage = () => {
           defaultValue={defaultToken}
           label={"Token"}
         />
+        <Button
+          onClick={() =>
+            dispatchAppEvent({ type: "connection", status: "CONNECTED" })
+          }
+        >
+          Connect
+        </Button>
       </div>
       <div className="relative">
         <div className="absolute top-4 right-4">
-          <NotificationContainer
-            actions={{ accept: () => Promise.resolve() }}
-          />
+          <NotificationContainer />
         </div>
       </div>
     </>

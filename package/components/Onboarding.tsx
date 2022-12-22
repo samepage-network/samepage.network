@@ -4,9 +4,11 @@ import {
   Classes,
   Dialog,
   Icon,
+  IconSize,
   InputGroup,
   Label,
   Spinner,
+  Tooltip,
 } from "@blueprintjs/core";
 import apiClient from "../internal/apiClient";
 import { OverlayProps } from "../internal/types";
@@ -296,7 +298,7 @@ const Onboarding = ({
                   No, I already have another connected Notebook
                 </p>
                 <p className="text-gray-700 flex-grow">
-                  Use your existing notebook to generate a new Notebook
+                  Use your existing Notebook to generate a new Notebook
                   Universal Id for this {appsById[app].name}{" "}
                   {appsById[app].workspaceLabel}.
                 </p>
@@ -312,7 +314,13 @@ const Onboarding = ({
                 <p className="font-bold text-lg">Yes, let's get set up!</p>
                 <p className="text-gray-700 flex-grow">
                   This will create a new Notebook Universal Id and attach it to
-                  your notebook
+                  your Notebook.{" "}
+                  <Tooltip
+                    popoverClassName="w-96"
+                    content={`A 'Notebook' is a SamePage concept represented by a workspace in a given app. For example, this ${appsById[app].name} ${appsById[app].workspaceLabel} is an example of a Notebook.`}
+                  >
+                    <Icon icon={"help"} size={IconSize.STANDARD * 0.75} />
+                  </Tooltip>
                 </p>
                 <Button
                   text={"Start Notebook"}

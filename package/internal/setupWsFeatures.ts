@@ -2,7 +2,12 @@ import { Spinner, SpinnerSize } from "@blueprintjs/core";
 import React from "react";
 import Onboarding from "../components/Onboarding";
 import UsageChart, { UsageChartProps } from "../components/UsageChart";
-import type { Status, SendToBackend, Notebook, Notification } from "./types";
+import type {
+  ConnectionStatus,
+  SendToBackend,
+  Notebook,
+  Notification,
+} from "./types";
 import apiClient from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
 import getNodeEnv from "./getNodeEnv";
@@ -31,7 +36,7 @@ const USAGE_LABEL = "View SamePage Usage";
 
 const samePageBackend: {
   channel?: WebSocket;
-  status: Status;
+  status: ConnectionStatus;
 } = { status: "DISCONNECTED" };
 
 const onError = (e: { error: Error } | Event) => {
@@ -241,6 +246,20 @@ const setupWsFeatures = ({
     onboard();
   }
 
+  if (notificationContainerPath) {
+    const notificationUnmount = renderOverlay({
+      id: "samepage-notification-container",
+      Overlay: NotificationContainer,
+      path: notificationContainerPath,
+    });
+    if (notificationUnmount) {
+      unloads["samepage-notification-container"] = () => {
+        notificationUnmount?.();
+        delete unloads["samepage-notification-container"];
+      };
+    }
+  }
+
   addNotebookListener({
     operation: "ERROR",
     handler: (args) => {
@@ -298,19 +317,6 @@ const setupWsFeatures = ({
                 })
               ),
         });
-        if (notificationContainerPath) {
-          const notificationUnmount = renderOverlay({
-            id: "samepage-notification-container",
-            Overlay: NotificationContainer,
-            path: notificationContainerPath,
-          });
-          if (notificationUnmount) {
-            unloads["samepage-notification-container"] = () => {
-              notificationUnmount?.();
-              delete unloads["samepage-notification-container"];
-            };
-          }
-        }
         // TODO - Problems to solve with this:
         // 1. 2N + 1 API calls. Might as well do it all in `get-unmarked-messages` and remove the metadata column
         // 2. Weird dependency between buttons.length being nonzero and auto marking as read
