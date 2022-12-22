@@ -26,7 +26,7 @@ const AdminDashboard = () => {
         "invites",
         "notebooks",
         "pages",
-        "extensions",
+        "interviews",
         "components",
         "emails",
       ]}

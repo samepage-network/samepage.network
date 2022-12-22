@@ -15,15 +15,6 @@ import getNotebookUuids from "~/data/getNotebookUuids.server";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
 import { Operation } from "package/internal/messages";
 
-// postToConnection({
-//   ConnectionId,
-//   Data: {
-//     operation: "INITIALIZE_P2P",
-//     to: event.requestContext.connectionId,
-//     graph,
-//   },
-// })
-
 export type WSEvent = Pick<APIGatewayProxyEvent, "body"> & {
   requestContext: Pick<APIGatewayProxyEvent["requestContext"], "connectionId">;
 };
@@ -74,25 +65,6 @@ const dataHandler = async (
       },
     });
     cxn.destroy();
-  } else if (operation === "OFFER") {
-    const { to, offer } = props as { to: string; offer: string };
-    return postToConnection({
-      ConnectionId: to,
-      Data: {
-        operation: `OFFER`,
-        to: clientId,
-        offer,
-      },
-    });
-  } else if (operation === "ANSWER") {
-    const { to, answer } = props as { to: string; answer: string };
-    return postToConnection({
-      ConnectionId: to,
-      Data: {
-        operation: `ANSWER`,
-        answer,
-      },
-    });
   } else if (operation === "PING") {
     return postToConnection({
       ConnectionId: clientId,

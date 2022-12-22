@@ -2,7 +2,6 @@ import {
   addNotebookListener,
   removeNotebookListener,
 } from "../internal/setupMessageHandlers";
-import setupP2PFeatures from "../internal/setupP2PFeatures";
 import type {
   AddCommand,
   RemoveCommand,
@@ -51,7 +50,6 @@ const setupSamePageClient = ({
     appRoot,
   });
   const unloadWS = setupWsFeatures({ notificationContainerPath });
-  const unloadP2P = setupP2PFeatures();
   const offAppEvent = onAppEvent("log", onAppLog);
 
   if (typeof window !== "undefined") {
@@ -66,7 +64,6 @@ const setupSamePageClient = ({
   return {
     unload: () => {
       offAppEvent();
-      unloadP2P();
       unloadWS();
     },
     addNotebookListener,

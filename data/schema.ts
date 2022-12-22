@@ -102,6 +102,14 @@ const quota = z.object({
   stripeId: z.string().optional(),
 });
 
+const interview = z.object({
+  uuid,
+  completed: z.boolean().describe("index"),
+  link: z.string(),
+  date: z.date(),
+  email: z.string().describe("index"),
+});
+
 const schema = {
   token,
   tokenNotebookLink,
@@ -114,6 +122,7 @@ const schema = {
   message,
   ongoingMessage,
   quota,
+  interview,
 };
 
 export default schema;
