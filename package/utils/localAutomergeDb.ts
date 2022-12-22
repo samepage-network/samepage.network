@@ -33,8 +33,7 @@ export const load = async (
   return doc;
 };
 
-export const clear = () =>
-  Object.keys(notebookPageIds).forEach((k) => delete notebookPageIds[k]);
+export const clear = () => Object.keys(notebookPageIds).forEach(deleteId);
 
 export const deleteId = (id: string) => delete notebookPageIds[id];
 

@@ -1,0 +1,37 @@
+diff --git a/node_modules/automerge/@types/automerge/index.d.ts b/node_modules/automerge/@types/automerge/index.d.ts
+index c0a40e1..f4ced45 100644
+--- a/node_modules/automerge/@types/automerge/index.d.ts
++++ b/node_modules/automerge/@types/automerge/index.d.ts
+@@ -66,6 +66,7 @@ declare module 'automerge' {
+ 
+   function load<T>(data: BinaryDocument, options?: any): Doc<T>
+   function save<T>(doc: Doc<T>): BinaryDocument
++  function isFrozen<T>(doc: Doc<T>): boolean
+ 
+   function generateSyncMessage<T>(doc: Doc<T>, syncState: SyncState): [SyncState, BinarySyncMessage?]
+   function receiveSyncMessage<T>(doc: Doc<T>, syncState: SyncState, message: BinarySyncMessage): [Doc<T>, SyncState, Patch?]
+diff --git a/node_modules/automerge/src/automerge.js b/node_modules/automerge/src/automerge.js
+index 3be23ff..8ea5925 100644
+--- a/node_modules/automerge/src/automerge.js
++++ b/node_modules/automerge/src/automerge.js
+@@ -58,6 +58,11 @@ function save(doc) {
+   return backend.save(Frontend.getBackendState(doc, 'save'))
+ }
+ 
++function isFrozen(doc) {
++  const state = Frontend.getBackendState(doc, "isFrozen");
++  return state.frozen
++}
++
+ function merge(localDoc, remoteDoc) {
+   const localState = Frontend.getBackendState(localDoc, 'merge')
+   const remoteState = Frontend.getBackendState(remoteDoc, 'merge', 'second')
+@@ -150,7 +155,7 @@ function setDefaultBackend(newBackend) {
+ 
+ module.exports = {
+   init, from, change, emptyChange, clone, free,
+-  load, save, merge, getChanges, getAllChanges, applyChanges,
++  load, save, isFrozen, merge, getChanges, getAllChanges, applyChanges,
+   encodeChange, decodeChange, equals, getHistory, uuid,
+   Frontend, setDefaultBackend, generateSyncMessage, receiveSyncMessage, initSyncState,
+   get Backend() { return backend }

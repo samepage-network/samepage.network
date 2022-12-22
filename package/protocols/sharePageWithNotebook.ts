@@ -113,13 +113,10 @@ const setupSharePageWithNotebook = ({
   const initPage = ({
     notebookPageId,
     created = false,
-    doc,
   }: {
     notebookPageId: string;
     created?: boolean;
-    doc?: Schema;
   }) => {
-    set(notebookPageId, doc);
     if (sharedPageStatusProps) {
       sharedPageStatusProps
         .getPaths(notebookPageId)
@@ -173,7 +170,6 @@ const setupSharePageWithNotebook = ({
       .safeParseAsync(docToApply)
       .then((parseResult) => {
         if (parseResult.success) {
-          set(notebookPageId, doc);
           return applyState(notebookPageId, parseResult.data);
         } else {
           // let's not throw yet - let's see how many emails this generates first - can revisit this in a few months
@@ -196,25 +192,27 @@ const setupSharePageWithNotebook = ({
             },
             error,
           });
-          set(notebookPageId, doc);
           return applyState(notebookPageId, docToApply);
         }
       })
-      .then(() => {
-        return apiClient({
-          method: "save-page-version",
-          notebookPageId,
-          state: binaryToBase64(Automerge.save(doc)),
-        }).catch((e) => {
-          dispatchAppEvent({
-            type: "log",
-            id: "update-version-failure",
-            content: `Failed to broadcast new version: ${e.message}`,
-            intent: "warning",
+      .then(async () => {
+        if (!Automerge.isFrozen(doc)) {
+          // I think it's safe to say that if another change comes in, freezing this doc, it's outdated and not worth saving?
+          // this could have bad implications on history though - TODO
+          // - not that bad, because currently our document stores full history.
+          await apiClient({
+            method: "save-page-version",
+            notebookPageId,
+            state: binaryToBase64(Automerge.save(doc)),
+          }).catch((e) => {
+            dispatchAppEvent({
+              type: "log",
+              id: "update-version-failure",
+              content: `Failed to broadcast new version: ${e.message}`,
+              intent: "warning",
+            });
           });
-        });
-      })
-      .then(() => {
+        }
         dispatchAppEvent({
           type: "log",
           id: "update-success",
@@ -319,13 +317,15 @@ const setupSharePageWithNotebook = ({
                             notebookPageId: title,
                           });
                         })
-                        .catch((e) =>
+                        .catch((e) => {
+                          deleteId(title);
                           apiClient({
                             method: "disconnect-shared-page",
                             notebookPageId: title,
-                          }).then(() => Promise.reject(e))
-                        );
+                          }).then(() => Promise.reject(e));
+                        });
                     const doc = loadAutomergeFromBase64(res.state);
+                    set(title, doc);
                     if (preexisted) {
                       const preExistingDoc = await calculateState(title);
                       const mergedDoc = mergeDocs(doc, preExistingDoc);
@@ -422,6 +422,7 @@ const setupSharePageWithNotebook = ({
         },
       });
 
+      const pendingUpdates: Record<string, (() => Promise<unknown>)[]> = {};
       addNotebookListener({
         operation: "SHARE_PAGE_UPDATE",
         handler: async (data) => {
@@ -434,87 +435,100 @@ const setupSharePageWithNotebook = ({
             notebookPageId: string;
             dependencies: { [a: string]: { seq: number; hash: string } };
           };
+          if (!has(notebookPageId)) return;
 
-          return load(notebookPageId).then((oldDoc) => {
-            const binaryChanges = changes.map(
-              (c) => base64ToBinary(c) as Automerge.BinaryChange
-            );
-            const [newDoc, patch] = Automerge.applyChanges(
-              oldDoc,
-              binaryChanges
-            );
-            if (patch.pendingChanges) {
-              const storedChanges = Automerge.getAllChanges(newDoc).map((c) =>
-                Automerge.decodeChange(c)
+          const executeUpdate = () =>
+            load(notebookPageId).then((oldDoc) => {
+              const binaryChanges = changes.map(
+                (c) => base64ToBinary(c) as Automerge.BinaryChange
               );
-              const existingDependencies = Object.fromEntries(
-                storedChanges.map((c) => [`${c.actor}~${c.seq}`, c.hash])
+              const [newDoc, patch] = Automerge.applyChanges(
+                oldDoc,
+                binaryChanges
               );
-              const me = Automerge.getActorId(newDoc);
-              if (
-                Object.entries(dependencies).some(
-                  ([actor, { seq, hash }]) =>
-                    actor !== me &&
-                    existingDependencies[`${actor}~${seq}`] &&
-                    existingDependencies[`${actor}~${seq}`] !== hash
-                )
-              ) {
-                dispatchAppEvent({
-                  type: "log",
-                  id: "share-page-corrupted",
-                  content: `It looks like your version of the shared page ${notebookPageId} is corrupted and will cease to apply updates from other notebooks in the future. To resolve this issue, ask one of the other connected notebooks to manually sync the page.`,
-                  intent: "error",
-                });
-              } else {
-                const storedHashes = new Set(
-                  storedChanges.map((c) => c.hash || "")
+              set(notebookPageId, newDoc);
+              if (patch.pendingChanges) {
+                const storedChanges = Automerge.getAllChanges(newDoc).map((c) =>
+                  Automerge.decodeChange(c)
                 );
-                const actorsToRequest = Object.entries(patch.clock).filter(
-                  ([actor, seq]) => {
-                    if (me === actor) {
-                      return false;
-                    }
-                    const dependentHashFromActor =
-                      existingDependencies[`${actor}~${seq}`];
-                    return !(
-                      dependentHashFromActor &&
-                      storedHashes.has(dependentHashFromActor)
-                    );
-                  }
+                const existingDependencies = Object.fromEntries(
+                  storedChanges.map((c) => [`${c.actor}~${c.seq}`, c.hash])
                 );
-                if (!actorsToRequest.length) {
-                  const missingDependencies = binaryChanges
-                    .map((c) => Automerge.decodeChange(c))
-                    .flatMap((c) => c.deps)
-                    .filter((c) => !storedHashes.has(c));
-                  throw new HandlerError(
-                    "No actors to request and still waiting for changes",
-                    {
-                      missingDependencies,
-                      binaryDocument: binaryToBase64(Automerge.save(newDoc)),
-                      notebookPageId,
+                const me = Automerge.getActorId(newDoc);
+                if (
+                  Object.entries(dependencies).some(
+                    ([actor, { seq, hash }]) =>
+                      actor !== me &&
+                      existingDependencies[`${actor}~${seq}`] &&
+                      existingDependencies[`${actor}~${seq}`] !== hash
+                  )
+                ) {
+                  dispatchAppEvent({
+                    type: "log",
+                    id: "share-page-corrupted",
+                    content: `It looks like your version of the shared page ${notebookPageId} is corrupted and will cease to apply updates from other notebooks in the future. To resolve this issue, ask one of the other connected notebooks to manually sync the page.`,
+                    intent: "error",
+                  });
+                } else {
+                  const storedHashes = new Set(
+                    storedChanges.map((c) => c.hash || "")
+                  );
+                  const actorsToRequest = Object.entries(patch.clock).filter(
+                    ([actor, seq]) => {
+                      if (me === actor) {
+                        return false;
+                      }
+                      const dependentHashFromActor =
+                        existingDependencies[`${actor}~${seq}`];
+                      return !(
+                        dependentHashFromActor &&
+                        storedHashes.has(dependentHashFromActor)
+                      );
                     }
                   );
-                } else {
-                  actorsToRequest.forEach(([actor]) => {
-                    sendToNotebook({
-                      target: parseActorId(actor),
-                      operation: "REQUEST_PAGE_UPDATE",
-                      data: {
+                  if (!actorsToRequest.length && !Automerge.isFrozen(newDoc)) {
+                    const missingDependencies = binaryChanges
+                      .map((c) => Automerge.decodeChange(c))
+                      .flatMap((c) => c.deps)
+                      .filter((c) => !storedHashes.has(c));
+                    throw new HandlerError(
+                      "No actors to request and still waiting for changes",
+                      {
+                        missingDependencies,
+                        binaryDocument: binaryToBase64(Automerge.save(newDoc)),
                         notebookPageId,
-                        seq: patch.clock[actor],
-                      },
+                      }
+                    );
+                  } else {
+                    actorsToRequest.forEach(([actor]) => {
+                      sendToNotebook({
+                        target: parseActorId(actor),
+                        operation: "REQUEST_PAGE_UPDATE",
+                        data: {
+                          notebookPageId,
+                          seq: patch.clock[actor],
+                        },
+                      });
                     });
-                  });
+                  }
                 }
               }
-            }
-            if (Object.keys(patch.diffs.props).length) {
-              saveAndApply(notebookPageId, newDoc);
-            } else {
-              set(notebookPageId, newDoc);
-            }
-          });
+              if (Object.keys(patch.diffs.props).length) {
+                saveAndApply(notebookPageId, newDoc);
+              }
+              if (pendingUpdates[notebookPageId].length === 0) {
+                delete pendingUpdates[notebookPageId];
+                return Promise.resolve();
+              } else {
+                return pendingUpdates[notebookPageId].shift()?.();
+              }
+            });
+          if (!pendingUpdates[notebookPageId]) {
+            pendingUpdates[notebookPageId] = [];
+            return executeUpdate();
+          } else {
+            pendingUpdates[notebookPageId].push(executeUpdate);
+          }
         },
       });
 
@@ -526,6 +540,7 @@ const setupSharePageWithNotebook = ({
             notebookPageId: string;
           };
           const newDoc = loadAutomergeFromBase64(state);
+          set(notebookPageId, newDoc);
           saveAndApply(notebookPageId, newDoc);
         },
       });
@@ -629,35 +644,40 @@ const setupSharePageWithNotebook = ({
                     const doc = Automerge.from<Schema>(wrapSchema(docInit), {
                       actorId: getActorId(),
                     });
+                    set(notebookPageId, doc);
                     const state = Automerge.save(doc);
                     return apiClient<{ id: string; created: boolean }>({
                       method: "init-shared-page",
                       notebookPageId,
                       state: binaryToBase64(state),
-                    }).then(async (r) => {
-                      if (r.created) {
-                        initPage({
-                          notebookPageId,
-                          created: true,
-                          doc,
-                        });
-                        dispatchAppEvent({
-                          type: "log",
-                          id: "init-page-success",
-                          content: `Successfully initialized shared page! Click on the invite button below to share the page with other notebooks!`,
-                          intent: "info",
-                        });
-                      } else {
-                        dispatchAppEvent({
-                          type: "log",
-                          id: "samepage-warning",
-                          content:
-                            "This page is already shared from this notebook",
-                          intent: "warning",
-                        });
-                        return Promise.resolve();
-                      }
-                    });
+                    })
+                      .then(async (r) => {
+                        if (r.created) {
+                          initPage({
+                            notebookPageId,
+                            created: true,
+                          });
+                          dispatchAppEvent({
+                            type: "log",
+                            id: "init-page-success",
+                            content: `Successfully initialized shared page! Click on the invite button below to share the page with other notebooks!`,
+                            intent: "info",
+                          });
+                        } else {
+                          dispatchAppEvent({
+                            type: "log",
+                            id: "samepage-warning",
+                            content:
+                              "This page is already shared from this notebook",
+                            intent: "warning",
+                          });
+                          return Promise.resolve();
+                        }
+                      })
+                      .catch((e) => {
+                        deleteId(notebookPageId);
+                        throw e;
+                      });
                   })
                 : Promise.reject(new Error(`Failed to detect a page to share`))
             )
@@ -677,6 +697,7 @@ const setupSharePageWithNotebook = ({
       })
         .then(({ notebookPageIds }) => {
           notebookPageIds.map((id) => {
+            set(id);
             initPage({
               notebookPageId: id,
             });

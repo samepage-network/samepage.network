@@ -36,10 +36,10 @@ test("Full integration test of web app", async ({ page }) => {
 test.afterEach(async ({ page }) => {
   const origin = await page.evaluate("window.location.origin");
   const coverage = await page.coverage.stopJSCoverage();
-  console.log("coverages", coverage.length);
+  // console.log("coverages", coverage.length);
   //  coverage = coverage.filter((it) => it.url.match(/(?<=\/src).*\.[cm]?js/));
   coverage.forEach((it) => {
-    console.log("before replace", it.url);
+    // console.log("before replace", it.url);
     it.url = it.url.replace(
       new RegExp(`${origin}(?<pathname>.*)`),
       (...[, , , , { pathname }]) =>
@@ -49,7 +49,7 @@ test.afterEach(async ({ page }) => {
             : path.resolve(".", "public")
         }${pathname.replace(/([#?].*)/, "").replace(/\//g, path.sep)}`
     );
-    console.log("after replace", it.url);
+    // console.log("after replace", it.url);
   });
 
   fs.mkdirSync(covPath, { recursive: true });
