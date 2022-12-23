@@ -93,7 +93,10 @@ const NotificationContainer = () => {
       }}
     >
       {notifications.length ? (
-        <div className="absolute top-0 left-0 h-2 w-2 bg-red-600 rounded-full" />
+        <div
+          className="absolute top-0 left-0 h-2 w-2 bg-red-600 rounded-full"
+          role={"alert"}
+        />
       ) : (
         <></>
       )}

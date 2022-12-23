@@ -12,21 +12,6 @@ const MESSAGES = {
     description: "",
     buttons: [],
   },
-  INITIALIZE_P2P: {
-    title: "",
-    description: "",
-    buttons: [],
-  },
-  OFFER: {
-    title: "",
-    description: "",
-    buttons: [],
-  },
-  ANSWER: {
-    title: "",
-    description: "",
-    buttons: [],
-  },
   PING: {
     title: "",
     description: "",
