@@ -8,6 +8,8 @@ import AtJsonParserErrorEmail from "~/components/AtJsonParserErrorEmail";
 import ExtensionErrorEmail from "~/components/ExtensionErrorEmail";
 import { v4 } from "uuid";
 import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
+import EmailLayout from "~/components/EmailLayout";
+import parseZodError from "package/utils/parseZodError";
 
 const zBody = z.discriminatedUnion("method", [
   z.object({
@@ -40,12 +42,27 @@ const zBody = z.discriminatedUnion("method", [
   }),
 ]);
 
+export type RequestBody = z.infer<typeof zBody>;
+
 const logic = async (body: Record<string, unknown>) => {
-  const args = zBody.parse(body);
   if (process.env.NODE_ENV === "development") {
-    console.error(args);
+    console.error(body);
     return { success: true };
   }
+  const result = zBody.safeParse(body);
+  if (!result.success) {
+    const messageId = await sendEmail({
+      to: "support@samepage.network",
+      subject: `Failed to parse error request body`,
+      body: EmailLayout({
+        children: `Failed to parse request. Errors:\n${parseZodError(
+          result.error
+        )}\nInput:${JSON.stringify(body, null, 4)}`,
+      }),
+    });
+    return { success: false, messageId };
+  }
+  const args = result.data;
   switch (args.method) {
     case "at-json-parser": {
       const { app, input, results, version = "stale" } = args;
@@ -67,14 +84,7 @@ const logic = async (body: Record<string, unknown>) => {
       return { success: true };
     }
     case "extension-error": {
-      const {
-        notebookUuid,
-        data,
-        message,
-        stack,
-        version,
-        type,
-      } = args;
+      const { notebookUuid, data, message, stack, version, type } = args;
       const cxn = await getMysql();
       const [notebook] = await cxn
         .execute(
