@@ -59,6 +59,8 @@ const logic = async (body: Record<string, unknown>) => {
           result.error
         )}\nInput:${JSON.stringify(body, null, 4)}`,
       }),
+      // Can remove this when we migrate sendEmail from `vargas` to `samepage`
+      from: "support@samepage.network",
     });
     return { success: false, messageId };
   }

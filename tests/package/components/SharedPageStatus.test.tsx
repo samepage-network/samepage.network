@@ -12,6 +12,7 @@ import { clear, set } from "../../../package/utils/localAutomergeDb";
 import mockSchema from "../../utils/mockSchema";
 import setupRegistry from "../../../package/internal/registry";
 import getRandomWorkspace from "../../utils/getRandomWorkspace";
+import getRandomNotebookPageId from "../../utils/getRandomNotebookPageId";
 
 test.afterEach(cleanup);
 
@@ -39,8 +40,28 @@ const setupSharedPageStatus = async ({
   return { user, screen };
 };
 
+test("Shared Page Status Invite notebooks onclick", async () => {
+  const notebookPageId = await getRandomNotebookPageId();
+  const { user, screen } = await setupSharedPageStatus({
+    notebookPageId,
+  });
+
+  global.fetch = (_) =>
+    Promise.resolve(
+      new Response(JSON.stringify({ success: true }), { status: 200 })
+    );
+
+  const button = screen.getByRole("button", { name: "share" });
+  await user.click(button);
+
+  const dialogTitle = await waitFor(() =>
+    screen.getByText("Share Page on SamePage")
+  );
+  expect(dialogTitle).toBeTruthy();
+});
+
 test("Shared Page Status View History", async () => {
-  const notebookPageId = v4();
+  const notebookPageId = await getRandomNotebookPageId();
   const workspace = await getRandomWorkspace();
   setupRegistry({ workspace });
 
@@ -62,7 +83,7 @@ test("Shared Page Status View History", async () => {
 });
 
 test("Shared Page Status Disconnect from page", async () => {
-  const notebookPageId = v4();
+  const notebookPageId = await getRandomNotebookPageId();
   let onClose = false;
   const { user, screen } = await setupSharedPageStatus({
     notebookPageId,
@@ -89,7 +110,7 @@ test("Shared Page Status Disconnect from page", async () => {
 });
 
 test("Shared Page Status Disconnect failed", async () => {
-  const notebookPageId = v4();
+  const notebookPageId = await getRandomNotebookPageId();
   const { user, screen } = await setupSharedPageStatus({ notebookPageId });
 
   global.fetch = (_) =>
