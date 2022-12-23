@@ -52,6 +52,10 @@ fs.appendFileSync("dist/samepage.css", fs.readFileSync("/tmp/samepage.css"));
 ["LICENSE", "package/README.md", "package/declare.d.ts"].forEach((f) =>
   fs.cpSync(f, path.join(`dist`, path.basename(f)))
 );
+fs.mkdirSync("dist/patches");
+fs.readdirSync("patches").forEach((f) =>
+  fs.cpSync(path.join("patches", f), path.join(`dist`, "patches", f))
+);
 const rootPackageJson = JSON.parse(fs.readFileSync("package.json").toString());
 const fuegoPackageField = rootPackageJson.fuego?.package || {};
 const generatePackageJson = (local, file) => {
