@@ -16,7 +16,7 @@ env:
   CLERK_API_KEY: ${{ secrets.STAGING_CLERK_API_KEY }}
   CLERK_FRONTEND_API: clerk.in.horse-0.lcl.dev
   DATABASE_URL: mysql://root:root@localhost:3306/samepage_network
-  ORIGIN: https://samepage.network
+  ORIGIN: http://localhost:3000
   WEB3_STORAGE_API_KEY: ${{ secrets.WEB3_STORAGE_API_KEY }}
 
 jobs:

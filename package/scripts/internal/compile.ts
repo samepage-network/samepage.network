@@ -123,6 +123,7 @@ const compile = ({
   const externalModules = (
     typeof external === "string" ? [external] : external || []
   ).map((e) => e.split("="));
+  const outdir = path.join(root, "dist");
 
   return esbuild
     .build({
@@ -131,7 +132,7 @@ const compile = ({
         path.join(srcRoot, entryTs),
         ...(entryCss ? [path.join(srcRoot, entryCss)] : []),
       ],
-      outdir: path.join(root, "dist"),
+      outdir,
       bundle: true,
       define: {
         "process.env.BLUEPRINT_NAMESPACE": '"bp4"',
@@ -172,7 +173,6 @@ const compile = ({
     })
     .then(async (r) => {
       if (r.metafile) {
-        // TODO - parse metafile instead
         const text = await esbuild.analyzeMetafile(r.metafile);
         const files = text
           .trim()
@@ -267,29 +267,33 @@ const compile = ({
                 ...printTree(tn.children, level + 1),
               ];
             });
-        fs.writeFileSync("./analyze.txt", printTree(tree).join("\n"));
+        fs.writeFileSync(
+          path.join(root, "analyze.txt"),
+          printTree(tree).join("\n")
+        );
       }
       const finish = () => {
         DEFAULT_FILES_INCLUDED.concat(
           typeof include === "string" ? [include] : include || []
         )
+          .map((f) => path.join(root, f))
           .filter((f) => fs.existsSync(f))
           .forEach((f) => {
-            fs.cpSync(f, path.join("dist", path.basename(f)));
+            fs.cpSync(f, path.join(outdir, path.basename(f)));
           });
         if (css) {
           const outCssFilename = path.join(
-            "dist",
+            outdir,
             `${css.replace(/.css$/, "")}.css`
           );
           const inputCssFiles = fs
-            .readdirSync("dist")
+            .readdirSync(outdir)
             .filter((f) => /.css$/.test(f));
 
           if (inputCssFiles.length === 0) {
-            console.warn("No css files in the dist/ directory");
+            console.warn(`No css files in the ${outdir} directory`);
           } else if (inputCssFiles.length === 1) {
-            fs.renameSync(path.join("dist", inputCssFiles[0]), outCssFilename);
+            fs.renameSync(path.join(outdir, inputCssFiles[0]), outCssFilename);
           } else {
             const baseOutput = path.basename(outCssFilename);
             if (!inputCssFiles.includes(baseOutput))
@@ -297,9 +301,9 @@ const compile = ({
             inputCssFiles.forEach((f) => {
               if (baseOutput !== f) {
                 const cssFileContent = fs
-                  .readFileSync(path.join("dist", f))
+                  .readFileSync(path.join(outdir, f))
                   .toString();
-                fs.rmSync(path.join("dist", f));
+                fs.rmSync(path.join(outdir, f));
                 fs.appendFileSync(outCssFilename, cssFileContent);
                 fs.appendFileSync(outCssFilename, "\n");
               }
@@ -322,8 +326,8 @@ const compile = ({
         }
         if (mirror) {
           if (!fs.existsSync(mirror)) fs.mkdirSync(mirror, { recursive: true });
-          readDir("dist").forEach((f) =>
-            fs.cpSync(appPath(f), path.join(mirror, f.replace(/^dist\//, "")))
+          readDir(outdir).forEach((f) =>
+            fs.cpSync(appPath(f), path.join(mirror, path.relative(outdir, f)))
           );
         }
       };

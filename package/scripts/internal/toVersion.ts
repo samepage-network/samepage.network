@@ -1,7 +1,11 @@
 import fs from "fs";
+import path from "path";
 
-const toVersion = (): string => {
-  const json = JSON.parse(fs.readFileSync("package.json").toString());
+const toVersion = (root = "."): string => {
+  const filename = path.join(root, "package.json");
+  const json = fs.existsSync(filename)
+    ? JSON.parse(fs.readFileSync(filename).toString())
+    : {};
   return json?.version || "LIVE";
 };
 
