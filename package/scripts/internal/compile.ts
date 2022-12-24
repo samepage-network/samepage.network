@@ -95,7 +95,7 @@ const compile = ({
   env,
   analyze,
   opts = {},
-  finish: onFinishFile,
+  finish: onFinishFile = "",
   root = ".",
 }: CliArgs & { opts?: esbuild.BuildOptions }) => {
   const srcRoot = path.join(root, "src");
@@ -318,8 +318,8 @@ const compile = ({
             fs.writeFileSync(outCssFilename, imports.concat(rest).join("\n"));
           }
         }
-        if (fs.existsSync(`${process.cwd()}/${onFinishFile}`)) {
-          const customOnFinish = require(`${process.cwd()}/${onFinishFile}`);
+        if (onFinishFile && fs.existsSync(path.join(root, onFinishFile))) {
+          const customOnFinish = require(path.join(root, onFinishFile));
           if (typeof customOnFinish === "function") {
             customOnFinish();
           }

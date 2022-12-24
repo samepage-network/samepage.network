@@ -93,3 +93,32 @@ test("build command supports css combining", async () => {
     `body {\n  background: red;\n}\np {\n  font-size: 12px;\n}\n`
   );
 });
+
+test("build command supports on finish file", async () => {
+  const root = await makeRandomTmpDir();
+  fs.mkdirSync(`${root}/src`);
+  fs.mkdirSync(`${root}/scripts`);
+  fs.writeFileSync(
+    `${root}/src/index.ts`,
+    `const foo: string = "hello";console.log(foo);`
+  );
+  fs.writeFileSync(
+    `${root}/scripts/finish.js`,
+    `module.exports = () => {
+      const fs = require("fs");
+  fs.writeFileSync(
+    __dirname + "/../dist/index.js", 
+    fs.readFileSync(__dirname + "/../dist/index.js").toString().replace("hello","bye")
+  ); 
+};`
+  );
+  const code = await build({
+    dry: true,
+    root,
+    finish: "scripts/finish.js",
+  });
+  expect(code).toEqual(0);
+  expect(fs.readFileSync(`${root}/dist/index.js`).toString()).toEqual(
+    '(()=>{var o="bye";console.log(o);})();\n'
+  );
+});

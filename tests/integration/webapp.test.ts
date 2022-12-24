@@ -35,18 +35,17 @@ test("Full integration test of web app", async ({ page }) => {
 
 test.afterEach(async ({ page }) => {
   const origin = await page.evaluate("window.location.origin");
-  const coverage = await page.coverage.stopJSCoverage();
-  // console.log("coverages", coverage.length);
-  //  coverage = coverage.filter((it) => it.url.match(/(?<=\/src).*\.[cm]?js/));
+  const coverage = await page.coverage
+    .stopJSCoverage()
+    .then((fils) => fils.filter((it) => /\.js$/.test(it.url)));
+  // console.log("coverage.length", coverage.length);
   coverage.forEach((it) => {
     // console.log("before replace", it.url);
     it.url = it.url.replace(
       new RegExp(`${origin}(?<pathname>.*)`),
       (...[, , , , { pathname }]) =>
         `${
-          pathname.match(/^\/src/)
-            ? process.cwd()
-            : path.resolve(".", "public")
+          pathname.match(/^\/src/) ? process.cwd() : path.resolve(".", "public")
         }${pathname.replace(/([#?].*)/, "").replace(/\//g, path.sep)}`
     );
     // console.log("after replace", it.url);
