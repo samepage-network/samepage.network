@@ -298,7 +298,7 @@ const compile = ({
             const baseOutput = path.basename(outCssFilename);
             if (!inputCssFiles.includes(baseOutput))
               fs.writeFileSync(outCssFilename, "");
-            inputCssFiles.forEach((f) => {
+            inputCssFiles.sort().forEach((f) => {
               if (baseOutput !== f) {
                 const cssFileContent = fs
                   .readFileSync(path.join(outdir, f))

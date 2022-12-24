@@ -72,3 +72,24 @@ test("build command supports including", async () => {
   expect(code).toEqual(0);
   expect(fs.readFileSync(`${root}/dist/info.txt`).toString()).toEqual("Hello");
 });
+
+test("build command supports css combining", async () => {
+  const root = await makeRandomTmpDir();
+  fs.mkdirSync(`${root}/src`);
+  fs.writeFileSync(
+    `${root}/src/index.ts`,
+    `const foo: string = "hello";console.log(foo);`
+  );
+  fs.writeFileSync(`${root}/src/bar.css`, `body {\n  background: red;\n}`);
+  fs.writeFileSync(`${root}/src/foo.css`, `p {\n  font-size: 12px;\n}`);
+  const code = await build({
+    dry: true,
+    root,
+    include: ["src/foo.css", "src/bar.css"],
+    css: "extension",
+  });
+  expect(code).toEqual(0);
+  expect(fs.readFileSync(`${root}/dist/extension.css`).toString()).toEqual(
+    `body {\n  background: red;\n}\np {\n  font-size: 12px;\n}\n`
+  );
+});

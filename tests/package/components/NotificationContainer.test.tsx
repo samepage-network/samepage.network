@@ -9,6 +9,7 @@ import { v4 } from "uuid";
 import { registerNotificationActions } from "../../../package/internal/messages";
 import setupRegistry from "../../../package/internal/registry";
 import { Response } from "@remix-run/node";
+import defaultGetSetting from "../../../package/utils/defaultGetSetting";
 
 test.afterEach(cleanup);
 
@@ -51,4 +52,5 @@ test("Intro onboarding flow", async () => {
   const acceptButton = screen.getByRole("button", { name: "accept" });
   await user.click(acceptButton);
   expect.poll(() => accepted).toEqual(true);
+  setupRegistry({ getSetting: defaultGetSetting });
 });
