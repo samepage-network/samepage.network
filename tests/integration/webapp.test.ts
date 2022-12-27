@@ -31,14 +31,17 @@ test("Full integration test of web app", async ({ page }) => {
   await test.step("Wait for local network to be ready", () => appReady);
   await page.goto("http://localhost:3000");
   await expect(page.locator("text=Connect your")).toBeVisible();
+
+  await page.locator("text=Docs").click();
+  await expect(page.locator("text=SamePage Docs")).toBeVisible();
 });
 
 test.afterEach(async ({ page }) => {
   const origin = await page.evaluate("window.location.origin");
-  const coverage = await page.coverage
-    .stopJSCoverage()
-    .then((fils) => fils.filter((it) => /\.js$/.test(it.url)));
-  // console.log("coverage.length", coverage.length);
+  const coverage = await page.coverage.stopJSCoverage().then((fils) => {
+    // console.log("fils", fils.length);
+    return fils.filter((it) => /\.js$/.test(it.url));
+  });
   coverage.forEach((it) => {
     // console.log("before replace", it.url);
     it.url = it.url.replace(
@@ -48,14 +51,14 @@ test.afterEach(async ({ page }) => {
           pathname.match(/^\/src/) ? process.cwd() : path.resolve(".", "public")
         }${pathname.replace(/([#?].*)/, "").replace(/\//g, path.sep)}`
     );
-    // console.log("after replace", it.url);
+    // console.log("after replace", it.url, it.source);
   });
 
+  // console.log("covpath", covPath, coverage.length);
   fs.mkdirSync(covPath, { recursive: true });
-  coverage.map((it, idx) =>
-    fs.writeFileSync(
-      `${covPath}/coverage-${Date.now()}-${idx}.json`,
-      JSON.stringify({ result: [it] })
-    )
+  fs.writeFileSync(
+    `${covPath}/coverage-${Date.now()}-69.json`,
+    JSON.stringify({ result: coverage, timestamp: [] })
   );
+  // console.log("dir", fs.readdirSync(covPath));
 });

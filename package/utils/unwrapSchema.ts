@@ -37,7 +37,7 @@ const unwrapSchema = (doc: Automerge.FreezeObject<Schema>): InitialSchema => {
   } catch (e) {
     const cause = e as Error;
     sendExtensionError({
-      type: "Failed to Parse doc",
+      type: "Failed to unwrap doc",
       data: {
         doc: binaryToBase64(Automerge.save(doc)),
       },

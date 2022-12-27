@@ -134,6 +134,7 @@ const compile = ({
       ],
       outdir,
       bundle: true,
+      sourcemap: process.env.NODE_ENV === "production" ? undefined : "inline",
       define: {
         "process.env.BLUEPRINT_NAMESPACE": '"bp4"',
         "process.env.NODE_ENV": `"${process.env.NODE_ENV}"`,
