@@ -26,6 +26,8 @@ const test = ({
       // TODO - add a way to proc with debugger
       const args = [
         "c8",
+        "--reporter=lcov",
+        "--reporter=text",
         "--all",
         "--include",
         "src",
