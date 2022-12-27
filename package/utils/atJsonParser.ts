@@ -9,7 +9,23 @@ const atJsonParser = (
   opts: { raw?: true } = {}
 ): InitialSchema => {
   const parser = new Parser(Grammar.fromCompiled(grammar));
-  parser.feed(text);
+  try {
+    parser.feed(text);
+  } catch (e) {
+    apiPost({
+      path: "errors",
+      data: {
+        method: "at-json-parser",
+        results: [],
+        input: text,
+        app,
+        version: process.env.VERSION,
+      },
+    });
+    throw new Error(
+      `Failed to parse: A detailed error report was just sent to SamePage Support.`
+    );
+  }
 
   // Occam's razor says the candidate with the shortest explanation is the most likely
   // This _feels_ true for this style of parsing as well, but will have to validate with more rigorous testing
