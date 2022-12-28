@@ -49,8 +49,7 @@ const test = ({
         : spawn("npx", args, options);
       return new Promise<number>((resolve, reject) => {
         proc.on("exit", (c) => {
-          console.log("exiting playwright...", c);
-          resolve(c || 1);
+          resolve(c === null ? 1 : c);
         });
         proc.on("error", (e) => {
           console.error("error from playwright:", e);
