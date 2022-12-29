@@ -1,8 +1,8 @@
 import React from "react";
 import getMeta from "@dvargas92495/app/utils/getMeta";
 export { default as loader } from "@dvargas92495/app/backend/isAdminLoader.server";
-export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
-export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
+export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { useUser, UserButton } from "@clerk/remix";
 import { Link, useLoaderData } from "@remix-run/react";
 import Dashboard from "~/components/Dashboard";

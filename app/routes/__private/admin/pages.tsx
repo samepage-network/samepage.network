@@ -4,8 +4,8 @@ import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server"
 import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
 import listPageNotebookLinks from "~/data/listAllPageNotebookLinks.server";
 import searchPageNotebookLinks from "~/data/searchPageNotebookLinks.server";
-export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
-export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
+export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import TextInput from "@dvargas92495/app/components/TextInput";
 import StatPanels from "~/components/StatPanels";
 import { Chart, ChartOptions } from "react-charts";

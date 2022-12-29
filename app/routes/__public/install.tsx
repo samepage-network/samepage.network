@@ -5,8 +5,8 @@ import { LoaderFunction } from "@remix-run/node";
 import listExtensionsMetadata from "~/data/listExtensionsMetadata.server";
 import OverlayImg from "~/components/OverlayImg";
 import ExternalLink from "@dvargas92495/app/components/ExternalLink";
-export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
-export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
+export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const userApps = APPS.slice(1).map(({ name }) => ({
   id: name.toLowerCase(),

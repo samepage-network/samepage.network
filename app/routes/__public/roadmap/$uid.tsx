@@ -1,5 +1,5 @@
-export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
-export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
+export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import type { LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import AtJsonRendered from "package/components/AtJsonRendered";

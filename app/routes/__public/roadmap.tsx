@@ -3,8 +3,8 @@ import getMeta from "@dvargas92495/app/utils/getMeta";
 import type { LoaderFunction } from "@remix-run/node";
 import { Outlet, useNavigate } from "@remix-run/react";
 import getRoadmap from "~/data/getRoadmap.server";
-export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
-export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
+export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const RoadmapPage = () => {
   const navigate = useNavigate();

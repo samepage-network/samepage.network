@@ -1,5 +1,5 @@
-export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
-export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
+export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import remixAppAction from "@dvargas92495/app/backend/remixAppAction.server";
 import remixAppLoader from "@dvargas92495/app/backend/remixAppLoader.server";
 import Button from "@dvargas92495/app/components/Button";

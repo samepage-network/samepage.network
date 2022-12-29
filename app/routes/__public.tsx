@@ -1,10 +1,13 @@
-// import type { LoaderFunction } from "@remix-run/node";
-// import getUserId from "@dvargas92495/app/backend/getUserId.server";
-export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
-export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
+import type { LoaderFunction } from "@remix-run/node";
+import getUserId from "~/data/getUserId.server";
+export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import React, { useState, useEffect } from "react";
-import { Link, Outlet, useMatches } from "@remix-run/react";
+import { Link, Outlet, useMatches, useLoaderData } from "@remix-run/react";
 import MenuAlt1Icon from "@heroicons/react/solid/MenuAlt1Icon";
+import XIcon from "@heroicons/react/outline/XIcon";
+import { UserButton } from "@clerk/clerk-react";
+import ButtonLink from "~/components/ButtonLink";
 
 const TABS = [
   "install",
@@ -19,10 +22,8 @@ const PublicPage: React.FC = () => {
   const mainClassName =
     matches.reverse().find((m) => m.handle?.mainClassName)?.handle
       ?.mainClassName || "";
-  const rootClassName =
-    matches.reverse().find((m) => m.handle?.rootClassName)?.handle
-      ?.rootClassName || "";
   const [menuOpen, setMenuOpen] = useState(false);
+  const authed = useLoaderData<boolean>();
   useEffect(() => {
     // document.addEventListener("click", (e) => {
     //   if ((e.target as HTMLElement).classList.contains("nav-menu")) {
@@ -30,14 +31,15 @@ const PublicPage: React.FC = () => {
     //   }
     // });
   }, []);
+  const MenuIcon = menuOpen ? XIcon : MenuAlt1Icon;
   return (
-    <div className={`flex flex-col min-h-full ${rootClassName}`}>
+    <div className={`flex flex-col min-h-full`}>
       <header className="sticky bg-transparent shadow-xl z-10 backdrop-blur top-0">
-        <div className="px-6 h-16 flex items-center lg:gap-16 gap-4">
-          <Link to={"/"} className="flex max-h-full w-16 flex-shrink-0">
-            <img src={`/images/logo.png`} />
+        <div className="px-4 sm:px-8 lg:px-20 h-16 flex items-center lg:gap-16 gap-4">
+          <Link to={"/"} className="flex max-h-full w-40 flex-shrink-0">
+            <img src={`/images/full_logo.png`} />
           </Link>
-          <div className="hidden justify-start flex-grow lg:flex gap-6 capitalize text-lg items-center h-full">
+          <div className="hidden justify-center flex-grow lg:flex gap-6 capitalize text-lg items-center h-full">
             {TABS.map((p) => (
               <h6 className="mx-2 text-xl" key={p.id}>
                 <a
@@ -61,18 +63,18 @@ const PublicPage: React.FC = () => {
               setMenuOpen(!menuOpen);
             }}
           >
-            <MenuAlt1Icon
-              color={menuOpen ? "blue" : "black"}
+            <MenuIcon
+              color={"black"}
               width={24}
               height={24}
-              className={"nav-menu"}
+              className={"nav-menu cursor"}
             />
             {menuOpen && (
-              <div className="fixed left-0 right-0 top-full bg-sky-50 flex flex-col shadow-xl z-50">
+              <div className="fixed bg-white left-0 right-0 top-full flex flex-col shadow-xl z-50 px-9 py-6">
                 {TABS.map((tab) => (
                   <a
                     key={tab.id}
-                    className="capitalize py-3 px-6 font-bold"
+                    className="capitalize py-3 font-bold"
                     href={tab.href}
                     {...(tab.href.startsWith("http")
                       ? { target: "_blank", rel: "noopener" }
@@ -81,17 +83,19 @@ const PublicPage: React.FC = () => {
                     {tab.id}
                   </a>
                 ))}
+                <ButtonLink to={"/install"} className={"w-fit"}>
+                  Get Started
+                </ButtonLink>
               </div>
             )}
           </div>
-          {/* <div className="w-48 flex justify-end items-center">
-            {isWaitlist ? (
-              <span />
-            ) : authed ? (
+          <div className="hidden lg:flex w-40 justify-end items-center">
+            {authed ? (
               <UserButton />
             ) : (
               <>
-                <a
+                <ButtonLink to={"/install"}>Get Started</ButtonLink>
+                {/* {<a
                   href={"/login"}
                   className="mx-1 text-sky-400 border-sky-400 border rounded-md px-2 py-1 cursor-pointer hover:bg-sky-100 active:bg-sky-200"
                 >
@@ -102,14 +106,14 @@ const PublicPage: React.FC = () => {
                   className="mx-1 text-orange-400 border-orange-400 border rounded-md px-2 py-1 cursor-pointer hover:bg-orange-100 active:bg-orange-200"
                 >
                   SIGNUP
-                </a>
+                </a>} */}
               </>
             )}
-          </div> */}
+          </div>
         </div>
       </header>
       <main
-        className={`flex justify-center items-start w-full py-16 flex-grow ${mainClassName}`}
+        className={`flex justify-center items-start w-full flex-grow ${mainClassName}`}
       >
         <Outlet />
       </main>
@@ -141,9 +145,9 @@ const PublicPage: React.FC = () => {
   );
 };
 
-// export const loader: LoaderFunction = ({ request }) => {
-//   return getUserId(request).then((id) => !!id);
-// };
+export const loader: LoaderFunction = ({ request }) => {
+  return getUserId(request).then((id) => !!id);
+};
 
 export const headers = () => {
   return {

@@ -8,8 +8,8 @@ import Button from "@dvargas92495/app/components/Button";
 import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
 import createNotebook from "~/data/createNotebook.server";
 import StatPanels from "~/components/StatPanels";
-export { default as CatchBoundary } from "@dvargas92495/app/components/DefaultCatchBoundary";
-export { default as ErrorBoundary } from "@dvargas92495/app/components/DefaultErrorBoundary";
+export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const ORDER = ["total", "accepted", "online", "sessions", "messages"];
 
