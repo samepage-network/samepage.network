@@ -65,7 +65,7 @@ const Feature = ({
         index % 2 === 0 ? " bg-tertiary" : ""
       }`}
     >
-      <div className="flex-grow">
+      <div className="flex-grow" style={{ maxWidth: "50%" }}>
         <img src={`/images/landing/feature${index}.png`} />
       </div>
       <div className="flex flex-col max-w-md lg:max-w-xl text-center lg:text-left gap-2 sm:gap-4">
