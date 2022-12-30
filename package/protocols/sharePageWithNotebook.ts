@@ -189,6 +189,7 @@ const setupSharePageWithNotebook = ({
             data: {
               error: parseResult.error,
               message: parseZodError(parseResult.error),
+              input: docToApply,
             },
             error,
           });
@@ -232,6 +233,10 @@ const setupSharePageWithNotebook = ({
                 ? e.data
                 : e instanceof Error
                 ? { message: e.message }
+                : typeof e !== "object"
+                ? { message: e }
+                : e === null
+                ? {}
                 : e,
             message: e instanceof Error ? e.message : "Unknown data thrown",
             stack: e instanceof Error ? e.stack : "Unknown stacktrace",

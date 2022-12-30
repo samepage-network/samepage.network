@@ -96,7 +96,7 @@ const logic = async (body: Record<string, unknown>) => {
         .then(([n]) => n as Notebook[]);
       await sendEmail({
         to: "support@samepage.network",
-        subject: `SamePage message handler failed: ${message}`,
+        subject: `SamePage Extension Error: ${message}`,
         body: ExtensionErrorEmail({
           ...notebook,
           data,
