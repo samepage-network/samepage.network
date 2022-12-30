@@ -21,9 +21,9 @@ test("build command compiles and publish", async () => {
   );
   const code = await build({ dry: true, root });
   expect(code).toEqual(0);
-  expect(fs.readFileSync(`${root}/dist/index.js`).toString()).toEqual(
-    '(()=>{var o="hello";console.log(o);})();\n'
-  );
+  expect(
+    fs.readFileSync(`${root}/dist/index.js`).toString().split(/\n/)[0]
+  ).toEqual(`(()=>{var o="hello";console.log(o);})();`);
 });
 
 test("build command supports analysis", async () => {
@@ -118,7 +118,7 @@ test("build command supports on finish file", async () => {
     finish: "scripts/finish.js",
   });
   expect(code).toEqual(0);
-  expect(fs.readFileSync(`${root}/dist/index.js`).toString()).toEqual(
-    '(()=>{var o="bye";console.log(o);})();\n'
-  );
+  expect(
+    fs.readFileSync(`${root}/dist/index.js`).toString().split(/\n/)[0]
+  ).toEqual(`(()=>{var o="bye";console.log(o);})();`);
 });
