@@ -22,7 +22,9 @@ import ChevronRightIcon from "@heroicons/react/solid/ChevronRightIcon";
 import ChevronDownIcon from "@heroicons/react/solid/ChevronDownIcon";
 import { getSetting } from "package/internal/registry";
 
-const OPTIONS = Array.from(annotationSchema._def.options.keys()) as string[];
+const OPTIONS = Array.from(
+  annotationSchema._def.schema._def.schema.optionsMap.keys()
+) as string[];
 
 const EditAnnotation = ({
   setAnnotation,
