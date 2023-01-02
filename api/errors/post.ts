@@ -10,6 +10,7 @@ import { v4 } from "uuid";
 import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
 import EmailLayout from "~/components/EmailLayout";
 import parseZodError from "package/utils/parseZodError";
+import axios from "axios";
 
 const zBody = z.discriminatedUnion("method", [
   z.object({
@@ -94,6 +95,19 @@ const logic = async (body: Record<string, unknown>) => {
           [notebookUuid]
         )
         .then(([n]) => n as Notebook[]);
+      const { latest, file = "main.js" } = await axios
+        .get<{
+          tag_name: string;
+          assets: { name: string }[];
+        }>(
+          `https://api.github.com/repos/samepage-network/${appsById[
+            notebook.app
+          ].name.toLowerCase()}-samepage/releases/latest`
+        )
+        .then((r) => ({
+          latest: r.data.tag_name,
+          file: r.data.assets.find((a) => /\.js$/.test(a.name))?.name,
+        }));
       const uuid = v4();
       await uploadFile({
         Key: `data/errors/${uuid}.json`,
@@ -108,6 +122,8 @@ const logic = async (body: Record<string, unknown>) => {
           stack,
           version,
           type,
+          latest,
+          file,
         }),
       });
       return { success: true };

@@ -111,7 +111,7 @@ const Home: React.FC = () => {
               your personal workflow.
             </p>
           </div>
-          <div className="flex items-center flex-grow w-full h-full overflow-hidden justify-center">
+          <div className="flex items-center flex-grow w-full h-full overflow-hidden justify-end">
             <img
               src={`/images/landing/hero.png`}
               className={"h-full max-w-none"}

@@ -10,6 +10,8 @@ const ExtensionErrorEmail = ({
   stack,
   version,
   type,
+  latest,
+  file,
 }: {
   app: AppId;
   workspace: string;
@@ -17,11 +19,16 @@ const ExtensionErrorEmail = ({
   stack: string;
   version: string;
   type: string;
+  latest: string;
+  file: string;
 }): React.ReactElement => (
   <EmailLayout>
     <h1 style={{ fontSize: 32, marginBottom: 32 }}>{type}</h1>
     <div>
       Version: <code>{version}</code>
+    </div>
+    <div>
+      Latest: <code>{latest}</code>
     </div>
     <div>
       App: <code>{appsById[app].name}</code>
@@ -46,7 +53,7 @@ const ExtensionErrorEmail = ({
       <a
         href={`https://github.com/samepage-network/${appsById[
           app
-        ].name.toLowerCase()}-samepage/releases/download/${version}/main.js`}
+        ].name.toLowerCase()}-samepage/releases/download/${version}/${file}`}
       >
         here.
       </a>
