@@ -86,7 +86,7 @@ const logic = async (body: Record<string, unknown>) => {
       return { success: true };
     }
     case "extension-error": {
-      const { notebookUuid, data, message, stack, version, type } = args;
+      const { notebookUuid, data, stack, version, type } = args;
       const cxn = await getMysql();
       const [notebook] = await cxn
         .execute(
@@ -94,12 +94,17 @@ const logic = async (body: Record<string, unknown>) => {
           [notebookUuid]
         )
         .then(([n]) => n as Notebook[]);
+      const uuid = v4();
+      await uploadFile({
+        Key: `data/errors/${uuid}.json`,
+        Body: JSON.stringify(data),
+      });
       await sendEmail({
         to: "support@samepage.network",
-        subject: `SamePage Extension Error: ${message}`,
+        subject: `SamePage Extension Error: ${type}`,
         body: ExtensionErrorEmail({
           ...notebook,
-          data,
+          data: uuid,
           stack,
           version,
           type,

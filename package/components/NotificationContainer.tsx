@@ -33,7 +33,7 @@ const ActionButtons = ({
                 .callback()
                 .catch((e) => {
                   sendExtensionError({
-                    type: "notification-action",
+                    type: "Failed to run notification action",
                     error: e as Error,
                     data: { label: action.label },
                   });

@@ -13,7 +13,7 @@ const ExtensionErrorEmail = ({
 }: {
   app: AppId;
   workspace: string;
-  data: Record<string, unknown>;
+  data: string;
   stack: string;
   version: string;
   type: string;
@@ -31,9 +31,9 @@ const ExtensionErrorEmail = ({
     </div>
     <div>
       Context:{" "}
-      <pre>
-        <code>{JSON.stringify(data, null, 4)}</code>
-      </pre>
+      <a href={`https://samepage.network/data/errors/${data}.json`}>
+        Download.
+      </a>
     </div>
     <div>Stack:</div>
     <div>
@@ -42,7 +42,7 @@ const ExtensionErrorEmail = ({
       </pre>
     </div>
     <div>
-      Download{" "}
+      Download extension{" "}
       <a
         href={`https://github.com/samepage-network/${appsById[
           app

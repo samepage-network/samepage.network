@@ -173,25 +173,14 @@ const setupSharePageWithNotebook = ({
           return applyState(notebookPageId, parseResult.data);
         } else {
           // let's not throw yet - let's see how many emails this generates first - can revisit this in a few months
-          // throw new Error(
-          //   `State received from other notebook was corrupted:\n${parseZodError(
-          //     parseResult.error
-          //   )}`
-          // );
-          //
           // This is the previous behavior
-          const error = new Error(
-            `State received from other notebook was corrupted`
-          );
-          error.stack = "Unknown stacktrace";
           sendExtensionError({
-            type: "Failed to Parse doc",
+            type: `State received from other notebook was corrupted`,
             data: {
               error: parseResult.error,
               message: parseZodError(parseResult.error),
               input: docToApply,
             },
-            error,
           });
           return applyState(notebookPageId, docToApply);
         }
@@ -755,6 +744,20 @@ const setupSharePageWithNotebook = ({
     return load(notebookPageId).then((oldDoc) => {
       const doc = Automerge.change(oldDoc, label, callback);
       set(notebookPageId, doc);
+      const unwrappedDoc = unwrapSchema(doc);
+      zInitialSchema.safeParseAsync(unwrappedDoc).then((zResult) => {
+        if (!zResult.success) {
+          sendExtensionError({
+            type: "Document became invalid after change was made",
+            data: {
+              oldDoc: unwrapSchema(oldDoc),
+              doc: unwrappedDoc,
+              errors: zResult.error,
+              message: parseZodError(zResult.error),
+            },
+          });
+        }
+      });
       return apiClient({
         method: "update-shared-page",
         changes: Automerge.getChanges(oldDoc, doc).map(binaryToBase64),
@@ -772,13 +775,34 @@ const setupSharePageWithNotebook = ({
     notebookPageId: string;
   }) => {
     const doc = await calculateState(notebookPageId);
-    return updatePage({
-      notebookPageId,
-      label,
-      callback: async (oldDoc) => {
-        changeAutomergeDoc(oldDoc, doc);
-      },
-    });
+    const zResult = await zInitialSchema.safeParseAsync(doc);
+    if (zResult.success) {
+      return updatePage({
+        notebookPageId,
+        label,
+        callback: async (oldDoc) => {
+          changeAutomergeDoc(oldDoc, zResult.data);
+        },
+      });
+    } else {
+      // For now, just email error and run updatePage as normal. Should result in pairs of emails being sent I think.
+      sendExtensionError({
+        type: "Failed to calculate valid document",
+        data: {
+          notebookPageId,
+          doc: binaryToBase64(Automerge.save(doc)),
+          errors: zResult.error,
+          message: parseZodError(zResult.error),
+        },
+      });
+      return updatePage({
+        notebookPageId,
+        label,
+        callback: async (oldDoc) => {
+          changeAutomergeDoc(oldDoc, doc);
+        },
+      });
+    }
   };
 
   return {
@@ -786,7 +810,6 @@ const setupSharePageWithNotebook = ({
       offAppEvent();
       unload();
     },
-    updatePage,
     refreshContent,
     isShared: (notebookPageId: string) => has(notebookPageId),
   };

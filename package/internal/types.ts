@@ -105,19 +105,26 @@ const codeAnnotation = annotationBase.merge(
     }),
   })
 );
-export const annotationSchema = z.discriminatedUnion("type", [
-  blockAnnotation,
-  metadataAnnotation,
-  boldAnnotation,
-  italicsAnnotation,
-  strikethroughAnnotation,
-  highlightingAnnotation,
-  externalLinkAnnotation,
-  referenceAnnotation,
-  imageAnnotation,
-  customAnnotation,
-  codeAnnotation,
-]);
+export const annotationSchema = z
+  .discriminatedUnion("type", [
+    blockAnnotation,
+    metadataAnnotation,
+    boldAnnotation,
+    italicsAnnotation,
+    strikethroughAnnotation,
+    highlightingAnnotation,
+    externalLinkAnnotation,
+    referenceAnnotation,
+    imageAnnotation,
+    customAnnotation,
+    codeAnnotation,
+  ])
+  .refine((a) => a.start >= 0, {
+    message: "Start index must be greater than or equal to 0",
+  })
+  .refine((a) => a.end > a.start, {
+    message: "End index must be greater than start index",
+  });
 export type Annotation = z.infer<typeof annotationSchema>;
 export type AutomergeAnnotation = Omit<Annotation, "start" | "end"> & {
   startIndex: Automerge.Counter;

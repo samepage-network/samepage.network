@@ -3,12 +3,12 @@ import { getSetting } from "./registry";
 
 const sendExtensionError = ({
   type,
+  error = new Error(type),
   data,
-  error,
 }: {
   type: string;
   data: Record<string, unknown>;
-  error: Error;
+  error?: Error;
 }) =>
   apiPost({
     path: "errors",
