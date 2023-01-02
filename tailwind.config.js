@@ -1,3 +1,5 @@
+const plugin = require("tailwindcss/plugin");
+
 module.exports = {
   content: [
     "./app/**/*.tsx",
@@ -14,5 +16,21 @@ module.exports = {
       },
     },
   },
-  plugins: [require("@tailwindcss/forms")],
+  plugins: [
+    require("@tailwindcss/forms"),
+    plugin(({ addBase }) => {
+      addBase({
+        "@font-face": [
+          {
+            "font-family": "Syne",
+            src: "url(/fonts/Syne-VariableFont_wght.ttf) format('truetype')",
+          },
+          {
+            "font-family": "Familjen Grotesk",
+            src: "url(/fonts/FamiljenGrotesk-VariableFont_wght.ttf) format('truetype')",
+          },
+        ],
+      });
+    }),
+  ],
 };
