@@ -117,28 +117,24 @@ const PublicPage: React.FC = () => {
       >
         <Outlet />
       </main>
-      <footer className="px-6 py-4 m-t-auto bg-sky-100 bg-opacity-25 border-t border-t-gray-400 border-opacity-50">
-        <hr className="border-gray-400" />
-        <div className="flex mt-4">
-          <div className="w-1/3 text-gray-400 text-xs">
-            <p>© {new Date().getFullYear()} SamePage Network, Inc.</p>
-          </div>
-          <div className="w-2/3">
-            <h6 className="text-xl font-bold mb-8">Site Links</h6>
-            {["About", "Terms of Use", "Privacy Policy", "Contact"].map(
-              (l, i) => (
-                <p key={i}>
-                  <a
-                    href={`/${l.toLowerCase().replace(/ /g, "-")}`}
-                    color="inherit"
-                    className=" text-gray-400 text-xs"
-                  >
-                    {l}
-                  </a>
-                </p>
-              )
-            )}
-          </div>
+      <footer className="lg:py-20 sm:py-16 py-10 lg:gap-20 sm:gap-16 gap-10 flex flex-col items-center text-primary bg-tertiary">
+        <div className="flex flex-col sm:flex-row gap-6 sm:gap-10 items-center">
+          {["About", "Terms of Use", "Privacy Policy", "Contact"].map(
+            (l, i) => (
+              <p key={i}>
+                <a
+                  href={`/${l.toLowerCase().replace(/ /g, "-")}`}
+                  color="inherit"
+                  className="text-semibold text-sm uppercase"
+                >
+                  {l}
+                </a>
+              </p>
+            )
+          )}
+        </div>
+        <div className="opacity-75">
+          <p>© {new Date().getFullYear()} SamePage Network, Inc.</p>
         </div>
       </footer>
     </div>
