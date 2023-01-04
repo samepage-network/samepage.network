@@ -5,7 +5,7 @@ import convertAnnotations from "./convertAnnotations";
 import Automerge from "automerge";
 import migrateDocToLatest from "./migrateDocToLatest";
 import unwrapSchema from "./unwrapSchema";
-import sendExtensionError from "package/internal/sendExtensionError";
+import sendExtensionError from "../internal/sendExtensionError";
 import parseZodError from "./parseZodError";
 
 const changeLatestAutomergeDoc = (oldDoc: LatestSchema, doc: InitialSchema) => {
