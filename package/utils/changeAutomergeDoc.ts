@@ -1,9 +1,12 @@
 import { diffChars } from "diff";
 import { app } from "../internal/registry";
-import { Schema, InitialSchema, LatestSchema } from "../internal/types";
+import { Schema, InitialSchema, LatestSchema, zInitialSchema } from "../internal/types";
 import convertAnnotations from "./convertAnnotations";
 import Automerge from "automerge";
 import migrateDocToLatest from "./migrateDocToLatest";
+import unwrapSchema from "./unwrapSchema";
+import sendExtensionError from "package/internal/sendExtensionError";
+import parseZodError from "./parseZodError";
 
 const changeLatestAutomergeDoc = (oldDoc: LatestSchema, doc: InitialSchema) => {
   const changes = diffChars(oldDoc.content.toString(), doc.content);
@@ -81,8 +84,25 @@ const changeLatestAutomergeDoc = (oldDoc: LatestSchema, doc: InitialSchema) => {
 };
 
 const changeAutomergeDoc = (oldDoc: Schema, doc: InitialSchema) => {
-  const latestDoc = migrateDocToLatest(oldDoc);
-  changeLatestAutomergeDoc(latestDoc, doc);
+  const oldDocUnwrapped = unwrapSchema(oldDoc);
+  const oldDocAsLatest = migrateDocToLatest(oldDoc);
+  changeLatestAutomergeDoc(oldDocAsLatest, doc);
+  
+  const changedDocUnwrapped = unwrapSchema(oldDocAsLatest);
+  zInitialSchema.safeParseAsync(changedDocUnwrapped).then((zResult) => {
+    if (!zResult.success) {
+      sendExtensionError({
+        type: "Document became invalid after change was made",
+        data: {
+          oldDoc: oldDocUnwrapped,
+          doc,
+          changedDoc: changedDocUnwrapped,
+          errors: zResult.error,
+          message: parseZodError(zResult.error),
+        },
+      });
+    }
+  });
 };
 
 export default changeAutomergeDoc;

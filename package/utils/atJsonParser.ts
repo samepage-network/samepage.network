@@ -1,7 +1,6 @@
 import { InitialSchema } from "../internal/types";
 import { Parser, Grammar, CompiledRules } from "nearley";
-import { apiPost } from "../internal/apiClient";
-import { app } from "../internal/registry";
+import sendExtensionError from "../internal/sendExtensionError";
 
 const atJsonParser = (
   grammar: CompiledRules,
@@ -12,14 +11,10 @@ const atJsonParser = (
   try {
     parser.feed(text);
   } catch (e) {
-    apiPost({
-      path: "errors",
+    sendExtensionError({
+      type: "At JSON Parser failed to parse text",
       data: {
-        method: "at-json-parser",
-        results: [],
         input: text,
-        app,
-        version: process.env.VERSION,
       },
     });
     throw new Error(
@@ -42,14 +37,11 @@ const atJsonParser = (
   const results = parser.results.filter((r) => r.content.length === occam);
   if (results.length > 1) {
     if (process.env.NODE_ENV === "production") {
-      apiPost({
-        path: "errors",
+      sendExtensionError({
+        type: "At JSON Parser returned multiple ambiguous results",
         data: {
-          method: "at-json-parser",
-          results,
           input: text,
-          app,
-          version: process.env.VERSION,
+          results,
         },
       });
     } else {
@@ -65,14 +57,10 @@ const atJsonParser = (
   }
   if (results.length === 0) {
     if (process.env.NODE_ENV === "production") {
-      apiPost({
-        path: "errors",
+      sendExtensionError({
+        type: "At JSON Parser returned no results",
         data: {
-          method: "at-json-parser",
-          results,
           input: text,
-          app,
-          version: process.env.VERSION,
         },
       });
     } else {

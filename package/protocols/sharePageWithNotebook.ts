@@ -744,20 +744,6 @@ const setupSharePageWithNotebook = ({
     return load(notebookPageId).then((oldDoc) => {
       const doc = Automerge.change(oldDoc, label, callback);
       set(notebookPageId, doc);
-      const unwrappedDoc = unwrapSchema(doc);
-      zInitialSchema.safeParseAsync(unwrappedDoc).then((zResult) => {
-        if (!zResult.success) {
-          sendExtensionError({
-            type: "Document became invalid after change was made",
-            data: {
-              oldDoc: unwrapSchema(oldDoc),
-              doc: unwrappedDoc,
-              errors: zResult.error,
-              message: parseZodError(zResult.error),
-            },
-          });
-        }
-      });
       return apiClient({
         method: "update-shared-page",
         changes: Automerge.getChanges(oldDoc, doc).map(binaryToBase64),
