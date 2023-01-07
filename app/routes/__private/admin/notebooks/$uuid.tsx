@@ -68,11 +68,19 @@ export const loader: LoaderFunction = (args) => {
 
 export const action: ActionFunction = (args) => {
   return remixAdminAction(args, {
-    DELETE: ({ params, context: { requestId } }) =>
+    DELETE: ({ params, context: { requestId }, searchParams }) =>
       deleteNotebook({
         uuid: params["uuid"] || "",
         requestId,
-      }).then(() => redirect("/admin/notebooks")),
+      }).then(() =>
+        redirect(
+          `/admin/notebooks${
+            Object.keys(searchParams).length
+              ? `?${new URLSearchParams(searchParams).toString()}`
+              : ""
+          }`
+        )
+      ),
   });
 };
 

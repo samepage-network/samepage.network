@@ -1,6 +1,6 @@
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
-import { Outlet, useNavigate, Form, useLoaderData } from "@remix-run/react";
-import Table from "@dvargas92495/app/components/Table";
+import { Outlet, Form, useLoaderData } from "@remix-run/react";
+import Table from "~/components/Table";
 import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
 import listNotebooks from "~/data/listNotebooks.server";
 import TextInput from "@dvargas92495/app/components/TextInput";
@@ -14,7 +14,6 @@ export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 const ORDER = ["total", "accepted", "online", "sessions", "messages"];
 
 const NotebooksPage = () => {
-  const navigate = useNavigate();
   const { stats } = useLoaderData<Awaited<ReturnType<typeof listNotebooks>>>();
   return (
     <div className={"flex gap-8 items-start"}>
@@ -29,7 +28,7 @@ const NotebooksPage = () => {
           <Button>Search</Button>
         </Form>
         <Table
-          onRowClick={(r) => navigate(r.uuid as string)}
+          onRowClick={'uuid'}
           renderCell={{
             connected: (v) =>
               typeof v === "number"
