@@ -273,7 +273,7 @@ const Onboarding = ({
             <div className="mb-4 flex-grow max-w-sm m-auto">
               <p>
                 You're about to connect your notebook to SamePage - the
-                intra-tool-for-thought protocol.
+                inter-tool protocol for thought.
               </p>
               <p className="mb-4">We're excited to have you!</p>
               <p className="text-xs italic opacity-50">

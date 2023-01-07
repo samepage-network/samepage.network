@@ -146,7 +146,7 @@ const Home: React.FC = () => {
       <div className="h-[100vh] py-20 sm:py-32 lg:py-40 px-4 flex flex-col">
         <div className="mb-8 max-w-4xl flex justify-center items-center flex-col gap-4 mx-auto text-center">
           <h1 className="font-bold text-3xl sm:text-4xl lg:text-5xl">
-            The intra-tool{" "}
+            The inter-tool{" "}
             <span className="text-accent">protocol for thought</span>
           </h1>
           <h2 className={`font-normal text-lg`}>

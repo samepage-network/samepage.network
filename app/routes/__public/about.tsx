@@ -13,7 +13,7 @@ const AboutPage: React.FunctionComponent = () => (
   >
     <Title className="font-bold text-3xl mb-2">{"SamePage"}</Title>
     <Subtitle className="font-semibold mb-2">
-      {"We are building the intra-tool protocol for thought."}
+      {"We are building the inter-tool protocol for thought."}
     </Subtitle>
     <p className="mb-8">
       We are a remote-first organization looking to reconnect our tools for
