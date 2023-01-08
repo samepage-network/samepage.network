@@ -14,7 +14,10 @@ const AnalyticsPage = () => {
   const pathname = matches[3]?.pathname || "undefined";
   const active = tabs.find((t) => pathname.endsWith(t.path));
   return (
-    <div className="bg-secondary w-full px-32 py-16">
+    <div
+      className="bg-secondary w-full px-32 py-16"
+      style={{ alignSelf: "normal" }}
+    >
       <div className="flex justify-between mb-16">
         <h1 className="text-3xl text-primary flex items-center">
           <Link to={""} className={"mr-2"}>
