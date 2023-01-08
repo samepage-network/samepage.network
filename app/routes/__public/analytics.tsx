@@ -4,6 +4,7 @@ export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import type { LoaderFunction } from "@remix-run/node";
 import { Link, Outlet, useLoaderData, useMatches } from "@remix-run/react";
+import Icon from "@heroicons/react/solid/ChartPieIcon";
 
 const AnalyticsPage = () => {
   const { tabs } = useLoaderData<{
@@ -15,7 +16,12 @@ const AnalyticsPage = () => {
   return (
     <div className="bg-secondary w-full px-32 py-16">
       <div className="flex justify-between mb-16">
-        <h1 className="text-3xl">{active?.name || "Analytics"}</h1>
+        <h1 className="text-3xl text-primary flex items-center">
+          <Link to={""} className={"mr-2"}>
+            <Icon className="inline w-9 h-9" />
+          </Link>
+          {active?.name || "Analytics"}
+        </h1>
         {/* Date filter */}
       </div>
       <div className="flex items-start gap-12">
