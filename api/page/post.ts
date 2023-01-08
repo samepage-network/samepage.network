@@ -34,6 +34,7 @@ import createNotebook from "~/data/createNotebook.server";
 import QUOTAS from "~/data/quotas.server";
 import connectNotebook from "~/data/connectNotebook.server";
 import getQuota from "~/data/getQuota.server";
+import { encode } from "@ipld/dag-cbor";
 
 const zMethod = zUnauthenticatedBody
   .and(zBaseHeaders)
@@ -729,6 +730,65 @@ const logic = async (req: Record<string, unknown>) => {
         })
           .then(() => ({ success: true }))
           .catch(catchError("Failed to respond to query"));
+      }
+      case "notebook-request": {
+        const { request, targets } = args;
+        if (!targets.length) {
+          return { found: false };
+        }
+        const hash = crypto
+          .createHash("md5")
+          .update(encode(request))
+          .digest("hex");
+        return downloadFileContent({ Key: `data/requests/${hash}.json` })
+          .then((r) => {
+            if (r)
+              return {
+                data: JSON.parse(r),
+                found: true,
+              };
+            else return { found: false };
+          })
+          .then(async (body) =>
+            Promise.all(
+              targets.map((target) =>
+                messageNotebook({
+                  source: notebookUuid,
+                  target,
+                  operation: "REQUEST",
+                  data: {
+                    request,
+                  },
+                  requestId,
+                })
+              )
+            ).then(() => body)
+          )
+          .catch(catchError("Failed to request across notebooks"));
+      }
+      case "notebook-response": {
+        const { request, response, target } = args;
+        // TODO replace with IPFS
+        const hash = crypto
+          .createHash("md5")
+          .update(encode(request))
+          .digest("hex");
+        await uploadFile({
+          Body: JSON.stringify(response),
+          Key: `data/requests/${hash}.json`,
+        });
+        return messageNotebook({
+          target,
+          source: notebookUuid,
+          operation: `RESPONSE`,
+          data: {
+            request,
+            response,
+          },
+          requestId: requestId,
+        })
+          .then(() => ({ success: true }))
+          .catch(catchError("Failed to respond to request"));
       }
       case "link-different-page": {
         const { oldNotebookPageId, newNotebookPageId } = args;

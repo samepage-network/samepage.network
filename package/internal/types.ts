@@ -156,6 +156,7 @@ export type json =
   | json[]
   | { [key: string]: json }
   | Uint8Array;
+export type JSONData = Record<string, json>;
 
 export type AddCommand = (args: {
   label: string;
@@ -229,7 +230,7 @@ type MessageHandler = (
   uuid: string
 ) => void;
 export type MessageHandlers = {
-  [operation: string]: MessageHandler;
+  [operation: string]: MessageHandler[];
 };
 
 export type SharedPages = {
@@ -244,7 +245,7 @@ export type NotificationHandler = (
 export type AddNotebookListener = (args: {
   operation: Operation | string;
   handler: MessageHandler;
-}) => void;
+}) => () => void;
 export type RemoveNotebookListener = (args: { operation: string }) => void;
 export type SendToNotebook = (args: {
   target: Notebook | string;
@@ -333,6 +334,17 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     method: z.literal("query-response"),
     data: z.any(),
     request: z.string(),
+    target: z.string(),
+  }),
+  z.object({
+    method: z.literal("notebook-request"),
+    request: z.record(z.any()),
+    targets: z.string().array(),
+  }),
+  z.object({
+    method: z.literal("notebook-response"),
+    request: z.record(z.any()),
+    response: z.record(z.any()),
     target: z.string(),
   }),
   z.object({

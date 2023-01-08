@@ -29,8 +29,19 @@ export const handleMessage = ({
   uuid: string;
 }) => {
   const { operation, ...props } = JSON.parse(content);
-  const handler = messageHandlers[operation];
-  if (handler) {
+  const handlers = messageHandlers[operation];
+  if (!handlers?.length) {
+    dispatchAppEvent({
+      type: "log",
+      id: `network-error-${operation}`,
+      content: `Unknown network operation: ${
+        operation || "No operation specified"
+      }`,
+      intent: "error",
+    });
+    return;
+  }
+  messageHandlers[operation].forEach((handler) => {
     try {
       handler(props, source || props.source || "", uuid);
     } catch (e) {
@@ -52,16 +63,7 @@ export const handleMessage = ({
         },
       });
     }
-  } else {
-    dispatchAppEvent({
-      type: "log",
-      id: `network-error-${operation}`,
-      content: `Unknown network operation: ${
-        operation || "No operation specified"
-      }`,
-      intent: "error",
-    });
-  }
+  });
 };
 
 const ongoingMessages: { [uuid: string]: string[] } = {};
@@ -82,7 +84,17 @@ export const addNotebookListener: AddNotebookListener = ({
   operation,
   handler,
 }) => {
-  messageHandlers[operation] = handler;
+  messageHandlers[operation] = (messageHandlers[operation] || []).concat(
+    handler
+  );
+  return () => {
+    const handlers = messageHandlers[operation] || [];
+    const index = (messageHandlers[operation] || []).indexOf(handler);
+    handlers.splice(index, 1);
+    if (!handlers.length) {
+      delete messageHandlers[operation];
+    }
+  };
 };
 
 export const removeNotebookListener: RemoveNotebookListener = ({

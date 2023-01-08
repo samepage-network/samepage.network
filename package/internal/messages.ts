@@ -56,6 +56,16 @@ const MESSAGES = {
     description: "",
     buttons: [],
   },
+  REQUEST: {
+    title: "",
+    description: "",
+    buttons: [],
+  },
+  RESPONSE: {
+    title: "",
+    description: "",
+    buttons: [],
+  },
 } as const;
 
 export type Operation = keyof typeof MESSAGES;

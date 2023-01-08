@@ -3,20 +3,27 @@ import {
   removeNotebookListener,
 } from "../internal/setupMessageHandlers";
 import apiClient from "../internal/apiClient";
-import { InitialSchema } from "../internal/types";
-
-// In the future, I could see this becoming rows of data.
-type QueryResult = InitialSchema;
+import { InitialSchema, JSONData } from "../internal/types";
 
 const setupNotebookQuerying = ({
-  onQuery = () =>
-    Promise.resolve({ content: "", annotations: []}),
+  // @deprecated
+  onQuery = () => Promise.resolve({ content: "", annotations: [] }),
+  // @deprecated
   onQueryResponse = () => Promise.resolve(),
+  onRequest = () => Promise.resolve({}),
+  onResponse = () => Promise.resolve(),
 }: {
-  onQuery?: (notebookPageId: string) => Promise<QueryResult>;
+  // @deprecated
+  onQuery?: (notebookPageId: string) => Promise<InitialSchema>;
+  // @deprecated
   onQueryResponse?: (response: {
-    data: QueryResult;
+    data: InitialSchema;
     request: string;
+  }) => Promise<unknown>;
+  onRequest?: (request: JSONData) => Promise<JSONData>;
+  onResponse?: (data: {
+    response: JSONData;
+    request: JSONData;
   }) => Promise<unknown>;
 }) => {
   addNotebookListener({
@@ -39,8 +46,33 @@ const setupNotebookQuerying = ({
       onQueryResponse(
         e as {
           found: boolean;
-          data: QueryResult;
+          data: InitialSchema;
           request: string;
+        }
+      );
+    },
+  });
+
+  addNotebookListener({
+    operation: "REQUEST",
+    handler: async (e, source) => {
+      const { request } = e as { request: JSONData };
+      const response = await onRequest(request);
+      apiClient({
+        method: "notebook-response",
+        request,
+        response,
+        target: source.uuid,
+      });
+    },
+  });
+  addNotebookListener({
+    operation: "RESPONSE",
+    handler: (e) => {
+      onResponse(
+        e as {
+          response: JSONData;
+          request: JSONData;
         }
       );
     },
@@ -49,14 +81,23 @@ const setupNotebookQuerying = ({
     unload: () => {
       removeNotebookListener({ operation: "QUERY" });
       removeNotebookListener({ operation: "QUERY_RESPONSE" });
+      removeNotebookListener({ operation: "REQUEST" });
+      removeNotebookListener({ operation: "RESPONSE" });
     },
+    // @deprecated
     query: (request: string) =>
       apiClient<{
         found: boolean;
-        data: QueryResult;
+        data: InitialSchema;
       }>({
         method: "query",
         request,
+      }),
+    request: (targets: string | string[], request: JSONData = {}) =>
+      apiClient<{ found: true; data: JSONData } | { found: false }>({
+        method: "notebook-request",
+        request,
+        targets: typeof targets === "string" ? [targets] : targets,
       }),
   };
 };
