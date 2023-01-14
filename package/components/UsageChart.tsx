@@ -17,6 +17,7 @@ const UsageChart = ({
 }: OverlayProps<UsageChartProps>) => {
   // just doing this to skirt around the React unused import error/umd global catch 22 for now
   React.useEffect(() => {}, []);
+
   return (
     <Dialog
       onClose={onClose}

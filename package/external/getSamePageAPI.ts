@@ -6,7 +6,7 @@ const getSamePageAPI = async () => {
       return window.samepage;
     } else {
       return new Promise<SamePageAPI>((resolve) => {
-        document.addEventListener(
+        document.body.addEventListener(
           "samepage:loaded",
           () => {
             resolve(window.samepage);

@@ -320,7 +320,9 @@ const compile = ({
           }
         }
         if (onFinishFile && fs.existsSync(path.join(root, onFinishFile))) {
-          const customOnFinish = require(path.join(root, onFinishFile));
+          const customOnFinish = require(path.resolve(
+            path.join(root, onFinishFile)
+          ));
           if (typeof customOnFinish === "function") {
             customOnFinish();
           }
