@@ -30,7 +30,7 @@ test("Full integration test of web app", async ({ page }) => {
 
   await test.step("Wait for local network to be ready", () => appReady);
   await page.goto("http://localhost:3000");
-  await expect(page.locator("text=Connect your")).toBeVisible();
+  await expect(page.locator("text=Unlock your")).toBeVisible();
 
   await page.locator("text=Docs").click();
   await expect(page.locator("text=SamePage Docs")).toBeVisible();
