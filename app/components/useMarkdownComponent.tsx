@@ -77,96 +77,71 @@ const CodeBlock: React.FC<React.HTMLAttributes<HTMLPreElement>> = ({
   );
 };
 
+export const MarkdownComponent = ({ children }: { children: string }) => (
+  <Markdown
+    options={{
+      overrides: {
+        h1: (props) => <Header h={1} {...props} />,
+        h2: (props) => (
+          <Header h={2} {...props} className={"text-3xl my-6 font-semibold"} />
+        ),
+        h3: (props) => (
+          <Header h={3} {...props} className={"text-2xl my-4 font-medium"} />
+        ),
+        h4: (props) => (
+          <Header h={4} {...props} className={"text-xl my-3 font-medium"} />
+        ),
+        h5: (props) => (
+          <Header h={5} {...props} className={"text-lg my-2 font-medium"} />
+        ),
+        h6: (props) => (
+          <Header h={6} {...props} className={"text-lg my-3 font-normal"} />
+        ),
+        p: { props: { className: "mb-2" } },
+        pre: CodeBlock,
+        li: { props: { className: "list-disc ml-4" } },
+        code: {
+          props: {
+            className:
+              "bg-gray-200 rounded-md py-0.5 px-2 my-0.5 inline-block font-normal text-sm",
+          },
+        },
+        img: (props) => (
+          <span className="lg:p-12 py-6 inline-block">
+            <OverlayImg
+              alt={props.alt}
+              src={props.src}
+              className={"rounded-md shadow-xl max-w-full lg:max-w-sm m-auto"}
+            />
+          </span>
+        ),
+        a: (props) =>
+          /^http/.test(props.href) ? (
+            <a
+              href={props.href}
+              className={"text-sky-500 underline hover:no-underline"}
+              download={
+                props.href.endsWith(".zip") ? "roam-samepage.zip" : false
+              }
+            >
+              {props.children}
+            </a>
+          ) : (
+            <Link
+              to={props.href.replace(/\.md$/, "")}
+              className={"text-sky-500 underline hover:no-underline"}
+            >
+              {props.children}
+            </Link>
+          ),
+      },
+    }}
+  >
+    {children}
+  </Markdown>
+);
+
 const useMarkdownComponent = (code: string) =>
-  useMemo(
-    // () => (code ? getMDXComponent(code) : React.Fragment),
-    () => () =>
-      (
-        <Markdown
-          options={{
-            overrides: {
-              h1: (props) => <Header h={1} {...props} />,
-              h2: (props) => (
-                <Header
-                  h={2}
-                  {...props}
-                  className={"text-3xl my-6 font-semibold"}
-                />
-              ),
-              h3: (props) => (
-                <Header
-                  h={3}
-                  {...props}
-                  className={"text-2xl my-4 font-medium"}
-                />
-              ),
-              h4: (props) => (
-                <Header
-                  h={4}
-                  {...props}
-                  className={"text-xl my-3 font-medium"}
-                />
-              ),
-              h5: (props) => (
-                <Header
-                  h={5}
-                  {...props}
-                  className={"text-lg my-2 font-medium"}
-                />
-              ),
-              h6: (props) => (
-                <Header
-                  h={6}
-                  {...props}
-                  className={"text-lg my-3 font-normal"}
-                />
-              ),
-              p: { props: { className: "mb-2" } },
-              pre: CodeBlock,
-              li: { props: { className: "list-disc ml-4" } },
-              code: {
-                props: {
-                  className:
-                    "bg-gray-200 rounded-md py-0.5 px-2 my-0.5 inline-block font-normal text-sm",
-                },
-              },
-              img: (props) => (
-                <span className="lg:p-12 py-6 inline-block">
-                  <OverlayImg
-                    alt={props.alt}
-                    src={props.src}
-                    className={
-                      "rounded-md shadow-xl max-w-full lg:max-w-sm m-auto"
-                    }
-                  />
-                </span>
-              ),
-              a: (props) =>
-                /^http/.test(props.href) ? (
-                  <a
-                    href={props.href}
-                    className={"text-sky-500 underline hover:no-underline"}
-                    download={
-                      props.href.endsWith(".zip") ? "roam-samepage.zip" : false
-                    }
-                  >
-                    {props.children}
-                  </a>
-                ) : (
-                  <Link
-                    to={props.href.replace(/\.md$/, "")}
-                    className={"text-sky-500 underline hover:no-underline"}
-                  >
-                    {props.children}
-                  </Link>
-                ),
-            },
-          }}
-        >
-          {code}
-        </Markdown>
-      ),
-    [code]
-  );
+  useMemo(() => () => <MarkdownComponent>{code}</MarkdownComponent>, [code]);
 
 export default useMarkdownComponent;

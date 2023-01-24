@@ -119,19 +119,23 @@ const PublicPage: React.FC = () => {
       </main>
       <footer className="lg:py-20 sm:py-16 py-10 lg:gap-20 sm:gap-16 gap-10 flex flex-col items-center text-primary bg-tertiary">
         <div className="flex flex-col sm:flex-row gap-6 sm:gap-10 items-center">
-          {["About", "Terms of Use", "Privacy Policy", "Contact"].map(
-            (l, i) => (
-              <p key={i}>
-                <a
-                  href={`/${l.toLowerCase().replace(/ /g, "-")}`}
-                  color="inherit"
-                  className="text-semibold text-sm uppercase"
-                >
-                  {l}
-                </a>
-              </p>
-            )
-          )}
+          {[
+            "About",
+            "Careers",
+            "Terms of Use",
+            "Privacy Policy",
+            "Contact",
+          ].map((l, i) => (
+            <p key={i}>
+              <a
+                href={`/${l.toLowerCase().replace(/ /g, "-")}`}
+                color="inherit"
+                className="text-semibold text-sm uppercase"
+              >
+                {l}
+              </a>
+            </p>
+          ))}
         </div>
         <div className="opacity-75">
           <p>© {new Date().getFullYear()} SamePage Network, Inc.</p>
