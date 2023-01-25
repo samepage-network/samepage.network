@@ -154,7 +154,7 @@ const BlogPage = () => {
               <h2 className="relative mt-3 text-lg font-semibold leading-tight">
                 {d.title}
               </h2>
-              <p className="mt-2 text-base leading-6 text-secondary">
+              <p className="mt-2 text-base leading-6">
                 {d.description}
               </p>
               <div className="mt-5 flex items-start space-x-2">
@@ -174,7 +174,7 @@ const BlogPage = () => {
                       {d.author}
                     </div>
                   </div>
-                  <div className="text-small leading-none text-secondary">
+                  <div className="text-small leading-none">
                     {d.date}
                   </div>
                 </div>
