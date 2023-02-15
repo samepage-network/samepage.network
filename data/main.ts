@@ -61,5 +61,8 @@ base({
     }
 
     // TODO migrate google verification route53 record
+    // - standard TXT record
+    // - google._domainkey TXT record
+    // - _dmarc TXT record
   },
 });

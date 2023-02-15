@@ -17,11 +17,11 @@ const Plan = ({
   link: string;
 }) => {
   return (
-    <div className="bg-sky-100 rounded shadow-md flex-1">
+    <div className="bg-sky-100 rounded shadow-md flex-1 flex flex-col">
       <div className="border-b border-b-black border-opacity-75 py-8 px-4 text-center">
         <h1 className="font-bold text-xl">{title}</h1>
         <p className="opacity-50 mb-8 text-sm h-10">{description}</p>
-        {base > 0 ? <p>Starts at</p> : <p className="h-6" />}
+        <p className="h-6" />
         <h2>
           {base > 0 ? (
             <span>
@@ -34,7 +34,7 @@ const Plan = ({
           )}
         </h2>
       </div>
-      <div className="p-4">
+      <div className="p-4 flex-grow">
         {features.map((f) => (
           <div key={f}>
             <CheckIcon color="green" className="mr-4 inline-block h-6 w-6" />
@@ -57,10 +57,7 @@ const Plan = ({
 const PricingPage = () => {
   return (
     <div className="w-full max-w-7xl">
-      <h1 className="text-3xl font-bold mb-8 text-center">
-        Straightforward pricing for individuals and teams
-      </h1>
-      <div className="flex gap-8 w-full mb-8">
+      <div className="flex gap-8 w-full my-8">
         <Plan
           title={"Hobby"}
           base={0}
@@ -71,17 +68,20 @@ const PricingPage = () => {
         <Plan
           title={"Professional"}
           base={10}
-          description={"For professionals managing several workspaces"}
+          description={"For professionals managing several personal workspaces"}
           features={["5 Notebooks", "1K Shared Pages"]}
           link={"/signup"}
         />
         <Plan
-          title={"Team"}
-          base={50}
-          description={
-            "For organizations building decentralized knowledge bases"
-          }
-          features={["8 Notebooks", "10K Shared Pages"]}
+          title={"Client"}
+          base={1000}
+          description={"For organizations partnering with us"}
+          features={[
+            "1K Notebooks",
+            "1M Shared Pages",
+            "Unlimited requests",
+            "Prioritized support",
+          ]}
           link={"/signup"}
         />
       </div>
