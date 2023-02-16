@@ -26,6 +26,11 @@ const APPS = [
     name: "Obsidian",
     workspaceLabel: "vault",
   },
+  {
+    id: 4,
+    name: "Notion",
+    workspaceLabel: "workspace",
+  },
 ] as const;
 
 export const appsById = Object.fromEntries(APPS.map(({ id, ...a }) => [id, a]));
