@@ -38,6 +38,7 @@ export type CliArgs = {
   analyze?: boolean;
   max?: string;
   finish?: string;
+  entry?: string | string[];
 };
 
 // https://github.com/evanw/esbuild/issues/337#issuecomment-954633403
@@ -97,6 +98,7 @@ const compile = ({
   opts = {},
   finish: onFinishFile = "",
   root = ".",
+  entry = [],
 }: CliArgs & { opts?: esbuild.BuildOptions }) => {
   const srcRoot = path.join(root, "src");
   const rootDir = fs
@@ -130,6 +132,9 @@ const compile = ({
       absWorkingDir: process.cwd(),
       entryPoints: [
         path.join(srcRoot, entryTs),
+        ...(typeof entry === "string" ? [entry] : entry).map((e) =>
+          path.join(srcRoot, e)
+        ),
         ...(entryCss ? [path.join(srcRoot, entryCss)] : []),
       ],
       outdir,

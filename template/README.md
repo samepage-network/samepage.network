@@ -1,6 +1,6 @@
 # SamePage
 
-[![Built by SamePage](https://img.shields.io/badge/Ξ-Built_by_SamePage-blue.svg)](https://github.com/samepage-network/samepage.network) [![Install](https://img.shields.io/github/v/release/samepage-network/roam-samepage)](https://samepage.network/install?id=roam) [![Twitter follow](https://img.shields.io/badge/follow-%40samepagenetwork-blue.svg?style=flat&logo=twitter)](https://twitter.com/samepagenetwork) [![Discord](https://img.shields.io/discord/1042590270849568788.svg)](https://discord.gg/UpKAfUvUPd) [![Test coverage](https://codecov.io/gh/samepage-network/roam-samepage/branch/main/graph/badge.svg)](https://codecov.io/gh/samepage-network/roam-samepage)
+[![Built by SamePage](https://img.shields.io/badge/Ξ-Built_by_SamePage-blue.svg)](https://github.com/samepage-network/samepage.network) [![Install](https://img.shields.io/github/v/release/samepage-network/{{id}}-samepage)](https://samepage.network/install?id={{id}}) [![Twitter follow](https://img.shields.io/badge/follow-%40samepagenetwork-blue.svg?style=flat&logo=twitter)](https://twitter.com/samepagenetwork) [![Discord](https://img.shields.io/discord/1042590270849568788.svg)](https://discord.gg/UpKAfUvUPd) [![Test coverage](https://codecov.io/gh/samepage-network/{{id}}-samepage/branch/main/graph/badge.svg)](https://codecov.io/gh/samepage-network/{{id}}-samepage)
 
 Official {{app}} client into [SamePage](https://samepage.network) - the inter-tool protocol for thought.
 
