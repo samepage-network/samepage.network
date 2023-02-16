@@ -1,0 +1,31 @@
+{
+  "name": "{{id}}-samepage",
+  "version": "1.0.0",
+  "description": "Official {{app}} client into the intra tool-for-thought protocol.",
+  "main": "./dist/index.js",
+  "scripts": {
+    "postinstall": "patch-package --patch-dir node_modules/samepage/patches",
+    "start": "npx samepage dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/samepage-network/{{id}}-samepage.git"
+  },
+  "keywords": [
+    "{{app}}",
+    "SamePage"
+  ],
+  "author": {
+    "name": "SamePage",
+    "email": "support@samepage.network",
+    "url": "https://samepage.network"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/samepage-network/{{id}}-samepage/issues"
+  },
+  "homepage": "https://github.com/samepage-network/{{id}}-samepage#readme",
+  "dependencies": {
+    "samepage": "^0.39.18"
+  }
+}
