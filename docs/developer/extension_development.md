@@ -76,7 +76,7 @@ const settings = defaultSettings.map((d) => ({
     id: d.id,                   // string
     name: d.name,               // string
     description: d.description, // string
-    value: d.default            // boolean or string
+    value: d.default,           // boolean or string
     type: d.type                // "boolean" or "string"
 }))
 ```

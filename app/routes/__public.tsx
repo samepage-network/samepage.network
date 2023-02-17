@@ -10,10 +10,10 @@ import { UserButton } from "@clerk/clerk-react";
 import ButtonLink from "~/components/ButtonLink";
 
 const TABS = [
+  "agency",
   "install",
   "docs",
   "blog",
-  "pricing",
   { id: "community", href: "https://discord.gg/UpKAfUvUPd" },
 ].map((p) => (typeof p === "string" ? { id: p, href: `/${p}` } : p));
 

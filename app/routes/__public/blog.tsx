@@ -88,7 +88,7 @@ const BlogPage = () => {
   const [showFollowUs, setShowFollowUs] = useState(false);
   const fetcher = useFetcher();
   return (
-    <div className="max-w-6xl w-full mb-16 px-2">
+    <div className="max-w-6xl w-full my-16 px-2">
       <div className="-mt-3 lg:mt-0 flex items-center justify-between pb-2 lg:pb-16 border-b-gray-400 border-b border-opacity-60">
         <h1 className="text-4xl font-bold">Blog</h1>
         <div className="text-orange-500 font-medium cursor-pointer relative">
