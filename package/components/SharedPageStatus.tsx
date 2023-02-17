@@ -194,7 +194,11 @@ const HistoryContent = ({
         autoFocus={false}
         portalContainer={portalContainer}
       >
-        <div className={`${Classes.DIALOG_BODY} text-black`}>
+        <div
+          className={`${Classes.DIALOG_BODY} text-black`}
+          onKeyDown={(e) => e.stopPropagation()}
+          onPaste={(e) => e.stopPropagation()}
+        >
           <p>
             There are {selectedChange?.change.ops.length} operations in this
             change. Snapshot at this version:

@@ -263,6 +263,8 @@ const Onboarding = ({
 }`}</style>
       <div
         className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center text-black`}
+        onKeyDown={e => e.stopPropagation()}
+        onPaste={e => e.stopPropagation()}
       >
         {page === "WELCOME" && (
           <Fragment>

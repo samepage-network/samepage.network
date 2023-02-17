@@ -107,7 +107,7 @@ const NotificationContainer = () => {
           }
         >
           <div className="flex items-center justify-between py-2 px-4 bg-slate-100 bg-opacity-50 border-b border-b-black border-solid">
-            <h4 className="font-normal text-lg">
+            <h4 className="font-normal text-lg my-0">
               {status === "CONNECTED" ? "Notifications" : "Disconnected"}
             </h4>
             <Button onClick={() => setIsOpen(false)} icon={"cross"} minimal />

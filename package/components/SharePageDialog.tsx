@@ -127,7 +127,11 @@ const SharePageDialog = ({
       autoFocus={false}
       portalContainer={portalContainer}
     >
-      <div className={`${Classes.DIALOG_BODY} text-black`}>
+      <div
+        className={`${Classes.DIALOG_BODY} text-black`}
+        onKeyDown={(e) => e.stopPropagation()}
+        onPaste={(e) => e.stopPropagation()}
+      >
         {notebooks.map((g) => (
           <div
             key={`${g.app}/${g.workspace}`}
