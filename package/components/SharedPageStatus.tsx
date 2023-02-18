@@ -280,16 +280,6 @@ const SharedPageStatus = ({
             <SharePageDialog
               {...props}
               notebookPageId={notebookPageId}
-              removeOpenInvite={(app, workspace) =>
-                apiClient({
-                  method: "remove-page-invite",
-                  notebookPageId,
-                  target: {
-                    app,
-                    workspace,
-                  },
-                })
-              }
               listConnectedNotebooks={(notebookPageId: string) =>
                 Promise.all([
                   apiClient<{

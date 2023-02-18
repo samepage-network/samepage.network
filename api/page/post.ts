@@ -540,7 +540,20 @@ const logic = async (req: Record<string, unknown>) => {
       }
       case "remove-page-invite": {
         const { notebookPageId, target } = args;
-        const { linkUuid, invitedBy } = await (target
+        const { linkUuid, invitedBy } = await (typeof target === "string"
+          ? cxn
+              .execute(
+                `SELECT l.uuid 
+FROM page_notebook_links l
+INNER JOIN notebooks n ON n.uuid = l.notebook_uuid
+WHERE n.uuid ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
+                [target, notebookPageId, notebookUuid]
+              )
+              .then(([invitedByLink]) => ({
+                invitedBy: notebookUuid,
+                linkUuid: (invitedByLink as { uuid: string }[])[0]?.uuid,
+              }))
+          : typeof target === "object"
           ? cxn
               .execute(
                 `SELECT l.uuid 
@@ -569,7 +582,6 @@ const logic = async (req: Record<string, unknown>) => {
         if (!linkUuid) {
           throw new NotFoundError(`Could not find valid invite to remove.`);
         }
-        console.log("invitedBy", invitedBy, "target", target);
         return cxn
           .execute(`DELETE FROM page_notebook_links WHERE uuid = ?`, [linkUuid])
           .then(() =>
@@ -637,7 +649,7 @@ const logic = async (req: Record<string, unknown>) => {
             Object.fromEntries(
               recents
                 .filter((r) => !clientUuids.has(r.uuid))
-                .map((r) => [r.uuid, r])
+                .map((r) => [r.uuid, { ...r, appName: appsById[r.app].name }])
             )
           ),
         };
@@ -899,5 +911,6 @@ export const handler = createAPIGatewayProxyHandler({
     "https://roamresearch.com",
     "https://logseq.com",
     "app://obsidian.md",
+    /^https:\/\/([\w]+\.)?notion\.so/,
   ],
 });

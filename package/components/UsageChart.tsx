@@ -34,7 +34,9 @@ const UsageChart = ({
           <div className="font-bold">Pages</div>
           {stats.notebooks.map((notebook) => (
             <React.Fragment key={notebook.uuid}>
-              <div className="font-semibold">{appsById[notebook.app].name}</div>
+              <div className="font-semibold">
+                {appsById[notebook.app]?.name || "Unknown"}
+              </div>
               <div className="font-normal">{notebook.workspace}</div>
               <div className="font-normal">{notebook.pages}</div>
             </React.Fragment>
