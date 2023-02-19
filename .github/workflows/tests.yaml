@@ -31,11 +31,17 @@ jobs:
           npx playwright install
           brew install mysql
           /usr/local/opt/mysql/bin/mysql.server start
+          echo "MYSQL STARTED!"
           mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'" -uroot
+          echo "MYSQL PW CREATED!"
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
+          echo "DATABASE CREATED!"
           npx fuego plan --sql
+          echo "DATABASE PLANNED!"
           npx fuego apply --sql --bare
+          echo "DATABASE APPLIED!"
           mysql -e "INSERT INTO samepage_network.quotas (uuid, value, field) VALUES (UUID(), 100, 0), (UUID(), 3, 1)" -uroot -proot
+          echo "DATABASE SEEDED!"
       # We separated unit tests and integration tests because c8 was having a hard time consolidating reports - but code cov wasn't!
       - name: Unit Tests
         run: npm t -- --project=unit
