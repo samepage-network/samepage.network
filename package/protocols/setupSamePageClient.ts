@@ -70,12 +70,12 @@ const setupSamePageClient = ({
   const unloadWS = setupWsFeatures({ notificationContainerPath });
   const offAppEvent = onAppEvent("log", onAppLog);
 
-  addNotebookListener({
+  const removeRequestListener = addNotebookListener({
     operation: "REQUEST",
     handler: async (e, source) => {
       const { request } = e as { request: JSONData };
       const response = await notebookRequestHandlers.reduce(
-        (p, c) => p || c({ request, source: source.uuid }),
+        (p, c) => p.then((prev) => prev || c(request)),
         Promise.resolve() as Promise<JSONData | undefined>
       );
       if (response) {
@@ -88,7 +88,7 @@ const setupSamePageClient = ({
       }
     },
   });
-  addNotebookListener({
+  const removeResponseListener = addNotebookListener({
     operation: "RESPONSE",
     handler: async (e, sender) => {
       const { request, response } = e as {
@@ -136,6 +136,8 @@ const setupSamePageClient = ({
 
   return {
     unload: () => {
+      removeResponseListener();
+      removeRequestListener();
       offAppEvent();
       unloadWS();
     },

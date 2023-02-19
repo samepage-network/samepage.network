@@ -7,14 +7,10 @@ import { InitialSchema, JSONData } from "../internal/types";
 
 // @deprecate this whole method...
 const setupNotebookQuerying = ({
-  // @deprecated
   onQuery = () => Promise.resolve({ content: "", annotations: [] }),
-  // @deprecated
   onQueryResponse = () => Promise.resolve(),
 }: {
-  // @deprecated
   onQuery?: (notebookPageId: string) => Promise<InitialSchema>;
-  // @deprecated
   onQueryResponse?: (response: {
     data: InitialSchema;
     request: string;
@@ -57,10 +53,7 @@ const setupNotebookQuerying = ({
     unload: () => {
       removeNotebookListener({ operation: "QUERY" });
       removeNotebookListener({ operation: "QUERY_RESPONSE" });
-      removeNotebookListener({ operation: "REQUEST" });
-      removeNotebookListener({ operation: "RESPONSE" });
     },
-    // @deprecated
     query: (request: string) =>
       apiClient<{
         found: boolean;
@@ -68,12 +61,6 @@ const setupNotebookQuerying = ({
       }>({
         method: "query",
         request,
-      }),
-    request: (targets: string | string[], request: JSONData = {}) =>
-      apiClient<{ found: true; data: JSONData } | { found: false }>({
-        method: "notebook-request",
-        request,
-        targets: typeof targets === "string" ? [targets] : targets,
       }),
   };
 };
