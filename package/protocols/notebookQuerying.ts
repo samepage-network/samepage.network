@@ -5,13 +5,12 @@ import {
 import apiClient from "../internal/apiClient";
 import { InitialSchema, JSONData } from "../internal/types";
 
+// @deprecate this whole method...
 const setupNotebookQuerying = ({
   // @deprecated
   onQuery = () => Promise.resolve({ content: "", annotations: [] }),
   // @deprecated
   onQueryResponse = () => Promise.resolve(),
-  onRequest = () => Promise.resolve({}),
-  onResponse = () => Promise.resolve(),
 }: {
   // @deprecated
   onQuery?: (notebookPageId: string) => Promise<InitialSchema>;
@@ -53,30 +52,7 @@ const setupNotebookQuerying = ({
     },
   });
 
-  addNotebookListener({
-    operation: "REQUEST",
-    handler: async (e, source) => {
-      const { request } = e as { request: JSONData };
-      const response = await onRequest(request);
-      apiClient({
-        method: "notebook-response",
-        request,
-        response,
-        target: source.uuid,
-      });
-    },
-  });
-  addNotebookListener({
-    operation: "RESPONSE",
-    handler: (e) => {
-      onResponse(
-        e as {
-          response: JSONData;
-          request: JSONData;
-        }
-      );
-    },
-  });
+  
   return {
     unload: () => {
       removeNotebookListener({ operation: "QUERY" });

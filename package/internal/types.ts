@@ -262,6 +262,54 @@ export type Memo = {
   headers: Record<string, string>;
   parent: CID | null;
 };
+export type RecentNotebook = {
+  uuid: string;
+  appName?: string;
+} & Notebook;
+
+export type ListConnectedNotebooks = (notebookPageId: string) => Promise<{
+  notebooks: {
+    app: string;
+    workspace: string;
+    version: number;
+    openInvite: boolean;
+    uuid: string;
+  }[];
+  recents: RecentNotebook[];
+}>;
+export type ListNotebooks = () => Promise<{
+  // TODO: Replace with RecentNotebook
+  notebooks: { uuid: string; appName: string; workspace: string }[];
+}>;
+export type AddNotebookRequestListener = (
+  args: (inner: {
+    request: JSONData;
+    sendResponse: (response: JSONData) => void;
+  }) => void
+) => () => void;
+
+const zNotebookRequest = z.object({
+  method: z.literal("notebook-request"),
+  request: z.record(z.any()),
+  targets: z.string().array(),
+});
+const zNotebookResponse = z.object({
+  method: z.literal("notebook-response"),
+  request: z.record(z.any()),
+  response: z.record(z.any()),
+  target: z.string(),
+});
+
+export type NotebookResponse = z.infer<typeof zNotebookResponse>["response"];
+
+export type SendNotebookRequest = (
+  args: Omit<z.infer<typeof zNotebookRequest>, "method"> & {
+    // the `onResponse` is an arg instead of called on promise resolution
+    // bc we want to call it multiple times. Once on initial cache hit, and
+    // again whenever the network wants to respond with updated info.
+    onResponse: (args: Record<string, NotebookResponse>) => void;
+  }
+) => Promise<unknown>;
 
 export const zUnauthenticatedBody = z.discriminatedUnion("method", [
   z
@@ -323,6 +371,9 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     notebookPageId: z.string(),
   }),
   z.object({
+    method: z.literal("list-recent-notebooks"),
+  }),
+  z.object({
     method: z.literal("list-shared-pages"),
   }),
   z.object({
@@ -336,17 +387,8 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     request: z.string(),
     target: z.string(),
   }),
-  z.object({
-    method: z.literal("notebook-request"),
-    request: z.record(z.any()),
-    targets: z.string().array(),
-  }),
-  z.object({
-    method: z.literal("notebook-response"),
-    request: z.record(z.any()),
-    response: z.record(z.any()),
-    target: z.string(),
-  }),
+  zNotebookRequest,
+  zNotebookResponse,
   z.object({
     oldNotebookPageId: z.string(),
     newNotebookPageId: z.string(),
@@ -396,6 +438,9 @@ export type SamePageAPI = {
   addNotebookListener: AddNotebookListener;
   removeNotebookListener: RemoveNotebookListener;
   sendToNotebook: SendToNotebook;
+  sendNotebookRequest: SendNotebookRequest;
+  listNotebooks: ListNotebooks;
+  addNotebookRequestListener: AddNotebookRequestListener;
 };
 
 declare global {

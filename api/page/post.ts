@@ -5,6 +5,7 @@ import {
   zAuthenticatedBody,
   zUnauthenticatedBody,
   zBaseHeaders,
+  JSONData,
 } from "package/internal/types";
 import { appsById } from "package/internal/apps";
 import parseZodError from "package/utils/parseZodError";
@@ -40,6 +41,20 @@ const zMethod = zUnauthenticatedBody
   .and(zBaseHeaders)
   .or(zAuthenticatedBody.and(zAuthHeaders).and(zBaseHeaders));
 
+const hashNotebookRequest = ({
+  target,
+  request,
+}: {
+  target: string;
+  request: JSONData;
+}) => {
+  return crypto
+    .createHash("md5")
+    .update(target)
+    .update(encode(request))
+    .digest("hex");
+};
+
 const validatePageQuota = async ({
   requestId,
   notebookUuid,
@@ -62,6 +77,33 @@ const validatePageQuota = async ({
       `Maximum number of pages allowed to be connected to this notebook on this plan is ${pageQuota}.`
     );
   }
+};
+
+const getRecentNotebooks = async ({ requestId }: { requestId: string }) => {
+  const cxn = await getMysql(requestId);
+  return (
+    cxn
+      // TODO - create better hueristics here for recent notebooks, prob its own LRU cache table
+      .execute(
+        `SELECT n.* FROM notebooks n 
+              INNER JOIN token_notebook_links l on l.notebook_uuid = n.uuid`
+      )
+      .then(([a]) => a as ({ uuid: string } & Notebook)[])
+      .then((recents) =>
+        Object.values(
+          Object.fromEntries(
+            recents.map((r) => [
+              r.uuid,
+              {
+                uuid: r.uuid,
+                workspace: r.workspace,
+                appName: appsById[r.app].name,
+              },
+            ])
+          )
+        )
+      )
+  );
 };
 
 const logic = async (req: Record<string, unknown>) => {
@@ -629,13 +671,7 @@ WHERE n.uuid ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
               })[]
           );
         const clientUuids = new Set(clients.map((c) => c.uuid));
-        const recents = await cxn
-          // TODO - create better hueristics here for recent notebooks, prob its own LRU cache table
-          .execute(
-            `SELECT n.* FROM notebooks n 
-              INNER JOIN token_notebook_links l on l.notebook_uuid = n.uuid`
-          )
-          .then(([a]) => a as ({ uuid: string } & Notebook)[]);
+        const recents = await getRecentNotebooks({ requestId });
         cxn.destroy();
         return {
           notebooks: clients.map((c) => ({
@@ -645,13 +681,14 @@ WHERE n.uuid ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
             version: c.version,
             openInvite: !!c.open,
           })),
-          recents: Object.values(
-            Object.fromEntries(
-              recents
-                .filter((r) => !clientUuids.has(r.uuid))
-                .map((r) => [r.uuid, { ...r, appName: appsById[r.app].name }])
-            )
-          ),
+          recents: recents.filter((r) => !clientUuids.has(r.uuid)),
+        };
+      }
+      case "list-recent-notebooks": {
+        const notebooks = await getRecentNotebooks({ requestId });
+        cxn.destroy();
+        return {
+          notebooks,
         };
       }
       case "list-shared-pages": {
@@ -746,36 +783,29 @@ WHERE n.uuid ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
       case "notebook-request": {
         const { request, targets } = args;
         if (!targets.length) {
-          return { found: false };
+          return {};
         }
-        const hash = crypto
-          .createHash("md5")
-          .update(encode(request))
-          .digest("hex");
-        return downloadFileContent({ Key: `data/requests/${hash}.json` })
-          .then((r) => {
-            if (r)
-              return {
-                data: JSON.parse(r),
-                found: true,
-              };
-            else return { found: false };
+        return Promise.all(
+          targets.map(async (target) => {
+            const hash = hashNotebookRequest({ request, target });
+            const data = await downloadFileContent({
+              Key: `data/requests/${hash}.json`,
+            });
+            await messageNotebook({
+              source: notebookUuid,
+              target,
+              operation: "REQUEST",
+              data: {
+                request,
+              },
+              requestId,
+            });
+            return [target, data];
           })
-          .then(async (body) =>
-            Promise.all(
-              targets.map((target) =>
-                messageNotebook({
-                  source: notebookUuid,
-                  target,
-                  operation: "REQUEST",
-                  data: {
-                    request,
-                  },
-                  requestId,
-                })
-              )
-            ).then(() => body)
-          )
+        )
+          .then((entries) => {
+            return Object.fromEntries(entries.filter(([, v]) => !!v));
+          })
           .catch(catchError("Failed to request across notebooks"));
       }
       case "notebook-response": {

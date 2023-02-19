@@ -1,4 +1,4 @@
-import type { Notebook } from "../internal/types";
+import type { ListConnectedNotebooks, RecentNotebook } from "../internal/types";
 import React from "react";
 import {
   AnchorButton,
@@ -15,22 +15,6 @@ import inviteNotebookToPage from "../utils/inviteNotebookToPage";
 // TODO - remove both of these fields when possible
 import { appIdByName, appsById } from "../internal/apps";
 import apiClient from "../internal/apiClient";
-
-type RecentNotebook = {
-  uuid: string;
-  appName?: string;
-} & Notebook;
-
-export type ListConnectedNotebooks = (notebookPageId: string) => Promise<{
-  notebooks: {
-    app: string;
-    workspace: string;
-    version: number;
-    openInvite: boolean;
-    uuid: string;
-  }[];
-  recents: RecentNotebook[];
-}>;
 
 const formatVersion = (s: number) =>
   s ? new Date(s * 1000).toLocaleString() : "unknown";
