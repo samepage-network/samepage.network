@@ -102,7 +102,8 @@ const setupSamePageClient = ({
   });
 
   if (typeof window !== "undefined") {
-    window.samepage = {
+    const parentWindow = window.parent !== window ? window.parent : window;
+    parentWindow.samepage = {
       addNotebookListener,
       removeNotebookListener,
       sendToNotebook,
@@ -128,7 +129,9 @@ const setupSamePageClient = ({
         };
       },
     };
-    document.body.dispatchEvent(new CustomEvent("samepage:loaded"));
+    parentWindow.document.body.dispatchEvent(
+      new CustomEvent("samepage:loaded")
+    );
   }
 
   return {

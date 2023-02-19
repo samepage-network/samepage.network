@@ -2,14 +2,15 @@ import type { SamePageAPI } from "../internal/types";
 
 const getSamePageAPI = async () => {
   if (typeof window !== "undefined") {
-    if (typeof window.samepage !== "undefined") {
-      return window.samepage;
+    const parentWindow = window.parent !== window ? window.parent : window;
+    if (typeof parentWindow.samepage !== "undefined") {
+      return parentWindow.samepage;
     } else {
       return new Promise<SamePageAPI>((resolve) => {
-        document.body.addEventListener(
+        parentWindow.document.body.addEventListener(
           "samepage:loaded",
           () => {
-            resolve(window.samepage);
+            resolve(parentWindow.samepage);
           },
           { once: true }
         );

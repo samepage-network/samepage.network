@@ -31,10 +31,10 @@ jobs:
           npx playwright install
           brew install mysql
           /usr/local/opt/mysql/bin/mysql.server start
-          echo "MYSQL STARTED!"
           mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'" -uroot
-          echo "MYSQL PW CREATED!"
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
+          echo "SHOW TABLES!"
+          mysql -e "show tables" -uroot -proot -Dsamepage_network
           echo "DATABASE CREATED!"
           npx fuego plan --sql
           echo "DATABASE PLANNED!"
