@@ -804,17 +804,15 @@ WHERE n.uuid ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
           })
         )
           .then((entries) => {
-            return Object.fromEntries(entries.filter(([, v]) => !!v));
+            return Object.fromEntries(
+              entries.filter(([, v]) => !!v).map(([k, v]) => [k, JSON.parse(v)])
+            );
           })
           .catch(catchError("Failed to request across notebooks"));
       }
       case "notebook-response": {
         const { request, response, target } = args;
-        // TODO replace with IPFS
-        const hash = crypto
-          .createHash("md5")
-          .update(encode(request))
-          .digest("hex");
+        const hash = hashNotebookRequest({ request, target: notebookUuid });
         await uploadFile({
           Body: JSON.stringify(response),
           Key: `data/requests/${hash}.json`,
