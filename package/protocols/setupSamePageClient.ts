@@ -17,7 +17,7 @@ import setupRegistry from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
 import setupWsFeatures from "../internal/setupWsFeatures";
 import { onAppEvent } from "../internal/registerAppEventListener";
-import apiClient from "package/internal/apiClient";
+import apiClient from "../internal/apiClient";
 import { encode } from "@ipld/dag-cbor";
 
 const notebookRequestHandlers: ((
