@@ -33,9 +33,11 @@ jobs:
           /usr/local/opt/mysql/bin/mysql.server start
           mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'" -uroot
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
-          echo "SHOW TABLES!"
-          mysql -e "show tables" -uroot -proot -Dsamepage_network
           echo "DATABASE CREATED!"
+          mysql -e "show databases" -uroot -proot -Dsamepage_network
+          echo "SHOW DATABASES!"
+          sed -i '' 's/"Fuego Args:"/process.env.DATABASE_URL/' node_modules/fuegojs/utils/base.js
+          echo "HACKED FILE"
           npx fuego plan --sql
           echo "DATABASE PLANNED!"
           npx fuego apply --sql --bare
