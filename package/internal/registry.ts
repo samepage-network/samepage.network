@@ -26,7 +26,7 @@ const defaultRenderOverlay: RenderOverlay = ({
   const pathElement =
     typeof path === "string" ? document.querySelector(path) : path;
   if (pathElement && !pathElement.querySelector(`#${parent.id}`)) {
-    // dynamic render so that React17 apps could still use the registry
+    // dynamic render so that React17 tfts could still use the registry
     import("react-dom/client")
       .then((ReactDOM) => {
         pathElement.appendChild(parent);

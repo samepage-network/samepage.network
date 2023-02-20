@@ -194,11 +194,7 @@ const HistoryContent = ({
         autoFocus={false}
         portalContainer={portalContainer}
       >
-        <div
-          className={`${Classes.DIALOG_BODY} text-black`}
-          onKeyDown={(e) => e.stopPropagation()}
-          onPaste={(e) => e.stopPropagation()}
-        >
+        <div className={`${Classes.DIALOG_BODY} text-black`}>
           <p>
             There are {selectedChange?.change.ops.length} operations in this
             change. Snapshot at this version:
@@ -280,6 +276,16 @@ const SharedPageStatus = ({
             <SharePageDialog
               {...props}
               notebookPageId={notebookPageId}
+              removeOpenInvite={(app, workspace) =>
+                apiClient({
+                  method: "remove-page-invite",
+                  notebookPageId,
+                  target: {
+                    app,
+                    workspace,
+                  },
+                })
+              }
               listConnectedNotebooks={(notebookPageId: string) =>
                 Promise.all([
                   apiClient<{

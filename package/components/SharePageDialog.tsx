@@ -1,4 +1,4 @@
-import type { ListConnectedNotebooks, RecentNotebook } from "../internal/types";
+import type { AppId, Notebook } from "../internal/types";
 import React from "react";
 import {
   AnchorButton,
@@ -12,9 +12,25 @@ import {
 } from "@blueprintjs/core";
 import { MultiSelect, MultiSelect2 } from "@blueprintjs/select";
 import inviteNotebookToPage from "../utils/inviteNotebookToPage";
-// TODO - remove both of these fields when possible
 import { appIdByName, appsById } from "../internal/apps";
-import apiClient from "../internal/apiClient";
+
+export type ListConnectedNotebooks = (notebookPageId: string) => Promise<{
+  notebooks: {
+    app: string;
+    workspace: string;
+    version: number;
+    openInvite: boolean;
+    uuid: string;
+  }[];
+  recents: ({
+    uuid: string;
+  } & Notebook)[];
+}>;
+
+export type RemoveOpenInvite = (
+  app: AppId,
+  workspace: string
+) => Promise<{ success: boolean }>;
 
 const formatVersion = (s: number) =>
   s ? new Date(s * 1000).toLocaleString() : "unknown";
@@ -25,6 +41,7 @@ export type Props = {
   isOpen?: boolean;
   notebookPageId: string;
   listConnectedNotebooks: ListConnectedNotebooks;
+  removeOpenInvite: RemoveOpenInvite;
 };
 
 const MultiSelectComponent = MultiSelect2 || MultiSelect;
@@ -34,15 +51,18 @@ const SharePageDialog = ({
   isOpen = true,
   portalContainer,
   listConnectedNotebooks,
+  removeOpenInvite,
   notebookPageId,
 }: Props) => {
   const [notebooks, setNotebooks] = React.useState<
     Awaited<ReturnType<ListConnectedNotebooks>>["notebooks"]
   >([]);
-  const [recents, setRecents] = React.useState<RecentNotebook[]>([]);
+  const [recents, setRecents] = React.useState<
+    Awaited<ReturnType<ListConnectedNotebooks>>["recents"]
+  >([]);
   const [inviteQuery, setInviteQuery] = React.useState("");
   const [currentNotebooks, setCurrentNotebooks] = React.useState<
-    RecentNotebook[]
+    ({ uuid: string } & Notebook)[]
   >([]);
   const currentNotebookUuids = React.useMemo(
     () => new Set(currentNotebooks.map((n) => n.uuid)),
@@ -71,22 +91,15 @@ const SharePageDialog = ({
         .finally(() => setLoading(false));
       setNotebooks(
         notebooks.concat(
-          currentNotebooks
-            .filter((n) => n.appName || appsById[n.app]?.name)
-            .map((n) => ({
-              ...n,
-              openInvite: true,
-              version: 0,
-              app: n.appName || appsById[n.app]?.name,
-            }))
+          currentNotebooks.map((n) => ({
+            ...n,
+            openInvite: true,
+            version: 0,
+            app: appsById[n.app].name,
+          }))
         )
       );
-      setRecents(
-        recents.filter(
-          (r) =>
-            !currentNotebookUuids.has(r.uuid) && (r.appName || appsById[r.app])
-        )
-      );
+      setRecents(recents.filter((r) => !currentNotebookUuids.has(r.uuid)));
     }
   };
 
@@ -114,11 +127,7 @@ const SharePageDialog = ({
       autoFocus={false}
       portalContainer={portalContainer}
     >
-      <div
-        className={`${Classes.DIALOG_BODY} text-black`}
-        // onKeyDown={(e) => e.stopPropagation()}
-        // onPaste={(e) => e.stopPropagation()}
-      >
+      <div className={`${Classes.DIALOG_BODY} text-black`}>
         {notebooks.map((g) => (
           <div
             key={`${g.app}/${g.workspace}`}
@@ -135,22 +144,19 @@ const SharePageDialog = ({
                   icon={"trash"}
                   onClick={() => {
                     setLoading(true);
-                    apiClient({
-                      method: "remove-page-invite",
-                      notebookPageId,
-                      target: g.uuid,
-                    })
+                    removeOpenInvite(appIdByName[g.app], g.workspace)
                       .then(() => {
                         setNotebooks(
                           notebooks.filter((n) => n.uuid !== g.uuid)
                         );
                         setRecents(
-                          recents.concat({
-                            uuid: g.uuid,
-                            workspace: g.workspace,
-                            app: appIdByName[g.app],
-                            appName: g.app,
-                          })
+                          [
+                            {
+                              uuid: g.uuid,
+                              workspace: g.workspace,
+                              app: appIdByName[g.app],
+                            },
+                          ].concat(recents)
                         );
                       })
                       .finally(() => setLoading(false));
@@ -187,7 +193,7 @@ const SharePageDialog = ({
                   <div className="text-black">
                     <div>
                       <span className="font-bold text-base">
-                        {a.appName || appsById[a.app]?.name}
+                        {appsById[a.app].name}
                       </span>{" "}
                       <span className="font-normal text-sm">{a.workspace}</span>
                     </div>
@@ -210,7 +216,7 @@ const SharePageDialog = ({
             tagRenderer={(a) => (
               <span>
                 <span className="font-bold text-base">
-                  {a.appName || appsById[a.app]?.name}
+                  {appsById[a.app].name}
                 </span>{" "}
                 <span className="font-normal text-sm">{a.workspace}</span>
               </span>
@@ -221,7 +227,7 @@ const SharePageDialog = ({
               const q = Q.toLowerCase();
               return (
                 i.workspace.toLowerCase().includes(q) ||
-                `${i.appName || appsById[i.app]?.name} ${i.workspace}`
+                `${appsById[i.app].name} ${i.workspace}`
                   .toLowerCase()
                   .includes(q)
               );

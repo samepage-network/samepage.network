@@ -5,7 +5,6 @@ import {
   zAuthenticatedBody,
   zUnauthenticatedBody,
   zBaseHeaders,
-  JSONData,
 } from "package/internal/types";
 import { appsById } from "package/internal/apps";
 import parseZodError from "package/utils/parseZodError";
@@ -41,20 +40,6 @@ const zMethod = zUnauthenticatedBody
   .and(zBaseHeaders)
   .or(zAuthenticatedBody.and(zAuthHeaders).and(zBaseHeaders));
 
-const hashNotebookRequest = ({
-  target,
-  request,
-}: {
-  target: string;
-  request: JSONData;
-}) => {
-  return crypto
-    .createHash("md5")
-    .update(target)
-    .update(encode(request))
-    .digest("hex");
-};
-
 const validatePageQuota = async ({
   requestId,
   notebookUuid,
@@ -77,33 +62,6 @@ const validatePageQuota = async ({
       `Maximum number of pages allowed to be connected to this notebook on this plan is ${pageQuota}.`
     );
   }
-};
-
-const getRecentNotebooks = async ({ requestId }: { requestId: string }) => {
-  const cxn = await getMysql(requestId);
-  return (
-    cxn
-      // TODO - create better hueristics here for recent notebooks, prob its own LRU cache table
-      .execute(
-        `SELECT n.* FROM notebooks n 
-              INNER JOIN token_notebook_links l on l.notebook_uuid = n.uuid`
-      )
-      .then(([a]) => a as ({ uuid: string } & Notebook)[])
-      .then((recents) =>
-        Object.values(
-          Object.fromEntries(
-            recents.map((r) => [
-              r.uuid,
-              {
-                uuid: r.uuid,
-                workspace: r.workspace,
-                appName: appsById[r.app].name,
-              },
-            ])
-          )
-        )
-      )
-  );
 };
 
 const logic = async (req: Record<string, unknown>) => {
@@ -582,20 +540,7 @@ const logic = async (req: Record<string, unknown>) => {
       }
       case "remove-page-invite": {
         const { notebookPageId, target } = args;
-        const { linkUuid, invitedBy } = await (typeof target === "string"
-          ? cxn
-              .execute(
-                `SELECT l.uuid 
-FROM page_notebook_links l
-INNER JOIN notebooks n ON n.uuid = l.notebook_uuid
-WHERE n.uuid ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
-                [target, notebookPageId, notebookUuid]
-              )
-              .then(([invitedByLink]) => ({
-                invitedBy: notebookUuid,
-                linkUuid: (invitedByLink as { uuid: string }[])[0]?.uuid,
-              }))
-          : typeof target === "object"
+        const { linkUuid, invitedBy } = await (target
           ? cxn
               .execute(
                 `SELECT l.uuid 
@@ -624,6 +569,7 @@ WHERE n.uuid ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
         if (!linkUuid) {
           throw new NotFoundError(`Could not find valid invite to remove.`);
         }
+        console.log("invitedBy", invitedBy, "target", target);
         return cxn
           .execute(`DELETE FROM page_notebook_links WHERE uuid = ?`, [linkUuid])
           .then(() =>
@@ -671,7 +617,13 @@ WHERE n.uuid ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
               })[]
           );
         const clientUuids = new Set(clients.map((c) => c.uuid));
-        const recents = await getRecentNotebooks({ requestId });
+        const recents = await cxn
+          // TODO - create better hueristics here for recent notebooks, prob its own LRU cache table
+          .execute(
+            `SELECT n.* FROM notebooks n 
+              INNER JOIN token_notebook_links l on l.notebook_uuid = n.uuid`
+          )
+          .then(([a]) => a as ({ uuid: string } & Notebook)[]);
         cxn.destroy();
         return {
           notebooks: clients.map((c) => ({
@@ -681,14 +633,13 @@ WHERE n.uuid ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
             version: c.version,
             openInvite: !!c.open,
           })),
-          recents: recents.filter((r) => !clientUuids.has(r.uuid)),
-        };
-      }
-      case "list-recent-notebooks": {
-        const notebooks = await getRecentNotebooks({ requestId });
-        cxn.destroy();
-        return {
-          notebooks,
+          recents: Object.values(
+            Object.fromEntries(
+              recents
+                .filter((r) => !clientUuids.has(r.uuid))
+                .map((r) => [r.uuid, r])
+            )
+          ),
         };
       }
       case "list-shared-pages": {
@@ -783,36 +734,45 @@ WHERE n.uuid ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
       case "notebook-request": {
         const { request, targets } = args;
         if (!targets.length) {
-          return {};
+          return { found: false };
         }
-        return Promise.all(
-          targets.map(async (target) => {
-            const hash = hashNotebookRequest({ request, target });
-            const data = await downloadFileContent({
-              Key: `data/requests/${hash}.json`,
-            });
-            await messageNotebook({
-              source: notebookUuid,
-              target,
-              operation: "REQUEST",
-              data: {
-                request,
-              },
-              requestId,
-            });
-            return [target, data];
+        const hash = crypto
+          .createHash("md5")
+          .update(encode(request))
+          .digest("hex");
+        return downloadFileContent({ Key: `data/requests/${hash}.json` })
+          .then((r) => {
+            if (r)
+              return {
+                data: JSON.parse(r),
+                found: true,
+              };
+            else return { found: false };
           })
-        )
-          .then((entries) => {
-            return Object.fromEntries(
-              entries.filter(([, v]) => !!v).map(([k, v]) => [k, JSON.parse(v)])
-            );
-          })
+          .then(async (body) =>
+            Promise.all(
+              targets.map((target) =>
+                messageNotebook({
+                  source: notebookUuid,
+                  target,
+                  operation: "REQUEST",
+                  data: {
+                    request,
+                  },
+                  requestId,
+                })
+              )
+            ).then(() => body)
+          )
           .catch(catchError("Failed to request across notebooks"));
       }
       case "notebook-response": {
         const { request, response, target } = args;
-        const hash = hashNotebookRequest({ request, target: notebookUuid });
+        // TODO replace with IPFS
+        const hash = crypto
+          .createHash("md5")
+          .update(encode(request))
+          .digest("hex");
         await uploadFile({
           Body: JSON.stringify(response),
           Key: `data/requests/${hash}.json`,
@@ -939,6 +899,5 @@ export const handler = createAPIGatewayProxyHandler({
     "https://roamresearch.com",
     "https://logseq.com",
     "app://obsidian.md",
-    /^https:\/\/([\w]+\.)?notion\.so/,
   ],
 });
