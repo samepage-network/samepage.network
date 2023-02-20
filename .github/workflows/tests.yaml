@@ -34,7 +34,7 @@ jobs:
           mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'" -uroot
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
           echo "DATABASE CREATED!"
-          mysql -uroot -proot -e "SHOW GLOBAL VARIABLES LIKE 'PORT';"
+          mysql -uroot -proot --host=localhost --port=3306 --database=samepage_network -e "SHOW GLOBAL VARIABLES LIKE 'PORT';"
           echo "SHOW PORT!"
           npx fuego plan --sql
           echo "DATABASE PLANNED!"
