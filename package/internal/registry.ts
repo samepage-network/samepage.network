@@ -23,33 +23,39 @@ const defaultRenderOverlay: RenderOverlay = ({
   if (typeof document === "undefined") return undefined;
   const parent = document.createElement("div");
   parent.id = id.replace(/^\d*/, "");
-  const pathElement =
-    typeof path === "string" ? document.querySelector(path) : path;
-  if (pathElement && !pathElement.querySelector(`#${parent.id}`)) {
-    // dynamic render so that React17 apps could still use the registry
-    import("react-dom/client")
-      .then((ReactDOM) => {
-        pathElement.appendChild(parent);
-        const root = ReactDOM.createRoot(parent);
-        onClose = () => {
-          root.unmount();
-          parent.remove();
-        };
-        root.render(
-          //@ts-ignore what is happening here...
-          React.createElement(Overlay, {
-            ...props,
-            onClose,
-            isOpen: true,
-          })
+
+  const render = (i = 0) => {
+    const pathElement =
+      typeof path === "string" ? document.querySelector(path) : path;
+    if (pathElement && !pathElement.querySelector(`#${parent.id}`)) {
+      // dynamic render so that React17 apps could still use the registry
+      import("react-dom/client")
+        .then((ReactDOM) => {
+          pathElement.appendChild(parent);
+          const root = ReactDOM.createRoot(parent);
+          onClose = () => {
+            root.unmount();
+            parent.remove();
+          };
+          root.render(
+            //@ts-ignore what is happening here...
+            React.createElement(Overlay, {
+              ...props,
+              onClose,
+              isOpen: true,
+            })
+          );
+        })
+        .catch(() =>
+          Promise.reject(
+            "SamePage's default `renderOverlay` method uses React18. If you require an earlier version of React, please provide your own `renderOverlay` method."
+          )
         );
-      })
-      .catch(() =>
-        Promise.reject(
-          "SamePage's default `renderOverlay` method uses React18. If you require an earlier version of React, please provide your own `renderOverlay` method."
-        )
-      );
-  }
+    } else if (i < 100) {
+      setTimeout(() => render(i + 1), 100);
+    }
+  };
+  render();
   return () => {
     onClose?.();
   };
