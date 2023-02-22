@@ -36,6 +36,7 @@ import QUOTAS from "~/data/quotas.server";
 import connectNotebook from "~/data/connectNotebook.server";
 import getQuota from "~/data/getQuota.server";
 import { encode } from "@ipld/dag-cbor";
+import { users } from "@clerk/clerk-sdk-node";
 
 const zMethod = zUnauthenticatedBody
   .and(zBaseHeaders)
@@ -117,37 +118,60 @@ const logic = async (req: Record<string, unknown>) => {
   console.log("Received method:", args.method);
   try {
     if (args.method === "create-notebook") {
-      const { inviteCode, app, workspace } = args;
-      const [results] = await cxn.execute(
-        `SELECT token_uuid, expiration_date FROM invitations where code = ?`,
-        [inviteCode]
-      );
-      const [invite] = results as {
-        token_uuid: string;
-        expiration_date: Date;
-      }[];
-      if (!invite) {
-        throw new NotFoundError("Could not find invite");
-      }
-      if (invite.token_uuid) {
-        throw new ConflictError(
-          "Invite has already been claimed by a notebook."
+      const { inviteCode, app, workspace, email } = args;
+      if (!inviteCode && !email) {
+        throw new BadRequestError(
+          "One of either `inviteCode` or `email` is required."
         );
       }
-      if (new Date().valueOf() >= invite.expiration_date.valueOf()) {
-        throw new ConflictError(
-          "Invite has expired. Please request a new one from the team."
+      if (!email) {
+        const [results] = await cxn.execute(
+          `SELECT token_uuid, expiration_date FROM invitations where code = ?`,
+          [inviteCode]
         );
-      }
+        const [invite] = results as {
+          token_uuid: string;
+          expiration_date: Date;
+        }[];
+        if (!invite) {
+          throw new NotFoundError("Could not find invite");
+        }
+        if (invite.token_uuid) {
+          throw new ConflictError(
+            "Invite has already been claimed by a notebook."
+          );
+        }
+        if (new Date().valueOf() >= invite.expiration_date.valueOf()) {
+          throw new ConflictError(
+            "Invite has expired. Please request a new one from the team."
+          );
+        }
 
+        const { token, tokenUuid, notebookUuid } = await createNotebook({
+          requestId,
+          app,
+          workspace,
+        });
+        await cxn.execute(
+          `UPDATE invitations SET token_uuid = ? where code = ?`,
+          [tokenUuid, inviteCode]
+        );
+        cxn.destroy();
+        return { notebookUuid, token };
+      }
+      const userId = await users
+        .createUser({ emailAddress: [email] })
+        .then((u) => u.id);
       const { token, tokenUuid, notebookUuid } = await createNotebook({
         requestId,
         app,
         workspace,
       });
       await cxn.execute(
-        `UPDATE invitations SET token_uuid = ? where code = ?`,
-        [tokenUuid, inviteCode]
+        `UPDATE tokens t
+      SET t.user_id = ?
+      WHERE t.uuid = ?`,
+        [userId, tokenUuid]
       );
       cxn.destroy();
       return { notebookUuid, token };

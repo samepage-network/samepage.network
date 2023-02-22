@@ -3,7 +3,7 @@
 // - This page itself will be more performant as the expensive parts of each query happens in the background.
 import getMysql from "fuegojs/utils/mysql";
 
-const loadActiveAnalytics = async ({ requestId }: { requestId: string }) => {
+const loadNotebookAnalytics = async ({ requestId }: { requestId: string }) => {
   const cxn = await getMysql(requestId);
   const data = await cxn
     .execute(
@@ -26,4 +26,4 @@ ORDER BY date;
   return { data };
 };
 
-export default loadActiveAnalytics;
+export default loadNotebookAnalytics;

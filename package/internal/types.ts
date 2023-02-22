@@ -313,7 +313,11 @@ export type SendNotebookRequest = (
 
 export const zUnauthenticatedBody = z.discriminatedUnion("method", [
   z
-    .object({ method: z.literal("create-notebook"), inviteCode: z.string() })
+    .object({
+      method: z.literal("create-notebook"),
+      inviteCode: z.string().optional(),
+      email: z.string().optional(),
+    })
     .merge(zNotebook),
   z.object({ method: z.literal("ping") }),
 ]);

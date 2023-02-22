@@ -9,6 +9,7 @@ const token = z.object({
   uuid,
   value: z.string(),
   userId: z.string().optional(),
+  createdDate: z.date(),
 });
 
 const tokenNotebookLink = z

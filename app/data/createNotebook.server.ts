@@ -13,9 +13,9 @@ const createNotebook = async ({
   const tokenUuid = v4();
   const cxn = await getMysql(requestId);
   await cxn.execute(
-    `INSERT INTO tokens (uuid, value)
-      VALUES (?, ?)`,
-    [tokenUuid, token]
+    `INSERT INTO tokens (uuid, value, created_date)
+      VALUES (?, ?, ?)`,
+    [tokenUuid, token, new Date()]
   );
   const notebookUuid = await getOrGenerateNotebookUuid({
     requestId,

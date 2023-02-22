@@ -1,7 +1,7 @@
 import getMysqlConnection from "fuegojs/utils/mysql";
 import { users } from "@clerk/clerk-sdk-node";
 
-// TODO - Call this automatically when a user registers for SamePage with w e b h o o k s 💣
+// TODO - We could nuke this soon
 const migrateNotebooksForUser = async ({
   context: { requestId },
   userId,

@@ -122,7 +122,7 @@ const CreateNotebookPage = ({
   setPage: (s: Page) => void;
   onSuccess: OnSuccess;
 }) => {
-  const [inviteCode, setInviteCode] = React.useState("");
+  const [email, setEmail] = React.useState("");
   const [termsOfUse, setTermsOfUse] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
@@ -130,7 +130,7 @@ const CreateNotebookPage = ({
     setLoading(true);
     apiClient<{ notebookUuid: string; token: string }>({
       method: "create-notebook",
-      inviteCode,
+      email,
       app,
       workspace,
     })
@@ -142,7 +142,7 @@ const CreateNotebookPage = ({
       .finally(() => {
         setLoading(false);
       });
-  }, [setError, setLoading, setPage, onSuccess, inviteCode]);
+  }, [setError, setLoading, setPage, onSuccess, email]);
   return (
     <Fragment>
       {loading && (
@@ -151,16 +151,16 @@ const CreateNotebookPage = ({
         </div>
       )}
       <h1 className="text-lg font-normal">
-        Create a Notebook by generating a Universal Id
+        Enter your email to create an account and link this notebook
       </h1>
       <Label className={"w-1/2"}>
-        Invite Code
+        Email
         <InputGroup
-          value={inviteCode}
-          onChange={(e) => setInviteCode(e.target.value)}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           autoFocus
           type={"text"}
-          name={"inviteCode"}
+          name={"email"}
         />
       </Label>
       <Checkbox
@@ -182,7 +182,7 @@ const CreateNotebookPage = ({
       />
       <div className="flex items-center gap-8">
         <Button
-          disabled={!termsOfUse || !inviteCode || loading}
+          disabled={!termsOfUse || !email || loading}
           text={"Create"}
           intent={"primary"}
           onClick={onCreate}
@@ -263,8 +263,8 @@ const Onboarding = ({
 }`}</style>
       <div
         className={`${Classes.DIALOG_BODY} flex flex-col gap-2 items-center text-black`}
-        onKeyDown={e => e.stopPropagation()}
-        onPaste={e => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        onPaste={(e) => e.stopPropagation()}
       >
         {page === "WELCOME" && (
           <Fragment>
