@@ -34,18 +34,13 @@ jobs:
       - name: publish
         run: npm publish --access public
         working-directory: dist
-      - name: Conventional Changelog Action
-        id: changelog
-        uses: TriPSs/conventional-changelog-action@v3 
-        with: 
-          github-token: ${{ secrets.TERRAFORM_GITHUB_TOKEN }}
-          output-file: "false"
+      - name: Set version
+        run: echo "VERSION=$(cat package.json | grep version | cut -d '"' -f 4)" >> $GITHUB_ENV
       - name: Create Release
         uses: actions/create-release@v1
         if: ${{ steps.changelog.outputs.skipped == 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.TERRAFORM_GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.changelog.outputs.tag }}
-          release_name: ${{ steps.changelog.outputs.tag }}
-          body: ${{ steps.changelog.outputs.clean_changelog }}
+          tag_name: ${{ env.VERSION }}
+          release_name: ${{ env.VERSION }}
