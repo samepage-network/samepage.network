@@ -118,7 +118,7 @@ const logic = async (req: Record<string, unknown>) => {
   console.log("Received method:", args.method);
   try {
     if (args.method === "create-notebook") {
-      const { inviteCode, app, workspace, email } = args;
+      const { inviteCode, app, workspace, email, password = "" } = args;
       if (!inviteCode && !email) {
         throw new BadRequestError(
           "One of either `inviteCode` or `email` is required."
@@ -160,8 +160,17 @@ const logic = async (req: Record<string, unknown>) => {
         return { notebookUuid, token };
       }
       const userId = await users
-        .createUser({ emailAddress: [email] })
-        .then((u) => u.id);
+        .createUser({ emailAddress: [email], password })
+        .then((u) => u.id)
+        .catch((e) => {
+          const msg = e.errors
+            .map(
+              (a: { message: string; longMessage: string }) =>
+                a.longMessage || a.message
+            )
+            .join("\n");
+          return Promise.reject(new BadRequestError(msg));
+        });
       const { token, tokenUuid, notebookUuid } = await createNotebook({
         requestId,
         app,

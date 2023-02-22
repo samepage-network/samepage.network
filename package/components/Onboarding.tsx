@@ -123,6 +123,7 @@ const CreateNotebookPage = ({
   onSuccess: OnSuccess;
 }) => {
   const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const [termsOfUse, setTermsOfUse] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
@@ -131,6 +132,7 @@ const CreateNotebookPage = ({
     apiClient<{ notebookUuid: string; token: string }>({
       method: "create-notebook",
       email,
+      password,
       app,
       workspace,
     })
@@ -142,7 +144,7 @@ const CreateNotebookPage = ({
       .finally(() => {
         setLoading(false);
       });
-  }, [setError, setLoading, setPage, onSuccess, email]);
+  }, [setError, setLoading, setPage, onSuccess, email, password]);
   return (
     <Fragment>
       {loading && (
@@ -151,7 +153,7 @@ const CreateNotebookPage = ({
         </div>
       )}
       <h1 className="text-lg font-normal">
-        Enter your email to create an account and link this notebook
+        Create an account to link this notebook
       </h1>
       <Label className={"w-1/2"}>
         Email
@@ -161,6 +163,13 @@ const CreateNotebookPage = ({
           autoFocus
           type={"text"}
           name={"email"}
+        />
+        Password
+        <InputGroup
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          type={"text"}
+          name={"password"}
         />
       </Label>
       <Checkbox

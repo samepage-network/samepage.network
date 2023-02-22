@@ -38,7 +38,6 @@ jobs:
         run: echo "VERSION=$(cat package.json | grep version | cut -d '"' -f 4)" >> $GITHUB_ENV
       - name: Create Release
         uses: actions/create-release@v1
-        if: ${{ steps.changelog.outputs.skipped == 'false' }}
         env:
           GITHUB_TOKEN: ${{ secrets.TERRAFORM_GITHUB_TOKEN }}
         with:

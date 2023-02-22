@@ -317,6 +317,7 @@ export const zUnauthenticatedBody = z.discriminatedUnion("method", [
       method: z.literal("create-notebook"),
       inviteCode: z.string().optional(),
       email: z.string().optional(),
+      password: z.string().optional(),
     })
     .merge(zNotebook),
   z.object({ method: z.literal("ping") }),
