@@ -1,9 +1,9 @@
-import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
+import createAPIGatewayProxyHandler from "~/data/createAPIGatewayProxyHandler.server";
 import {
   BadRequestError,
   InternalServorError,
   NotFoundError,
-} from "@dvargas92495/app/backend/errors.server";
+} from "~/data/errors.server";
 import axios from "axios";
 
 const logic = ({

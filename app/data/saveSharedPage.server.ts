@@ -2,7 +2,7 @@ import Automerge from "automerge";
 import type { LatestSchema, Memo } from "package/internal/types";
 import { encode } from "@ipld/dag-cbor";
 import { CID } from "multiformats";
-import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
+import uploadFile from "~/data/uploadFile.server";
 import invokeAsync from "./invokeAsync.server";
 
 const saveSharedPage = async ({

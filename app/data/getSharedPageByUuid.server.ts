@@ -2,7 +2,7 @@ import getMysqlConnection from "fuegojs/utils/mysql";
 import type { AppId, InitialSchema, Schema } from "package/internal/types";
 import Automerge from "automerge";
 import downloadSharedPage from "./downloadSharedPage.server";
-import { NotFoundError } from "@dvargas92495/app/backend/errors.server";
+import { NotFoundError } from "~/data/errors.server";
 import unwrapSchema from "package/utils/unwrapSchema";
 
 const DEFAULT_SCHEMA: InitialSchema = {

@@ -6,7 +6,7 @@ import { useLoaderData } from "@remix-run/react";
 import useMarkdownComponent, {
   MarkdownComponent,
 } from "~/components/useMarkdownComponent";
-import ExternalLink from "@dvargas92495/app/components/ExternalLink";
+import ExternalLink from "~/components/ExternalLink";
 
 const CareerDescriptionPage = () => {
   const { career } = useLoaderData<{ career: typeof CAREERS[number] }>();

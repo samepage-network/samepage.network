@@ -1,10 +1,7 @@
 import { Lambda } from "@aws-sdk/client-lambda";
-import { domain } from "@dvargas92495/app/backend/constants.server";
 import axios from "axios";
 import { v4 } from "uuid";
 import { handler as uploadToIpfs } from "../../api/upload-to-ipfs";
-// import { spawn } from "child_process";
-// import fs from "fs";
 
 const lambda = new Lambda({ region: process.env.AWS_REGION });
 
@@ -19,7 +16,7 @@ const invokeAsync =
       }) =>
         lambda
           .invoke({
-            FunctionName: `${domain.replace(/\./g, "-")}_${path}`,
+            FunctionName: `samepage-network_${path}`,
             InvocationType: "Event",
             Payload: Buffer.from(JSON.stringify(data)),
           })

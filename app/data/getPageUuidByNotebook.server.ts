@@ -1,5 +1,5 @@
 import getMysqlConnection from "fuegojs/utils/mysql";
-import { NotFoundError } from "@dvargas92495/app/backend/errors.server";
+import { NotFoundError } from "~/data/errors.server";
 
 const getPageUuidByNotebook = async ({
   uuid,

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Fetcher, useActionData } from "@remix-run/react";
-import Toast from "./Toast";
+import Toast from "~/components/Toast";
 
 const SuccessfulActionToast = ({
   message = "Successfully submitted action!",
@@ -13,10 +13,7 @@ const SuccessfulActionToast = ({
   const [isOpen, setIsOpen] = useState(false);
   const [errReason, setErrReason] = useState("");
   const triggerSuccess = useMemo(
-    () =>
-      fetcher
-        ? fetcher.state === "loading" && fetcher.data?.success
-        : data?.success,
+    () => (fetcher ? fetcher.data?.success : data?.success),
     [data, fetcher]
   );
   const triggerErrorReason = useMemo(() => {

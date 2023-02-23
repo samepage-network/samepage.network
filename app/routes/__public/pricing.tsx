@@ -1,4 +1,4 @@
-import ExternalLink from "@dvargas92495/app/components/ExternalLink";
+import ExternalLink from "~/components/ExternalLink";
 import CheckIcon from "@heroicons/react/solid/CheckIcon";
 import ArrowRightIcon from "@heroicons/react/outline/ArrowRightIcon";
 import { Link } from "@remix-run/react";

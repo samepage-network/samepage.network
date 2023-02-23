@@ -1,4 +1,4 @@
-import { ConflictError } from "@dvargas92495/app/backend/errors.server";
+import { ConflictError } from "~/data/errors.server";
 import getMysql from "fuegojs/utils/mysql";
 import connectNotebook from "./connectNotebook.server";
 

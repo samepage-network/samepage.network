@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import AtJsonRendered from "package/components/AtJsonRendered";
-import Textarea from "@dvargas92495/app/components/Textarea";
+import Textarea from "~/components/Textarea";
 import { zInitialSchema } from "package/internal/types";
 
 const DEFAULT_VALUE = `{

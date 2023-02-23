@@ -1,9 +1,9 @@
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
-import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
-import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
-import Button from "@dvargas92495/app/components/Button";
-import Switch from "@dvargas92495/app/components/Switch";
+import remixAdminLoader from "~/data/remixAdminLoader.server";
+import remixAdminAction from "~/data/remixAdminAction.server";
+import Button from "~/components/Button";
+import Switch from "~/components/Switch";
 import deleteSharedPage from "~/data/deleteSharedPage.server";
 import disconnectNotebookFromPage from "~/data/disconnectNotebookFromPage.server";
 import getSharedPageByUuid from "~/data/getSharedPageByUuid.server";
@@ -14,12 +14,12 @@ import APPS, { appsById } from "package/internal/apps";
 import { parseAndFormatActorId } from "package/internal/parseActorId";
 import { useState } from "react";
 import AtJsonRendered from "package/components/AtJsonRendered";
-import TextInput from "@dvargas92495/app/components/TextInput";
-import Select from "@dvargas92495/app/components/Select";
+import TextInput from "~/components/TextInput";
+import Select from "~/components/Select";
 import inviteNotebookToPage from "~/data/inviteNotebookToPage.server";
 import getNotebookUuids from "~/data/getNotebookUuids.server";
 import { zNotebook } from "package/internal/types";
-import BaseInput from "@dvargas92495/app/components/BaseInput";
+import BaseInput from "~/components/BaseInput";
 import { z } from "zod";
 
 const SinglePagePage = () => {

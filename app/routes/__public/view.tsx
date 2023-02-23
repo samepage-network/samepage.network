@@ -1,5 +1,5 @@
-import Button from "@dvargas92495/app/components/Button";
-import TextInput from "@dvargas92495/app/components/TextInput";
+import Button from "~/components/Button";
+import TextInput from "~/components/TextInput";
 import { Link, Outlet, useParams } from "@remix-run/react";
 import { useState, useEffect } from "react";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";

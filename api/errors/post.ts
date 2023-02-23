@@ -1,5 +1,5 @@
-import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
-import sendEmail from "@dvargas92495/app/backend/sendEmail.server";
+import createAPIGatewayProxyHandler from "~/data/createAPIGatewayProxyHandler.server";
+import sendEmail from "~/data/sendEmail.server";
 import { appsById } from "package/internal/apps";
 import { z } from "zod";
 import getMysql from "fuegojs/utils/mysql";
@@ -7,7 +7,7 @@ import { Notebook } from "package/internal/types";
 import AtJsonParserErrorEmail from "~/components/AtJsonParserErrorEmail";
 import ExtensionErrorEmail from "~/components/ExtensionErrorEmail";
 import { v4 } from "uuid";
-import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
+import uploadFile from "~/data/uploadFile.server";
 import EmailLayout from "~/components/EmailLayout";
 import parseZodError from "package/utils/parseZodError";
 import axios from "axios";

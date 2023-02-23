@@ -1,11 +1,11 @@
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
 import { Outlet, Form, useLoaderData } from "@remix-run/react";
 import Table from "~/components/Table";
-import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
+import remixAdminLoader from "~/data/remixAdminLoader.server";
 import listNotebooks from "~/data/listNotebooks.server";
-import TextInput from "@dvargas92495/app/components/TextInput";
-import Button from "@dvargas92495/app/components/Button";
-import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
+import TextInput from "~/components/TextInput";
+import Button from "~/components/Button";
+import remixAdminAction from "~/data/remixAdminAction.server";
 import createNotebook from "~/data/createNotebook.server";
 import StatPanels from "~/components/StatPanels";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
@@ -28,7 +28,7 @@ const NotebooksPage = () => {
           <Button>Search</Button>
         </Form>
         <Table
-          onRowClick={'uuid'}
+          onRowClick={"uuid"}
           renderCell={{
             connected: (v) =>
               typeof v === "number"

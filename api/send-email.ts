@@ -1,4 +1,4 @@
-import sendEmail from "@dvargas92495/app/backend/sendEmail.server";
+import sendEmail from "~/data/sendEmail.server";
 import React from "react";
 import InviteCodeEmail from "~/components/InviteCodeEmail";
 import WelcomeEmail from "~/components/WelcomeEmail";
@@ -24,7 +24,7 @@ const ToolRequestEmail = ({
 const RENDERS: Record<string, (args: any) => React.ReactElement> = {
   "tool-request": ToolRequestEmail,
   "invite-code": InviteCodeEmail,
-  "welcome": WelcomeEmail,
+  welcome: WelcomeEmail,
 };
 
 export const handler = ({
@@ -41,6 +41,6 @@ export const handler = ({
   return sendEmail({
     ...params,
     body: RENDERS[bodyComponent](bodyProps),
-    from: "support@samepage.network"
+    from: "support@samepage.network",
   });
 };

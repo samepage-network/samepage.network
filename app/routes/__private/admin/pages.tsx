@@ -1,16 +1,16 @@
 import { LoaderFunction, ActionFunction } from "@remix-run/node";
 import { Link, useLoaderData, Form, useActionData } from "@remix-run/react";
-import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
-import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
+import remixAdminLoader from "~/data/remixAdminLoader.server";
+import remixAdminAction from "~/data/remixAdminAction.server";
 import listPageNotebookLinks from "~/data/listAllPageNotebookLinks.server";
 import searchPageNotebookLinks from "~/data/searchPageNotebookLinks.server";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
-import TextInput from "@dvargas92495/app/components/TextInput";
+import TextInput from "~/components/TextInput";
 import StatPanels from "~/components/StatPanels";
 import { Chart, ChartOptions } from "react-charts";
 import { useMemo } from "react";
-import Button from "@dvargas92495/app/components/Button";
+import Button from "~/components/Button";
 
 const AdminPagesPage = () => {
   const { pages, stats, timeSeries } =

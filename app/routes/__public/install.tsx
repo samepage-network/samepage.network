@@ -4,7 +4,7 @@ import { useLoaderData, useSearchParams, Link } from "@remix-run/react";
 import { LoaderFunction } from "@remix-run/node";
 import listExtensionsMetadata from "~/data/listExtensionsMetadata.server";
 import OverlayImg from "~/components/OverlayImg";
-import ExternalLink from "@dvargas92495/app/components/ExternalLink";
+import ExternalLink from "~/components/ExternalLink";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 

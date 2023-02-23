@@ -1,8 +1,8 @@
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
-import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
-import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
-import Button from "@dvargas92495/app/components/Button";
+import remixAdminAction from "~/data/remixAdminAction.server";
+import remixAdminLoader from "~/data/remixAdminLoader.server";
+import Button from "~/components/Button";
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
 import { Form, useLoaderData, Link } from "@remix-run/react";
 import deleteNotebook from "~/data/deleteNotebook.server";

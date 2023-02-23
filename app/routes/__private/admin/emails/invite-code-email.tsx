@@ -1,6 +1,6 @@
 import type { LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
+import remixAdminLoader from "~/data/remixAdminLoader.server";
 import randomString from "~/data/randomString.server";
 import InviteCodeEmail from "~/components/InviteCodeEmail";
 

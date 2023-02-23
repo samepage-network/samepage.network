@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import type { ActionFunction } from "@remix-run/node";
 import { Link, useFetcher } from "@remix-run/react";
-import subscribeToConvertkitAction from "@dvargas92495/app/backend/subscribeToConvertkitAction.server";
+import subscribeToConvertkitAction from "~/data/subscribeToConvertkitAction.server";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import TextInput from "~/components/TextInput";

@@ -1,7 +1,7 @@
 import React from "react";
-import getMeta from "@dvargas92495/app/utils/getMeta";
-import ExternalLink from "@dvargas92495/app/components/ExternalLink";
-import Title from "@dvargas92495/app/components/Title";
+import getMeta from "~/data/getMeta.server";
+import ExternalLink from "~/components/ExternalLink";
+import Title from "~/components/Title";
 
 const ContactPage: React.FunctionComponent = () => (
   <div
@@ -15,7 +15,8 @@ const ContactPage: React.FunctionComponent = () => (
       Best place to reach us is in our{" "}
       <ExternalLink href={"https://discord.gg/UpKAfUvUPd"}>
         Discord
-      </ExternalLink>.
+      </ExternalLink>
+      .
     </p>
     <p>
       You can also email us for any bugs, issues, or ideas at{" "}

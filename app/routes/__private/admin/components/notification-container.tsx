@@ -1,13 +1,13 @@
-import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
+import remixAdminLoader from "~/data/remixAdminLoader.server";
 import NotificationContainer from "package/components/NotificationContainer";
 import listNotebooks from "~/data/listNotebooks.server";
 import type { LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import Select from "@dvargas92495/app/components/Select";
+import Select from "~/components/Select";
 import { getSetting, setSetting } from "package/internal/registry";
-import TextInput from "@dvargas92495/app/components/TextInput";
+import TextInput from "~/components/TextInput";
 import React from "react";
-import Button from "@dvargas92495/app/components/Button";
+import Button from "~/components/Button";
 import dispatchAppEvent from "package/internal/dispatchAppEvent";
 
 const NotificationContainerPage = () => {

@@ -1,4 +1,4 @@
-import { NotFoundError } from "@dvargas92495/app/backend/errors.server";
+import { NotFoundError } from "~/data/errors.server";
 import getMysqlConnection from "fuegojs/utils/mysql";
 import { appsById } from "package/internal/apps";
 import { AppId } from "package/internal/types";

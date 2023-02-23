@@ -1,8 +1,8 @@
-import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
+import uploadFile from "~/data/uploadFile.server";
 import postError from "~/data/postError.server";
 import { v4 } from "uuid";
 import getMysqlConnection from "fuegojs/utils/mysql";
-import { downloadFileContent } from "@dvargas92495/app/backend/downloadFile.server";
+import { downloadFileContent } from "~/data/downloadFile.server";
 import type { AppId } from "package/internal/types";
 import postToConnection from "~/data/postToConnection.server";
 import messageNotebook from "~/data/messageNotebook.server";

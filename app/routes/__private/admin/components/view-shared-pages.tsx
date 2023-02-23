@@ -1,9 +1,9 @@
 import { useState } from "react";
 import ViewSharedPages from "package/components/ViewSharedPages";
-import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
+import remixAdminLoader from "~/data/remixAdminLoader.server";
 import type { LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import Button from "@dvargas92495/app/components/Button";
+import Button from "~/components/Button";
 import listPages from "~/data/listPages.server";
 import { getSetting } from "package/internal/registry";
 

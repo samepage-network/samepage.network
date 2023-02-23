@@ -1,4 +1,4 @@
-import createAPIGatewayProxyHandler from "@dvargas92495/app/backend/createAPIGatewayProxyHandler.server";
+import createAPIGatewayProxyHandler from "~/data/createAPIGatewayProxyHandler.server";
 import {
   Notebook,
   zAuthHeaders,
@@ -17,11 +17,11 @@ import {
   MethodNotAllowedError,
   NotFoundError,
   UnauthorizedError,
-} from "@dvargas92495/app/backend/errors.server";
+} from "~/data/errors.server";
 import catchError from "~/data/catchError.server";
 import getMysql from "fuegojs/utils/mysql";
-import { downloadFileContent } from "@dvargas92495/app/backend/downloadFile.server";
-import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
+import { downloadFileContent } from "~/data/downloadFile.server";
+import uploadFile from "~/data/uploadFile.server";
 import { v4 } from "uuid";
 import messageNotebook from "~/data/messageNotebook.server";
 import differenceInMinutes from "date-fns/differenceInMinutes";

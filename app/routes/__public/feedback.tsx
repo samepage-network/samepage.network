@@ -1,14 +1,14 @@
-import Title from "@dvargas92495/app/components/Title";
-import Textarea from "@dvargas92495/app/components/Textarea";
+import Title from "~/components/Title";
+import Textarea from "~/components/Textarea";
 import { useFetcher } from "@remix-run/react";
 import { useRef, useEffect } from "react";
-import Subtitle from "@dvargas92495/app/components/Subtitle";
-import TextInput from "@dvargas92495/app/components/TextInput";
-import Button from "@dvargas92495/app/components/Button";
-import SuccessfulActionToast from "@dvargas92495/app/components/SuccessfulActionToast";
+import Subtitle from "~/components/Subtitle";
+import TextInput from "~/components/TextInput";
+import Button from "~/components/Button";
+import SuccessfulActionToast from "~/components/SuccessfulActionToast";
 import submitToolRequest from "~/data/submitToolRequest.server";
 import type { ActionFunction } from "@remix-run/node";
-import ExternalLink from "@dvargas92495/app/components/ExternalLink";
+import ExternalLink from "~/components/ExternalLink";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 

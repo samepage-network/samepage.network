@@ -1,5 +1,5 @@
 import type { WSHandler } from "./sendmessage";
-// import emailError from "@dvargas92495/app/backend/emailError.server";
+// import emailError from "~/data/emailError.server";
 // import getMysqlConnection from "fuegojs/utils/mysql";
 
 export const handler: WSHandler = (event) => {

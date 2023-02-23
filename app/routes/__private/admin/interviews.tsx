@@ -1,7 +1,7 @@
 import { LoaderFunction } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
-import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
-import remixAdminAction from "@dvargas92495/app/backend/remixAdminAction.server";
+import remixAdminLoader from "~/data/remixAdminLoader.server";
+import remixAdminAction from "~/data/remixAdminAction.server";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import listUserInterviewCandidates from "~/data/listUserInterviewCandidates.server";

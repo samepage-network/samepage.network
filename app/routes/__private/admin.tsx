@@ -1,7 +1,7 @@
 import { useUser, UserButton } from "@clerk/remix";
 import { LoaderFunction } from "@remix-run/node";
-import Dashboard from "@dvargas92495/app/components/Dashboard";
-import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
+import Dashboard from "~/components/Dashboard";
+import remixAdminLoader from "~/data/remixAdminLoader.server";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
@@ -22,13 +22,7 @@ const AdminDashboard = () => {
     <Dashboard
       footer={<UserFooter />}
       root={"admin"}
-      tabs={[
-        "notebooks",
-        "pages",
-        "interviews",
-        "components",
-        "emails",
-      ]}
+      tabs={["notebooks", "pages", "interviews", "components", "emails"]}
     />
   );
 };

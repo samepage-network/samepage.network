@@ -2,9 +2,9 @@ import { Link, useLoaderData } from "@remix-run/react";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import type { LoaderFunction } from "@remix-run/node";
-import remixAppLoader from "@dvargas92495/app/backend/remixAppLoader.server";
+import remixAppLoader from "~/data/remixAppLoader.server";
 import Stripe from "stripe";
-import ExternalLink from "@dvargas92495/app/components/ExternalLink";
+import ExternalLink from "~/components/ExternalLink";
 
 const UserIndexPage: React.FunctionComponent = () => {
   const { isAdmin, plan, portal } = useLoaderData<{

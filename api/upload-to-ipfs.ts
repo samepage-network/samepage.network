@@ -1,6 +1,6 @@
 import { Web3Storage, File } from "web3.storage";
-import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
-import { downloadFileBuffer } from "@dvargas92495/app/backend/downloadFile.server";
+import uploadFile from "~/data/uploadFile.server";
+import { downloadFileBuffer } from "~/data/downloadFile.server";
 import getMysql from "fuegojs/utils/mysql";
 import type { Context } from "aws-lambda";
 import { v4 } from "uuid";

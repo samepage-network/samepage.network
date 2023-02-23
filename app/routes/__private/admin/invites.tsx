@@ -1,9 +1,9 @@
 import type { LoaderFunction } from "@remix-run/node";
-import { Form, Outlet, useNavigate} from "@remix-run/react";
-import Table from "@dvargas92495/app/components/Table";
-import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
-import Button from "@dvargas92495/app/components/Button";
-import TextInput from "@dvargas92495/app/components/TextInput";
+import { Form, Outlet, useNavigate } from "@remix-run/react";
+import Table from "~/components/Table";
+import remixAdminLoader from "~/data/remixAdminLoader.server";
+import Button from "~/components/Button";
+import TextInput from "~/components/TextInput";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 

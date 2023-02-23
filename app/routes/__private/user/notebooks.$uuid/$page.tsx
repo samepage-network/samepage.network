@@ -1,5 +1,5 @@
-import remixAppAction from "@dvargas92495/app/backend/remixAppAction.server";
-import remixAppLoader from "@dvargas92495/app/backend/remixAppLoader.server";
+import remixAppAction from "~/data/remixAppAction.server";
+import remixAppLoader from "~/data/remixAppLoader.server";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { ActionFunction, LoaderFunction } from "@remix-run/node";
@@ -9,15 +9,15 @@ import getSharedPageByUuidForUser from "~/data/getSharedPageByUuidForUser.server
 import getUserNotebookProfile from "~/data/getUserNotebookProfile.server";
 import { useEffect, useState, useRef } from "react";
 import PencilIcon from "@heroicons/react/outline/PencilIcon";
-import Textarea from "@dvargas92495/app/components/Textarea";
-import NumberInput from "@dvargas92495/app/components/NumberInput";
-import Select from "@dvargas92495/app/components/Select";
+import Textarea from "~/components/Textarea";
+import NumberInput from "~/components/NumberInput";
+import Select from "~/components/Select";
 import {
   Annotation,
   InitialSchema,
   annotationSchema,
 } from "package/internal/types";
-import Button from "@dvargas92495/app/components/Button";
+import Button from "~/components/Button";
 import ChevronRightIcon from "@heroicons/react/solid/ChevronRightIcon";
 import ChevronDownIcon from "@heroicons/react/solid/ChevronDownIcon";
 import { getSetting } from "package/internal/registry";

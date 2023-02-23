@@ -1,9 +1,9 @@
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
-import remixAppAction from "@dvargas92495/app/backend/remixAppAction.server";
-import remixAppLoader from "@dvargas92495/app/backend/remixAppLoader.server";
-import Button from "@dvargas92495/app/components/Button";
-import TextInput from "@dvargas92495/app/components/TextInput";
+import remixAppAction from "~/data/remixAppAction.server";
+import remixAppLoader from "~/data/remixAppLoader.server";
+import Button from "~/components/Button";
+import TextInput from "~/components/TextInput";
 import {
   ActionFunction,
   LoaderFunction,
@@ -27,9 +27,9 @@ import loadSharePageWithNotebook from "package/protocols/sharePageWithNotebook";
 import { createRoot } from "react-dom/client";
 import getPageUuidByNotebook from "~/data/getPageUuidByNotebook.server";
 import { v4 } from "uuid";
-import { downloadFileContent } from "@dvargas92495/app/backend/downloadFile.server";
-import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
-import Dialog from "@dvargas92495/app/components/Dialog";
+import { downloadFileContent } from "~/data/downloadFile.server";
+import uploadFile from "~/data/uploadFile.server";
+import Dialog from "~/components/Dialog";
 
 const Back = () => (
   <Link to={"/user/notebooks"} className={"text-sky-500 underline"}>

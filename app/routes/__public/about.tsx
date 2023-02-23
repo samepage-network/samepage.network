@@ -1,8 +1,8 @@
 import React from "react";
-import getMeta from "@dvargas92495/app/utils/getMeta";
-import Title from "@dvargas92495/app/components/Title";
-import Subtitle from "@dvargas92495/app/components/Subtitle";
-import ExternalLink from "@dvargas92495/app/components/ExternalLink";
+import getMeta from "~/data/getMeta.server";
+import Title from "~/components/Title";
+import Subtitle from "~/components/Subtitle";
+import ExternalLink from "~/components/ExternalLink";
 
 const AboutPage: React.FunctionComponent = () => (
   <div

@@ -4,7 +4,7 @@ import { useLoaderData, Link } from "@remix-run/react";
 import downloadIpfsFile from "~/data/downloadIpfsFile.server";
 import Automerge from "automerge";
 import { Schema, InitialSchema, Memo } from "package/internal/types";
-import Button from "@dvargas92495/app/components/Button";
+import Button from "~/components/Button";
 import binaryToBase64 from "package/internal/binaryToBase64";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";

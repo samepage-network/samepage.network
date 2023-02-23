@@ -6,13 +6,13 @@ import {
   useLoaderData,
   Link,
 } from "@remix-run/react";
-import Table from "@dvargas92495/app/components/Table";
+import Table from "~/components/Table";
 import listNotebooksForUser from "~/data/listNotebooksForUser.server";
-import TextInput from "@dvargas92495/app/components/TextInput";
-import Button from "@dvargas92495/app/components/Button";
+import TextInput from "~/components/TextInput";
+import Button from "~/components/Button";
 import createUserNotebook from "~/data/createUserNotebook.server";
-import remixAppAction from "@dvargas92495/app/backend/remixAppAction.server";
-import remixAppLoader from "@dvargas92495/app/backend/remixAppLoader.server";
+import remixAppAction from "~/data/remixAppAction.server";
+import remixAppLoader from "~/data/remixAppLoader.server";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 

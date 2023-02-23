@@ -1,6 +1,6 @@
 import { decode } from "@ipld/dag-cbor";
 import { LatestSchema, Memo } from "../../package/internal/types";
-import { downloadFileBuffer } from "@dvargas92495/app/backend/downloadFile.server";
+import { downloadFileBuffer } from "~/data/downloadFile.server";
 import Automerge from "automerge";
 import wrapSchema from "../../package/utils/wrapSchema";
 

@@ -1,4 +1,4 @@
-import uploadFile from "@dvargas92495/app/backend/uploadFile.server";
+import uploadFile from "~/data/uploadFile.server";
 import endClient from "./endClient.server";
 import postToConnection from "./postToConnection.server";
 import { v4 } from "uuid";

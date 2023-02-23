@@ -1,8 +1,8 @@
 import React from "react";
-import getMeta from "@dvargas92495/app/utils/getMeta";
-import ExternalLink from "@dvargas92495/app/components/ExternalLink";
-import Title from "@dvargas92495/app/components/Title";
-import Subtitle from "@dvargas92495/app/components/Subtitle";
+import getMeta from "~/data/getMeta.server";
+import ExternalLink from "~/components/ExternalLink";
+import Title from "~/components/Title";
+import Subtitle from "~/components/Subtitle";
 
 const P = ({ children }: React.PropsWithChildren) => (
   <p className="my-2">{children}</p>

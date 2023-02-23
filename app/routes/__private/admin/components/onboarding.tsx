@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Onboarding from "../../../../../package/components/Onboarding";
-import remixAdminLoader from "@dvargas92495/app/backend/remixAdminLoader.server";
+import remixAdminLoader from "~/data/remixAdminLoader.server";
 import type { LoaderFunction } from "@remix-run/node";
 
 const OnboardingPage = () => {

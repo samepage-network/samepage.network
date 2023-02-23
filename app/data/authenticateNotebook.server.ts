@@ -1,7 +1,4 @@
-import {
-  NotFoundError,
-  UnauthorizedError,
-} from "@dvargas92495/app/backend/errors.server";
+import { NotFoundError, UnauthorizedError } from "~/data/errors.server";
 import getMysql from "fuegojs/utils/mysql";
 
 const authenticateNotebook = async (args: {

@@ -1,4 +1,4 @@
-import { BadRequestError } from "@dvargas92495/app/backend/errors.server";
+import { BadRequestError } from "~/data/errors.server";
 import invokeAsync from "./invokeAsync.server";
 
 const submitToolRequest = ({

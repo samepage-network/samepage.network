@@ -1,14 +1,14 @@
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
-import subscribeToConvertkitAction from "@dvargas92495/app/backend/subscribeToConvertkitAction.server";
+import subscribeToConvertkitAction from "~/data/subscribeToConvertkitAction.server";
 import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { Link, useLoaderData, useFetcher } from "@remix-run/react";
 import listBlogPosts from "~/data/listBlogPosts.server";
 import { useState } from "react";
-import Button from "@dvargas92495/app/components/Button";
-import TextInput from "@dvargas92495/app/components/TextInput";
+import Button from "~/components/Button";
+import TextInput from "~/components/TextInput";
 import SuccessfulActionToast from "~/components/SuccessfulActionToast";
-import getMeta from "@dvargas92495/app/utils/getMeta";
+import getMeta from "~/data/getMeta.server";
 
 const Twitter = () => (
   <a
@@ -154,9 +154,7 @@ const BlogPage = () => {
               <h2 className="relative mt-3 text-lg font-semibold leading-tight">
                 {d.title}
               </h2>
-              <p className="mt-2 text-base leading-6">
-                {d.description}
-              </p>
+              <p className="mt-2 text-base leading-6">{d.description}</p>
               <div className="mt-5 flex items-start space-x-2">
                 <div className="flex space-x-1 pt-sm">
                   <span className="box-border inline-block overflow-hidden w-10 h-10 bg-none opacity-100 border-0 m-0 p-0 relative">
@@ -174,9 +172,7 @@ const BlogPage = () => {
                       {d.author}
                     </div>
                   </div>
-                  <div className="text-small leading-none">
-                    {d.date}
-                  </div>
+                  <div className="text-small leading-none">{d.date}</div>
                 </div>
               </div>
             </div>
