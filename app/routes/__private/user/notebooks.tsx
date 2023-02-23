@@ -1,5 +1,11 @@
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
-import { Outlet, useNavigate, Form, useLoaderData } from "@remix-run/react";
+import {
+  Outlet,
+  useNavigate,
+  Form,
+  useLoaderData,
+  Link,
+} from "@remix-run/react";
 import Table from "@dvargas92495/app/components/Table";
 import listNotebooksForUser from "~/data/listNotebooksForUser.server";
 import TextInput from "@dvargas92495/app/components/TextInput";
@@ -7,7 +13,6 @@ import Button from "@dvargas92495/app/components/Button";
 import createUserNotebook from "~/data/createUserNotebook.server";
 import remixAppAction from "@dvargas92495/app/backend/remixAppAction.server";
 import remixAppLoader from "@dvargas92495/app/backend/remixAppLoader.server";
-import migrateNotebooksForUser from "~/data/migrateNotebooksForUser.server";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
@@ -19,13 +24,10 @@ const NotebooksPage = () => {
     <div className={"flex gap-8 items-start h-full"}>
       <div className="max-w-3xl w-full flex flex-col h-full gap-4">
         {count === 0 ? (
-          <Form method="put" className="flex items-center max-w-lg gap-8">
-            <span>
-              No notebooks found. Click the claim button to migrate the
-              notebooks associated with your email to your account.
-            </span>
-            <Button>Claim</Button>
-          </Form>
+          <span>
+            No notebooks found. <Link to="/install">Install</Link> the SamePage
+            extension on one of our supported applications to get started!
+          </span>
         ) : (
           <Form method="get" className="flex items-center max-w-lg gap-8">
             <TextInput
@@ -82,7 +84,6 @@ export const action: ActionFunction = (args) => {
       }).then(({ notebookUuid }) =>
         redirect(`/user/notebooks/${notebookUuid}`)
       ),
-    PUT: migrateNotebooksForUser,
   });
 };
 

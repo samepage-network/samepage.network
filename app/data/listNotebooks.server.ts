@@ -16,12 +16,11 @@ const listNotebooks = async (
     : pagination;
   const data = await cxn
     .execute(
-      `SELECT n.uuid, n.app as app, n.workspace as workspace, MAX(c.created_date) as created_date, MAX(i.created_date) as invited_date, MAX(t.value) as token
+      `SELECT n.uuid, n.app as app, n.workspace as workspace, MAX(c.created_date) as created_date, MAX(t.created_date) as invited_date, MAX(t.value) as token
   FROM notebooks n 
   LEFT JOIN online_clients c ON n.uuid = c.notebook_uuid
   LEFT JOIN token_notebook_links l ON n.uuid = l.notebook_uuid
   LEFT JOIN tokens t ON t.uuid = l.token_uuid
-  LEFT JOIN invitations i ON i.token_uuid = l.token_uuid
   ${search ? `WHERE n.workspace LIKE CONCAT("%",?,"%")` : ""}
   GROUP BY n.uuid
   ORDER BY created_date DESC, invited_date DESC, app, workspace
@@ -51,8 +50,8 @@ const listNotebooks = async (
       ),
     cxn
       .execute(
-        `SELECT COUNT(code) as accepted FROM invitations i 
-        LEFT JOIN token_notebook_links l ON l.token_uuid = i.token_uuid
+        `SELECT COUNT(code) as accepted FROM tokens t 
+        LEFT JOIN token_notebook_links l ON l.token_uuid = t.uuid
         LEFT JOIN notebooks n ON l.notebook_uuid = n.uuid
         WHERE n.app is not null`
       )

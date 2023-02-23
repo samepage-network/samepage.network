@@ -9,11 +9,11 @@ const loadNotebookAnalytics = async ({ requestId }: { requestId: string }) => {
     .execute(
       `
 SELECT 
-  DATE_FORMAT(i.created_date, '%Y-%m-%d') as date,
+  DATE_FORMAT(t.created_date, '%Y-%m-%d') as date,
   COUNT(n.uuid) as notebooks 
 FROM notebooks n 
 INNER JOIN token_notebook_links l ON l.notebook_uuid = n.uuid
-INNER JOIN invitations i ON i.token_uuid = l.token_uuid 
+INNER JOIN tokens t ON t.uuid = l.token_uuid 
 GROUP BY date 
 ORDER BY date;
       `
