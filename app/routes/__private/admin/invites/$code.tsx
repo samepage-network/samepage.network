@@ -7,7 +7,6 @@ import TextInput from "@dvargas92495/app/components/TextInput";
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
 import { Form, useLoaderData, Link } from "@remix-run/react";
 import getInviteInfo from "~/data/getInviteInfo.server";
-import updateInviteInfo from "~/data/updateInviteInfo.server";
 import deleteInvite from "~/data/deleteInvite.server";
 
 const SingleInvitePage = () => {
@@ -58,12 +57,6 @@ export const action: ActionFunction = (args) => {
         code: params["code"] || "",
         requestId,
       }).then(() => redirect("/admin/invites")),
-    PUT: ({ params, context: { requestId }, data }) =>
-      updateInviteInfo({
-        code: params["code"] || "",
-        requestId,
-        email: data["email"][0] || "",
-      }),
   });
 };
 

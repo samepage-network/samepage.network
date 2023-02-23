@@ -29,7 +29,7 @@ Click on the button on the right to get started with connecting your first noteb
 
 ![](/images/docs/getting-started/onboarding-create.png)
 
-Enter the invite code you were sent by the SamePage team. If you do not yet have an invite code, please reach out to the team by emailing [support@samepage.network](mailto:support@samepage.network) to secure your own. Make sure to also check the flag ensuring you agree to SamePage's terms and conditions:
+Create your SamePage account by entering your email address and adding a password. This will automatically link the current application you're using as a Notebook tied to your account. Make sure to also check the flag ensuring you agree to SamePage's terms and conditions:
 
 ![](/images/docs/getting-started/onboarding-invite.png)
 
@@ -48,9 +48,9 @@ Notebooks are the main concept integral to SamePage. A Notebook is composed of t
 
 When you onboard a new Notebook onto SamePage, you are issued a new **Univeral Id** and a new **Token**. The Universal Id belongs to the Notebook you are using and identifies the notebook to the rest of the network. The Token belongs to you as a user and is granting your notebook access to use features on the network. **This token is considered sensitive data and should be kept safe.** If unauthorized parties were to gain access to it, they would be able to manipulate data in your Notebook.
 
-To onboard a new Notebook, the same onboarding modal will appear upon installing the extension to the new Notebook. This time, you will want to click the left button to `Use Existing Notebook`.
+To onboard a new Notebook, the same onboarding modal will appear upon installing the extension to the new Notebook. This time, you will want to click the left button to `Add Another Notebook`.
 
-You will be prompted to enter the Notebook Universal Id and Token of a previous notebook you've added so that we can identify you as a user and know that you are authorized to connect a new Notebook.
+You will be prompted to enter your email and password so that we can identify you as a user and know that you are authorized to connect a new Notebook.
 
 ![](/images/docs/getting-started/onboarding-connect.png)
 

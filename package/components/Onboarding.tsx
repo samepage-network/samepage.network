@@ -163,7 +163,7 @@ const CreateNotebookPage = ({
           name={"email"}
         />
       </Label>
-      <Label>
+      <Label className={"w-1/2"}>
         Password
         <InputGroup
           value={password}
