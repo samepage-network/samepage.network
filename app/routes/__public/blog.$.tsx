@@ -10,7 +10,7 @@ import loadMarkdownFile from "~/data/loadMarkdownFile.server";
 import React from "react";
 import prism from "~/styles/prism-vs.css";
 import useMarkdownComponent from "~/components/useMarkdownComponent";
-import getMeta from "~/data/getMeta.server";
+import getMeta from "~/components/getMeta";
 
 const BlogPostPage = (): React.ReactElement => {
   const { code, frontmatter } =

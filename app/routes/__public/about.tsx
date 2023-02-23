@@ -1,5 +1,5 @@
 import React from "react";
-import getMeta from "~/data/getMeta.server";
+import getMeta from "~/components/getMeta";
 import Title from "~/components/Title";
 import Subtitle from "~/components/Subtitle";
 import ExternalLink from "~/components/ExternalLink";

@@ -1,4 +1,4 @@
-import getMeta from "~/data/getMeta.server";
+import getMeta from "~/components/getMeta";
 import { SignUp } from "@clerk/remix";
 import remixAuthedLoader from "~/data/remixAuthedLoader.server";
 

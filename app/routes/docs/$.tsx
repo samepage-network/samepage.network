@@ -10,7 +10,7 @@ import loadMarkdownFile from "~/data/loadMarkdownFile.server";
 import { useState, useEffect, useRef } from "react";
 import React from "react";
 import prism from "~/styles/prism-vs.css";
-import getMeta from "~/data/getMeta.server";
+import getMeta from "~/components/getMeta";
 import useMarkdownComponent from "~/components/useMarkdownComponent";
 
 const DocsPage = (): React.ReactElement => {

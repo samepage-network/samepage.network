@@ -8,7 +8,7 @@ import { useState } from "react";
 import Button from "~/components/Button";
 import TextInput from "~/components/TextInput";
 import SuccessfulActionToast from "~/components/SuccessfulActionToast";
-import getMeta from "~/data/getMeta.server";
+import getMeta from "~/components/getMeta";
 
 const Twitter = () => (
   <a

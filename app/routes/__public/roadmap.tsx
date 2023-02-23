@@ -1,5 +1,5 @@
 import Table from "~/components/Table";
-import getMeta from "~/data/getMeta.server";
+import getMeta from "~/components/getMeta";
 import type { LoaderFunction } from "@remix-run/node";
 import { Outlet, useNavigate } from "@remix-run/react";
 import getRoadmap from "~/data/getRoadmap.server";
