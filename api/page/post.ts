@@ -706,11 +706,11 @@ WHERE n.uuid ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
       WHERE notebook_uuid = ? AND notebook_page_id = ? AND open = 1`,
                 [notebookUuid, notebookPageId]
               )
-              .then(async ([link]) => {
-                const { uuid, invited_by } = (
-                  link as { uuid: string; invited_by: string }[]
+              .then(async ([record]) => {
+                const link = (
+                  record as { uuid: string; invited_by: string }[]
                 )[0];
-                return { linkUuid: uuid, invitedBy: invited_by };
+                return { linkUuid: link?.uuid, invitedBy: link?.invited_by };
               }));
         if (!linkUuid) {
           throw new NotFoundError(`Could not find valid invite to remove.`);
