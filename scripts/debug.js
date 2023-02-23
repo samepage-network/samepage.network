@@ -1,4 +1,5 @@
 const mysql = require("mysql2/promise");
+const Net = require("net");
 const exec = require("child_process").execSync;
 
 exec(
@@ -7,24 +8,25 @@ exec(
 );
 console.log("RAN THE INLINE VERSION");
 Promise.all([
-  mysql
-    .createConnection("mysql://root:root@localhost:3306/samepage_network")
-    .then((con) => {
-      con.destroy();
-      console.log("WE CAN CONNECT!");
-      return [];
-    })
-    .catch((e) => {
-      console.error("WE COULDN'T CONNECT!");
-      return [e];
-    }),
+  // mysql
+  //   .createConnection("mysql://root:root@localhost:3306/samepage_network")
+  //   .then((con) => {
+  //     con.destroy();
+  //     console.log("WE CAN CONNECT!");
+  //     return [];
+  //   })
+  //   .catch((e) => {
+  //     console.error("WE COULDN'T CONNECT!");
+  //     return [e];
+  //   }),
   mysql
     .createConnection({
       user: "root",
       password: "root",
       host: "localhost",
-      port: 3306,
+      port: "3306",
       database: "samepage_network",
+      debug: true,
     })
     .then((con) => {
       con.destroy();
@@ -35,10 +37,17 @@ Promise.all([
       console.error("WE COULDN'T CONNECT!");
       return [e];
     }),
+  new Promise((resolve, reject) => {
+    const stream = Net.connect(3306, "localhost");
+    stream.on("error", (err) => {
+      resolve([err]);
+    });
+    setTimeout(() => resolve([]), 15000);
+  }),
 ]).then((f) => {
   const errs = f.flat();
   if (errs.length) {
-    console.error(errs.length, "errors");
-    throw errs;
+    errs.forEach((e) => console.error(e));
+    throw new Error(`Threw ${errs.length} errors`);
   }
 });

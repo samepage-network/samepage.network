@@ -18,20 +18,20 @@ env:
 
 jobs:
   deploy:
-    runs-on: ubuntu-22.04
+    # runs-on: ubuntu-22.04
     # c8 was not picking up coverage on package/components in 20.04 - maybe try in the future with 22.04
-    # runs-on: macos-latest
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
       - name: install
         run: npm install
-      # brew install mysql
-      # /usr/local/opt/mysql/bin/mysql.server start
-      # mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'" -uroot
+          # sudo systemctl start mysql.service
       - name: setup mysql + playwright
         run: |
           npx playwright install
-          sudo systemctl start mysql.service
+          brew install mysql
+          /usr/local/opt/mysql/bin/mysql.server start
+          mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'" -uroot
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
           echo "DATABASE CREATED!"
           node scripts/debug.js
