@@ -58,9 +58,7 @@ const ConnectNotebookPage = ({
           <Spinner size={32} />
         </div>
       )}
-      <h1 className="text-lg font-normal">
-        Connect a Notebook with a Universal Id and Token
-      </h1>
+      <h1 className="text-lg font-normal">Add this notebook to your account</h1>
       <Label className={"w-1/2"}>
         Email
         <InputGroup
@@ -164,11 +162,13 @@ const CreateNotebookPage = ({
           type={"text"}
           name={"email"}
         />
+      </Label>
+      <Label>
         Password
         <InputGroup
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          type={"text"}
+          type={"password"}
           name={"password"}
         />
       </Label>
@@ -310,12 +310,12 @@ const Onboarding = ({
                   No, I already have another connected Notebook
                 </p>
                 <p className="text-gray-700 flex-grow">
-                  Use your existing Notebook to generate a new Notebook
+                  Use your existing SamePage account to generate a new Notebook
                   Universal Id for this {appsById[app].name}{" "}
                   {appsById[app].workspaceLabel}.
                 </p>
                 <Button
-                  text={"Use Existing Notebook"}
+                  text={"Add Another Notebook"}
                   onClick={() => setPage("CONNECT")}
                   intent={"primary"}
                   className={"mt-4"}

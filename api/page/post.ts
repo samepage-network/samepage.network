@@ -39,7 +39,7 @@ import QUOTAS from "~/data/quotas.server";
 import connectNotebook from "~/data/connectNotebook.server";
 import getQuota from "~/data/getQuota.server";
 import { encode } from "@ipld/dag-cbor";
-import { users } from "@clerk/clerk-sdk-node";
+import clerk, { users } from "@clerk/clerk-sdk-node";
 import invokeAsync from "~/data/invokeAsync.server";
 
 const zMethod = zUnauthenticatedBody
@@ -213,8 +213,8 @@ const logic = async (req: Record<string, unknown>) => {
         );
       }
       const userId = userResponse[0].id;
-      const passwordResponse = await users
-        // @ts-ignore https://github.com/clerkinc/javascript/pull/855
+      // https://github.com/clerkinc/javascript/pull/855
+      const passwordResponse = await clerk
         .request<{ verified: true }>({
           method: "POST",
           path: `/users/${userId}/verify_password`,

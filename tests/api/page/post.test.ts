@@ -1617,7 +1617,7 @@ test("Attempt to create notebook without an invite", async () => {
   })
     .then(() => ({ success: true, e: undefined }))
     .catch((e) => ({ success: false, e: e as string }));
-  expect(r).toEqual({ success: false, e: "Error: Could not find invite" });
+  expect(r).toEqual({ success: false, e: "Error: One of either `inviteCode` or `email` is required." });
 });
 
 test("Attempt to create notebook with an already claimed invite", async () => {

@@ -12,7 +12,7 @@ env:
   AWS_REGION: us-east-1
   CLERK_API_KEY: ${{ secrets.STAGING_CLERK_API_KEY }}
   CLERK_FRONTEND_API: clerk.in.horse-0.lcl.dev
-  DATABASE_URL: mysql://root:root@localhost:3306/samepage_network
+  DATABASE_URL: mysql://root:root@127.0.0.1:3306/samepage_network
   ORIGIN: http://localhost:3000
   WEB3_STORAGE_API_KEY: ${{ secrets.WEB3_STORAGE_API_KEY }}
 
@@ -26,6 +26,7 @@ jobs:
       - name: install
         run: npm install
           # sudo systemctl start mysql.service
+          # node scripts/debug.js
       - name: setup mysql + playwright
         run: |
           npx playwright install
@@ -34,7 +35,6 @@ jobs:
           mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'" -uroot
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
           echo "DATABASE CREATED!"
-          node scripts/debug.js
           mysql -uroot -proot --host=localhost --port=3306 --database=samepage_network -e "SHOW GLOBAL VARIABLES LIKE 'PORT';"
           echo "SHOW PORT!"
           npx fuego plan --sql

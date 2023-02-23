@@ -41,12 +41,16 @@ test("Intro onboarding flow", async () => {
   const startNotebook = screen.getByText("Start Notebook");
   await user.click(startNotebook);
   const connectScreen = await waitFor(() =>
-    screen.getByText("Create a Notebook by generating a Universal Id")
+    screen.getByText("Create an account to link this notebook")
   );
   expect(connectScreen).toBeTruthy();
-  const inviteCodeInput = screen.getByLabelText("Invite Code");
-  await user.type(inviteCodeInput, "abcdef");
-  expect(inviteCodeInput).toHaveProperty("value", "abcdef");
+  const emailInput = screen.getByLabelText("Email");
+  await user.type(emailInput, "example@samepage.network");
+  expect(emailInput).toHaveProperty("value", "example@samepage.network");
+  const passwordInput = screen.getByLabelText("Password");
+  const password = v4().slice(0, 8);
+  await user.type(passwordInput, password);
+  expect(passwordInput).toHaveProperty("value", password);
   const termsOfUse = screen.getByLabelText(
     "I have read and agree to the Terms of Use"
   );
@@ -99,35 +103,29 @@ test("Connect onboarding flow", async () => {
     screen.getByText("New to SamePage?")
   );
   expect(optionScreen).toBeTruthy();
-  const connectNotebook = screen.getByText("Use Existing Notebook");
+  const connectNotebook = screen.getByText("Add Another Notebook");
   await user.click(connectNotebook);
   const connectScreen = await waitFor(() =>
-    screen.getByText("Connect a Notebook with a Universal Id and Token")
+    screen.getByText("Add this notebook to your account")
   );
   expect(connectScreen).toBeTruthy();
-  const idInput = screen.getByLabelText("Notebook Universal ID");
-  const originalId = v4();
-  await user.type(idInput, originalId);
-  expect(idInput).toHaveProperty("value", originalId);
-  const tokenInput = screen.getByLabelText("Token");
-  const originalToken = v4().slice(0, 8);
-  await user.type(tokenInput, originalToken);
-  expect(tokenInput).toHaveProperty("value", originalToken);
+  const emailInput = screen.getByLabelText("Email");
+  await user.type(emailInput, "example@samepage.network");
+  expect(emailInput).toHaveProperty("value", "example@samepage.network");
+  const passwordInput = screen.getByLabelText("Password");
+  const password = v4().slice(0, 8);
+  await user.type(passwordInput, password);
+  expect(passwordInput).toHaveProperty("value", password);
   const termsOfUse = screen.getByLabelText(
     "I have read and agree to the Terms of Use"
   );
   await user.click(termsOfUse);
   const createButton = screen.getByText("Connect");
   const notebookUuid = v4();
-  global.fetch = (_, init) => {
-    expect(init).toBeTruthy();
-    if (typeof init?.body === "string") {
-      const data = JSON.parse(init.body);
-      expect(data).toHaveProperty("notebookUuid", originalId);
-      expect(data).toHaveProperty("token", originalToken);
-    } else throw new Error("Request body expected to be a string");
+  const token = v4().slice(0, 8);
+  global.fetch = () => {
     return Promise.resolve(
-      new Response(JSON.stringify({ notebookUuid, token: originalToken }), {
+      new Response(JSON.stringify({ notebookUuid, token }), {
         status: 200,
       })
     );
@@ -137,7 +135,7 @@ test("Connect onboarding flow", async () => {
   const final = await waitFor(() => screen.getByText("Congratulations! 🎉"));
   expect(final).toBeTruthy();
   expect(credentials.notebookUuid).toEqual(notebookUuid);
-  expect(credentials.token).toEqual(originalToken);
+  expect(credentials.token).toEqual(token);
 });
 
 test("Closing right away invokes cancel", async () => {

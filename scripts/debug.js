@@ -37,7 +37,7 @@ Promise.all([
       console.error("WE COULDN'T CONNECT!");
       return [e];
     }),
-  new Promise((resolve, reject) => {
+  new Promise((resolve) => {
     const stream = Net.connect(3306, "localhost");
     stream.on("error", (err) => {
       resolve([err]);
