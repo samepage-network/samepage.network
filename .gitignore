@@ -9,3 +9,4 @@ SamePage.pem
 /public/data
 playwright-report
 coverage
+scripts/debug.ts

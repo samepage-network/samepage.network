@@ -1,12 +1,13 @@
 import getMysqlConnection from "fuegojs/utils/mysql";
 import { users } from "@clerk/clerk-sdk-node";
+import type mysql from "mysql2/promise";
 
 // TODO - We could nuke this soon
 const migrateNotebooksForUser = async ({
   context: { requestId },
   userId,
 }: {
-  context: { requestId: string };
+  context: { requestId: string | mysql.Connection };
   userId: string;
 }) => {
   const email = await users
@@ -24,7 +25,7 @@ const migrateNotebooksForUser = async ({
   WHERE t.user_id IS NULL and i.email = ?`,
     [userId, email]
   );
-  cxn.destroy();
+  if (typeof requestId === "string") cxn.destroy();
   return {
     success: true,
   };
