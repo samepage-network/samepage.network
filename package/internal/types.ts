@@ -198,9 +198,9 @@ type ConnectionEvent = {
   status: ConnectionStatus;
 };
 
-type PromptInviteCodeEvent = {
-  type: "prompt-invite-code";
-  respond: (s: string) => Promise<void>;
+type PromptAccountInfoEvent = {
+  type: "prompt-account-info";
+  respond: (e: string, p: string) => Promise<void>;
 };
 
 export type Notification = {
@@ -221,7 +221,7 @@ export type AppEvent =
   | LogEvent
   | SharePageEvent
   | ConnectionEvent
-  | PromptInviteCodeEvent
+  | PromptAccountInfoEvent
   | NotificationEvent;
 
 type MessageHandler = (
@@ -315,9 +315,8 @@ export const zUnauthenticatedBody = z.discriminatedUnion("method", [
   z
     .object({
       method: z.literal("create-notebook"),
-      inviteCode: z.string().optional(),
-      email: z.string().optional(),
-      password: z.string().optional(),
+      email: z.string(),
+      password: z.string(),
     })
     .merge(zNotebook),
   z
@@ -331,12 +330,6 @@ export const zUnauthenticatedBody = z.discriminatedUnion("method", [
 ]);
 
 export const zAuthenticatedBody = z.discriminatedUnion("method", [
-  z
-    .object({
-      method: z.literal("connect-notebook"),
-      token: z.string(),
-    })
-    .merge(zNotebook),
   z.object({ method: z.literal("usage") }),
   z.object({ method: z.literal("load-message"), messageUuid: z.string() }),
   z.object({

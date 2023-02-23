@@ -12,9 +12,9 @@ const getNotebookProfile = async ({
 }) => {
   const cxn = await getMysqlConnection(requestId);
   const [results] = await cxn.execute(
-    `SELECT n.app, n.workspace, n.uuid, i.created_date FROM notebooks n
+    `SELECT n.app, n.workspace, n.uuid, t.created_date FROM notebooks n
     LEFT JOIN token_notebook_links l ON n.uuid = l.notebook_uuid
-    LEFT JOIN invitations i ON i.token_uuid = l.token_uuid
+    LEFT JOIN tokens t ON t.uuid = l.token_uuid
   WHERE n.uuid = ?`,
     [uuid]
   );

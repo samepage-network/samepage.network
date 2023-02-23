@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import clerk, { users } from "@clerk/clerk-sdk-node";
 import { handler } from "../../../api/page/post";
 import { globalContext } from "../../../app/data/getQuota.server";
 import { handler as wsHandler } from "../../../api/ws/sendmessage";
@@ -11,12 +12,12 @@ import deleteNotebook from "~/data/deleteNotebook.server";
 import binaryToBase64 from "../../../package/internal/binaryToBase64";
 import Automerge from "automerge";
 import { RequestBody, Schema } from "../../../package/internal/types";
-import issueRandomInvite from "../../utils/issueRandomInvite";
 import getRandomNotebookPageId from "../../utils/getRandomNotebookPageId";
 import wrapSchema from "../../../package/utils/wrapSchema";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
 import mockState from "../../utils/mockState";
 import getRandomWorkspace from "../../utils/getRandomWorkspace";
+import getRandomAccount from "../../utils/getRandomAccount";
 
 // upload to ipfs loses out on a core to run in the background
 // test.describe.configure({ mode: "parallel", });
@@ -175,15 +176,63 @@ test.beforeAll(() => {
       }
     };
   });
+  const users: Record<
+    string,
+    { id: string; password: string; emailAddress: string[] }
+  > = {};
+  clerk.request = (async (opts) => {
+    if (opts.path === "/users" && opts.method === "GET") {
+      return Object.values(users).filter((u) =>
+        u.emailAddress.some((e) =>
+          (opts.queryParams?.["emailAddress"] as string[])?.includes(e)
+        )
+      );
+    } else if (opts.path?.startsWith("/users") && opts.method === "GET") {
+      const userId = /\/users\/([^/]+)$/.exec(opts.path)?.[1];
+      if (!userId) throw new Error(`User Id not found: ${opts.path}`);
+      return users[userId];
+    } else if (opts.path?.startsWith("/users") && opts.method === "DELETE") {
+      const userId = /\/users\/([^/]+)$/.exec(opts.path)?.[1];
+      if (!userId) throw new Error(`User Id not found: ${opts.path}`);
+      delete users[userId];
+      return { success: true };
+    } else if (
+      opts.path === "/users" &&
+      opts.method === "POST" &&
+      opts.bodyParams
+    ) {
+      const { password, emailAddress } = opts.bodyParams as {
+        password: string;
+        emailAddress: string[];
+      };
+      const id = v4();
+      const user = { password, emailAddress, id };
+      return (users[id] = user);
+    } else if (
+      opts.path?.endsWith("verify_password") &&
+      opts.method === "POST"
+    ) {
+      const userId =
+        /\/users\/([^/]+)\/verify_password$/.exec(opts.path)?.[1] || "";
+      return {
+        verified:
+          users[userId]?.password ===
+          (opts.bodyParams as { password: string })?.password,
+      };
+    } else {
+      throw new Error(`Unknown opts: ${opts.method} ${opts.path}`);
+    }
+  }) as typeof clerk.request;
 });
 
 test("Connect Notebook with same app/workspace returns same notebook uuid", async () => {
-  const { code } = await issueRandomInvite();
+  const { email, password } = await getRandomAccount();
   const workspace = await getRandomWorkspace();
 
   const { notebookUuid, token } = await mockLambda({
     method: "create-notebook",
-    inviteCode: code,
+    email,
+    password,
     app: 0,
     workspace,
   });
@@ -191,22 +240,24 @@ test("Connect Notebook with same app/workspace returns same notebook uuid", asyn
   expect(token).toBeTruthy();
 
   const connected = await mockLambda({
-    method: "connect-notebook",
-    notebookUuid,
-    token,
+    method: "add-notebook",
+    email,
+    password,
     app: 0,
     workspace,
   });
   expect(connected.notebookUuid).toBe(notebookUuid);
+  expect(connected.token).toBe(token);
 });
 
 test("Connect Notebook with different source notebook same target notebook returns same notebook uuid", async () => {
-  const { code } = await issueRandomInvite();
+  const { email, password } = await getRandomAccount();
   const workspace = await getRandomWorkspace();
 
   const { notebookUuid, token } = await mockLambda({
     method: "create-notebook",
-    inviteCode: code,
+    email,
+    password,
     app: 0,
     workspace,
   });
@@ -215,24 +266,26 @@ test("Connect Notebook with different source notebook same target notebook retur
 
   const workspaceTwo = await getRandomWorkspace();
   const connected = await mockLambda({
-    method: "connect-notebook",
-    notebookUuid,
-    token,
+    method: "add-notebook",
+    email,
+    password,
     app: 0,
     workspace: workspaceTwo,
   });
   expect(connected.notebookUuid).toBeTruthy();
   expect(connected.notebookUuid).not.toEqual(notebookUuid);
+  expect(connected.token).toEqual(token);
 
   const connectedTwo = await mockLambda({
-    method: "connect-notebook",
-    notebookUuid,
-    token,
+    method: "add-notebook",
+    email,
+    password,
     app: 0,
     workspace: workspaceTwo,
   });
   expect(connectedTwo.notebookUuid).toBeTruthy();
   expect(connectedTwo.notebookUuid).toEqual(connected.notebookUuid);
+  expect(connected.token).toEqual(token);
 });
 
 test("Messages from deleted notebooks should return Unknown", async () => {
@@ -1565,12 +1618,23 @@ test("Reaching the notebook limit should throw on create", async () => {
   const requestId = v4();
   globalContext[requestId] = { quotas: { [""]: { Notebooks: 1 } } };
 
-  const { notebookUuid, token } = await mockRandomNotebook();
+  const { notebookUuid } = await mockRandomNotebook();
+  const { email, password } = await getRandomAccount();
+  const user = await users.createUser({ emailAddress: [email], password });
+  await getMysql(requestId).then((cxn) =>
+    cxn.execute(
+      `UPDATE tokens t 
+      INNER JOIN token_notebook_links l ON t.uuid = l.token_uuid
+      SET t.user_id = ?
+      WHERE l.notebook_uuid = ?`,
+      [user.id, notebookUuid]
+    )
+  );
   const r = await mockLambda(
     {
-      method: "connect-notebook",
-      notebookUuid,
-      token,
+      method: "add-notebook",
+      email,
+      password,
       app: 0,
       workspace: await getRandomWorkspace(),
     },
@@ -1582,6 +1646,7 @@ test("Reaching the notebook limit should throw on create", async () => {
     success: false,
     e: `Error: Maximum number of notebooks allowed to be connected to this token with this plan is 1.`,
   });
+  await users.deleteUser(user.id);
 });
 
 test("Ping pong", async () => {
@@ -1602,71 +1667,9 @@ test("Invalid method results in parse error", async () => {
     e: `Failed to parse request. Errors:
 - Path \`\` had the following union errors:
   - Invalid discriminator value. Expected 'create-notebook' | 'add-notebook' | 'ping' (invalid_union_discriminator)
-  - Invalid discriminator value. Expected 'connect-notebook' | 'usage' | 'load-message' | 'init-shared-page' | 'join-shared-page' | 'revert-page-join' | 'update-shared-page' | 'force-push-page' | 'get-shared-page' | 'invite-notebook-to-page' | 'remove-page-invite' | 'list-page-notebooks' | 'list-recent-notebooks' | 'list-shared-pages' | 'disconnect-shared-page' | 'query' | 'query-response' | 'notebook-request' | 'notebook-response' | 'link-different-page' | 'save-page-version' | 'get-ipfs-cid' | 'get-unmarked-messages' | 'mark-message-read' (invalid_union_discriminator)
+  - Invalid discriminator value. Expected 'usage' | 'load-message' | 'init-shared-page' | 'join-shared-page' | 'revert-page-join' | 'update-shared-page' | 'force-push-page' | 'get-shared-page' | 'invite-notebook-to-page' | 'remove-page-invite' | 'list-page-notebooks' | 'list-recent-notebooks' | 'list-shared-pages' | 'disconnect-shared-page' | 'query' | 'query-response' | 'notebook-request' | 'notebook-response' | 'link-different-page' | 'save-page-version' | 'get-ipfs-cid' | 'get-unmarked-messages' | 'mark-message-read' (invalid_union_discriminator)
 - Expected \`notebookUuid\` to be of type \`string\` but received type \`undefined\`
 - Expected \`token\` to be of type \`string\` but received type \`undefined\``,
-  });
-});
-
-test("Attempt to create notebook without an invite", async () => {
-  const r = await mockLambda({
-    method: "create-notebook",
-    inviteCode: "",
-    app: 0,
-    workspace: await getRandomWorkspace(),
-  })
-    .then(() => ({ success: true, e: undefined }))
-    .catch((e) => ({ success: false, e: e as string }));
-  expect(r).toEqual({ success: false, e: "Error: One of either `inviteCode` or `email` is required." });
-});
-
-test("Attempt to create notebook with an already claimed invite", async () => {
-  const { code } = await issueRandomInvite();
-  const r = await mockLambda({
-    method: "create-notebook",
-    inviteCode: code,
-    app: 0,
-    workspace: await getRandomWorkspace(),
-  });
-  expect(r).toHaveProperty("notebookUuid");
-  expect(r).toHaveProperty("token");
-  const r2 = await mockLambda({
-    method: "create-notebook",
-    inviteCode: code,
-    app: 0,
-    workspace: await getRandomWorkspace(),
-  })
-    .then(() => ({ success: true, e: undefined }))
-    .catch((e) => ({ success: false, e: e as string }));
-  expect(r2).toEqual({
-    success: false,
-    e: "Error: Invite has already been claimed by a notebook.",
-  });
-});
-
-test("Attempt to claim an expired invite", async () => {
-  const { code } = await issueRandomInvite();
-  const expirationDate = new Date();
-  expirationDate.setHours(expirationDate.getHours() - 1);
-  await getMysql().then((cxn) =>
-    cxn
-      .execute(`UPDATE invitations SET expiration_date = ? WHERE code = ?`, [
-        expirationDate,
-        code,
-      ])
-      .then(() => cxn.destroy())
-  );
-  const r2 = await mockLambda({
-    method: "create-notebook",
-    inviteCode: code,
-    app: 0,
-    workspace: await getRandomWorkspace(),
-  })
-    .then(() => ({ success: true, e: undefined }))
-    .catch((e) => ({ success: false, e: e as string }));
-  expect(r2).toEqual({
-    success: false,
-    e: "Error: Invite has expired. Please request a new one from the team.",
   });
 });
 

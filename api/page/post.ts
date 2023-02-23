@@ -122,58 +122,21 @@ const logic = async (req: Record<string, unknown>) => {
   console.log("Received method:", args.method);
   try {
     if (args.method === "create-notebook") {
-      const { inviteCode, app, workspace, email, password = "" } = args;
-      if (!inviteCode && !email) {
-        throw new BadRequestError(
-          "One of either `inviteCode` or `email` is required."
-        );
-      }
-      if (!email) {
-        const [results] = await cxn.execute(
-          `SELECT token_uuid, expiration_date FROM invitations where code = ?`,
-          [inviteCode]
-        );
-        const [invite] = results as {
-          token_uuid: string;
-          expiration_date: Date;
-        }[];
-        if (!invite) {
-          throw new NotFoundError("Could not find invite");
-        }
-        if (invite.token_uuid) {
-          throw new ConflictError(
-            "Invite has already been claimed by a notebook."
-          );
-        }
-        if (new Date().valueOf() >= invite.expiration_date.valueOf()) {
-          throw new ConflictError(
-            "Invite has expired. Please request a new one from the team."
-          );
-        }
-
-        const { token, tokenUuid, notebookUuid } = await createNotebook({
-          requestId,
-          app,
-          workspace,
-        });
-        await cxn.execute(
-          `UPDATE invitations SET token_uuid = ? where code = ?`,
-          [tokenUuid, inviteCode]
-        );
-        cxn.destroy();
-        return { notebookUuid, token };
-      }
+      const { app, workspace, email, password } = args;
       const userId = await users
         .createUser({ emailAddress: [email], password })
         .then((u) => u.id)
         .catch((e) => {
-          const msg = e.errors
-            .map(
-              (a: { message: string; longMessage: string }) =>
-                a.longMessage || a.message
-            )
-            .join("\n");
-          return Promise.reject(new BadRequestError(msg));
+          if (e.errors) {
+            const msg = e.errors
+              .map(
+                (a: { message: string; longMessage: string }) =>
+                  a.longMessage || a.message
+              )
+              .join("\n");
+            throw new BadRequestError(msg || JSON.stringify(e));
+          }
+          throw e;
         });
       const { token, tokenUuid, notebookUuid } = await createNotebook({
         requestId,
@@ -256,31 +219,6 @@ const logic = async (req: Record<string, unknown>) => {
     console.log("authenticated notebook as", notebookUuid);
 
     switch (args.method) {
-      case "connect-notebook": {
-        const { app, workspace } = args;
-        const [check] = await cxn.execute(
-          `SELECT n.app, n.workspace
-          FROM notebooks n
-          WHERE n.uuid = ?`,
-          [notebookUuid]
-        );
-        const [existingNotebook] = check as Notebook[];
-        if (
-          existingNotebook &&
-          existingNotebook.app === app &&
-          existingNotebook.workspace === workspace
-        ) {
-          return { notebookUuid };
-        }
-        const response = await connectNotebook({
-          requestId,
-          tokenUuid,
-          app,
-          workspace,
-        });
-        cxn.destroy();
-        return response;
-      }
       case "usage": {
         const currentDate = new Date();
         const currentMonth = currentDate.getMonth();

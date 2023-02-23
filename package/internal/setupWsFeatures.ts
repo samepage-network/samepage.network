@@ -225,11 +225,12 @@ const onboard = () =>
         },
       })
     : dispatchAppEvent({
-        type: "prompt-invite-code",
-        respond: (inviteCode) =>
+        type: "prompt-account-info",
+        respond: (email, password) =>
           apiClient<{ notebookUuid: string; token: string }>({
             method: "create-notebook",
-            inviteCode,
+            email,
+            password,
             app,
             workspace,
           }).then(onSuccessOnboarding),
@@ -246,12 +247,13 @@ const setupWsFeatures = ({
     onboard();
   }
 
-  const notificationUnmount = notificationContainerPath ?
-    renderOverlay({
-      id: "samepage-notification-container",
-      Overlay: NotificationContainer,
-      path: notificationContainerPath,
-    }) : undefined;
+  const notificationUnmount = notificationContainerPath
+    ? renderOverlay({
+        id: "samepage-notification-container",
+        Overlay: NotificationContainer,
+        path: notificationContainerPath,
+      })
+    : undefined;
 
   addNotebookListener({
     operation: "ERROR",

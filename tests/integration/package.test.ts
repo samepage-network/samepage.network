@@ -4,22 +4,19 @@ import { test, expect } from "@playwright/test";
 import type {
   MessageSchema,
   ResponseSchema,
-  // responseMessageSchema,
 } from "../../package/testing/createTestSamePageClient";
 import { Notification } from "../../package/internal/types";
 import deleteNotebook from "~/data/deleteNotebook.server";
-import deleteInvite from "~/data/deleteInvite.server";
-import issueRandomInvite from "../utils/issueRandomInvite";
 import { JSDOM } from "jsdom";
 import getRandomNotebookPageId from "../utils/getRandomNotebookPageId";
-// import axios from "axios";
+import getRandomAccount from "../utils/getRandomAccount";
 
 let cleanup: () => Promise<unknown>;
-const inviteCodes: string[] = [];
+const accounts: { email: string; password: string }[] = [];
 
 test.beforeAll(async () => {
-  await issueRandomInvite().then((c) => inviteCodes.push(c.code));
-  await issueRandomInvite().then((c) => inviteCodes.push(c.code));
+  accounts.push(await getRandomAccount());
+  accounts.push(await getRandomAccount());
 });
 
 const log = (...args: Parameters<typeof console.log>) =>
@@ -27,15 +24,17 @@ const log = (...args: Parameters<typeof console.log>) =>
 
 const forkSamePageClient = ({
   workspace,
-  inviteCode,
+  email,
+  password,
 }: {
   workspace: string;
-  inviteCode: string;
+  email: string;
+  password: string;
 }) => {
   let expectedToClose = false;
   const client = fork(
     "./package/testing/createTestSamePageClient",
-    ["--inspect=9323", "--forked", workspace, inviteCode],
+    ["--inspect=9323", "--forked", workspace, email, password],
     { execPath: "./node_modules/.bin/ts-node", stdio: "inherit" }
   );
   const pendingRequests: Record<string, (data: unknown) => void> = {};
@@ -104,11 +103,17 @@ const forkSamePageClient = ({
 //     .post("http://localhost:3003/close")
 //     .then((r) => console.log("api kill", r.data));
 //
-// TODO: spawn dev 
+// TODO: spawn dev
 test("Full integration test of extensions", async () => {
   test.setTimeout(60000);
   const api = spawn("node", ["./node_modules/.bin/fuego", "api"], {
-    env: { ...process.env, NODE_ENV: "development", DEBUG: undefined },
+    env: {
+      ...process.env,
+      NODE_ENV: "development",
+      DEBUG: undefined,
+      // Uncomment below for testing without WIFI
+      // CLERK_API_URL: "http://localhost:3003/clerk",
+    },
   });
   const spawnCallbacks: { test: RegExp; callback: () => unknown }[] = [];
 
@@ -141,11 +146,11 @@ test("Full integration test of extensions", async () => {
       Promise.all([
         forkSamePageClient({
           workspace: "one",
-          inviteCode: inviteCodes[0],
+          ...accounts[0],
         }),
         forkSamePageClient({
           workspace: "two",
-          inviteCode: inviteCodes[1],
+          ...accounts[1],
         }),
       ]));
   cleanup = async () => {
@@ -574,8 +579,7 @@ test("Full integration test of extensions", async () => {
 
 test.afterAll(async () => {
   await cleanup?.();
-  await deleteInvite({ code: inviteCodes[0], requestId: v4() });
-  await deleteInvite({ code: inviteCodes[1], requestId: v4() });
+  // TODO delete accounts
   // hack to ensure proper exit of forks.
   await new Promise((resolve) => setTimeout(resolve, 5000));
 });

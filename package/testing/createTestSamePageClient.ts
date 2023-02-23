@@ -131,7 +131,7 @@ const createTestSamePageClient = async ({
   onMessage,
 }: {
   initOptions:
-    | { inviteCode: string }
+    | { email: string; password: string }
     | Record<typeof defaultSettings[number]["id"], string>;
   workspace: string;
   onMessage: (args: ResponseSchema) => void;
@@ -179,18 +179,18 @@ const createTestSamePageClient = async ({
     }
   };
   const settings =
-    "inviteCode" in initOptions
+    "email" in initOptions
       ? {
           uuid: "",
           token: "",
         }
       : initOptions;
   const initializingPromise =
-    "inviteCode" in initOptions
+    "email" in initOptions
       ? new Promise<void>((resolve) => {
-          const offAppEvent = onAppEvent("prompt-invite-code", (e) => {
+          const offAppEvent = onAppEvent("prompt-account-info", (e) => {
             offAppEvent();
-            e.respond(initOptions.inviteCode).then(resolve);
+            e.respond(initOptions.email, initOptions.password).then(resolve);
           });
         })
       : Promise.resolve();
@@ -500,7 +500,8 @@ if (forked >= 0 && typeof process.send !== "undefined") {
     createTestSamePageClient({
       workspace: process.argv[forked + 1],
       initOptions: {
-        inviteCode: process.argv[forked + 2],
+        email: process.argv[forked + 2],
+        password: process.argv[forked + 3],
       },
       onMessage: process.send.bind(process),
     })
