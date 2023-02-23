@@ -25,12 +25,12 @@ jobs:
       - uses: actions/checkout@v3
       - name: install
         run: npm install
-      # sudo systemctl start mysql.service
       # brew install mysql
       # /usr/local/opt/mysql/bin/mysql.server start
       - name: setup mysql + playwright
         run: |
           npx playwright install
+          sudo systemctl start mysql.service
           mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'" -uroot
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
           echo "DATABASE CREATED!"
