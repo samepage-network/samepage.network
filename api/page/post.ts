@@ -12,8 +12,11 @@ import parseZodError from "package/utils/parseZodError";
 import {
   BadRequestError,
   ConflictError,
+  ForbiddenError,
+  InternalServorError,
   MethodNotAllowedError,
   NotFoundError,
+  UnauthorizedError,
 } from "@dvargas92495/app/backend/errors.server";
 import catchError from "~/data/catchError.server";
 import getMysql from "fuegojs/utils/mysql";
@@ -37,6 +40,7 @@ import connectNotebook from "~/data/connectNotebook.server";
 import getQuota from "~/data/getQuota.server";
 import { encode } from "@ipld/dag-cbor";
 import { users } from "@clerk/clerk-sdk-node";
+import invokeAsync from "~/data/invokeAsync.server";
 
 const zMethod = zUnauthenticatedBody
   .and(zBaseHeaders)
@@ -183,7 +187,61 @@ const logic = async (req: Record<string, unknown>) => {
         [userId, tokenUuid]
       );
       cxn.destroy();
+      if (process.env.NODE_ENV === "production") {
+        await invokeAsync({
+          path: "send-email",
+          data: {
+            to: email,
+            subject: "Welcome to SamePage!",
+            bodyComponent: "welcome",
+            bodyProps: {},
+          },
+        });
+      }
       return { notebookUuid, token };
+    } else if (args.method === "add-notebook") {
+      const { app, workspace, email, password } = args;
+      const userResponse = await users.getUserList({ emailAddress: [email] });
+      if (userResponse.length === 0) {
+        throw new UnauthorizedError(
+          `No user found with email ${email}. Please create an account first.`
+        );
+      }
+      if (userResponse.length > 1) {
+        throw new ConflictError(
+          `Multiple users found with email ${email}. Contact support@samepage.network for help.`
+        );
+      }
+      const userId = userResponse[0].id;
+      const passwordResponse = await users
+        // @ts-ignore https://github.com/clerkinc/javascript/pull/855
+        .request<{ verified: true }>({
+          method: "POST",
+          path: `/users/${userId}/verify_password`,
+          bodyParams: { userId, password },
+        })
+        .catch(() => ({ verified: false }));
+      if (!passwordResponse.verified) {
+        throw new ForbiddenError(`Incorrect password for this email`);
+      }
+      const tokenRecord = await cxn
+        .execute(`SELECT t.uuid, t.value FROM tokens t WHERE t.user_id = ?`, [
+          userId,
+        ])
+        .then(([a]) => (a as { uuid: string; value: string }[])[0]);
+      if (!tokenRecord) {
+        throw new InternalServorError(
+          `Could not find token to use for this user. Please contact support@samepage.network for help.`
+        );
+      }
+      const response = await connectNotebook({
+        requestId,
+        tokenUuid: tokenRecord.uuid,
+        app,
+        workspace,
+      });
+      cxn.destroy();
+      return { notebookUuid: response.notebookUuid, token: tokenRecord.value };
     } else if (args.method === "ping") {
       // uptime checker
       console.log("ping");

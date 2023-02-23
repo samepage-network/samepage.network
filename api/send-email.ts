@@ -1,6 +1,7 @@
 import sendEmail from "@dvargas92495/app/backend/sendEmail.server";
 import React from "react";
 import InviteCodeEmail from "~/components/InviteCodeEmail";
+import WelcomeEmail from "~/components/WelcomeEmail";
 
 const ToolRequestEmail = ({
   tool,
@@ -23,6 +24,7 @@ const ToolRequestEmail = ({
 const RENDERS: Record<string, (args: any) => React.ReactElement> = {
   "tool-request": ToolRequestEmail,
   "invite-code": InviteCodeEmail,
+  "welcome": WelcomeEmail,
 };
 
 export const handler = ({

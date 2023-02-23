@@ -43,6 +43,7 @@
     "@babel/preset-react": "^7.18.6",
     "@blueprintjs/core": "^4.10.1",
     "@blueprintjs/select": "^4.6.6",
+    "@clerk/clerk-sdk-node": "^4.7.4",
     "@docsearch/react": "^3.3.0",
     "@dvargas92495/app": "^0.13.51",
     "@ipld/dag-cbor": "^7.0.3",

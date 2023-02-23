@@ -27,22 +27,22 @@ const ConnectNotebookPage = ({
   setPage: (s: Page) => void;
   onSuccess: OnSuccess;
 }) => {
-  const [notebookUuid, setNotebookUuid] = React.useState("");
-  const [token, setToken] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
   const [termsOfUse, setTermsOfUse] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
-  const disabled = !termsOfUse || !notebookUuid || !token;
+  const disabled = !termsOfUse || !email || !password;
   const onConnect = useCallback(() => {
     setLoading(true);
-    apiClient<{ notebookUuid: string }>({
-      method: "connect-notebook",
-      notebookUuid,
-      token,
+    apiClient<{ notebookUuid: string; token: string }>({
+      method: "add-notebook",
+      email,
+      password,
       app,
       workspace,
     })
-      .then(({ notebookUuid }) => {
+      .then(({ notebookUuid, token }) => {
         onSuccess({ token, notebookUuid });
         setPage("COMPLETE");
       })
@@ -50,7 +50,7 @@ const ConnectNotebookPage = ({
       .finally(() => {
         setLoading(false);
       });
-  }, [setError, setLoading, setPage, setNotebookUuid, token, notebookUuid]);
+  }, [setError, setLoading, setPage, onSuccess, email, password]);
   return (
     <Fragment>
       {loading && (
@@ -62,22 +62,22 @@ const ConnectNotebookPage = ({
         Connect a Notebook with a Universal Id and Token
       </h1>
       <Label className={"w-1/2"}>
-        Notebook Universal ID
+        Email
         <InputGroup
-          value={notebookUuid}
-          onChange={(e) => setNotebookUuid(e.target.value)}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           autoFocus
           type={"text"}
-          name={"uuid"}
+          name={"email"}
         />
       </Label>
       <Label className={"w-1/2"}>
-        Token
+        Password
         <InputGroup
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
           type={"password"}
-          name={"token"}
+          name={"password"}
         />
       </Label>
       <Checkbox
@@ -191,7 +191,7 @@ const CreateNotebookPage = ({
       />
       <div className="flex items-center gap-8">
         <Button
-          disabled={!termsOfUse || !email || loading}
+          disabled={!termsOfUse || !email || !password || loading}
           text={"Create"}
           intent={"primary"}
           onClick={onCreate}
