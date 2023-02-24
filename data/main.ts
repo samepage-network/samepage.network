@@ -15,6 +15,7 @@ base({
     "staging_clerk_api_key",
     "web3_storage_api_key",
     "roadmap_roam_token",
+    "stripe_webhook_secret",
   ],
   backendProps: {
     sizes: {

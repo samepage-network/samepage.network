@@ -103,12 +103,13 @@ const Home: React.FC = () => {
         <div className="w-full flex flex-col sm:flex-row flex-grow justify-between items-center m-auto min-h-0">
           <div className="flex flex-col w-full px-4 sm:pl-8 lg:pl-20 sm:pr-0 py-10 text-center sm:text-left max-w-lg">
             <h1 className="mb-4 text-4xl sm:text-5xl lg:text-6xl font-bold flex flex-col">
-              <span className="text-primary">Unlock your</span>
-              <span className="text-accent">workspace's data</span>
+              <span className="text-primary">Collaborate across</span>
+              <span className="text-accent">any application</span>
             </h1>
             <p>
-              Live sync and query data across different workspaces so that you
-              never have to leave your favorite tool.
+              Live sync pages, query data, and automate workflows across
+              different workspaces all from within the context of your favorite
+              app.
             </p>
           </div>
           <div className="flex items-center flex-grow w-full h-full overflow-hidden justify-end">
