@@ -237,3 +237,33 @@ test("Change handles eol diffs with emojis", async () =>
       annotations: [],
     }
   ));
+
+test("If existing doc is in a corrupted state, just force use the new one", async () => {
+  runChangeAutomergeDocTest(
+    {
+      content: "Hello\n",
+      annotations: [
+        // @ts-ignore
+        {
+          type: "block",
+          start: 0,
+          end: 6,
+        },
+      ],
+    },
+    {
+      content: "Hello\n",
+      annotations: [
+        {
+          type: "block",
+          start: 0,
+          end: 6,
+          attributes: {
+            level: 1,
+            viewType: "document",
+          },
+        },
+      ],
+    }
+  );
+});

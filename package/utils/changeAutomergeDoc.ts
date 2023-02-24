@@ -1,12 +1,18 @@
 import { diffChars } from "diff";
 import { app } from "../internal/registry";
-import { Schema, InitialSchema, LatestSchema, zInitialSchema } from "../internal/types";
+import {
+  Schema,
+  InitialSchema,
+  LatestSchema,
+  zInitialSchema,
+} from "../internal/types";
 import convertAnnotations from "./convertAnnotations";
 import Automerge from "automerge";
 import migrateDocToLatest from "./migrateDocToLatest";
 import unwrapSchema from "./unwrapSchema";
 import sendExtensionError from "../internal/sendExtensionError";
 import parseZodError from "./parseZodError";
+import wrapSchema from "./wrapSchema";
 
 const changeLatestAutomergeDoc = (oldDoc: LatestSchema, doc: InitialSchema) => {
   const changes = diffChars(oldDoc.content.toString(), doc.content);
@@ -85,9 +91,20 @@ const changeLatestAutomergeDoc = (oldDoc: LatestSchema, doc: InitialSchema) => {
 
 const changeAutomergeDoc = (oldDoc: Schema, doc: InitialSchema) => {
   const oldDocUnwrapped = unwrapSchema(oldDoc);
-  const oldDocAsLatest = migrateDocToLatest(oldDoc);
-  changeLatestAutomergeDoc(oldDocAsLatest, doc);
-  
+  const zOldResult = zInitialSchema.safeParse(oldDocUnwrapped);
+  let oldDocAsLatest: LatestSchema;
+  if (zOldResult.success) {
+    oldDocAsLatest = migrateDocToLatest(oldDoc);
+    changeLatestAutomergeDoc(oldDocAsLatest, doc);
+  } else {
+    const wrappedDoc = wrapSchema(doc);
+    oldDoc.content.deleteAt?.(0, oldDoc.content.length);
+    oldDoc.content.insertAt?.(0, ...wrappedDoc.content);
+    if (!oldDoc.annotations) oldDoc.annotations = [];
+    oldDoc.annotations.splice(0, oldDoc.annotations.length);
+    oldDocAsLatest = oldDoc as LatestSchema;
+    wrappedDoc.annotations.forEach((a) => oldDocAsLatest.annotations.push(a));
+  }
   const changedDocUnwrapped = unwrapSchema(oldDocAsLatest);
   zInitialSchema.safeParseAsync(changedDocUnwrapped).then((zResult) => {
     if (!zResult.success) {
