@@ -102,6 +102,7 @@ const codeAnnotation = annotationBase.merge(
     type: z.literal("code"),
     attributes: z.object({
       language: z.string(),
+      ticks: z.number().optional(),
     }),
   })
 );

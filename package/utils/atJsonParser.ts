@@ -7,19 +7,25 @@ const atJsonParser = (
   text: string,
   opts: { raw?: true } = {}
 ): InitialSchema => {
-  const parser = new Parser(Grammar.fromCompiled(grammar));
+  const parser = new Parser(Grammar.fromCompiled(grammar), {
+    keepHistory: process.env.NODE_ENV !== "production",
+  });
   try {
     parser.feed(text);
   } catch (e) {
-    sendExtensionError({
-      type: "At JSON Parser failed to parse text",
-      data: {
-        input: text,
-      },
-    });
-    throw new Error(
-      `Failed to parse: A detailed error report was just sent to SamePage Support.`
-    );
+    if (process.env.NODE_ENV === "production") {
+      sendExtensionError({
+        type: "At JSON Parser failed to parse text",
+        data: {
+          input: text,
+        },
+      });
+      throw new Error(
+        `Failed to parse: A detailed error report was just sent to SamePage Support.`
+      );
+    } else {
+      throw e;
+    }
   }
 
   // Occam's razor says the candidate with the shortest explanation is the most likely
@@ -66,6 +72,17 @@ const atJsonParser = (
     } else {
       console.error(`Failed to parse:`);
       console.error(text);
+      // @ts-ignore I know you exist
+      console.error("Table length: " + parser.table.length + "\n");
+      console.error("Number of parses: " + parser.results.length + "\n");
+      console.error("Parse Charts");
+      // @ts-ignore I know you exist
+      (parser.table as { states: {}[] }[]).forEach(function (column, index) {
+        console.error("\nChart: " + index++ + "\n");
+        column.states.forEach(function (state, stateIndex) {
+          console.error(stateIndex + ": " + state.toString() + "\n");
+        });
+      });
     }
     throw new Error(`Failed to parse: Unexpected end of text`);
   }
