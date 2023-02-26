@@ -617,7 +617,7 @@ const logic = async (req: Record<string, unknown>) => {
                 `SELECT l.uuid 
 FROM page_notebook_links l
 INNER JOIN notebooks n ON n.uuid = l.notebook_uuid
-WHERE n.uuid ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
+WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
                 [target, notebookPageId, notebookUuid]
               )
               .then(([invitedByLink]) => ({
