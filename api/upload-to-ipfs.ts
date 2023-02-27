@@ -38,6 +38,9 @@ export const handler = async (
 ) => {
   const client = new Web3Storage({
     token: process.env.WEB3_STORAGE_API_KEY || "",
+    endpoint: process.env.WEB3_STORAGE_URL
+      ? new URL(process.env.WEB3_STORAGE_URL)
+      : undefined,
   });
   const Key = `data/${type}/${uuid}`;
 
@@ -50,6 +53,7 @@ export const handler = async (
   const files = [new File([encoded], "data")];
   const [cid] = await Promise.all([
     dry
+      // REPLACE with api/ipfs/car/post.ts
       ? pack({
           input: files.map(toImportCandidate),
           blockstore: new MemoryBlockStore(),

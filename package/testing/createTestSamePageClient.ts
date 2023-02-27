@@ -101,6 +101,25 @@ const processMessageSchema = z.discriminatedUnion("type", [
     notebookPageId: z.string(),
     update: z.string(),
   }),
+  z.object({
+    type: z.literal("route"),
+    routes: z
+      .object({
+        key: z.string(),
+        value: z.string(),
+        response: z.any(),
+      })
+      .array(),
+  }),
+  z.object({
+    type: z.literal("request"),
+    request: z.any(),
+    target: z.string(),
+  }),
+  z.object({
+    type: z.literal("response"),
+    requestId: z.string(),
+  }),
 ]);
 export const responseMessageSchema = z.discriminatedUnion("type", [
   z.object({
@@ -132,7 +151,7 @@ const createTestSamePageClient = async ({
 }: {
   initOptions:
     | { email: string; password: string }
-    | Record<typeof defaultSettings[number]["id"], string>;
+    | Record<(typeof defaultSettings)[number]["id"], string>;
   workspace: string;
   onMessage: (args: ResponseSchema) => void;
 }) => {
@@ -194,13 +213,14 @@ const createTestSamePageClient = async ({
           });
         })
       : Promise.resolve();
-  const { unload } = setupSamePageClient({
-    getSetting: (s) => settings[s],
-    setSetting: (s, v) => (settings[s] = v),
-    addCommand: ({ label, callback }) => (commands[label] = callback),
-    removeCommand: ({ label }) => delete commands[label],
-    workspace,
-  });
+  const { unload, addNotebookRequestListener, sendNotebookRequest } =
+    setupSamePageClient({
+      getSetting: (s) => settings[s],
+      setSetting: (s, v) => (settings[s] = v),
+      addCommand: ({ label, callback }) => (commands[label] = callback),
+      removeCommand: ({ label }) => delete commands[label],
+      workspace,
+    });
   const {
     unload: unloadSharePage,
     refreshContent,
@@ -241,39 +261,30 @@ const createTestSamePageClient = async ({
   await awaitLog("samepage-success");
   onMessage({ type: "ready", uuid: settings.uuid });
   const updatesToSend: Record<string, any> = {};
+  const responsesToSend: Record<string, any> = {};
   return {
     send: async (m: unknown) => {
       try {
         const message = processMessageSchema
           .and(z.object({ uuid: z.string().uuid() }))
           .parse(m);
+        const sendResponse = (data?: Record<string, unknown>) =>
+          onMessage({ type: "response", uuid: message.uuid, data });
         if (message.type === "setCurrentNotebookPageId") {
           currentNotebookPageId = message.notebookPageId;
-          onMessage({ type: "response", uuid: message.uuid });
+          sendResponse();
         } else if (message.type === "setAppClientState") {
           appClientState[message.notebookPageId] = new JSDOM(message.data);
           if (isShared(message.notebookPageId)) {
             await refreshContent({
               notebookPageId: message.notebookPageId,
-            }).then(() =>
-              onMessage({
-                type: "response",
-                uuid: message.uuid,
-                data: { success: true },
-              })
-            );
+            }).then(() => sendResponse({ success: true }));
           } else {
-            onMessage({
-              type: "response",
-              uuid: message.uuid,
-              data: { success: false },
-            });
+            sendResponse({ success: false });
           }
         } else if (message.type === "share") {
           commands["Share Page on SamePage"]();
-          await awaitLog("init-page-success").then(() =>
-            onMessage({ type: "response", uuid: message.uuid })
-          );
+          await awaitLog("init-page-success").then(() => sendResponse());
         } else if (message.type === "accept") {
           callNotificationAction({
             operation: "SHARE_PAGE",
@@ -282,27 +293,17 @@ const createTestSamePageClient = async ({
               title: message.notebookPageId,
             },
             messageUuid: message.notificationUuid,
-          }).then(() =>
-            onMessage({
-              type: "response",
-              uuid: message.uuid,
-              data: { success: true },
-            })
-          );
+          }).then(() => sendResponse({ success: true }));
         } else if (message.type === "read") {
           const dom = appClientState[message.notebookPageId];
-          onMessage({
-            type: "response",
-            uuid: message.uuid,
-            data: {
-              html: dom ? dom.window.document.body.innerHTML : "",
-            },
+          sendResponse({
+            html: dom ? dom.window.document.body.innerHTML : "",
           });
         } else if (message.type === "unload") {
           unloadNotebookQuerying();
           unloadSharePage();
           unload();
-          onMessage({ type: "response", uuid: message.uuid });
+          sendResponse();
         } else if (message.type === "invite") {
           await Promise.all([
             awaitLog("share-page-success"),
@@ -310,7 +311,7 @@ const createTestSamePageClient = async ({
               notebookPageId: currentNotebookPageId,
               notebookUuid: message.notebookUuid,
             }),
-          ]).then(() => onMessage({ type: "response", uuid: message.uuid }));
+          ]).then(() => sendResponse());
         } else if (message.type === "waitForNotification") {
           await new Promise<Notification>((resolve) => {
             const offAppEvent = onAppEvent("notification", (e) => {
@@ -318,7 +319,7 @@ const createTestSamePageClient = async ({
               resolve(e.notification);
             });
           }).then((data) => {
-            onMessage({ type: "response", uuid: message.uuid, data });
+            sendResponse(data);
           });
         } else if (message.type === "insert") {
           const dom = appClientState[message.notebookPageId];
@@ -367,22 +368,12 @@ const createTestSamePageClient = async ({
                   notebookPageId: message.notebookPageId,
                   state: binaryToBase64(Automerge.save(doc)),
                 };
-                onMessage({
-                  type: "response",
-                  uuid: message.uuid,
-                  data: { success: true, delayed: updateUuid },
-                });
+                sendResponse({ success: true, delayed: updateUuid });
               });
             }
             await refreshContent({
               notebookPageId: message.notebookPageId,
-            }).then(() =>
-              onMessage({
-                type: "response",
-                uuid: message.uuid,
-                data: { success: true },
-              })
-            );
+            }).then(() => sendResponse({ success: true }));
           }
         } else if (message.type === "delete") {
           const dom = appClientState[message.notebookPageId];
@@ -399,13 +390,7 @@ const createTestSamePageClient = async ({
             }
             await refreshContent({
               notebookPageId: message.notebookPageId,
-            }).then(() =>
-              onMessage({
-                type: "response",
-                uuid: message.uuid,
-                data: { success: false },
-              })
-            );
+            }).then(() => sendResponse({ success: false }));
           } else {
             onMessage({
               type: "error",
@@ -416,40 +401,26 @@ const createTestSamePageClient = async ({
           const body = updatesToSend[message.update];
           if (body) {
             await apiClient(body);
-            onMessage({
-              type: "response",
-              uuid: message.uuid,
-              data: { success: true },
-            });
+            sendResponse({ success: true });
           } else {
-            onMessage({
-              type: "response",
-              uuid: message.uuid,
-              data: { success: false },
-            });
+            sendResponse({ success: false });
           }
         } else if (message.type === "disconnect") {
           const awaitDisconnect = awaitLog("samepage-disconnect");
           commands["Disconnect from SamePage Network"]();
-          awaitDisconnect.then(() =>
-            onMessage({ type: "response", uuid: message.uuid })
-          );
+          awaitDisconnect.then(() => sendResponse());
         } else if (message.type === "connect") {
           commands["Connect to SamePage Network"]();
-          awaitLog("samepage-success").then(() =>
-            onMessage({ type: "response", uuid: message.uuid })
-          );
+          awaitLog("samepage-success").then(() => sendResponse());
         } else if (message.type === "break") {
           applyState = () =>
             Promise.reject(new Error("Something went wrong..."));
-          onMessage({ type: "response", uuid: message.uuid });
+          sendResponse();
         } else if (message.type === "fix") {
           applyState = defaultApplyState;
-          onMessage({ type: "response", uuid: message.uuid });
+          sendResponse();
         } else if (message.type === "updates") {
-          await awaitLog("update-success").then(() =>
-            onMessage({ type: "response", uuid: message.uuid })
-          );
+          await awaitLog("update-success").then(() => sendResponse());
         } else if (message.type === "ipfs") {
           await apiClient<{ state: string }>({
             method: "get-shared-page",
@@ -459,11 +430,7 @@ const createTestSamePageClient = async ({
               const data = Automerge.load<Schema>(
                 base64ToBinary(state) as Automerge.BinaryDocument
               );
-              onMessage({
-                type: "response",
-                uuid: message.uuid,
-                data: unwrapSchema(data),
-              });
+              sendResponse(unwrapSchema(data));
             })
             .catch((e) => {
               return {
@@ -475,14 +442,52 @@ const createTestSamePageClient = async ({
         } else if (message.type === "refresh") {
           await applyState(message.notebookPageId, message.data);
           await refreshContent({ notebookPageId: message.notebookPageId });
-          onMessage({
-            type: "response",
-            uuid: message.uuid,
-            data: { success: true },
-          });
+          sendResponse({ success: true });
         } else if (message.type === "query") {
           const data = await query(message.request);
-          onMessage({ type: "response", uuid: message.uuid, data });
+          sendResponse(data);
+        } else if (message.type === "route") {
+          addNotebookRequestListener(({ request, sendResponse }) => {
+            const route = message.routes.find(
+              (rte) => request[rte.key] === rte.value
+            );
+            sendResponse(route?.response);
+          });
+          sendResponse();
+        } else if (message.type === "request") {
+          const id = v4();
+          const response = await new Promise<Record<string, any>>((resolve) => {
+            let cached = false;
+            sendNotebookRequest({
+              request: message.request,
+              targets: [message.target],
+              onResponse: (data) => {
+                console.log("onresponsible", cached, JSON.stringify(data));
+                if (cached) {
+                  responsesToSend[id] = data;
+                } else {
+                  cached = true;
+                  resolve(data);
+                }
+              },
+            });
+          });
+          sendResponse({ cache: response[message.target] || {}, id });
+        } else if (message.type === "response") {
+          const data = await new Promise<Record<string, unknown>>((resolve) => {
+            const interval = setInterval(() => {
+              if (responsesToSend[message.requestId]) {
+                clearInterval(interval);
+                resolve(responsesToSend[message.requestId]);
+              }
+            }, 100);
+          });
+          sendResponse(data);
+        } else {
+          onMessage({
+            type: "error",
+            data: `Unknown message type: ${message["type"]}`,
+          });
         }
       } catch (e) {
         onMessage({

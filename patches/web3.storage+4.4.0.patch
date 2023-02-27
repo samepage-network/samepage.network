@@ -1,0 +1,14 @@
+diff --git a/node_modules/web3.storage/src/lib.js b/node_modules/web3.storage/src/lib.js
+index 3d9b211..51976e7 100644
+--- a/node_modules/web3.storage/src/lib.js
++++ b/node_modules/web3.storage/src/lib.js
+@@ -197,6 +197,9 @@ class Web3Storage {
+     }
+ 
+     const carRoot = roots[0].toString()
++    if (process.env.NODE_ENV !== "production") {
++      headers = { ...headers, 'X-CID': carRoot }
++    }
+     const splitter = new TreewalkCarSplitter(car, targetSize, { decoders })
+ 
+     /**

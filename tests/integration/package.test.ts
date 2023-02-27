@@ -102,8 +102,6 @@ const forkSamePageClient = ({
 //   axios
 //     .post("http://localhost:3003/close")
 //     .then((r) => console.log("api kill", r.data));
-//
-// TODO: spawn dev
 test("Full integration test of extensions", async () => {
   test.setTimeout(60000);
   const api = spawn("node", ["./node_modules/.bin/fuego", "api"], {
@@ -113,6 +111,8 @@ test("Full integration test of extensions", async () => {
       DEBUG: undefined,
       // Uncomment below for testing without WIFI
       // CLERK_API_URL: "http://localhost:3003/clerk",
+      // CLERK_DATA_FILE: `data/clerk/${v4()}.json`,
+      // WEB3_STORAGE_URL: "http://localhost:3003",
     },
   });
   const spawnCallbacks: { test: RegExp; callback: () => unknown }[] = [];
@@ -572,6 +572,36 @@ test("Full integration test of extensions", async () => {
           },
         ],
       });
+  });
+
+  await test.step("Client 1 sends a cross notebook request to client 2", async () => {
+    const hello = v4();
+    await client2.send({
+      type: "route",
+      routes: [{ key: "method", value: "get", response: { hello } }],
+    });
+    const request1 = await client1
+      .send({
+        type: "request",
+        request: { method: "get" },
+        target: client2.uuid,
+      })
+      .then((r) => r as { cache: unknown; id: string });
+    expect(request1.cache).toEqual({});
+    const response1 = await client1.send({
+      type: "response",
+      requestId: request1.id,
+    });
+    expect(response1).toEqual({ [client2.uuid]: { hello } });
+
+    const request2 = await client1
+      .send({
+        type: "request",
+        request: { method: "get" },
+        target: client2.uuid,
+      })
+      .then((r) => r as { cache: unknown; id: string });
+    expect(request2.cache).toEqual({ hello });
   });
   client1.prepare();
   client2.prepare();
