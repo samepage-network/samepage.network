@@ -122,3 +122,77 @@ test("build command supports on finish file", async () => {
     fs.readFileSync(`${root}/dist/index.js`).toString().split(/\n/)[0]
   ).toEqual(`(()=>{var o="bye";console.log(o);})();`);
 });
+
+test("build command compiles template", async () => {
+  const root = await makeRandomTmpDir();
+  fs.mkdirSync(`${root}/src`);
+  fs.cpSync("template/src/index.ts", `${root}/src/index.ts`);
+  fs.cpSync("package", `${root}/node_modules/samepage`, { recursive: true });
+  [
+    "@babel",
+    "@blueprintjs",
+    "@hypnosphi",
+    "@ipld",
+    "@juggle",
+    "@popperjs",
+    "automerge",
+    "call-bind",
+    "camel-case",
+    "capital-case",
+    "cborg",
+    "change-case",
+    "classnames",
+    "constant-case",
+    "define-properties",
+    "diff",
+    "dom-helpers",
+    "dom4",
+    "dot-case",
+    "fast-sha256",
+    "function-bind",
+    "functions-have-names",
+    "get-intrinsic",
+    "gud",
+    "has",
+    "has-property-descriptors",
+    "has-symbols",
+    "has-tostringtag",
+    "header-case",
+    "is-arguments",
+    "is-date-object",
+    "is-regex",
+    "lower-case",
+    "markdown-to-jsx",
+    "multiformats",
+    "no-case",
+    "object-assign",
+    "object-keys",
+    "object-is",
+    "pako",
+    "param-case",
+    "pascal-case",
+    "path-case",
+    "popper.js",
+    "prop-types",
+    "react",
+    "react-dom",
+    "react-fast-compare",
+    "react-popper",
+    "react-transition-group",
+    "regexp.prototype.flags",
+    "sentence-case",
+    "snake-case",
+    "tslib",
+    "upper-case",
+    "upper-case-first",
+    "uuid",
+    "warning",
+    "zod",
+  ].forEach((mod) => {
+    fs.cpSync(`node_modules/${mod}`, `${root}/node_modules/${mod}`, {
+      recursive: true,
+    });
+  });
+  const code = await build({ dry: true, root });
+  expect(code).toEqual(0);
+});

@@ -152,7 +152,7 @@ const compile = ({
       },
       format,
       entryNames: out,
-      external: externalModules.map(([e]) => e),
+      external: externalModules.map(([e]) => e).concat(["crypto"]),
       plugins: [
         {
           name: "nearley",

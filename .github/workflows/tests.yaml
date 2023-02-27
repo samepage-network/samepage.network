@@ -23,6 +23,10 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ hashFiles('**/package-lock.json') }}
       - name: install
         run: npm install
           # sudo systemctl start mysql.service
