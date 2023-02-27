@@ -822,7 +822,6 @@ WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`
             const data = await downloadFileContent({
               Key: `data/requests/${hash}.json`,
             });
-            console.log("fetch me hash", hash, data);
             await messageNotebook({
               source: notebookUuid,
               target,

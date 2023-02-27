@@ -462,7 +462,6 @@ const createTestSamePageClient = async ({
               request: message.request,
               targets: [message.target],
               onResponse: (data) => {
-                console.log("onresponsible", cached, JSON.stringify(data));
                 if (cached) {
                   responsesToSend[id] = data;
                 } else {
