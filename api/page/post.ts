@@ -754,6 +754,7 @@ WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`
             .finally(() => cxn.destroy())
         );
       }
+      // @deprecated
       case "query": {
         const { request } = args;
         const getTargetsForQuery = () => {
@@ -788,6 +789,7 @@ WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`
           )
           .catch(catchError("Failed to query across notebooks"));
       }
+      // @deprecated
       case "query-response": {
         const { request, data, target } = args;
         // TODO replace with IPFS

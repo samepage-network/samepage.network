@@ -11,6 +11,7 @@ import type {
   LogEvent,
   NotebookResponse,
   JSONData,
+  SamePageAPI,
 } from "../internal/types";
 import APPS, { appIdByName } from "../internal/apps";
 import setupRegistry from "../internal/registry";
@@ -28,11 +29,15 @@ const notebookResponseHandlers: Record<
   (args: Record<string, JSONData>) => void
 > = {};
 const hashRequest = async (request: JSONData) =>
-  Array.from(
-    new Uint8Array(await crypto.subtle.digest("SHA-256", encode(request)))
-  )
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  typeof window !== "undefined"
+    ? Array.from(
+        new Uint8Array(await crypto.subtle.digest("SHA-256", encode(request)))
+      )
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("")
+    : import("crypto").then((mod) =>
+        mod.createHash("sha256").update(encode(request)).digest("hex")
+      );
 
 const setupSamePageClient = ({
   app,
@@ -52,7 +57,7 @@ const setupSamePageClient = ({
   getSetting?: GetSetting;
   setSetting?: SetSetting;
   workspace?: string;
-  app?: typeof APPS[number]["name"];
+  app?: (typeof APPS)[number]["name"];
   appRoot?: HTMLElement;
   onAppLog?: (e: LogEvent) => void;
   notificationContainerPath?: string;
@@ -101,34 +106,36 @@ const setupSamePageClient = ({
     },
   });
 
+  const samepageApi: SamePageAPI = {
+    addNotebookListener,
+    removeNotebookListener,
+    sendToNotebook,
+    sendNotebookRequest: ({ targets, request, onResponse }) =>
+      apiClient({
+        method: "notebook-request",
+        targets,
+        request,
+      }).then(async (r) => {
+        // TODO - reconsider whether or not it makes sense for both the cache hit 
+        // and the eventual response to use the same onResponse method...
+        // Question to answer - is it always only ever at most two responses per request?
+        onResponse(r as Record<string, NotebookResponse>);
+        notebookResponseHandlers[await hashRequest(request)] = onResponse;
+      }),
+    listNotebooks: () => apiClient({ method: "list-recent-notebooks" }),
+    addNotebookRequestListener: (listener) => {
+      const handler: (typeof notebookRequestHandlers)[number] = (request) =>
+        new Promise((resolve) => listener({ request, sendResponse: resolve }));
+      notebookRequestHandlers.push(handler);
+      return () => {
+        const index = notebookRequestHandlers.indexOf(handler);
+        if (index >= 0) notebookRequestHandlers.splice(index, 1);
+      };
+    },
+  };
   if (typeof window !== "undefined") {
     const parentWindow = window.parent !== window ? window.parent : window;
-    parentWindow.samepage = {
-      addNotebookListener,
-      removeNotebookListener,
-      sendToNotebook,
-      sendNotebookRequest: ({ targets, request, onResponse }) =>
-        apiClient({
-          method: "notebook-request",
-          targets,
-          request,
-        }).then(async (r) => {
-          onResponse(r as Record<string, NotebookResponse>);
-          notebookResponseHandlers[await hashRequest(request)] = onResponse;
-        }),
-      listNotebooks: () => apiClient({ method: "list-recent-notebooks" }),
-      addNotebookRequestListener: (listener) => {
-        const handler: typeof notebookRequestHandlers[number] = (request) =>
-          new Promise((resolve) =>
-            listener({ request, sendResponse: resolve })
-          );
-        notebookRequestHandlers.push(handler);
-        return () => {
-          const index = notebookRequestHandlers.indexOf(handler);
-          if (index >= 0) notebookRequestHandlers.splice(index, 1);
-        };
-      },
-    };
+    parentWindow.samepage = samepageApi;
     parentWindow.document.body.dispatchEvent(
       new CustomEvent("samepage:loaded")
     );
@@ -141,9 +148,7 @@ const setupSamePageClient = ({
       offAppEvent();
       unloadWS();
     },
-    addNotebookListener,
-    removeNotebookListener,
-    sendToNotebook,
+    ...samepageApi,
   };
 };
 
