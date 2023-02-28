@@ -5,3 +5,4 @@ dist
 /playwright/.cache/
 *.ne.ts
 coverage
+.env

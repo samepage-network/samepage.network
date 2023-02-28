@@ -5,7 +5,8 @@
   "main": "./dist/index.js",
   "scripts": {
     "postinstall": "patch-package --patch-dir node_modules/samepage/patches",
-    "start": "npx samepage dev"
+    "start": "npx samepage dev",
+    "test": "npx samepage test"
   },
   "repository": {
     "type": "git",
