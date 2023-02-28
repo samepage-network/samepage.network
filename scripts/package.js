@@ -53,9 +53,6 @@ fs.appendFileSync("dist/samepage.css", fs.readFileSync("/tmp/samepage.css"));
   fs.cpSync(f, path.join(`dist`, path.basename(f)))
 );
 fs.mkdirSync("dist/patches");
-fs.readdirSync("patches").forEach((f) =>
-  fs.cpSync(path.join("patches", f), path.join(`dist`, "patches", f))
-);
 const rootPackageJson = JSON.parse(fs.readFileSync("package.json").toString());
 const fuegoPackageField = rootPackageJson.fuego?.package || {};
 const generatePackageJson = (local, file) => {
@@ -80,8 +77,18 @@ const generatePackageJson = (local, file) => {
     bin: local.bin,
   };
   fs.writeFileSync(file, JSON.stringify(newPackageJson, null, 4));
+  return newPackageJson;
 };
-generatePackageJson(fuegoPackageField, "dist/package.json");
+const root = generatePackageJson(fuegoPackageField, "dist/package.json");
+fs.readdirSync("patches").forEach((f) => {
+  const package = /(.*?)\+\d+\./.exec(f)?.[1];
+  if (root.peerDependencies[package]) {
+    fs.cpSync(path.join("patches", f), path.join(`dist`, "patches", f));
+    console.log("copied patch for", package);
+  } else {
+    console.log("skipped patch for", f, package);
+  }
+});
 
 Object.entries(fuegoPackageField.scoped || {}).forEach(([dir, config]) => {
   generatePackageJson(config, `dist/${dir}/package.json`);

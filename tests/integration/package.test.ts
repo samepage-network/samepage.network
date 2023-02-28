@@ -34,13 +34,12 @@ const forkSamePageClient = ({
   let expectedToClose = false;
   const client = fork(
     "./package/testing/createTestSamePageClient",
-    [
-      // "--inspect=9323",
+    (process.env.DEBUG ? ["--inspect=9323"] : []).concat([
       "--forked",
       workspace,
       email,
       password,
-    ],
+    ]),
     { execPath: "./node_modules/.bin/ts-node", stdio: "inherit" }
   );
   const pendingRequests: Record<string, (data: unknown) => void> = {};
