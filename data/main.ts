@@ -30,7 +30,7 @@ base({
     const accessSecret = this.node.children.find(
       (c) => c.node.id === "deploy_aws_access_secret"
     );
-    const samePageTestPassword = new TerraformVariable(this, "samepage_test_password_secret", {
+    const samePageTestPassword = new TerraformVariable(this, "samepage_test_password", {
       type: "string",
     });
     new ActionsOrganizationSecret(this, `deploy_aws_access_key_secret`, {
