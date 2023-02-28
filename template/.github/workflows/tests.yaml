@@ -11,8 +11,7 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.SAMEPAGE_AWS_ACCESS_SECRET }}
   AWS_REGION: us-east-1
   PLAYWRIGHT_HTML_REPORT: playwright-report
-  SAMEPAGE_TEST_UUID: ${{ secrets.SAMEPAGE_TEST_UUID }}
-  SAMEPAGE_TEST_TOKEN: ${{ secrets.SAMEPAGE_TEST_TOKEN }}
+  SAMEPAGE_TEST_PASSWORD: ${{ secrets.SAMEPAGE_TEST_PASSWORD }}
   WEB_SOCKET_URL: wss://ws.samepage.network
 
 jobs:
