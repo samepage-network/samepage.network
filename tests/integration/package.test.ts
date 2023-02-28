@@ -34,7 +34,13 @@ const forkSamePageClient = ({
   let expectedToClose = false;
   const client = fork(
     "./package/testing/createTestSamePageClient",
-    ["--inspect=9323", "--forked", workspace, email, password],
+    [
+      // "--inspect=9323",
+      "--forked",
+      workspace,
+      email,
+      password,
+    ],
     { execPath: "./node_modules/.bin/ts-node", stdio: "inherit" }
   );
   const pendingRequests: Record<string, (data: unknown) => void> = {};
@@ -46,14 +52,20 @@ const forkSamePageClient = ({
       client.send({ ...m, uuid });
     });
   };
-  const api = {
+  let resolveDisconnect = () => {};
+  const clientApi = {
     send,
-    kill: () => send({ type: "unload" }),
+    kill: () =>
+      send({ type: "unload" })
+        .then(
+          () => new Promise<void>((resolve) => (resolveDisconnect = resolve))
+        )
+        .then(() => client.exitCode),
     prepare: () => (expectedToClose = true),
     uuid: "",
   };
 
-  return new Promise<typeof api>((resolve) => {
+  return new Promise<typeof clientApi>((resolve) => {
     const clientCallbacks: {
       [k in ResponseSchema as k["type"]]: (data: k) => void;
     } = {
@@ -64,8 +76,8 @@ const forkSamePageClient = ({
         throw new Error(`Client ${workspace} threw an unexpected error`);
       },
       ready: ({ uuid }) => {
-        log(`Client ${workspace} has uuid ${uuid}`);
-        return resolve({ ...api, uuid });
+        log(`Client ${workspace} has uuid ${uuid} on process ${client.pid}`);
+        return resolve({ ...clientApi, uuid });
       },
       response: (m) => {
         const { uuid, data } = m as {
@@ -91,9 +103,7 @@ const forkSamePageClient = ({
     });
     client.on("close", (e) => {
       console.log(`Client ${workspace}: closed (${e})`);
-    });
-    client.on("disconnect", () => {
-      console.log(`Client ${workspace}: disconnected`);
+      resolveDisconnect();
     });
   });
 };
@@ -154,9 +164,9 @@ test("Full integration test of extensions", async () => {
         }),
       ]));
   cleanup = async () => {
-    client1.kill();
+    expect(await client1.kill()).toEqual(0);
     await deleteNotebook({ uuid: client1.uuid, requestId: v4() });
-    client2.kill();
+    expect(await client2.kill()).toEqual(0);
     await deleteNotebook({ uuid: client2.uuid, requestId: v4() });
     api.kill();
     log("Test: cleaned up!");
@@ -610,6 +620,4 @@ test("Full integration test of extensions", async () => {
 test.afterAll(async () => {
   await cleanup?.();
   // TODO delete accounts
-  // hack to ensure proper exit of forks.
-  await new Promise((resolve) => setTimeout(resolve, 5000));
 });

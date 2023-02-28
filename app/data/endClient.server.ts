@@ -21,16 +21,11 @@ const endClient = (
       const now = new Date();
       await Promise.all([
         cxn.execute(`DELETE FROM online_clients WHERE id = ?`, [source.id]),
+        // should only happen in a race condition where endClient is called from disconnection and missed message
         cxn.execute(
           `INSERT INTO client_sessions (id, created_date, end_date, disconnected_by, notebook_uuid)
-            VALUES (?,?,?,?,?)`,
-          [
-            source.id,
-            source.created_date,
-            now,
-            reason,
-            source.notebook_uuid,
-          ]
+            VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE id=id`,
+          [source.id, source.created_date, now, reason, source.notebook_uuid]
         ),
       ]);
     }

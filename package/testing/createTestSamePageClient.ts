@@ -255,7 +255,7 @@ const createTestSamePageClient = async ({
   await initializingPromise.catch(() =>
     onMessage({
       type: "error",
-      data: `Error: 3 arguments required for --forked (workspace, notebook id, token)\nFound: ${process.argv}`,
+      data: `Error: 3 arguments required for --forked (workspace, email, password)\nFound: ${process.argv}`,
     })
   );
   await awaitLog("samepage-success");
@@ -304,6 +304,7 @@ const createTestSamePageClient = async ({
           unloadSharePage();
           unload();
           sendResponse();
+          process.disconnect();
         } else if (message.type === "invite") {
           await Promise.all([
             awaitLog("share-page-success"),
