@@ -52,7 +52,7 @@ export const meta: MetaFunction = (args) =>
   getMeta({
     title: args.data.frontmatter?.title,
     description: args.data.frontmatter?.description,
-    img: `/images/blog/${args.params["*"]}/thumbnail.png`,
+    img: `https://samepage.network/images/blog/${args.params["*"]}/thumbnail.png`,
   })(args);
 
 export default BlogPostPage;
