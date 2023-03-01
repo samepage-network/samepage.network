@@ -51,10 +51,8 @@ test.afterEach(async ({ page }) => {
   fs.readdirSync(covPath).forEach((f) => {
     const content = fs.readFileSync(`${covPath}/${f}`).toString();
     const data = JSON.parse(content);
-    const cache =
-      data["source-map-cache"][
-        "file:///Users/dvargas/developer/samepage.network/app/server/build/index.js"
-      ]?.data;
+    const cacheKey = `file://${process.cwd()}/app/server/build/index.js`;
+    const cache = data["source-map-cache"][cacheKey]?.data;
     if (cache) {
       cache.sources = cache.sources.map((s: string) =>
         s.replace(/file:\/\//, "")
