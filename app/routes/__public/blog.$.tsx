@@ -17,7 +17,7 @@ const BlogPostPage = (): React.ReactElement => {
     useLoaderData<Awaited<ReturnType<typeof loadMarkdownFile>>>();
   const Component = useMarkdownComponent(code);
   return (
-    <div className="flex gap-28 h-min items-start relative justify-between px-4">
+    <div className="flex gap-28 h-min items-start relative justify-between px-4 mb-16">
       <div key={frontmatter.title}>
         <div className="max-w-2xl">
           <div>

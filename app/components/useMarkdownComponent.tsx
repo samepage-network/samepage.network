@@ -97,8 +97,9 @@ export const MarkdownComponent = ({ children }: { children: string }) => (
         h6: (props) => (
           <Header h={6} {...props} className={"text-lg my-3 font-normal"} />
         ),
-        p: { props: { className: "mb-2" } },
+        p: { props: { className: "mb-4" } },
         pre: CodeBlock,
+        ul: { props: { className: "mb-4" } },
         li: { props: { className: "list-disc ml-4" } },
         code: {
           props: {

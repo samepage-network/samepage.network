@@ -52,8 +52,8 @@ const AgencyPage = () => {
               <div>
                 <CogIcon width={64} height={64} className={"inline-block"} />
               </div>
-              Receive the functionality within the SamePage extension within a
-              few business days.
+              Receive the functionality delivered via the SamePage ecosystem of
+              extensions within a few business days.
             </div>
             <div className="text-center">
               <div>
