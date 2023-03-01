@@ -54,11 +54,22 @@ test.afterEach(async ({ page }) => {
     const cache =
       data["source-map-cache"][
         "file:///Users/dvargas/developer/samepage.network/app/server/build/index.js"
-      ].data;
-    cache.sources = cache.sources.map((s: string) =>
-      s.replace(/file:\/\//, "")
-    );
-    fs.writeFileSync(`${covPath}/${f}`, JSON.stringify(data));
+      ]?.data;
+    if (cache) {
+      cache.sources = cache.sources.map((s: string) =>
+        s.replace(/file:\/\//, "")
+      );
+      fs.writeFileSync(`${covPath}/${f}`, JSON.stringify(data));
+    } else {
+      console.error(
+        "Failed to find cache in ",
+        f,
+        "Found:",
+        Object.keys(data["source-map-cache"]).filter((k) =>
+          k.includes("app/server/build")
+        )
+      );
+    }
   });
 
   const origin = await page.evaluate("window.location.origin");
