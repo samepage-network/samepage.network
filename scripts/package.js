@@ -82,11 +82,8 @@ const generatePackageJson = (local, file) => {
 const root = generatePackageJson(fuegoPackageField, "dist/package.json");
 fs.readdirSync("patches").forEach((f) => {
   const package = /(.*?)\+\d+\./.exec(f)?.[1];
-  if (root.peerDependencies[package]) {
+  if (package && root.peerDependencies[package.replace(/\+/g, "/")]) {
     fs.cpSync(path.join("patches", f), path.join(`dist`, "patches", f));
-    console.log("copied patch for", package);
-  } else {
-    console.log("skipped patch for", f, package);
   }
 });
 
