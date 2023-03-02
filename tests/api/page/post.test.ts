@@ -506,7 +506,7 @@ test("Reverting a page invite should make it acceptable again", async () => {
     notebookPageId,
     targetUuid,
   });
-  expect(r1).toEqual({ success: true });
+  expect(r1.success).toEqual(true);
   const r2 = await mockLambda({
     method: "join-shared-page",
     notebookUuid: targetUuid,
@@ -551,7 +551,7 @@ test("Sharing pages produces messages to be read and marked read", async () => {
     notebookPageId,
     targetUuid,
   });
-  expect(r1).toEqual({ success: true });
+  expect(r1.success).toEqual(true);
 
   const r2 = await mockLambda({
     method: "get-unmarked-messages",
@@ -679,7 +679,7 @@ test("Shared pages should be receptive to updates", async () => {
     notebookPageId,
     targetUuid,
   });
-  expect(r1).toEqual({ success: true });
+  expect(r1.success).toEqual(true);
   const r2 = await mockLambda({
     method: "join-shared-page",
     notebookUuid: targetUuid,
@@ -779,7 +779,7 @@ test("Sending updates with no changes should return with success false", async (
     notebookPageId,
     targetUuid,
   });
-  expect(r1).toEqual({ success: true });
+  expect(r1.success).toEqual(true);
   const r2 = await mockLambda({
     method: "join-shared-page",
     notebookUuid: targetUuid,
@@ -959,7 +959,7 @@ test("Invitee can remove invite from invitee's notebook", async () => {
     targetUuid,
     method: "invite-notebook-to-page",
   });
-  expect(r).toEqual({ success: true });
+  expect(r.success).toEqual(true);
 
   await expect
     .poll(
@@ -1067,7 +1067,7 @@ test("Inviter can remove invite from invitee's notebook", async () => {
     targetUuid,
     method: "invite-notebook-to-page",
   });
-  expect(r).toEqual({ success: true });
+  expect(r.success).toEqual(true);
   await expect
     .poll(
       () =>
@@ -1181,7 +1181,7 @@ test("Unrelated notebook can't remove invite from invitee's notebook", async () 
     targetUuid,
     method: "invite-notebook-to-page",
   });
-  expect(r).toEqual({ success: true });
+  expect(r.success).toEqual(true);
   await expect
     .poll(
       () =>
@@ -1305,22 +1305,18 @@ test("Inviting a notebook that isn't on SamePage", async () => {
   });
   expect(created).toEqual(true);
 
-  const badWorkspace = await getRandomWorkspace();
   const r = await mockLambda({
     notebookPageId,
     notebookUuid,
     token,
-    target: {
-      app: 0,
-      workspace: badWorkspace,
-    },
+    targetEmail: "invalid@samepage.network",
     method: "invite-notebook-to-page",
   })
     .then(() => ({ success: true, e: undefined }))
     .catch((e) => ({ success: false, e: e as string }));
   expect(r).toEqual({
     success: false,
-    e: `Error: Could not find notebook with workspace name: ${badWorkspace} in app SamePage`,
+    e: `Error: No live notebooks specified. Inviting new notebooks to SamePage is coming soon!`,
   });
 
   const r2 = await mockLambda({
@@ -1334,43 +1330,6 @@ test("Inviting a notebook that isn't on SamePage", async () => {
   expect(r2).toEqual({
     success: false,
     e: `Error: No live notebooks specified. Inviting new notebooks to SamePage is coming soon!`,
-  });
-});
-
-test("Inviting a workspace that has multiple notebooks tied to it", async () => {
-  const { notebookUuid, token } = await mockRandomNotebook();
-  const notebookPageId = await getRandomNotebookPageId();
-  const { created } = await mockLambda({
-    notebookPageId,
-    notebookUuid,
-    token,
-    method: "init-shared-page",
-    state: mockState("hello"),
-  });
-  expect(created).toEqual(true);
-
-  const { workspace } = await mockRandomNotebook();
-  await createNotebook({
-    requestId: v4(),
-    app: 0,
-    workspace,
-  });
-
-  const r = await mockLambda({
-    notebookPageId,
-    notebookUuid,
-    token,
-    target: {
-      app: 0,
-      workspace,
-    },
-    method: "invite-notebook-to-page",
-  })
-    .then(() => ({ success: true, e: undefined }))
-    .catch((e) => ({ success: false, e: e as string }));
-  expect(r).toEqual({
-    success: false,
-    e: `Error: Attempted to invite an ambiguous notebook - multiple notebooks within this app have the workspace name: ${workspace}`,
   });
 });
 
@@ -1411,7 +1370,7 @@ test("Shared pages should be receptive to force pushes", async () => {
     notebookPageId,
     targetUuid,
   });
-  expect(r1).toEqual({ success: true });
+  expect(r1.success).toEqual(true);
   const r2 = await mockLambda({
     method: "join-shared-page",
     notebookUuid: targetUuid,
@@ -1554,7 +1513,7 @@ test("Joining a page where the original notebook disconnected", async () => {
     notebookPageId,
     targetUuid,
   });
-  expect(r).toEqual({ success: true });
+  expect(r.success).toEqual(true);
 
   const r3 = await mockLambda({
     method: "disconnect-shared-page",

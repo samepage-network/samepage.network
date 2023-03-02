@@ -33,7 +33,6 @@ import authenticateNotebook from "~/data/authenticateNotebook.server";
 import { Operation } from "package/internal/messages";
 import messageToNotification from "package/internal/messageToNotification";
 import inviteNotebookToPage from "~/data/inviteNotebookToPage.server";
-import getNotebookUuids from "~/data/getNotebookUuids.server";
 import createNotebook from "~/data/createNotebook.server";
 import QUOTAS from "~/data/quotas.server";
 import connectNotebook from "~/data/connectNotebook.server";
@@ -84,14 +83,39 @@ const validatePageQuota = async ({
   }
 };
 
-const getRecentNotebooks = async ({ requestId }: { requestId: string }) => {
+const getRecentNotebooks = async ({
+  requestId,
+  notebookUuid,
+  tokenUuid,
+}: {
+  requestId: string;
+  notebookUuid: string;
+  tokenUuid: string;
+}) => {
   const cxn = await getMysql(requestId);
+  const email = await cxn
+    .execute(`SELECT user_id from tokens where uuid = ?`, [tokenUuid])
+    .then(([t]) => {
+      const userId = (t as { user_id: string }[])[0]?.user_id;
+      return userId
+        ? users
+            .getUser((t as { user_id: string }[])[0]?.user_id)
+            .then(
+              (u) =>
+                u.emailAddresses.find((ea) => ea.id === u.primaryEmailAddressId)
+                  ?.emailAddress
+            )
+        : "email not found";
+    });
   return (
     cxn
       // TODO - create better hueristics here for recent notebooks, prob its own LRU cache table
+      // OR we create a contacts table and load those notebooks here
       .execute(
         `SELECT n.* FROM notebooks n 
-              INNER JOIN token_notebook_links l on l.notebook_uuid = n.uuid`
+         INNER JOIN token_notebook_links l on l.notebook_uuid = n.uuid
+         WHERE l.token_uuid = ? AND n.uuid != ?`,
+        [tokenUuid, notebookUuid]
       )
       .then(([a]) => a as ({ uuid: string } & Notebook)[])
       .then((recents) =>
@@ -103,6 +127,7 @@ const getRecentNotebooks = async ({ requestId }: { requestId: string }) => {
                 uuid: r.uuid,
                 workspace: r.workspace,
                 appName: appsById[r.app].name,
+                email,
               },
             ])
           )
@@ -559,25 +584,35 @@ const logic = async (req: Record<string, unknown>) => {
         };
       }
       case "invite-notebook-to-page": {
-        const { notebookPageId, target, targetUuid } = args;
-        const targetNotebookUuids = target
-          ? await getNotebookUuids({
-              ...target,
-              requestId,
-            })
-          : targetUuid
-          ? [targetUuid]
-          : [];
-        if (target && targetNotebookUuids.length > 1) {
-          throw new ConflictError(
-            `Attempted to invite an ambiguous notebook - multiple notebooks within this app have the workspace name: ${target.workspace}`
-          );
-        } else if (targetNotebookUuids.length === 0) {
+        const { notebookPageId, targetEmail, targetUuid } = args;
+        const targetNotebookUuid =
+          targetUuid ||
+          (targetEmail
+            ? await users
+                .getUserList({ emailAddress: [targetEmail] })
+                .then((us) =>
+                  us.length
+                    ? cxn
+                        .execute(
+                          `SELECT n.uuid FROM notebooks n 
+                    INNER JOIN token_notebook_links tnl ON tnl.notebook_uuid = n.uuid
+                    INNER JOIN tokens t ON t.user_id = ?
+                    LIMIT 1`,
+                          [us[0].id]
+                        )
+
+                        .then(
+                          ([records]) =>
+                            (records as { uuid: string }[])[0]?.uuid
+                        )
+                    : ""
+                )
+            : "");
+        if (!targetNotebookUuid) {
           throw new BadRequestError(
             `No live notebooks specified. Inviting new notebooks to SamePage is coming soon!`
           );
         }
-        const [targetNotebookUuid] = targetNotebookUuids;
         return Promise.all([
           getSharedPage({
             notebookUuid,
@@ -685,8 +720,10 @@ WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`
             `SELECT n.app, n.workspace, n.uuid, l.version, l.open, CASE 
             WHEN l.notebook_uuid = l.invited_by THEN 1
             ELSE 2 
-          END as priority FROM page_notebook_links l 
+          END as priority, t.user_id as user FROM page_notebook_links l 
                 INNER JOIN notebooks n ON n.uuid = l.notebook_uuid 
+                INNER JOIN token_notebook_links tl ON tl.notebook_uuid = n.uuid
+                INNER JOIN tokens t ON t.uuid = tl.token_uuid
                 WHERE l.page_uuid = ?
                 ORDER BY priority, l.invited_date`,
             [pageUuid]
@@ -697,11 +734,27 @@ WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`
                 version: number;
                 open: 0 | 1;
                 uuid: string;
+                user: string;
               })[]
           );
         const clientUuids = new Set(clients.map((c) => c.uuid));
-        const recents = await getRecentNotebooks({ requestId });
+        const recents = await getRecentNotebooks({
+          requestId,
+          notebookUuid,
+          tokenUuid,
+        });
         cxn.destroy();
+        const emailsByIds = await users
+          .getUserList({ userId: clients.map((u) => u.user) })
+          .then((us) =>
+            Object.fromEntries(
+              us.map((u) => [
+                u.id,
+                u.emailAddresses.find((ea) => ea.id === u.primaryEmailAddressId)
+                  ?.emailAddress,
+              ])
+            )
+          );
         return {
           notebooks: clients.map((c) => ({
             uuid: c.uuid,
@@ -709,12 +762,17 @@ WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`
             app: appsById[c.app].name,
             version: c.version,
             openInvite: !!c.open,
+            email: emailsByIds[c.user],
           })),
           recents: recents.filter((r) => !clientUuids.has(r.uuid)),
         };
       }
       case "list-recent-notebooks": {
-        const notebooks = await getRecentNotebooks({ requestId });
+        const notebooks = await getRecentNotebooks({
+          requestId,
+          notebookUuid,
+          tokenUuid,
+        });
         cxn.destroy();
         return {
           notebooks,

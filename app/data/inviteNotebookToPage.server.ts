@@ -1,5 +1,7 @@
 import messageNotebook from "./messageNotebook.server";
 import getMysql from "fuegojs/utils/mysql";
+import getNotebookByUuid from "./getNotebookByUuid.server";
+import { appsById } from "package/internal/apps";
 
 const inviteNotebookToPage = async ({
   requestId,
@@ -31,7 +33,16 @@ const inviteNotebookToPage = async ({
     },
     requestId: requestId,
     metadata: ["title"],
-  }).then(() => ({ success: true }));
+  })
+    .then(() => getNotebookByUuid({ uuid: targetNotebookUuid, requestId }))
+    .then((notebook) => ({
+      success: true,
+      notebook: {
+        uuid: targetNotebookUuid,
+        appName: appsById[notebook.app].name,
+        workspace: notebook.workspace,
+      },
+    }));
 };
 
 export default inviteNotebookToPage;

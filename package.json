@@ -42,7 +42,7 @@
     "@aws-sdk/client-apigatewaymanagementapi": "^3.218.0",
     "@aws-sdk/client-ses": "^3.278.0",
     "@babel/preset-react": "^7.18.6",
-    "@blueprintjs/core": "^4.17.0",
+    "@blueprintjs/core": "^4.17.4",
     "@blueprintjs/select": "^4.6.6",
     "@clerk/clerk-sdk-node": "^4.5.14",
     "@clerk/remix": "1.0.2",

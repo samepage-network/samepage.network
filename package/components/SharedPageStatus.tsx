@@ -9,14 +9,11 @@ import {
   IconSize,
   Tooltip,
 } from "@blueprintjs/core";
-import { appsById } from "../internal/apps";
 import React from "react";
 import SharePageDialog from "./SharePageDialog";
-import { Notebook, OverlayProps, Schema } from "../internal/types";
+import { OverlayProps, Schema } from "../internal/types";
 import Automerge from "automerge";
 import apiClient from "../internal/apiClient";
-import { app, workspace } from "../internal/registry";
-import getLastLocalVersion from "../internal/getLastLocalVersion";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { parseAndFormatActorId } from "../internal/parseActorId";
 import AtJsonRendered from "./AtJsonRendered";
@@ -277,37 +274,7 @@ const SharedPageStatus = ({
           portalContainer={portalContainer}
           icon={"share"}
           Overlay={(props) => (
-            <SharePageDialog
-              {...props}
-              notebookPageId={notebookPageId}
-              listConnectedNotebooks={(notebookPageId: string) =>
-                Promise.all([
-                  apiClient<{
-                    notebooks: {
-                      app: string;
-                      workspace: string;
-                      version: number;
-                      openInvite: boolean;
-                      uuid: string;
-                    }[];
-                    recents: ({ uuid: string } & Notebook)[];
-                  }>({
-                    method: "list-page-notebooks",
-                    notebookPageId,
-                  }),
-                  load(notebookPageId),
-                ]).then(([{ notebooks, recents }, doc]) => {
-                  return {
-                    notebooks: notebooks.map((n) =>
-                      n.workspace !== workspace || n.app !== appsById[app].name
-                        ? n
-                        : { ...n, version: getLastLocalVersion(doc) }
-                    ),
-                    recents,
-                  };
-                })
-              }
-            />
+            <SharePageDialog {...props} notebookPageId={notebookPageId} />
           )}
         />
         <TooltipButtonOverlay
