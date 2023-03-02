@@ -8,6 +8,7 @@ import TextInput from "~/components/TextInput";
 import Button from "~/components/Button";
 import SuccessfulActionToast from "~/components/SuccessfulActionToast";
 import MailIcon from "@heroicons/react/outline/MailIcon";
+import ButtonLink from "~/components/ButtonLink";
 
 const Subscribe = ({
   title,
@@ -106,10 +107,13 @@ const Home: React.FC = () => {
               <span className="text-primary">Collaborate across</span>
               <span className="text-accent">any application</span>
             </h1>
-            <p>
+            <p className="mb-4">
               Live sync pages, query data, and automate workflows across
               different workspaces all from within the context of your favorite
               app.
+            </p>
+            <p className="flex gap-2">
+              <ButtonLink to={"/agency"}>Work with us</ButtonLink>
             </p>
           </div>
           <div className="flex items-center flex-grow w-full h-full overflow-hidden justify-end">

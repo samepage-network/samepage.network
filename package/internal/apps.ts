@@ -30,6 +30,7 @@ const APPS = [
     id: 4,
     name: "Notion",
     workspaceLabel: "workspace",
+    development: true,
   },
 ] as const;
 

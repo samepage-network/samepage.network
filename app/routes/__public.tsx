@@ -96,21 +96,7 @@ const PublicPage: React.FC = () => {
                 afterSignOutUrl={"/"}
               />
             ) : (
-              <>
-                <ButtonLink to={"/install"}>Get Started</ButtonLink>
-                {/* {<a
-                  href={"/login"}
-                  className="mx-1 text-sky-400 border-sky-400 border rounded-md px-2 py-1 cursor-pointer hover:bg-sky-100 active:bg-sky-200"
-                >
-                  LOGIN
-                </a>
-                <a
-                  href={"/signup"}
-                  className="mx-1 text-orange-400 border-orange-400 border rounded-md px-2 py-1 cursor-pointer hover:bg-orange-100 active:bg-orange-200"
-                >
-                  SIGNUP
-                </a>} */}
-              </>
+              <ButtonLink to={"/install"}>Get Started</ButtonLink>
             )}
           </div>
         </div>
