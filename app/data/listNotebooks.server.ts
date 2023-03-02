@@ -50,7 +50,7 @@ const listNotebooks = async (
       ),
     cxn
       .execute(
-        `SELECT COUNT(code) as accepted FROM tokens t 
+        `SELECT COUNT(t.value) as accepted FROM tokens t 
         LEFT JOIN token_notebook_links l ON l.token_uuid = t.uuid
         LEFT JOIN notebooks n ON l.notebook_uuid = n.uuid
         WHERE n.app is not null`

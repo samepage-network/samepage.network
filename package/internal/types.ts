@@ -6,7 +6,7 @@ import type { CID } from "multiformats";
 import type { default as defaultSettings } from "../utils/defaultSettings";
 import { Operation } from "./messages";
 
-export type App = typeof APPS[number];
+export type App = (typeof APPS)[number];
 export type AppId = App["id"];
 export type Apps = Record<AppId, Omit<App, "id">>;
 
@@ -174,7 +174,7 @@ export type RenderOverlay = <T extends Record<string, unknown>>(args: {
   props?: T;
   path?: string | HTMLElement | null;
 }) => (() => void) | undefined;
-type SettingId = typeof defaultSettings[number]["id"];
+type SettingId = (typeof defaultSettings)[number]["id"];
 export type GetSetting = (s: SettingId) => string;
 export type SetSetting = (s: SettingId, v: string) => void;
 
@@ -263,21 +263,7 @@ export type Memo = {
   headers: Record<string, string>;
   parent: CID | null;
 };
-export type RecentNotebook = {
-  uuid: string;
-  appName?: string;
-} & Notebook;
 
-export type ListConnectedNotebooks = (notebookPageId: string) => Promise<{
-  notebooks: {
-    app: string;
-    workspace: string;
-    version: number;
-    openInvite: boolean;
-    uuid: string;
-  }[];
-  recents: RecentNotebook[];
-}>;
 export type ListNotebooks = () => Promise<{
   // TODO: Replace with RecentNotebook
   notebooks: { uuid: string; appName: string; workspace: string }[];
@@ -364,8 +350,8 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
   z.object({
     method: z.literal("invite-notebook-to-page"),
     notebookPageId: z.string(),
-    target: zNotebook.optional(),
     targetUuid: z.string().optional(),
+    targetEmail: z.string().optional(),
   }),
   z.object({
     method: z.literal("remove-page-invite"),

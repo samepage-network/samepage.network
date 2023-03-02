@@ -10,6 +10,7 @@ test.beforeEach(async ({ page }) => {
     resetOnNavigation: false,
   });
 });
+let pid: number | undefined;
 
 // TODO: include app/routes + app/components again when properly code covering
 test("Full integration test of web app", async ({ page }) => {
@@ -24,6 +25,7 @@ test("Full integration test of web app", async ({ page }) => {
     app.stdout.on("data", (s) => {
       if (/Remix App Server started at/.test(s)) {
         console.log("APP Process", app.pid);
+        pid = app.pid;
         resolve();
       }
       console.log(`APP Message: ${s as string}`);
@@ -48,27 +50,29 @@ test("Full integration test of web app", async ({ page }) => {
 
 test.afterEach(async ({ page }) => {
   // fix the sources in coverage file from app
-  fs.readdirSync(covPath).forEach((f) => {
-    const content = fs.readFileSync(`${covPath}/${f}`).toString();
-    const data = JSON.parse(content);
-    const cacheKey = `file://${process.cwd()}/app/server/build/index.js`;
-    const cache = data["source-map-cache"][cacheKey]?.data;
-    if (cache) {
-      cache.sources = cache.sources.map((s: string) =>
-        s.replace(/file:\/\//, "")
-      );
-      fs.writeFileSync(`${covPath}/${f}`, JSON.stringify(data));
-    } else {
-      console.error(
-        "Failed to find cache in ",
-        f,
-        "Found:",
-        Object.keys(data["source-map-cache"]).filter((k) =>
-          k.includes("app/server/build")
-        )
-      );
-    }
-  });
+  fs.readdirSync(covPath)
+    .filter((f) => new RegExp(`-${pid}-`).test(f))
+    .forEach((f) => {
+      const content = fs.readFileSync(`${covPath}/${f}`).toString();
+      const data = JSON.parse(content);
+      const cacheKey = `file://${process.cwd()}/app/server/build/index.js`;
+      const cache = data["source-map-cache"][cacheKey]?.data;
+      if (cache) {
+        cache.sources = cache.sources.map((s: string) =>
+          s.replace(/file:\/\//, "")
+        );
+        fs.writeFileSync(`${covPath}/${f}`, JSON.stringify(data));
+      } else {
+        console.error(
+          "Failed to find cache in ",
+          f,
+          "Found:",
+          Object.keys(data["source-map-cache"]).filter((k) =>
+            k.includes("app/server/build")
+          )
+        );
+      }
+    });
 
   const origin = await page.evaluate("window.location.origin");
   const coverage = await page.coverage.stopJSCoverage().then((fils) => {

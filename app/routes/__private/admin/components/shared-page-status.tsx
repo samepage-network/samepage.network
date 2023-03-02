@@ -14,18 +14,23 @@ import { set } from "package/utils/localAutomergeDb";
 const SharedPageStatusPage = () => {
   const { pages } = useLoaderData<Awaited<ReturnType<typeof listPages>>>();
   const navigate = useNavigate();
-  const filtered = useMemo(
-    () => pages.filter((p) => p.notebook_uuid === getSetting("uuid")),
-    [pages]
+  const [filtered, setFiltered] = useState(() =>
+    pages.filter((p) => p.notebook_uuid === getSetting("uuid"))
   );
   const notebookPageIds = useMemo(
     () => filtered.map((f) => f.notebook_page_id),
-    [pages]
+    [filtered]
   );
   const [notebookPageId, setNotebookPageId] = useState<string>();
   useEffect(() => {
     if (notebookPageId) set(notebookPageId);
   }, [notebookPageId]);
+  useEffect(() => {
+    const listener = () =>
+      setFiltered(pages.filter((p) => p.notebook_uuid === getSetting("uuid")));
+    document.addEventListener("uuid", listener);
+    return () => document.removeEventListener("uuid", listener);
+  }, [pages, setFiltered]);
   return (
     <>
       <div className={"mb-8"}>
@@ -33,7 +38,7 @@ const SharedPageStatusPage = () => {
           label="Page"
           options={notebookPageIds}
           onChange={(e) => setNotebookPageId(e as string)}
-          defaultValue={getSetting("uuid")}
+          defaultValue={""}
         />
       </div>
       <SharedPageStatus

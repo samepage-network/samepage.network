@@ -91,7 +91,10 @@ const PublicPage: React.FC = () => {
           </div>
           <div className="hidden lg:flex w-40 justify-end items-center">
             {authed ? (
-              <UserButton />
+              <UserButton
+                userProfileMode={"navigation"}
+                afterSignOutUrl={"/"}
+              />
             ) : (
               <>
                 <ButtonLink to={"/install"}>Get Started</ButtonLink>

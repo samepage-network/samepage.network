@@ -7,8 +7,7 @@ import blueprintcss from "@blueprintjs/core/lib/css/blueprint.css";
 import blueprinticonscss from "@blueprintjs/icons/lib/css/blueprint-icons.css";
 import { RemixAppLoaderCallback } from "~/data/remixAppLoader.server";
 import Select from "~/components/Select";
-import { getSetting, setSetting } from "package/internal/registry";
-import { useMemo } from "react";
+import { setSetting } from "package/internal/registry";
 import listAllNotebooks from "~/data/listAllNotebooks.server";
 
 const ComponentsPage = () => {
@@ -23,7 +22,6 @@ const ComponentsPage = () => {
       .split("-")
       .map((s) => `${s.slice(0, 1).toUpperCase()}${s.slice(1)}`)
       .join("");
-  const defaultNotebook = useMemo(() => getSetting("uuid"), []);
   return (
     <div className="flex h-full w-full gap-8">
       <style>{`div a {
@@ -32,7 +30,6 @@ const ComponentsPage = () => {
       <div className="w-64 flex flex-col bg-gray-200 h-full flex-shrink-0 overflow-auto scrollbar-thin">
         <div className="p-4">
           <Select
-            defaultValue={defaultNotebook}
             options={notebooks.map((n) => ({
               id: n.uuid,
               label: `${n.app} - ${n.workspace}`,
@@ -44,6 +41,7 @@ const ComponentsPage = () => {
                 "token",
                 notebooks.find((n) => n.uuid === uuid)?.token || ""
               );
+              document.dispatchEvent(new CustomEvent("uuid"));
             }}
           />
         </div>

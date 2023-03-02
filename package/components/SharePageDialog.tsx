@@ -1,4 +1,3 @@
-import type { ListConnectedNotebooks, RecentNotebook } from "../internal/types";
 import React from "react";
 import {
   AnchorButton,
@@ -15,6 +14,10 @@ import inviteNotebookToPage from "../utils/inviteNotebookToPage";
 // TODO - remove both of these fields when possible
 import { appIdByName, appsById } from "../internal/apps";
 import apiClient from "../internal/apiClient";
+import getLastLocalVersion from "../internal/getLastLocalVersion";
+import { workspace, app } from "../internal/registry";
+import { load } from "../utils/localAutomergeDb";
+import { AppId } from "../internal/types";
 
 const formatVersion = (s: number) =>
   s ? new Date(s * 1000).toLocaleString() : "unknown";
@@ -24,28 +27,48 @@ export type Props = {
   portalContainer?: HTMLElement;
   isOpen?: boolean;
   notebookPageId: string;
-  listConnectedNotebooks: ListConnectedNotebooks;
+};
+
+type ConnectedNotebooks = {
+  app: string;
+  workspace: string;
+  version: number;
+  openInvite: boolean;
+  uuid: string;
+  email: string;
+}[];
+
+type RecentNotebook = {
+  uuid: string;
+  appName?: string;
+  email?: string;
+  app?: AppId;
+  workspace: string;
 };
 
 const MultiSelectComponent = MultiSelect2 || MultiSelect;
+
+const getApp = (r: RecentNotebook) =>
+  r.appName ||
+  (typeof r.app !== "undefined" ? appsById[r.app]?.name : "Unknown");
 
 const SharePageDialog = ({
   onClose,
   isOpen = true,
   portalContainer,
-  listConnectedNotebooks,
   notebookPageId,
 }: Props) => {
-  const [notebooks, setNotebooks] = React.useState<
-    Awaited<ReturnType<ListConnectedNotebooks>>["notebooks"]
-  >([]);
+  const [notebooks, setNotebooks] = React.useState<ConnectedNotebooks>([]);
   const [recents, setRecents] = React.useState<RecentNotebook[]>([]);
   const [inviteQuery, setInviteQuery] = React.useState("");
   const [currentNotebooks, setCurrentNotebooks] = React.useState<
     RecentNotebook[]
   >([]);
+  // TODO: Remove this - we need to rearchitect RecentNotebook to be either:
+  // - a full notebook with email
+  // - just an email
   const currentNotebookUuids = React.useMemo(
-    () => new Set(currentNotebooks.map((n) => n.uuid)),
+    () => new Set(currentNotebooks.map((n) => n.uuid || n.email)),
     [currentNotebooks]
   );
   const [loading, setLoading] = React.useState(false);
@@ -58,42 +81,59 @@ const SharePageDialog = ({
           inviteNotebookToPage({
             notebookPageId,
             notebookUuid: n.uuid,
+            email: n.email,
+          }).then((notebook): ConnectedNotebooks[number] => {
+            return {
+              openInvite: true,
+              version: 0,
+              app: notebook.appName,
+              email: n.email || "",
+              workspace: notebook.workspace,
+              uuid: notebook.uuid,
+            };
           })
         )
       )
-        .then(() => setCurrentNotebooks([]))
-        .catch(() => {
-          setNotebooks(
-            notebooks.filter((n) => !currentNotebookUuids.has(n.uuid))
+        .then((newNotebooks) => {
+          setNotebooks(notebooks.concat(newNotebooks));
+          setRecents(
+            recents.filter(
+              (r) =>
+                !currentNotebookUuids.has(r.uuid) && getApp(r) !== "Unknown"
+            )
           );
-          setRecents(currentNotebooks.concat(recents));
+          setCurrentNotebooks([]);
+        })
+        .catch((e) => {
+          setError(e.message);
         })
         .finally(() => setLoading(false));
-      setNotebooks(
-        notebooks.concat(
-          currentNotebooks
-            .filter((n) => n.appName || appsById[n.app]?.name)
-            .map((n) => ({
-              ...n,
-              openInvite: true,
-              version: 0,
-              app: n.appName || appsById[n.app]?.name,
-            }))
-        )
-      );
-      setRecents(
-        recents.filter(
-          (r) =>
-            !currentNotebookUuids.has(r.uuid) && (r.appName || appsById[r.app])
-        )
-      );
     }
   };
 
   React.useEffect(() => {
     if (isOpen) {
       setLoading(true);
-      listConnectedNotebooks(notebookPageId)
+      Promise.all([
+        apiClient<{
+          notebooks: ConnectedNotebooks;
+          recents: RecentNotebook[];
+        }>({
+          method: "list-page-notebooks",
+          notebookPageId,
+        }),
+        load(notebookPageId),
+      ])
+        .then(([{ notebooks, recents }, doc]) => {
+          return {
+            notebooks: notebooks.map((n) =>
+              n.workspace !== workspace || n.app !== appsById[app].name
+                ? n
+                : { ...n, version: getLastLocalVersion(doc) }
+            ),
+            recents,
+          };
+        })
         .then((r) => {
           setNotebooks(r.notebooks);
           setRecents(r.recents);
@@ -107,7 +147,10 @@ const SharePageDialog = ({
     <Dialog
       isOpen={isOpen}
       title={`Share Page on SamePage`}
-      onClose={onClose}
+      onClose={() => {
+        setError("");
+        onClose();
+      }}
       canOutsideClickClose
       canEscapeKeyClose
       isCloseButtonShown={false}
@@ -124,15 +167,23 @@ const SharePageDialog = ({
             key={`${g.app}/${g.workspace}`}
             className={"flex gap-4 items-center mb-2 justify-between"}
           >
-            <span className={`flex-grow ${loading ? "text-opacity-50" : ""}`}>
-              <span className="font-bold text-base">{g.app}</span>{" "}
-              <span className="font-normal text-sm">{g.workspace}</span>
+            <span
+              className={`flex-grow flex flex-col ${
+                loading ? "text-opacity-50" : ""
+              }`}
+            >
+              <span>
+                <span className="font-bold text-base pr-2">{g.app}</span>
+                <span className="font-normal text-sm">{g.workspace}</span>
+              </span>
+              <span className="text-xs italic">{g.email}</span>
             </span>
             <span>
               {g.openInvite ? (
                 <Button
                   minimal
                   icon={"trash"}
+                  aria-label={"trash"}
                   onClick={() => {
                     setLoading(true);
                     apiClient({
@@ -171,7 +222,7 @@ const SharePageDialog = ({
           <style>{`.samepage-notebook-select .bp3-popover-target, .samepage-notebook-select .bp4-popover-target {
   width: 100%;
 }`}</style>
-          <MultiSelectComponent<typeof recents[number]>
+          <MultiSelectComponent<RecentNotebook>
             items={recents}
             className={"flex-grow samepage-notebook-select"}
             itemsEqual={(a, b) => a.uuid === b.uuid}
@@ -186,14 +237,12 @@ const SharePageDialog = ({
                 text={
                   <div className="text-black">
                     <div>
-                      <span className="font-bold text-base">
-                        {a.appName || appsById[a.app]?.name}
-                      </span>{" "}
+                      <span className="font-bold text-base">{getApp(a)}</span>{" "}
                       <span className="font-normal text-sm">{a.workspace}</span>
                     </div>
                     <div>
                       <span className="italic text-xs opacity-50">
-                        {a.uuid}
+                        {a.email || a.uuid}
                       </span>
                     </div>
                   </div>
@@ -207,21 +256,34 @@ const SharePageDialog = ({
                 roleStructure="listoption"
               />
             }
-            tagRenderer={(a) => (
-              <span>
-                <span className="font-bold text-base">
-                  {a.appName || appsById[a.app]?.name}
-                </span>{" "}
-                <span className="font-normal text-sm">{a.workspace}</span>
-              </span>
-            )}
+            tagRenderer={(a) => {
+              const appName = getApp(a);
+              return (
+                <span>
+                  {a.email && (
+                    <span className="font-bold text-base pr-2">{a.email}</span>
+                  )}
+                  {appName && appName !== "Unknown" && (
+                    <span className="font-bold text-base pr-2">{appName}</span>
+                  )}
+                  {a.workspace && (
+                    <span className="font-normal text-sm">{a.workspace}</span>
+                  )}
+                </span>
+              );
+            }}
             selectedItems={currentNotebooks}
-            placeholder={"Enter notebook..."}
+            placeholder={"Enter notebook or email..."}
             itemPredicate={(Q, i) => {
               const q = Q.toLowerCase();
               return (
                 i.workspace.toLowerCase().includes(q) ||
-                `${i.appName || appsById[i.app]?.name} ${i.workspace}`
+                `${
+                  i.appName ||
+                  (typeof i.app !== "undefined"
+                    ? appsById[i.app]?.name
+                    : "Unknown")
+                } ${i.workspace}`
                   .toLowerCase()
                   .includes(q)
               );
@@ -265,6 +327,11 @@ const SharePageDialog = ({
                 currentNotebooks.filter((n) => n.uuid !== item.uuid)
               )
             }
+            createNewItemFromQuery={(s) => {
+              return s.includes("@")
+                ? { email: s, uuid: "", appName: "", workspace: "" }
+                : [];
+            }}
           />
           <Tooltip
             content={
@@ -275,6 +342,7 @@ const SharePageDialog = ({
           >
             <AnchorButton
               minimal
+              aria-label={"plus"}
               icon={"plus"}
               disabled={!currentNotebooks.length}
               onClick={onInvite}
