@@ -201,7 +201,11 @@ type ConnectionEvent = {
 
 type PromptAccountInfoEvent = {
   type: "prompt-account-info";
-  respond: (e: string, p: string) => Promise<void>;
+  respond: (e: {
+    email: string;
+    password: string;
+    create?: boolean;
+  }) => Promise<void>;
 };
 
 export type Notification = {

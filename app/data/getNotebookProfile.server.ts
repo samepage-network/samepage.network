@@ -2,6 +2,7 @@ import { NotFoundError } from "~/data/errors.server";
 import getMysqlConnection from "fuegojs/utils/mysql";
 import { appsById } from "package/internal/apps";
 import { AppId } from "package/internal/types";
+import getPrimaryUserEmail from "./getPrimaryUserEmail.server";
 
 const getNotebookProfile = async ({
   context: { requestId },
@@ -12,7 +13,7 @@ const getNotebookProfile = async ({
 }) => {
   const cxn = await getMysqlConnection(requestId);
   const [results] = await cxn.execute(
-    `SELECT n.app, n.workspace, n.uuid, t.created_date FROM notebooks n
+    `SELECT n.app, n.workspace, n.uuid, t.created_date, t.user_id FROM notebooks n
     LEFT JOIN token_notebook_links l ON n.uuid = l.notebook_uuid
     LEFT JOIN tokens t ON t.uuid = l.token_uuid
   WHERE n.uuid = ?`,
@@ -22,6 +23,7 @@ const getNotebookProfile = async ({
     app: AppId;
     workspace: string;
     uuid: string;
+    user_id: string;
   }[];
   if (!notebook)
     throw new NotFoundError(`Could not find notebook by uuid: ${uuid}`);
@@ -70,8 +72,10 @@ const getNotebookProfile = async ({
   cxn.destroy();
   return {
     notebook: {
-      ...notebook,
+      workspace: notebook.workspace,
+      uuid: notebook.uuid,
       app: appsById[notebook.app].name,
+      email: await getPrimaryUserEmail(notebook.user_id),
     },
     outgoingMessages,
     incomingMessages,

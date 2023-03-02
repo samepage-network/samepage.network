@@ -82,30 +82,31 @@ const SharePageDialog = ({
             notebookPageId,
             notebookUuid: n.uuid,
             email: n.email,
-          }).then((notebook): ConnectedNotebooks[number] => {
-            return {
-              openInvite: true,
-              version: 0,
-              app: notebook.appName,
-              email: n.email || "",
-              workspace: notebook.workspace,
-              uuid: notebook.uuid,
-            };
           })
+            .then((notebook): ConnectedNotebooks[number] => {
+              return {
+                openInvite: true,
+                version: 0,
+                app: notebook.appName,
+                email: n.email || "",
+                workspace: notebook.workspace,
+                uuid: notebook.uuid,
+              };
+            })
+            .catch((e) => {
+              setError(e.message);
+              return undefined;
+            })
         )
       )
         .then((newNotebooks) => {
-          setNotebooks(notebooks.concat(newNotebooks));
-          setRecents(
-            recents.filter(
-              (r) =>
-                !currentNotebookUuids.has(r.uuid) && getApp(r) !== "Unknown"
-            )
+          const successfulInvites = newNotebooks.filter(
+            (n): n is ConnectedNotebooks[number] => !!n
           );
+          setNotebooks(notebooks.concat(successfulInvites));
+          const successfulUuids = new Set(successfulInvites.map((i) => i.uuid));
+          setRecents(recents.filter((r) => !successfulUuids.has(r.uuid)));
           setCurrentNotebooks([]);
-        })
-        .catch((e) => {
-          setError(e.message);
         })
         .finally(() => setLoading(false));
     }
@@ -149,6 +150,7 @@ const SharePageDialog = ({
       title={`Share Page on SamePage`}
       onClose={() => {
         setError("");
+        setCurrentNotebooks([]);
         onClose();
       }}
       canOutsideClickClose
@@ -176,7 +178,7 @@ const SharePageDialog = ({
                 <span className="font-bold text-base pr-2">{g.app}</span>
                 <span className="font-normal text-sm">{g.workspace}</span>
               </span>
-              <span className="text-xs italic">{g.email}</span>
+              <span className="text-xs italic opacity-50">{g.email}</span>
             </span>
             <span>
               {g.openInvite ? (
@@ -201,6 +203,7 @@ const SharePageDialog = ({
                             workspace: g.workspace,
                             app: appIdByName[g.app],
                             appName: g.app,
+                            email: g.email,
                           })
                         );
                       })
@@ -258,17 +261,19 @@ const SharePageDialog = ({
             }
             tagRenderer={(a) => {
               const appName = getApp(a);
-              return (
-                <span>
-                  {a.email && (
-                    <span className="font-bold text-base pr-2">{a.email}</span>
-                  )}
-                  {appName && appName !== "Unknown" && (
+              return !a.uuid ? (
+                <span className="font-bold text-base pr-2">{a.email}</span>
+              ) : (
+                <span className="flex flex-col">
+                  <span>
                     <span className="font-bold text-base pr-2">{appName}</span>
-                  )}
-                  {a.workspace && (
                     <span className="font-normal text-sm">{a.workspace}</span>
-                  )}
+                  </span>
+                  <span>
+                    <span className="text-xs opacity-50 italics">
+                      {a.email}
+                    </span>
+                  </span>
                 </span>
               );
             }}
@@ -291,6 +296,7 @@ const SharePageDialog = ({
             query={inviteQuery}
             onQueryChange={(e) => {
               setInviteQuery(e);
+              setError("");
             }}
             onItemSelect={(e) => {
               if (!currentNotebookUuids.has(e.uuid)) {

@@ -226,9 +226,9 @@ const onboard = () =>
       })
     : dispatchAppEvent({
         type: "prompt-account-info",
-        respond: (email, password) =>
+        respond: ({ email, password, create }) =>
           apiClient<{ notebookUuid: string; token: string }>({
-            method: "create-notebook",
+            method: create ? "create-notebook" : "add-notebook",
             email,
             password,
             app,

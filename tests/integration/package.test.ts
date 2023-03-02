@@ -39,6 +39,7 @@ const forkSamePageClient = ({
       workspace,
       email,
       password,
+      "--create",
     ]),
     { execPath: "./node_modules/.bin/ts-node", stdio: "inherit" }
   );

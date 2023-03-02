@@ -3,7 +3,9 @@ import { SignIn } from "@clerk/remix";
 import remixAuthedLoader from "~/data/remixAuthedLoader.server";
 import getMeta from "~/components/getMeta";
 
-const LoginPage: React.FC = () => <SignIn path="/login" />;
+const LoginPage: React.FC = () => (
+  <SignIn path="/login" redirectUrl={"/install"} />
+);
 
 export const loader = remixAuthedLoader;
 export const meta = getMeta({ title: "Log in" });

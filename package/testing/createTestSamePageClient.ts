@@ -17,7 +17,6 @@ import { JSDOM } from "jsdom";
 import apiClient from "../internal/apiClient";
 import Automerge from "automerge";
 import base64ToBinary from "../internal/base64ToBinary";
-import type { default as defaultSettings } from "../utils/defaultSettings";
 import { callNotificationAction } from "../internal/messages";
 import fromAtJson from "./fromAtJson";
 import { load, set } from "../utils/localAutomergeDb";
@@ -149,9 +148,7 @@ const createTestSamePageClient = async ({
   initOptions,
   onMessage,
 }: {
-  initOptions:
-    | { email: string; password: string }
-    | Record<(typeof defaultSettings)[number]["id"], string>;
+  initOptions: { email: string; password: string; create?: boolean };
   workspace: string;
   onMessage: (args: ResponseSchema) => void;
 }) => {
@@ -197,22 +194,16 @@ const createTestSamePageClient = async ({
       return { content: "", annotations: [] };
     }
   };
-  const settings =
-    "email" in initOptions
-      ? {
-          uuid: "",
-          token: "",
-        }
-      : initOptions;
-  const initializingPromise =
-    "email" in initOptions
-      ? new Promise<void>((resolve) => {
-          const offAppEvent = onAppEvent("prompt-account-info", (e) => {
-            offAppEvent();
-            e.respond(initOptions.email, initOptions.password).then(resolve);
-          });
-        })
-      : Promise.resolve();
+  const settings = {
+    uuid: "",
+    token: "",
+  };
+  const initializingPromise = new Promise<void>((resolve) => {
+    const offAppEvent = onAppEvent("prompt-account-info", (e) => {
+      offAppEvent();
+      e.respond(initOptions).then(resolve);
+    });
+  });
   const { unload, addNotebookRequestListener, sendNotebookRequest } =
     setupSamePageClient({
       getSetting: (s) => settings[s],
@@ -507,6 +498,7 @@ if (forked >= 0 && typeof process.send !== "undefined") {
       initOptions: {
         email: process.argv[forked + 2],
         password: process.argv[forked + 3],
+        create: process.argv.indexOf("--create") > -1,
       },
       onMessage: process.send.bind(process),
     })

@@ -40,6 +40,7 @@ import getQuota from "~/data/getQuota.server";
 import { encode } from "@ipld/dag-cbor";
 import clerk, { users } from "@clerk/clerk-sdk-node";
 import invokeAsync from "~/data/invokeAsync.server";
+import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
 
 const zMethod = zUnauthenticatedBody
   .and(zBaseHeaders)
@@ -97,15 +98,7 @@ const getRecentNotebooks = async ({
     .execute(`SELECT user_id from tokens where uuid = ?`, [tokenUuid])
     .then(([t]) => {
       const userId = (t as { user_id: string }[])[0]?.user_id;
-      return userId
-        ? users
-            .getUser((t as { user_id: string }[])[0]?.user_id)
-            .then(
-              (u) =>
-                u.emailAddresses.find((ea) => ea.id === u.primaryEmailAddressId)
-                  ?.emailAddress
-            )
-        : "email not found";
+      return userId ? getPrimaryUserEmail(userId) : "";
     });
   return (
     cxn
@@ -591,7 +584,8 @@ const logic = async (req: Record<string, unknown>) => {
                         .execute(
                           `SELECT n.uuid FROM notebooks n 
                     INNER JOIN token_notebook_links tnl ON tnl.notebook_uuid = n.uuid
-                    INNER JOIN tokens t ON t.user_id = ?
+                    INNER JOIN tokens t ON t.uuid = tnl.token_uuid
+                    WHERE t.user_id = ?
                     LIMIT 1`,
                           [us[0].id]
                         )

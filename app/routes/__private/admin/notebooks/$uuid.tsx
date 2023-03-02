@@ -16,6 +16,10 @@ const SingleNotebookPage = () => {
         <code>{data.notebook.uuid}</code>
       </div>
       <div>
+        <b>Email: </b>
+        <span>{data.notebook.email}</span>
+      </div>
+      <div>
         <b>App: </b>
         <span>{data.notebook.app}</span>
       </div>
