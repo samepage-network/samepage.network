@@ -99,7 +99,8 @@ const getRecentNotebooks = async ({
     .then(([t]) => {
       const userId = (t as { user_id: string }[])[0]?.user_id;
       return userId ? getPrimaryUserEmail(userId) : "";
-    });
+    })
+    .catch(() => "");
   return (
     cxn
       // TODO - create better hueristics here for recent notebooks, prob its own LRU cache table

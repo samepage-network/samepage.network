@@ -41,8 +41,7 @@ const getQuota = async ({
                 .then((subs) => subs.data[0].items.data[0].price.id)
             : "";
         })
-        .catch((e) => {
-          console.error(e);
+        .catch(() => {
           return "";
         })
     : "";

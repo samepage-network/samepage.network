@@ -180,18 +180,26 @@ test.beforeAll(() => {
   // TODO - import methods directly from api/clerk/v1/*
   const users: Record<
     string,
-    { id: string; password: string; emailAddress: string[] }
+    {
+      id: string;
+      password: string;
+      emailAddresses: { emailAddress: string }[];
+      privateMetadata: {};
+    }
   > = {};
   clerk.request = (async (opts) => {
     if (opts.path === "/users" && opts.method === "GET") {
       return Object.values(users).filter((u) =>
-        u.emailAddress.some((e) =>
-          (opts.queryParams?.["emailAddress"] as string[])?.includes(e)
+        u.emailAddresses.some((e) =>
+          (opts.queryParams?.["emailAddress"] as string[])?.includes(
+            e.emailAddress
+          )
         )
       );
     } else if (opts.path?.startsWith("/users") && opts.method === "GET") {
       const userId = /\/users\/([^/]+)$/.exec(opts.path)?.[1];
-      if (!userId) throw new Error(`User Id not found: ${opts.path}`);
+      if (!userId || !users[userId])
+        return Promise.reject(new Error(`User Id not found: ${opts.path}`));
       return users[userId];
     } else if (opts.path?.startsWith("/users") && opts.method === "DELETE") {
       const userId = /\/users\/([^/]+)$/.exec(opts.path)?.[1];
@@ -208,7 +216,12 @@ test.beforeAll(() => {
         emailAddress: string[];
       };
       const id = v4();
-      const user = { password, emailAddress, id };
+      const user = {
+        password,
+        emailAddresses: emailAddress.map((e) => ({ emailAddress: e })),
+        id,
+        privateMetadata: {},
+      };
       return (users[id] = user);
     } else if (
       opts.path?.endsWith("verify_password") &&
