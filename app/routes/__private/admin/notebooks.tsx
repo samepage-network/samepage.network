@@ -64,11 +64,12 @@ export const loader: LoaderFunction = (args) => {
 
 export const action: ActionFunction = (args) => {
   return remixAdminAction(args, {
-    POST: ({ context: { requestId }, data }) =>
+    POST: ({ context: { requestId }, data, userId }) =>
       createNotebook({
         requestId,
         app: 0,
         workspace: data["workspace"]?.[0] || "",
+        userId,
       }).then(({ notebookUuid }) =>
         redirect(`/admin/notebooks/${notebookUuid}`)
       ),

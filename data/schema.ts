@@ -8,7 +8,7 @@ const uuidIndex = uuidField.describe("index");
 const token = z.object({
   uuid,
   value: z.string(),
-  userId: z.string().optional(),
+  userId: z.string(),
   createdDate: z.date(),
 });
 
@@ -19,14 +19,6 @@ const tokenNotebookLink = z
     tokenUuid: uuidIndex,
   })
   .describe(JSON.stringify({ uniques: [["notebook_uuid", "token_uuid"]] }));
-
-const invitation = z.object({
-  code: z.string().describe("primary"),
-  createdDate: z.date(),
-  expirationDate: z.date(),
-  tokenUuid: z.string().optional().describe("unique"),
-  email: z.string().optional(),
-});
 
 const notebook = z.object({
   uuid,
@@ -114,7 +106,6 @@ const interview = z.object({
 const schema = {
   token,
   tokenNotebookLink,
-  invitation,
   notebook,
   page,
   pageNotebookLink,

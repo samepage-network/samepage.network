@@ -8,14 +8,15 @@ const createNotebook = async ({
   requestId,
   app,
   workspace,
-}: { requestId: string } & Notebook) => {
+  userId,
+}: { requestId: string; userId: string } & Notebook) => {
   const token = await randomString({ length: 12, encoding: "base64" });
   const tokenUuid = v4();
   const cxn = await getMysql(requestId);
   await cxn.execute(
-    `INSERT INTO tokens (uuid, value, created_date)
-      VALUES (?, ?, ?)`,
-    [tokenUuid, token, new Date()]
+    `INSERT INTO tokens (uuid, value, created_date, user_id)
+      VALUES (?, ?, ?, ?)`,
+    [tokenUuid, token, new Date(), userId]
   );
   const notebookUuid = await getOrGenerateNotebookUuid({
     requestId,

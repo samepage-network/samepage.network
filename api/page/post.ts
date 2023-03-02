@@ -163,17 +163,12 @@ const logic = async (req: Record<string, unknown>) => {
           }
           throw e;
         });
-      const { token, tokenUuid, notebookUuid } = await createNotebook({
+      const { token, notebookUuid } = await createNotebook({
         requestId,
         app,
         workspace,
+        userId,
       });
-      await cxn.execute(
-        `UPDATE tokens t
-      SET t.user_id = ?
-      WHERE t.uuid = ?`,
-        [userId, tokenUuid]
-      );
       cxn.destroy();
       if (process.env.NODE_ENV === "production") {
         await invokeAsync({

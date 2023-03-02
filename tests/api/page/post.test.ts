@@ -110,12 +110,13 @@ const mockLambda = async (body: RequestBody, requestId = v4()) => {
 
 const mockedNotebooks = new Set<string>();
 
-const mockRandomNotebook = async () => {
+const mockRandomNotebook = async (userId = v4()) => {
   const workspace = await getRandomWorkspace();
   return createNotebook({
     requestId: v4(),
     app: 0,
     workspace,
+    userId,
   }).then((n) => {
     mockedNotebooks.add(n.notebookUuid);
     return {
@@ -1578,18 +1579,12 @@ test("Reaching the notebook limit should throw on create", async () => {
   const requestId = v4();
   globalContext[requestId] = { quotas: { [""]: { Notebooks: 1 } } };
 
-  const { notebookUuid } = await mockRandomNotebook();
   const { email, password } = await getRandomAccount();
-  const user = await users.createUser({ emailAddress: [email], password });
-  await getMysql(requestId).then((cxn) =>
-    cxn.execute(
-      `UPDATE tokens t 
-      INNER JOIN token_notebook_links l ON t.uuid = l.token_uuid
-      SET t.user_id = ?
-      WHERE l.notebook_uuid = ?`,
-      [user.id, notebookUuid]
-    )
-  );
+  const user = await users.createUser({
+    emailAddress: [email],
+    password,
+  });
+  await mockRandomNotebook(user.id);
   const r = await mockLambda(
     {
       method: "add-notebook",
