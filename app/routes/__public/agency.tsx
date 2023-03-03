@@ -86,10 +86,12 @@ const AgencyPage = () => {
           </div>
           <div className="p-4 flex-grow">
             {[
-              "1K Notebooks",
-              "1M Shared Pages",
+              "Features for any digital tool",
+              "Integrations between your applications",
               "Unlimited requests",
               "Prioritized support",
+              "Up to 1K Notebooks Connected",
+              "Up to 1M Shared Pages",
               "Pause or cancel anytime",
             ].map((f) => (
               <div key={f}>
@@ -117,6 +119,13 @@ const AgencyPage = () => {
               Book a call
             </a>
           </div>
+        </div>
+        <div className="m-auto max-w-md text-xl">
+          We're so confident on the efficiency gains your business will
+          experience, that we offer a{" "}
+          <span className="font-bold">60-day money back guarantee</span> if you
+          unsubscribe unsatisfied within the first two months of working
+          together.
         </div>
       </div>
     </div>
