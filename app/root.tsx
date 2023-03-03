@@ -9,7 +9,6 @@ import { rootAuthLoader } from "@clerk/remix/ssr.server";
 import { ClerkApp, ClerkCatchBoundary } from "@clerk/remix";
 import {
   Links,
-  LiveReload,
   Meta,
   Outlet,
   Scripts,
@@ -37,7 +36,6 @@ const loaderCallback = (context: AppLoadContext) => {
     logUrl: `https://${region}.console.aws.amazon.com/cloudwatch/home?region=${region}#logsV2:log-groups/log-group/${encodeURIComponent(
       lambdaContext.logGroupName
     )}/log-events/${encodeURIComponent(lambdaContext.logStreamName)}`,
-    hideLiveReload: true,
   };
 };
 
@@ -124,7 +122,6 @@ const App = () => {
           }}
         />
         <Scripts />
-        {!data.hideLiveReload && <LiveReload />}
       </body>
     </html>
   );
