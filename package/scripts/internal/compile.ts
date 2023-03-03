@@ -143,7 +143,7 @@ const compile = ({
         process.env.NODE_ENV === "production"
           ? undefined
           : process.env.NODE_ENV === "test"
-          ? "external"
+          ? "linked"
           : "inline",
       define: {
         "process.env.BLUEPRINT_NAMESPACE": '"bp4"',
