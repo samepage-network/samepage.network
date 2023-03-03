@@ -14,7 +14,6 @@ const runOnboardingStep = async ({
   expect: typeof pwexpect;
 }) =>
   test.step("Onboard Notebook", async () => {
-    await page.reload();
     await page.locator("text=Get Started").click();
     await page.locator("text=Add Another Notebook").click();
     await page.locator("text=Email >> input").fill("test@samepage.network");

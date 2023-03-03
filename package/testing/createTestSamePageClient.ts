@@ -143,6 +143,8 @@ export const responseMessageSchema = z.discriminatedUnion("type", [
 export type MessageSchema = z.infer<typeof processMessageSchema>;
 export type ResponseSchema = z.infer<typeof responseMessageSchema>;
 
+const isForked = typeof process.send !== "undefined";
+
 const createTestSamePageClient = async ({
   workspace,
   initOptions,
@@ -295,7 +297,7 @@ const createTestSamePageClient = async ({
           unloadSharePage();
           unload();
           sendResponse();
-          process.disconnect();
+          if (isForked) process.disconnect();
         } else if (message.type === "invite") {
           await Promise.all([
             awaitLog("share-page-success"),
@@ -491,7 +493,7 @@ const createTestSamePageClient = async ({
 };
 
 const forked = process.argv.indexOf("--forked");
-if (forked >= 0 && typeof process.send !== "undefined") {
+if (forked >= 0 && isForked) {
   if (process.argv.length > forked + 2)
     createTestSamePageClient({
       workspace: process.argv[forked + 1],
@@ -500,7 +502,7 @@ if (forked >= 0 && typeof process.send !== "undefined") {
         password: process.argv[forked + 3],
         create: process.argv.indexOf("--create") > -1,
       },
-      onMessage: process.send.bind(process),
+      onMessage: process.send!.bind(process),
     })
       .then((client) => {
         process.on("message", client.send);
