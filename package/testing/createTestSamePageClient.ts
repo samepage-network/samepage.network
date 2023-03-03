@@ -214,6 +214,7 @@ const createTestSamePageClient = async ({
       addCommand: ({ label, callback }) => (commands[label] = callback),
       removeCommand: ({ label }) => delete commands[label],
       workspace,
+      app: "SamePage",
     });
   const {
     unload: unloadSharePage,

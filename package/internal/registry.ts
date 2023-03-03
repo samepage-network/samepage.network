@@ -90,7 +90,7 @@ const setupRegistry = ({
   getSetting?: (s: typeof defaultSettings[number]["id"]) => string;
   setSetting?: (s: typeof defaultSettings[number]["id"], v: string) => void;
 }) => {
-  if (_app) app = _app;
+  if (typeof _app !== "undefined") app = _app;
   if (_workspace) workspace = _workspace;
   if (_addCommand) addCommand = _addCommand;
   if (_removeCommand) removeCommand = _removeCommand;
