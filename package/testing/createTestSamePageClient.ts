@@ -143,7 +143,8 @@ export const responseMessageSchema = z.discriminatedUnion("type", [
 export type MessageSchema = z.infer<typeof processMessageSchema>;
 export type ResponseSchema = z.infer<typeof responseMessageSchema>;
 
-const isForked = typeof process.send !== "undefined";
+const forkedIndex = process.argv.indexOf("--forked");
+const isForked = forkedIndex >= 0 && typeof process.send !== "undefined";
 
 const createTestSamePageClient = async ({
   workspace,
@@ -492,14 +493,13 @@ const createTestSamePageClient = async ({
   };
 };
 
-const forked = process.argv.indexOf("--forked");
-if (forked >= 0 && isForked) {
-  if (process.argv.length > forked + 2)
+if (isForked) {
+  if (process.argv.length > forkedIndex + 2)
     createTestSamePageClient({
-      workspace: process.argv[forked + 1],
+      workspace: process.argv[forkedIndex + 1],
       initOptions: {
-        email: process.argv[forked + 2],
-        password: process.argv[forked + 3],
+        email: process.argv[forkedIndex + 2],
+        password: process.argv[forkedIndex + 3],
         create: process.argv.indexOf("--create") > -1,
       },
       onMessage: process.send!.bind(process),
