@@ -40,7 +40,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         )
         .catch(() => "ERROR");
       await sendEmail({
-        to: "vargas@samepage.network",
+        to: "support@samepage.network",
         subject: "New SamePage Customer",
         body: NewCustomerEmail({
           email: customerEmail,

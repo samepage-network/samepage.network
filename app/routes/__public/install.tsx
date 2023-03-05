@@ -123,7 +123,7 @@ const InstallPage = () => {
   const name = userApps.find((a) => a.id === selectedApp)?.name;
 
   return (
-    <div className="flex flex-col items-center max-w-4xl w-full">
+    <div className="flex flex-col items-center max-w-4xl w-full mb-16">
       <div className="rounded-full border-sky-600 border mb-12 inline-flex items-center justify-center">
         {userApps.map(({ id, name }) => {
           const selected = selectedApp === id;

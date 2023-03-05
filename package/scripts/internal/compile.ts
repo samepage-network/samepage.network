@@ -7,11 +7,13 @@ import dotenv from "dotenv";
 import toVersion from "./toVersion";
 dotenv.config();
 
-// Why is this not picked up from Remix?
+// TODO - Move this to a central location
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
       NODE_ENV: "development" | "production" | "test";
+      STRIPE_SECRET_KEY: string;
+      SVIX_SECRET: string;
     }
   }
 }

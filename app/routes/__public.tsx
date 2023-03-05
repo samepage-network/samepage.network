@@ -83,7 +83,7 @@ const PublicPage: React.FC = () => {
                     {tab.id}
                   </a>
                 ))}
-                <ButtonLink to={"/install"} className={"w-fit"}>
+                <ButtonLink to={"/signup"} className={"w-fit"}>
                   Get Started
                 </ButtonLink>
               </div>
@@ -96,7 +96,7 @@ const PublicPage: React.FC = () => {
                 afterSignOutUrl={"/"}
               />
             ) : (
-              <ButtonLink to={"/install"}>Get Started</ButtonLink>
+              <ButtonLink to={"/signup"}>Get Started</ButtonLink>
             )}
           </div>
         </div>

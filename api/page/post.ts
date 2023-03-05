@@ -39,7 +39,6 @@ import connectNotebook from "~/data/connectNotebook.server";
 import getQuota from "~/data/getQuota.server";
 import { encode } from "@ipld/dag-cbor";
 import clerk, { users } from "@clerk/clerk-sdk-node";
-import invokeAsync from "~/data/invokeAsync.server";
 import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
 
 const zMethod = zUnauthenticatedBody
@@ -164,17 +163,6 @@ const logic = async (req: Record<string, unknown>) => {
         userId,
       });
       cxn.destroy();
-      if (process.env.NODE_ENV === "production") {
-        await invokeAsync({
-          path: "send-email",
-          data: {
-            to: email,
-            subject: "Welcome to SamePage!",
-            bodyComponent: "welcome",
-            bodyProps: {},
-          },
-        });
-      }
       return { notebookUuid, token };
     } else if (args.method === "add-notebook") {
       const { app, workspace, email, password } = args;

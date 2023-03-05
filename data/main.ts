@@ -16,6 +16,7 @@ base({
     "web3_storage_api_key",
     "roadmap_roam_token",
     "stripe_webhook_secret",
+    "svix_secret",
   ],
   backendProps: {
     sizes: {
@@ -30,9 +31,13 @@ base({
     const accessSecret = this.node.children.find(
       (c) => c.node.id === "deploy_aws_access_secret"
     );
-    const samePageTestPassword = new TerraformVariable(this, "samepage_test_password", {
-      type: "string",
-    });
+    const samePageTestPassword = new TerraformVariable(
+      this,
+      "samepage_test_password",
+      {
+        type: "string",
+      }
+    );
     new ActionsOrganizationSecret(this, `deploy_aws_access_key_secret`, {
       visibility: "all",
       secretName: "SAMEPAGE_AWS_ACCESS_KEY",

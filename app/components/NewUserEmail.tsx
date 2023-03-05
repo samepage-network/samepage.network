@@ -1,11 +1,11 @@
 import EmailLayout from "./EmailLayout";
 import React from "react";
 
-const NewCustomerEmail = ({ email }: { email: string }): React.ReactElement => (
+const NewUserEmail = ({ email }: { email: string }): React.ReactElement => (
   <EmailLayout>
-    <div style={{ marginBottom: 16 }}>There's a new client on SamePage!</div>
+    <div style={{ marginBottom: 16 }}>There's a new user on SamePage!</div>
     <div>
-      New client could be reached at {email}. Here are the next steps to take:
+      New user could be reached at {email}. Here are the next steps to take:
       <ol>
         <li>
           Make sure that their Stripe customer account and their Clerk user
@@ -25,4 +25,4 @@ const NewCustomerEmail = ({ email }: { email: string }): React.ReactElement => (
   </EmailLayout>
 );
 
-export default NewCustomerEmail;
+export default NewUserEmail;

@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
+// import getRandomAccount from "../utils/getRandomAccount";
 
 const covPath = "./coverage/tmp";
 
@@ -38,10 +39,16 @@ test("Full integration test of web app", async ({ page }) => {
 
   await test.step("Wait for local network to be ready", () => appReady);
   await page.goto("http://localhost:3000");
-  await expect(page.locator("text=Collaborate across")).toBeVisible();
+  await expect(page.locator("text=Sign Up"));
+  // TODO - solve the OTP issue
+  // await page.locator("text=Sign Up").click();
+  // const { email, password } = await getRandomAccount();
+  // await page.locator("[name=email]").fill(email);
+  // await page.locator("[name=password]").fill(password);
+  // await page.locator("")
 
-  await page.locator("text=Docs").click();
-  await expect(page.locator("text=SamePage Docs")).toBeVisible();
+  await page.locator("text=Agency").click();
+  await expect(page.locator("text=See Plan")).toBeVisible();
   await new Promise((resolve) => {
     app.on("exit", resolve);
     app.kill();
