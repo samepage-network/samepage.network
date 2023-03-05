@@ -89,13 +89,20 @@ const mockLambda = async (body: RequestBody, requestId = v4()) => {
   });
 };
 
-test("Errors with the wrong body should send me an error", async () => {
+test("Errors with the wrong body should send me an error in production", async () => {
   const requestId = v4();
-  const res = await mockLambda({
-    method: "extension-error",
-    // @ts-ignore
-    data: "hello",
-  }, requestId);
+  // TODO - this should move within sendEmail.server.ts unit test
+  process.env.NODE_ENV = "production";
+  const res = await mockLambda(
+    {
+      method: "extension-error",
+      // @ts-ignore
+      data: "hello",
+    },
+    requestId
+  );
+  process.env.NODE_ENV = "test";
+
   expect(res).toHaveProperty("success", false);
   expect(global.emails[res.messageId]).toEqual({
     Destination: {
