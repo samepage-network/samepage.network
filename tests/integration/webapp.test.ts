@@ -39,7 +39,7 @@ test("Full integration test of web app", async ({ page }) => {
 
   await test.step("Wait for local network to be ready", () => appReady);
   await page.goto("http://localhost:3000");
-  await expect(page.locator("text=Sign Up"));
+  await expect(page.locator("text=Get Started"));
   // TODO - solve the OTP issue
   // await page.locator("text=Sign Up").click();
   // const { email, password } = await getRandomAccount();

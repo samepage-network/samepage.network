@@ -14,6 +14,7 @@ env:
   CLERK_FRONTEND_API: clerk.in.horse-0.lcl.dev
   DATABASE_URL: mysql://root:root@127.0.0.1:3306/samepage_network
   ORIGIN: http://localhost:3000
+  SVIX_SECRET: ${{ secrets.SVIX_SECRET }}
   WEB3_STORAGE_API_KEY: ${{ secrets.WEB3_STORAGE_API_KEY }}
 
 jobs:
