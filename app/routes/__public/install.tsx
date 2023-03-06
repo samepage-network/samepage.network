@@ -155,7 +155,7 @@ const InstallPage = () => {
       <div className="italic text-sm mb-2 w-full">
         A more in depth guide on how to install SamePage is available{" "}
         <Link
-          to={`/docs/${selectedApp}/install`}
+          to={`/docs/applications/${selectedApp}`}
           className={`text-sky-500 underline hover:no-underline active:text-sky-600 active:no-underline`}
         >
           in our docs.
