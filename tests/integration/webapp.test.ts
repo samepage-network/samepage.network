@@ -81,10 +81,10 @@ test.afterEach(async ({ page }) => {
       }
     });
 
-  const origin = await page.evaluate("window.location.origin");
+  const origin = "localhost:3000";
   const coverage = await page.coverage.stopJSCoverage().then((fils) => {
     return fils.filter(
-      (it) => /\.js$/.test(it.url) && /localhost:3000/.test(it.url)
+      (it) => /\.js$/.test(it.url) && new RegExp(origin).test(it.url)
     );
   });
 

@@ -1,6 +1,5 @@
 name: Update Algolia Index
 on:
-  pull_request:
   workflow_dispatch:
   push:
     branches: main
@@ -19,11 +18,9 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ hashFiles('**/package-lock.json') }}
       - name: install
         run: npm install
+      # TODO - can move to be a part of app.yaml/`fuego build` in the future
+      # this retains the property of 1-1 relation between top level directory and .github/workflows
       - name: Update Algolia Index
         run: ts-node scripts/algolia.ts
