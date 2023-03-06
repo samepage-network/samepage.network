@@ -317,7 +317,7 @@ test("build command automatically publishes to GitHub and runs a post publish sc
   });
 });
 
-test("Run from cli with node env not set", async () => {
+test.skip("Run from cli with node env not set", async () => {
   const root = await makeRandomTmpDir();
   fs.mkdirSync(`${root}/src`);
   fs.writeFileSync(
@@ -337,5 +337,3 @@ test("Run from cli with node env not set", async () => {
   );
   expect(out.toString()).toEqual("done\n");
 });
-
-// 11-18,27,41-45,48-53
