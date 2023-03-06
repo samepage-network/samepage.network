@@ -20,7 +20,7 @@ test.beforeAll(async () => {
 });
 
 const log = (...args: Parameters<typeof console.log>) =>
-  process.env.DEBUG && console.log(...args);
+  process.env.DEBUG && w(...args);
 
 const forkSamePageClient = ({
   workspace,

@@ -1,0 +1,25 @@
+name: Run Full Tests Suite
+on:
+  pull_request:
+  workflow_dispatch:
+  push:
+    branches: main
+
+env:
+  ALGOLIA_ADMIN_KEY: ${{ secrets.ALGOLIA_ADMIN_KEY }}
+  ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
+  NODE_ENV: production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ hashFiles('**/package-lock.json') }}
+      - name: install
+        run: npm install
+      - name: Update Algolia Index
+        uses: ts-node scripts/algolia.ts

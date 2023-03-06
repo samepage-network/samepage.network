@@ -5,13 +5,7 @@ description: Learn how to bring the SamePage Network into your application of ch
 
 SamePage is composed of two parts: app extensions and the network. As a user, you will need to install the SamePage extension available in your application of choice in order to gain access to the network. The network is what communicates between tools to bring you features such as cross-app syncing, cross-app querying, and more!
 
-We have listed the installation instructions for each application we support below:
-
-- [Roam](../roam/install.md)
-- [LogSeq](../logseq/install.md)
-- [Obsidian](../obsidian/install.md)
-
-A quick summary of how to install the extension in each app is also available in our [install](/install) page.
+We have listed the installation instructions for each application under the applications heading on the left. A quick summary of how to install the extension in each app is also available in our [install](/install) page.
 
 During each of these docs, we reference two versions of the SamePage extension.
 

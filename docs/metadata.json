@@ -3,9 +3,8 @@
     "index.md",
     "getting_started",
     "basics",
-    "roam",
-    "logseq",
-    "obsidian",
+    "applications",
+    "web_portal",
     "developer"
   ],
   "names": { "logseq": "LogSeq", "index.md": "Home" }

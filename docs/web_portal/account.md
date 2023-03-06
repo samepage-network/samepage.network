@@ -9,6 +9,14 @@ However, signing up for a SamePage account on the web will give you access to ou
 
 To access the web portal, simply navigate to [https://samepage.network/user](/user). If you don't already have an account, you may be redirected to our login page.
 
+## Managing Account
+
+To manage your account, click on your profile on the bottom left and click "Manage Account":
+
+![](/images/docs/web_portal/manage.png)
+
+From here, you could edit various user account fields, like your name, your profile photo, your email addresses, and reset your password.
+
 ## Payment Plans
 
 To view all of the currently available payment plans, visit our [pricing page](/pricing).
