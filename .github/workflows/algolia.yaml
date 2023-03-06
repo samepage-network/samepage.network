@@ -26,4 +26,4 @@ jobs:
       - name: install
         run: npm install
       - name: Update Algolia Index
-        uses: ts-node scripts/algolia.ts
+        run: ts-node scripts/algolia.ts
