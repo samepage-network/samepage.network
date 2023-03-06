@@ -92,6 +92,7 @@ const NotificationContainer = () => {
         zIndex: 1000,
       }}
     >
+      <style>{`.samepage-notification-container img { -webkit-app-region: no-drag; }`}</style>
       {notifications.length ? (
         <div
           className="absolute top-0 left-0 h-2 w-2 bg-red-600 rounded-full"

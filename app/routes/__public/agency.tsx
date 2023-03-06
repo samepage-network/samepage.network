@@ -23,7 +23,7 @@ const AgencyPage = () => {
           See Plan
         </Link>
         <p className="font-semibold text-center mb-8 text-sm">
-          Integrations that work like 🪄, guaranteed
+          Integrations & automations that work, guaranteed
         </p>
         <div>
           <img src="/images/agency/graphic.png" className="m-auto pl-3 my-4" />
