@@ -21,4 +21,4 @@ From here, you could edit various user account fields, like your name, your prof
 
 To view all of the currently available payment plans, visit our [pricing page](/pricing).
 
-You could manage your plan from the main page of the web portal. It should display what plan you are currently subscribed to, with directions on how to change your plan.
+You could access your billing portal from the main page of the web portal. From the billing portal, you could edit existing payment plans, update payment methods, update billing information, and view your invoice history.

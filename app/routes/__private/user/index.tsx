@@ -32,8 +32,8 @@ const UserIndexPage: React.FunctionComponent = () => {
         <span> {plan}</span>
       </p>
       <p>
-        To change your plan,{" "}
-        {portal && plan !== "Hobby" ? (
+        To view your billing information,{" "}
+        {portal ? (
           <ExternalLink href={portal}>click here</ExternalLink>
         ) : (
           <span>
@@ -60,11 +60,9 @@ export const loader: LoaderFunction = (args) => {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
       apiVersion: "2022-11-15",
     });
-    const portal = stripeCustomerId
-      ? await stripe.billingPortal.configurations
-          .list({ active: true })
-          .then((p) => p.data[0]?.login_page?.url || "")
-      : "";
+    const portal = await stripe.billingPortal.configurations
+      .list({ active: true })
+      .then((p) => p.data[0]?.login_page?.url || "");
     const plan = stripeCustomerId
       ? await stripe.subscriptions
           .list({
