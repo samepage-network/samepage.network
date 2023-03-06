@@ -55,7 +55,6 @@ const run = async (command: string, args: string[]): Promise<number> => {
       return 1;
   }
 };
-
 run(process.argv[2], process.argv.slice(3))
   .then((code) => code >= 0 && process.exit(code))
   .catch((err) => {

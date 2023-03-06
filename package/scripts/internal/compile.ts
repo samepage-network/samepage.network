@@ -11,6 +11,7 @@ dotenv.config();
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
+      GITHUB_TOKEN: string;
       NODE_ENV: "development" | "production" | "test";
       STRIPE_SECRET_KEY: string;
       SVIX_SECRET: string;

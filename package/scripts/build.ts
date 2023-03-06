@@ -5,26 +5,26 @@ import { execSync } from "child_process";
 import getPackageName from "./internal/getPackageName";
 import axios from "axios";
 import mimeTypes from "mime-types";
+import path from "path";
 
 const publish = async ({
-  path: destPath = getPackageName(),
+  root = ".",
   review,
   version,
 }: {
-  path?: string;
+  root?: string;
   review?: string;
   version?: string;
 } = {}): Promise<number> => {
   const token = process.env.GITHUB_TOKEN;
   if (token) {
-    if (!destPath) {
-      return Promise.reject(new Error("`path` argument is required."));
-    }
+    const destPath = getPackageName();
 
     console.log(
       `Preparing to publish zip to destination ${destPath} as version ${version}`
     );
-    process.chdir("dist");
+    const cwd = process.cwd();
+    process.chdir(path.join(root, "dist"));
     execSync(`zip -qr ${destPath}.zip .`);
     const opts = {
       headers: {
@@ -33,11 +33,11 @@ const publish = async ({
       },
     };
     const message = await axios
-      .get(
+      .get<{ commit: { message: string } }>(
         `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/commits/${process.env.GITHUB_SHA}`,
         opts
       )
-      .then((r) => r.data.commit?.message || version);
+      .then((r) => r.data.commit.message);
     const release = await axios.post(
       `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/releases`,
       {
@@ -73,15 +73,18 @@ const publish = async ({
     );
 
     console.log(`Successfully created github release for version ${tag_name}`);
-    process.chdir("..");
+    process.chdir(cwd);
   } else {
+    console.log(
+      "No GitHub token set - please set one to create a Github release"
+    );
     console.warn(
       "No GitHub token set - please set one to create a Github release"
     );
   }
 
-  if (review && fs.existsSync(`${process.cwd()}/${review}`)) {
-    await import(`${process.cwd()}/${review.replace(/\.[jt]s$/, "")}`)
+  if (review && fs.existsSync(path.join(root, review))) {
+    await import(`${root}/${review.replace(/\.[jt]s$/, "")}`)
       .then(
         //@ts-ignore
         (mod) => typeof mod.default === "function" && mod.default()
@@ -105,7 +108,9 @@ const build = (
   );
   return compile({ ...args, opts: { minify: true } })
     .then(() =>
-      args.dry ? Promise.resolve(0) : publish({ review: args.review, version })
+      args.dry
+        ? Promise.resolve(0)
+        : publish({ review: args.review, version, root: args.root })
     )
     .then((exitCode) => {
       console.log("done");
