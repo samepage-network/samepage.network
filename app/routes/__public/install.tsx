@@ -2,7 +2,6 @@ import APPS from "package/internal/apps";
 import { useState } from "react";
 import { useSearchParams, Link } from "@remix-run/react";
 import OverlayImg from "~/components/OverlayImg";
-import ExternalLink from "~/components/ExternalLink";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
@@ -149,12 +148,7 @@ const InstallPage = () => {
         <Instruction id={selectedApp} {...INSTRUCTIONS[selectedApp]} />
       </div>
       <div className="italic text-sm mb-2">
-        *Note: You will need to obtain an invite code from the team to access
-        the network by emailing{" "}
-        <ExternalLink href="mailto:support@samepage.network">
-          support@samepage.network
-        </ExternalLink>
-        . SamePage extensions are currently under{" "}
+        *Note: SamePage extensions are currently under{" "}
         <b className="font-bold">heavy</b> development and these extensions will
         update frequently. Do not use with sensitive data.
       </div>
