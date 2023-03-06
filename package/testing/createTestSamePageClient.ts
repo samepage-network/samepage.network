@@ -7,6 +7,7 @@ import {
   InitialSchema,
   Notification,
   Schema,
+  LogEvent,
 } from "../internal/types";
 import { z } from "zod";
 import WebSocket from "ws";
@@ -77,7 +78,14 @@ const processMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("fix"),
   }),
   z.object({
-    type: z.literal("updates"),
+    type: z.literal("breakCalculate"),
+  }),
+  z.object({
+    type: z.literal("fixCalculate"),
+  }),
+  z.object({
+    type: z.literal("awaitLog"),
+    id: z.string(),
   }),
   z.object({
     type: z.literal("query"),
@@ -161,7 +169,7 @@ const createTestSamePageClient = async ({
   global.fetch = fetch;
 
   const awaitLog = (id: string, target = 1) =>
-    new Promise<void>((resolve) => {
+    new Promise<{ content: string; intent: LogEvent["intent"] }>((resolve) => {
       let count = 0;
       const offAppEvent = onAppEvent("log", (e) => {
         onMessage({
@@ -172,7 +180,7 @@ const createTestSamePageClient = async ({
           count++;
           if (count === target) {
             offAppEvent();
-            resolve();
+            resolve({ content: e.content, intent: e.intent });
           }
         }
       });
@@ -183,20 +191,21 @@ const createTestSamePageClient = async ({
   const commands: Record<string, () => unknown> = {};
 
   const defaultApplyState = async (id: string, data: InitialSchema) => {
-    console.log("applyState", JSON.stringify(data));
     appClientState[id] = new JSDOM(fromAtJson(data));
   };
   let applyState = defaultApplyState;
-  const calculateState = async (id: string): Promise<InitialSchema> => {
+
+  const defaultCalculateState = async (id: string): Promise<InitialSchema> => {
     const dom = appClientState[id];
     if (dom) {
       const atJson = toAtJson(dom.window.document.body);
-      console.log("Calculated", JSON.stringify(atJson));
       return atJson;
     } else {
       return { content: "", annotations: [] };
     }
   };
+  let calculateState = defaultCalculateState;
+
   const settings = {
     uuid: "",
     token: "",
@@ -226,8 +235,8 @@ const createTestSamePageClient = async ({
       (appClientState[notebookPageId] = new JSDOM()),
     deletePage: async (notebookPageId) => delete appClientState[notebookPageId],
     doesPageExist: async (notebookPageId) => !!appClientState[notebookPageId],
-    calculateState,
-    applyState: async (id: string, data: InitialSchema) => applyState(id, data),
+    calculateState: async (notebookPageId) => calculateState(notebookPageId),
+    applyState: async (id, data) => applyState(id, data),
   });
   const { unload: unloadNotebookQuerying, query } = setupNotebookQuerying({
     onQuery: async (notebookPageId) => {
@@ -415,8 +424,18 @@ const createTestSamePageClient = async ({
         } else if (message.type === "fix") {
           applyState = defaultApplyState;
           sendResponse();
-        } else if (message.type === "updates") {
-          await awaitLog("update-success").then(() => sendResponse());
+        } else if (message.type === "breakCalculate") {
+          // @ts-expect-error
+          calculateState = async () => ({
+            content: "Invalid",
+            annotations: [{ type: "block", start: 0, end: 7 }],
+          });
+          sendResponse();
+        } else if (message.type === "fixCalculate") {
+          calculateState = defaultCalculateState;
+          sendResponse();
+        } else if (message.type === "awaitLog") {
+          await awaitLog(message.id).then(sendResponse);
         } else if (message.type === "ipfs") {
           await apiClient<{ state: string }>({
             method: "get-shared-page",

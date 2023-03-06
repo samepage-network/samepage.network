@@ -772,22 +772,22 @@ const setupSharePageWithNotebook = ({
       });
     } else {
       // For now, just email error and run updatePage as normal. Should result in pairs of emails being sent I think.
-      sendExtensionError({
+      return sendExtensionError({
         type: "Failed to calculate valid document",
         data: {
           notebookPageId,
-          doc: binaryToBase64(Automerge.save(doc)),
+          doc,
           errors: zResult.error,
           message: parseZodError(zResult.error),
         },
-      });
-      return updatePage({
-        notebookPageId,
-        label,
-        callback: async (oldDoc) => {
-          changeAutomergeDoc(oldDoc, doc);
-        },
-      });
+      }).then((data) =>
+        dispatchAppEvent({
+          type: "log",
+          intent: "error",
+          content: `Failed to parse document. Error report ${data.messageId} has been sent to support@samepage.network`,
+          id: `calculate-error`,
+        })
+      );
     }
   };
 

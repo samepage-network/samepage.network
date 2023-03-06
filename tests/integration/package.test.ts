@@ -43,11 +43,14 @@ const forkSamePageClient = ({
     ]),
     { execPath: "./node_modules/.bin/ts-node", stdio: "inherit" }
   );
-  const pendingRequests: Record<string, (data: unknown) => void> = {};
+  const pendingRequests: Record<
+    string,
+    (data: Record<string, unknown>) => void
+  > = {};
   const send = (m: MessageSchema) => {
     const uuid = v4();
     log(`Client ${workspace}: Sending ${m.type} request (${uuid})`);
-    return new Promise<unknown>((resolve) => {
+    return new Promise<Record<string, unknown>>((resolve) => {
       pendingRequests[uuid] = resolve;
       client.send({ ...m, uuid });
     });
@@ -612,6 +615,22 @@ test("Full integration test of extensions", async () => {
       })
       .then((r) => r as { cache: unknown; id: string });
     expect(request2.cache).toEqual({ hello });
+  });
+
+  await test.step("Break client 1 calculate state and test email sent", async () => {
+    await client1.send({ type: "breakCalculate" });
+    const awaitBreak = client1.send({
+      type: "awaitLog",
+      id: "calculate-error",
+    });
+    await client1.send({
+      type: "refresh",
+      notebookPageId,
+      data: { content: "Invalid", annotations: [] },
+    });
+    const breakAwaited = await awaitBreak;
+    expect(breakAwaited.intent).toEqual("error");
+    await client1.send({ type: "fixCalculate" });
   });
   client1.prepare();
   client2.prepare();
