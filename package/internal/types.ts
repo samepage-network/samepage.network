@@ -47,21 +47,56 @@ const metadataAnnotation = annotationBase.merge(
 const boldAnnotation = annotationBase.merge(
   z.object({
     type: z.literal("bold"),
+    attributes: z
+      .object({
+        open: z.boolean().optional(),
+        delimiter: z.string().optional(),
+      })
+      .optional(),
   })
 );
 const italicsAnnotation = annotationBase.merge(
   z.object({
     type: z.literal("italics"),
+    attributes: z
+      .object({
+        open: z.boolean().optional(),
+        delimiter: z.string().optional(),
+      })
+      .optional(),
   })
 );
 const strikethroughAnnotation = annotationBase.merge(
   z.object({
     type: z.literal("strikethrough"),
+    attributes: z
+      .object({
+        open: z.boolean().optional(),
+        delimiter: z.string().optional(),
+      })
+      .optional(),
   })
 );
 const highlightingAnnotation = annotationBase.merge(
   z.object({
     type: z.literal("highlighting"),
+    attributes: z
+      .object({
+        open: z.boolean().optional(),
+        delimiter: z.string().optional(),
+      })
+      .optional(),
+  })
+);
+const inlineAnnotation = annotationBase.merge(
+  z.object({
+    type: z.literal("inline"),
+    attributes: z
+      .object({
+        open: z.boolean().optional(),
+        delimiter: z.string().optional(),
+      })
+      .optional(),
   })
 );
 const externalLinkAnnotation = annotationBase.merge(
@@ -114,6 +149,7 @@ export const annotationSchema = z
     italicsAnnotation,
     strikethroughAnnotation,
     highlightingAnnotation,
+    inlineAnnotation,
     externalLinkAnnotation,
     referenceAnnotation,
     imageAnnotation,
