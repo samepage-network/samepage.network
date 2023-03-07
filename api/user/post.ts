@@ -73,7 +73,7 @@ export const handler = async (
               })
         )
         .then((r) =>
-          subscribe({ email })
+          subscribe({ email, tag: "SignUp", form: "AutoConfirm" })
             .then((sub) => ({
               stripeCustomerId: r.id,
               convertKit: sub.success ? sub.data : undefined,
