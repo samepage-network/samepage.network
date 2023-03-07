@@ -7,6 +7,9 @@ import sendEmail from "~/data/sendEmail.server";
 import WelcomeEmail from "~/components/WelcomeEmail";
 import NewUserEmail from "~/components/NewUserEmail";
 import { subscribe } from "~/data/subscribeToConvertkitAction.server";
+import getMysqlConnection from "fuegojs/utils/mysql";
+import { v4 } from "uuid";
+import randomString from "~/data/randomString.server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2022-11-15",
@@ -52,15 +55,39 @@ export const handler = async (
         last_name,
         email_addresses,
         primary_email_address_id,
+        created_at,
       } = data;
       // @ts-ignore
       const email = email_addresses.find(
         (e: { id: string }) => e.id === primary_email_address_id
       ).email_address;
-      return stripe.customers
-        .list({
-          email,
-        })
+      return getMysqlConnection()
+        .then((cxn) =>
+          cxn
+            .execute(
+              `SELECT COUNT(uuid) as count FROM tokens WHERE user_id = ?`,
+              [id]
+            )
+            .then(async ([a]) =>
+              !(a as [{ count: number }])[0]?.count
+                ? await cxn.execute(
+                    `INSERT INTO tokens (uuid, value, created_date, user_id)
+          VALUES (?, ?, ?, ?)`,
+                    [
+                      v4(),
+                      await randomString({ length: 12, encoding: "base64" }),
+                      new Date(created_at),
+                      id,
+                    ]
+                  )
+                : Promise.resolve()
+            )
+        )
+        .then(() =>
+          stripe.customers.list({
+            email,
+          })
+        )
         .then((existingCustomers) =>
           existingCustomers.data.length
             ? Promise.resolve(existingCustomers.data[0])
