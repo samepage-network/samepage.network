@@ -31,6 +31,7 @@ import {
 } from "./setupMessageHandlers";
 import MESSAGES, { Operation } from "./messages";
 import NotificationContainer from "../components/NotificationContainer";
+import sendExtensionError from "./sendExtensionError";
 
 const USAGE_LABEL = "View SamePage Usage";
 
@@ -47,13 +48,17 @@ const onError = (e: { error: Error } | Event) => {
   ) {
     // handled in disconnect
   } else {
-    console.error(e);
+    const errorContent =
+      "error" in e ? e.error.message : "Unknown error occurred";
+    if (errorContent === "Unknown error occurred")
+      sendExtensionError({
+        type: "Client failed to connect to SamePage for unknown reason",
+        data: { event: e },
+      });
     dispatchAppEvent({
       type: "log",
       id: "samepage-ws-error",
-      content: `SamePage Error: ${
-        "error" in e ? e.error.message : "Unknown error occurred"
-      }`,
+      content: `SamePage Error: ${errorContent}`,
       intent: "error",
     });
   }
