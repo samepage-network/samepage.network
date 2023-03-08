@@ -15,7 +15,7 @@
     "dev": "fuego dev",
     "format": "prettier --write \"**/*.tsx\"",
     "generate:css": "tailwindcss -o ./app/tailwind.css",
-    "postinstall": "ls node_modules/fuegojs && fuego postinstall && patch-package",
+    "postinstall": "fuego postinstall && patch-package",
     "lint": "eslint . --ext .ts,.tsx",
     "start": "concurrently \"npm:api\" \"npm:dev\" \"npm:tailwind\"",
     "ssh": "ssh -i SamePage.pem ubuntu@35.173.242.123",

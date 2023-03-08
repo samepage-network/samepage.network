@@ -19,7 +19,6 @@ env:
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
   GITHUB_TOKEN: ${{ secrets.TERRAFORM_GITHUB_TOKEN }}
   IS_PRODUCTION: 1
-  NODE_ENV: production
   STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
   TERRAFORM_CLOUD_TOKEN: ${{ secrets.TERRAFORM_CLOUD_TOKEN }}
 
@@ -28,10 +27,6 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v3
-      - name: wat
-        run: |
-          node -v
-          npm -v
       - name: install
         run: npm install --force
       - name: plan
@@ -41,3 +36,5 @@ jobs:
         run: rm out/apply-sql.txt
       - name: apply
         run: npx fuego apply
+        env:
+            NODE_ENV: production
