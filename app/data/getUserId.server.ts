@@ -1,15 +1,15 @@
 import { getAuth } from "@clerk/remix/ssr.server";
 import { offlinePrefs } from "./cookies.server";
 
-const getUserId = (request: Request) => {
+const getUserId = async (request: Request) => {
   const get = () => getAuth(request).then((authData) => authData.userId);
-  return Promise.resolve(
-    process.env.NODE_ENV === "development"
-      ? offlinePrefs
+  return process.env.NODE_ENV === "development"
+    ? get().catch(() =>
+        offlinePrefs
           .parse(request.headers.get("Cookie"))
-          .then((cookie) => (cookie?.userId as string) || get())
-      : get()
-  );
+          .then((cookie) => cookie?.userId as string)
+      )
+    : get();
 };
 
 export default getUserId;

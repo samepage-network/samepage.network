@@ -1,7 +1,10 @@
 import ExternalLink from "~/components/ExternalLink";
 import CheckIcon from "@heroicons/react/solid/CheckIcon";
 import ArrowRightIcon from "@heroicons/react/outline/ArrowRightIcon";
-import { Link } from "@remix-run/react";
+import { Link, useLoaderData } from "@remix-run/react";
+import { LoaderFunction } from "@remix-run/node";
+import getUserId from "~/data/getUserId.server";
+import getStripePlans from "~/data/getStripePlans.server";
 
 const Plan = ({
   title,
@@ -16,6 +19,7 @@ const Plan = ({
   features: string[];
   link: string;
 }) => {
+  const data = useLoaderData<Awaited<ReturnType<typeof loaderFunction>>>();
   return (
     <div className="bg-sky-100 rounded shadow-md flex-1 flex flex-col">
       <div className="border-b border-b-black border-opacity-75 py-8 px-4 text-center">
@@ -43,12 +47,21 @@ const Plan = ({
         ))}
       </div>
       <div className="flex py-8 justify-center items-center">
-        <Link
-          className="rounded-full border cursor-pointer py-3 px-6 border-black hover:bg-sky-300 active:bg-sky-500"
-          to={link}
-        >
-          Get started <ArrowRightIcon className="h-6 w-6 inline-block" />
-        </Link>
+        {data.isLoggedIn && data.plans[title] ? (
+          <ExternalLink
+            className="rounded-full border cursor-pointer py-3 px-6 border-black hover:bg-sky-300 active:bg-sky-500 text-black no-underline"
+            href={data.plans[title]}
+          >
+            Subscribe <ArrowRightIcon className="h-6 w-6 inline-block" />
+          </ExternalLink>
+        ) : (
+          <Link
+            className="rounded-full border cursor-pointer py-3 px-6 border-black hover:bg-sky-300 active:bg-sky-500"
+            to={link}
+          >
+            Get started <ArrowRightIcon className="h-6 w-6 inline-block" />
+          </Link>
+        )}
       </div>
     </div>
   );
@@ -85,19 +98,19 @@ const PricingPage = () => {
           link={"/signup"}
         />
       </div>
-      {/* <div className="text-sm italic text-center mb-8">
-        Additional fees apply to paid plans for usage beyond quota: $2 per
-        additional notebook, $1 per 100 additional shared pages
-      </div> */}
-      <div className="text-sm italic text-center">
-        Pricing plans are under development. To inquire about upgrading your
-        account, please reach out to{" "}
-        <ExternalLink href="mailto:support@samepage.network">
-          support@samepage.network
-        </ExternalLink>
-      </div>
     </div>
   );
 };
+
+const loaderFunction = async (args: Parameters<LoaderFunction>[0]) => {
+  const isLoggedIn = await getUserId(args.request).then((id) => !!id);
+  const plans = await getStripePlans();
+  return {
+    isLoggedIn,
+    plans,
+  };
+};
+
+export const loader: LoaderFunction = loaderFunction;
 
 export default PricingPage;
