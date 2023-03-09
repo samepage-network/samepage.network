@@ -28,6 +28,14 @@ const cliArgs = Object.entries(tsconfig.compilerOptions)
   .filter((a) => !!a)
   .join(" ");
 
+// https://github.com/microsoft/TypeScript/issues/27379
+cp.execSync(
+  `npx tsc package/**/*.ts package/**/*.tsx ${cliArgs}`,
+  {
+    stdio: "inherit",
+  }
+);
+
 fs.writeFileSync(
   "dist/samepage.css",
   `@import url("https://unpkg.com/normalize.css@^8.0.1");
