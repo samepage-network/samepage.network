@@ -1,6 +1,24 @@
 import { getSetting } from "../internal/registry";
-import { Annotation, InitialSchema } from "../internal/types";
-import { reduceTokens } from "../utils/atJsonTokens";
+import type { Annotation, InitialSchema } from "../internal/types";
+
+const reduceTokens = (tokens: InitialSchema[]): InitialSchema => {
+  return tokens.reduce(
+    (total, current) => ({
+      content: `${total.content}${current.content}`,
+      annotations: total.annotations.concat(
+        current.annotations.map((a) => ({
+          ...a,
+          start: a.start + total.content.length,
+          end: a.end + total.content.length,
+        }))
+      ),
+    }),
+    {
+      content: "",
+      annotations: [],
+    } as InitialSchema
+  );
+};
 
 const toAtJson = (node: ChildNode): InitialSchema => {
   if (node.nodeType === node.TEXT_NODE) {
@@ -11,7 +29,7 @@ const toAtJson = (node: ChildNode): InitialSchema => {
   } else if (node.nodeType === node.ELEMENT_NODE) {
     const el = node as Element;
     const schemas = Array.from(el.childNodes).map((c) => toAtJson(c));
-    const childSchema = reduceTokens([schemas]) as InitialSchema;
+    const childSchema = reduceTokens(schemas);
     if (el.tagName === "DIV") {
       return {
         content: `${childSchema.content}\n`,

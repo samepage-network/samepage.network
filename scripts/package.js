@@ -28,14 +28,6 @@ const cliArgs = Object.entries(tsconfig.compilerOptions)
   .filter((a) => !!a)
   .join(" ");
 
-// https://github.com/microsoft/TypeScript/issues/27379
-cp.execSync(
-  `npx tsc package/**/*.ts package/**/*.tsx package/declare.d.ts ${cliArgs}`,
-  {
-    stdio: "inherit",
-  }
-);
-
 fs.writeFileSync(
   "dist/samepage.css",
   `@import url("https://unpkg.com/normalize.css@^8.0.1");
@@ -49,7 +41,7 @@ cp.execSync(
 );
 fs.appendFileSync("dist/samepage.css", fs.readFileSync("/tmp/samepage.css"));
 
-["LICENSE", "package/README.md", "package/declare.d.ts"].forEach((f) =>
+["LICENSE", "package/README.md"].forEach((f) =>
   fs.cpSync(f, path.join(`dist`, path.basename(f)))
 );
 fs.mkdirSync("dist/patches");

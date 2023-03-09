@@ -1,4 +1,3 @@
-import nearleyCompile from "./nearley";
 import esbuild from "esbuild";
 import fs from "fs";
 import path from "path";
@@ -162,22 +161,6 @@ const compile = ({
       entryNames: out,
       external: externalModules.map(([e]) => e).concat(["crypto"]),
       plugins: [
-        {
-          name: "nearley",
-          setup(build) {
-            build.onResolve({ filter: /\.ne$/ }, (args) => ({
-              path: path.resolve(args.resolveDir, args.path),
-              namespace: "nearley-ns",
-            }));
-            build.onLoad({ filter: /.*/, namespace: "nearley-ns" }, (args) =>
-              nearleyCompile(args.path).then((contents) => ({
-                contents,
-                loader: "ts",
-                resolveDir: path.dirname(args.path),
-              }))
-            );
-          },
-        },
         importAsGlobals(
           Object.fromEntries(externalModules.filter((e) => e.length === 2))
         ),
