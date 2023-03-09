@@ -25,6 +25,7 @@ type Rule = {
   name: string;
   symbols: RuleSymbol[];
   postprocess: PostProcess;
+  // @deprecated - this was a mistake - we could do without this with rule macros. TODO
   preprocess?: PreProcess;
 };
 
@@ -125,8 +126,13 @@ const nextState = (
   return next;
 };
 
-const completeColumn = (col: Column, left: State, right: State) => {
-  const copy = nextState(left, right, "completion");
+const completeColumn = (
+  col: Column,
+  left: State,
+  right: State,
+  source: string
+) => {
+  const copy = nextState(left, right, `completion via ${source}`);
   if (copy !== reject) col.states.push(copy);
 };
 
@@ -155,11 +161,10 @@ const errorLogCharts = (table: Column[]) => {
       console.error(
         `${state.id}: 
     rule: {${ruleToString(state)}}
-    from: { index: ${state.context.index}, flags: ${Array.from(
-          state.context.flags
-        ).join(", ")} }
-    source: ${state.source}
+    indx: ${state.context.index}
+    srce: ${state.source}
     data: ${JSON.stringify(state.data)}
+    wtby: [${state.wantedBy.map((s) => s.id).join(", ")}]
 `
       );
     });
@@ -283,7 +288,12 @@ const atJsonParser = ({
   });
   if (!grammarRulesByName[START_RULE])
     throw new Error(`At least one rule named \`${START_RULE}\` is required`);
-  const predict = (col: Column, ruleName: string, context: Context) => {
+  const predict = (
+    col: Column,
+    ruleName: string,
+    context: Context,
+    id = -1
+  ) => {
     const rules = grammarRulesByName[ruleName] || [];
     rules.forEach((rule) => {
       const wantedBy = col.wants[ruleName];
@@ -295,7 +305,7 @@ const atJsonParser = ({
           index: col.index,
         },
         wantedBy,
-        source: `predict - ${ruleName}`,
+        source: `predict from ${id} - ${ruleName}`,
       });
       col.states.push(s);
     });
@@ -314,7 +324,9 @@ const atJsonParser = ({
         );
         if (output !== reject) {
           state.data = output;
-          state.wantedBy.forEach((s) => completeColumn(col, s, state));
+          state.wantedBy.forEach((s) =>
+            completeColumn(col, s, state, "postprocess")
+          );
 
           if (state.context.index === col.index) {
             const exp = state.rule.name;
@@ -332,11 +344,11 @@ const atJsonParser = ({
         if (wants[exp]) {
           wants[exp].push(state);
           (completed[exp] || []).forEach((right) =>
-            completeColumn(col, state, right)
+            completeColumn(col, state, right, "wants")
           );
         } else {
           wants[exp] = [state];
-          predict(col, exp, state.context);
+          predict(col, exp, state.context, state.id);
         }
       }
     }
@@ -367,7 +379,7 @@ const atJsonParser = ({
               data: [token],
               context: { ...state.context, index: current },
               source: `scanned - ${state.id}`,
-              id: stateIdGen++,
+              id: -1,
               rule: state.rule,
               dot: state.dot,
               wantedBy: [],
