@@ -48,9 +48,9 @@ const onError = (e: { error: Error } | Event) => {
   ) {
     // handled in disconnect
   } else {
-    const errorContent =
-      "error" in e ? e.error.message : "Unknown error occurred";
-    if (errorContent === "Unknown error occurred")
+    const defaultErrorContent = "Unknown error occurred";
+    const errorContent = "error" in e ? e.error.message : defaultErrorContent;
+    if (errorContent === defaultErrorContent)
       sendExtensionError({
         type: "Client failed to connect to SamePage for unknown reason",
         data: { event: e },
