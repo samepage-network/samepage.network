@@ -153,9 +153,14 @@ const errorLogCharts = (table: Column[]) => {
     console.error(`\nChart: ${index}\n`);
     column.states.forEach(function (state) {
       console.error(
-        `${state.id}: {${ruleToString(state)}}, from: ${JSON.stringify(
-          state.context
-        )}, source: ${state.source}, data: ${JSON.stringify(state.data)}\n`
+        `${state.id}: 
+    rule: {${ruleToString(state)}}
+    from: { index: ${state.context.index}, flags: ${Array.from(
+          state.context.flags
+        ).join(", ")} }
+    source: ${state.source}
+    data: ${JSON.stringify(state.data)}
+`
       );
     });
   });
