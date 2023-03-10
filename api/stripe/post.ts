@@ -3,6 +3,8 @@ import { AxiosRequestHeaders } from "axios";
 import Stripe from "stripe";
 import sendEmail from "~/data/sendEmail.server";
 import NewCustomerEmail from "~/components/NewCustomerEmail";
+import { users } from "@clerk/clerk-sdk-node";
+import emailError from "~/data/emailError.server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   maxNetworkRetries: 3,
@@ -39,6 +41,31 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           customer.deleted ? "DELETED" : customer.email || "UNKNOWN"
         )
         .catch(() => "ERROR");
+      const [clerkUser] = await users.getUserList({
+        emailAddress: [customerEmail],
+      });
+      const oldCustomerId = clerkUser?.privateMetadata.stripeCustomerId;
+      if (clerkUser && session.customer && oldCustomerId !== session.customer) {
+        await users
+          .updateUser(clerkUser.id, {
+            privateMetadata: {
+              ...clerkUser.privateMetadata,
+              stripeCustomerId: session.customer,
+            },
+          })
+          .then(() =>
+            typeof oldCustomerId === "string"
+              ? stripe.customers
+                  .del(oldCustomerId)
+                  .catch((e) =>
+                    emailError(
+                      "Failed to delete old customer upon subscription",
+                      e
+                    ).then(() => Promise.resolve())
+                  )
+              : Promise.resolve()
+          );
+      }
       await sendEmail({
         to: "support@samepage.network",
         subject: "New SamePage Customer",
@@ -47,15 +74,15 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         }),
       });
       return {
-        statusCode: 204,
-        body: "{}",
+        statusCode: 200,
+        body: JSON.stringify({ success: true }),
         headers: {},
       };
     }
     default:
       return {
         statusCode: 400,
-        body: "",
+        body: `Unexpected type: ${type}`,
         headers: {},
       };
   }

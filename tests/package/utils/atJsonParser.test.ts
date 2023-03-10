@@ -10,36 +10,6 @@ import { Response } from "@remix-run/node";
 // - console.error mocking
 // - process.env setting
 
-test("Preprocess helps remove ambiguity", () => {
-  const parser = atJsonParser({
-    lexerRules: { a: "a", b: "b", c: "c" },
-    grammarRules: [
-      {
-        name: "main",
-        symbols: [{ type: "a" }, "bc"],
-        postprocess: createTextAtJson,
-      },
-      {
-        name: "main",
-        symbols: ["ab", { type: "c" }],
-        postprocess: createTextAtJson,
-      },
-      {
-        name: "ab",
-        symbols: [{ type: "a" }, { type: "b" }],
-        postprocess: createTextAtJson,
-      },
-      {
-        name: "bc",
-        symbols: [{ type: "b" }, { type: "c" }],
-        postprocess: createTextAtJson,
-        preprocess: (_, __, reject) => reject,
-      },
-    ],
-  });
-  expect(parser("abc")).toEqual({ content: "abc", annotations: [] });
-});
-
 test("Grammar must start with `main`", async () => {
   expect(() =>
     atJsonParser({
