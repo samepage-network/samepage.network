@@ -50,7 +50,7 @@ const CareerDescriptionPage = () => {
       </p>
       <p className="mt-16">
         To apply, book a call on{" "}
-        <ExternalLink href={"https://cal.com/samepage/meeting"}>
+        <ExternalLink href={"https://cal.com/samepage/hiring"}>
           our calendar
         </ExternalLink>{" "}
         and in the description, list any links to relevant experiences that we

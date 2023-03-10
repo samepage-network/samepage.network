@@ -11,6 +11,9 @@ const CareersPage = () => {
   const match = matches[matches.length - 1].params["id"];
   return (
     <div className="max-w-4xl margin-auto pb-16">
+      <h1 className="font-bold text-3xl my-8 text-red-900 bg-red-300 py-4 rounded-lg">
+        Hiring Opportunities Currently Unavailable
+      </h1>
       <h1 className="font-bold text-3xl my-8">Jobs at SamePage</h1>
       <p className="mb-16">
         We are a remote-first company with a mission to connect 10 billion+
