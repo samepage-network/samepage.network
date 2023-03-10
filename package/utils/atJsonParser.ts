@@ -8,15 +8,9 @@ import type { InitialSchema } from "../internal/types";
 const reject = Symbol("reject");
 type InputData = (moo.Token | InitialSchema)[];
 type Data = InputData | typeof reject | InitialSchema;
-type Context = { flags: Set<string>; index: number };
-type PreProcess = (
-  ctx: Context,
-  dot: number,
-  rej: typeof reject
-) => Context | undefined | typeof reject;
 type PostProcess = (
   d: InputData,
-  context: Context,
+  context: { index: number },
   rej: typeof reject
 ) => InitialSchema | typeof reject;
 
@@ -25,14 +19,12 @@ type Rule = {
   name: string;
   symbols: RuleSymbol[];
   postprocess: PostProcess;
-  // @deprecated - this was a mistake - we could do without this with rule macros. TODO
-  preprocess?: PreProcess;
 };
 
 type State = {
   rule: Rule;
   dot: number;
-  context: Context;
+  reference: number;
   data: Data;
   wantedBy: State[];
   isComplete?: boolean;
@@ -58,28 +50,23 @@ const newColumn = (index: number, wants: Column["wants"] = {}): Column => ({
   completed: {},
 });
 
-const newContext = (index: number): Context => ({
-  index,
-  flags: new Set(),
-});
-
 let stateIdGen = 0;
 const newState = ({
   rule,
   dot,
-  context,
+  reference,
   wantedBy,
   source,
 }: {
   rule: Rule;
   dot: number;
-  context: Context;
+  reference: number;
   wantedBy: State[];
   source: string;
 }): State => ({
   rule,
   dot,
-  context,
+  reference,
   data: [],
   wantedBy,
   isComplete: dot === rule.symbols.length,
@@ -107,14 +94,10 @@ const nextState = (
   source: string
 ): State | typeof reject => {
   const nextDot = state.dot + 1;
-  const context = state.rule.preprocess?.(state.context, nextDot, reject) || {
-    ...state.context,
-  };
-  if (context === reject) return reject;
   const next = newState({
     rule: state.rule,
     dot: nextDot,
-    context,
+    reference: state.reference,
     wantedBy: state.wantedBy,
     source: `next state from ${source} - ${state.id}`,
   });
@@ -161,7 +144,7 @@ const errorLogCharts = (table: Column[]) => {
       console.error(
         `${state.id}: 
     rule: {${ruleToString(state)}}
-    indx: ${state.context.index}
+    indx: ${state.reference}
     srce: ${state.source}
     data: ${JSON.stringify(state.data)}
     wtby: [${state.wantedBy.map((s) => s.id).join(", ")}]
@@ -221,11 +204,6 @@ const getError = (table: Column[], token: moo.Token) => {
       const nextSymbol = getExp(state);
       const symbolDisplay = getSymbolDisplay(nextSymbol);
       lines.push(`${symbolDisplay} based on:`);
-      lines.push(
-        `    [context]: { index: ${state.context.index}, flags: [${Array.from(
-          state.context.flags
-        ).join(", ")}]}`
-      );
       displayStateStack(stateStack);
     });
   }
@@ -288,22 +266,14 @@ const atJsonParser = ({
   });
   if (!grammarRulesByName[START_RULE])
     throw new Error(`At least one rule named \`${START_RULE}\` is required`);
-  const predict = (
-    col: Column,
-    ruleName: string,
-    context: Context,
-    id = -1
-  ) => {
+  const predict = (col: Column, ruleName: string, id = -1) => {
     const rules = grammarRulesByName[ruleName] || [];
     rules.forEach((rule) => {
       const wantedBy = col.wants[ruleName];
       const s = newState({
         rule,
         dot: 0,
-        context: {
-          ...context,
-          index: col.index,
-        },
+        reference: col.index,
         wantedBy,
         source: `predict from ${id} - ${ruleName}`,
       });
@@ -319,7 +289,7 @@ const atJsonParser = ({
       if (state.isComplete) {
         const output = state.rule.postprocess(
           state.data as InputData,
-          state.context,
+          { index: state.reference },
           reject
         );
         if (output !== reject) {
@@ -328,7 +298,7 @@ const atJsonParser = ({
             completeColumn(col, s, state, "postprocess")
           );
 
-          if (state.context.index === col.index) {
+          if (state.reference === col.index) {
             const exp = state.rule.name;
             if (exp)
               (col.completed[exp] = col.completed[exp] || []).push(state);
@@ -348,7 +318,7 @@ const atJsonParser = ({
           );
         } else {
           wants[exp] = [state];
-          predict(col, exp, state.context, state.id);
+          predict(col, exp, state.id);
         }
       }
     }
@@ -357,7 +327,7 @@ const atJsonParser = ({
     const buffer = lexer.reset(content);
     stateIdGen = 0;
     const table = [newColumn(0, { [START_RULE]: [] })];
-    predict(table[0], START_RULE, newContext(0));
+    predict(table[0], START_RULE);
     processColumn(table[0]);
     let current = 0;
     while (true) {
@@ -377,7 +347,7 @@ const atJsonParser = ({
             state,
             {
               data: [token],
-              context: { ...state.context, index: current },
+              reference: current,
               source: `scanned - ${state.id}`,
               id: -1,
               rule: state.rule,
@@ -416,7 +386,7 @@ const atJsonParser = ({
         t.rule &&
         t.rule.name === START_RULE &&
         t.dot === t.rule.symbols.length &&
-        t.context.index === 0 &&
+        t.reference === 0 &&
         t.data !== reject &&
         !Array.isArray(t.data)
       ) {
