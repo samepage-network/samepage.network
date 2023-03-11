@@ -152,7 +152,6 @@ test("Unexpected token, expected others", async () => {
     `Unexpected %a: \"a\". Instead, I was expecting to see one of the following:
 
 %c based on:
-    [context]: { index: 1, flags: []}
     bc → %b ● %c
     main → %a ● bc
 `

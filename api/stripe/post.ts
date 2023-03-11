@@ -3,6 +3,7 @@ import { AxiosRequestHeaders } from "axios";
 import Stripe from "stripe";
 import sendEmail from "~/data/sendEmail.server";
 import NewCustomerEmail from "~/components/NewCustomerEmail";
+import SubscriptionUpdateEmail from "~/components/SubscriptionUpdateEmail";
 import { users } from "@clerk/clerk-sdk-node";
 import emailError from "~/data/emailError.server";
 
@@ -71,6 +72,31 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         subject: "New SamePage Customer",
         body: NewCustomerEmail({
           email: customerEmail,
+        }),
+      });
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ success: true }),
+        headers: {},
+      };
+    }
+    case "customer.subscription.updated": {
+      const subscription = object as Stripe.Subscription;
+      const customerEmail = await stripe.customers
+        .retrieve(subscription.customer as string)
+        .then((customer) =>
+          customer.deleted ? "DELETED" : customer.email || "UNKNOWN"
+        )
+        .catch(() => "ERROR");
+      await sendEmail({
+        to: "support@samepage.network",
+        subject: "SamePage Subscription Updated",
+        body: SubscriptionUpdateEmail({
+          email: customerEmail,
+          status: subscription.status,
+          id: subscription.id,
+          feedback: subscription.cancellation_details?.feedback
+            || undefined,
         }),
       });
       return {

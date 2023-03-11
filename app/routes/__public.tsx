@@ -111,6 +111,7 @@ const PublicPage: React.FC = () => {
         <div className="flex flex-col sm:flex-row gap-6 sm:gap-10 items-center">
           {[
             "About",
+            "Analytics",
             "Careers",
             "Terms of Use",
             "Privacy Policy",

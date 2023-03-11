@@ -15,7 +15,7 @@ type PostProcess = (
 ) => InitialSchema | typeof reject;
 
 type RuleSymbol = string | { type: string };
-type Rule = {
+export type Rule = {
   name: string;
   symbols: RuleSymbol[];
   postprocess: PostProcess;

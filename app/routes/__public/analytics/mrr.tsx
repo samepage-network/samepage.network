@@ -2,13 +2,13 @@ export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import type { LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import loadActiveAnalytics from "~/data/loadActiveAnalytics.server";
+import loadMRRAnalytics from "~/data/loadMRRAnalytics.server";
 import { Chart, ChartOptions } from "react-charts";
 import { useMemo } from "react";
 
-const AnalyticsActivePage = () => {
+const AnalyticsMRRPage = () => {
   const { data } =
-    useLoaderData<Awaited<ReturnType<typeof loadActiveAnalytics>>>();
+    useLoaderData<Awaited<ReturnType<typeof loadMRRAnalytics>>>();
   const lineChartOptions = useMemo<
     Omit<ChartOptions<(typeof data)[number]>, "data">
   >(
@@ -30,10 +30,11 @@ const AnalyticsActivePage = () => {
       },
       secondaryAxes: [
         {
-          getValue: (data) => data.users,
+          getValue: (data) => data.mrr,
           elementType: "line",
           min: 0,
           tickCount: 4,
+          formatters: { tooltip: (value: number) => `$${value}` },
         },
       ],
     }),
@@ -44,18 +45,15 @@ const AnalyticsActivePage = () => {
       <Chart
         options={{
           ...lineChartOptions,
-          data: [{ label: "Daily Active Users", data }],
+          data: [{ label: "MRR", data }],
         }}
       />
     </div>
   );
 };
 
-export const loader: LoaderFunction = ({ context }) => {
-  return loadActiveAnalytics({
-    // @ts-ignore TODO move remix*Loader from app.* to samepage
-    requestId: context?.lambdaContext?.awsRequestId as string,
-  });
+export const loader: LoaderFunction = () => {
+  return loadMRRAnalytics();
 };
 
-export default AnalyticsActivePage;
+export default AnalyticsMRRPage;

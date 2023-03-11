@@ -12,7 +12,7 @@ const AnalyticsPage = () => {
     tabs: { path: string; name: string }[];
   }>();
   const matches = useMatches();
-  const pathname = matches[3]?.pathname || "undefined";
+  const pathname = (matches[3]?.pathname || "undefined").replace(/\/$/, "");
   const active = tabs.find((t) => pathname.endsWith(t.path));
   return (
     <div
@@ -55,8 +55,10 @@ const AnalyticsPage = () => {
 export const loader: LoaderFunction = () => {
   return {
     tabs: [
+      { name: "Total Users", path: "/analytics" },
       { name: "Active Users", path: "active" },
       { name: "Notebooks Connected", path: "notebooks" },
+      { name: "MRR", path: "mrr" },
     ],
   };
 };

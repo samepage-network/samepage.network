@@ -37,16 +37,36 @@ const publish = async ({
         `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/commits/${process.env.GITHUB_SHA}`,
         opts
       )
-      .then((r) => r.data.commit.message);
-    const release = await axios.post(
-      `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/releases`,
-      {
-        tag_name: version,
-        name: message.length > 50 ? `${message.substring(0, 47)}...` : message,
-        body: message.length > 50 ? `...${message.substring(47)}` : "",
-      },
-      opts
-    );
+      .then((r) => r.data.commit.message)
+      .catch((r) =>
+        Promise.reject(
+          new Error(
+            `Failed to read commit message for ${process.env.GITHUB_SHA} in ${
+              process.env.GITHUB_REPOSITORY
+            }:\n${JSON.stringify(r.response.data || "No response data found")}`
+          )
+        )
+      );
+    const release = await axios
+      .post(
+        `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/releases`,
+        {
+          tag_name: version,
+          name:
+            message.length > 50 ? `${message.substring(0, 47)}...` : message,
+          body: message.length > 50 ? `...${message.substring(47)}` : "",
+        },
+        opts
+      )
+      .catch((r) =>
+        Promise.reject(
+          new Error(
+            `Failed to read post release ${version} for repo ${
+              process.env.GITHUB_REPOSITORY
+            }:\n${JSON.stringify(r.response.data || "No response data found")}`
+          )
+        )
+      );
     const { tag_name, id } = release.data;
 
     const assets = fs.readdirSync(".");

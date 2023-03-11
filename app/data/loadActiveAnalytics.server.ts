@@ -17,7 +17,12 @@ INNER JOIN token_notebook_links l on l.notebook_uuid = n.uuid
 GROUP BY date
 ORDER BY date`
     )
-    .then(([r]) => r as { date: string; users: number }[]);
+    .then(([r]) =>
+      (r as { date: string; users: number }[]).map((r) => ({
+        ...r,
+        date: new Date(r.date).valueOf(),
+      }))
+    );
   return { data };
 };
 

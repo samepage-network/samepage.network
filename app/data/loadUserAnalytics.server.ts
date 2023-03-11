@@ -3,32 +3,30 @@
 // - This page itself will be more performant as the expensive parts of each query happens in the background.
 import getMysql from "fuegojs/utils/mysql";
 
-const loadNotebookAnalytics = async ({ requestId }: { requestId: string }) => {
+const loadUserAnalytics = async ({ requestId }: { requestId: string }) => {
   const cxn = await getMysql(requestId);
   const _data = await cxn
     .execute(
       `
 SELECT 
   DATE_FORMAT(t.created_date, '%Y-%m-%d') as date,
-  COUNT(n.uuid) as notebooks 
-FROM notebooks n 
-INNER JOIN token_notebook_links l ON l.notebook_uuid = n.uuid
-INNER JOIN tokens t ON t.uuid = l.token_uuid 
+  COUNT(t.user_id) as users 
+FROM tokens t
 GROUP BY date 
 ORDER BY date;
       `
     )
-    .then(([r]) => r as { date: string; notebooks: number }[]);
+    .then(([r]) => r as { date: string; users: number }[]);
   let total = 0;
   const data = _data
     .map((d) => {
       return {
-        notebooks: (total += d.notebooks),
+        users: (total += d.users),
         date: new Date(d.date).valueOf(),
       };
     })
-    .concat([{ notebooks: total, date: new Date().valueOf() }]);
+    .concat([{ users: total, date: new Date().valueOf() }]);
   return { data };
 };
 
-export default loadNotebookAnalytics;
+export default loadUserAnalytics;
