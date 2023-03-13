@@ -31,7 +31,6 @@ import {
 } from "./setupMessageHandlers";
 import MESSAGES, { Operation } from "./messages";
 import NotificationContainer from "../components/NotificationContainer";
-import sendExtensionError from "./sendExtensionError";
 
 const USAGE_LABEL = "View SamePage Usage";
 
@@ -48,13 +47,9 @@ const onError = (e: { error: Error } | Event) => {
   ) {
     // handled in disconnect
   } else {
-    const defaultErrorContent = "Unknown error occurred";
+    // TODO - see if we can condition on 1006 status code instead of a default message
+    const defaultErrorContent = `Browser blocked the connection to SamePage. If you are using an ad blocker, please disable it for SamePage.`;
     const errorContent = "error" in e ? e.error.message : defaultErrorContent;
-    if (errorContent === defaultErrorContent)
-      sendExtensionError({
-        type: "Client failed to connect to SamePage for unknown reason",
-        data: { event: e },
-      });
     dispatchAppEvent({
       type: "log",
       id: "samepage-ws-error",

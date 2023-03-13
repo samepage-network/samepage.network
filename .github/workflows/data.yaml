@@ -2,7 +2,7 @@ name: Publish Data Infrastructure
 on:
   workflow_dispatch:
   push:
-    branches: 
+    branches:
       - main
       - AWS_MIGRATION
     paths:
@@ -24,7 +24,7 @@ env:
 
 jobs:
   deploy:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
       - name: install
@@ -37,4 +37,4 @@ jobs:
       - name: apply
         run: npx fuego apply
         env:
-            NODE_ENV: production
+          NODE_ENV: production

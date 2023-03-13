@@ -1,7 +1,7 @@
 {
   "name": "{{id}}-samepage",
   "version": "1.0.0",
-  "description": "Official {{app}} client into the intra tool-for-thought protocol.",
+  "description": "Official {{app}} client into the inter-tool protocol, SamePage.",
   "main": "./dist/index.js",
   "scripts": {
     "postinstall": "patch-package --patch-dir node_modules/samepage/patches",
@@ -27,6 +27,6 @@
   },
   "homepage": "https://github.com/samepage-network/{{id}}-samepage#readme",
   "dependencies": {
-    "samepage": "^0.39.18"
+    "samepage": "^{{latest}}"
   }
 }

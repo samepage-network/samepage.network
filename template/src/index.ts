@@ -23,8 +23,8 @@ const setupClient = () => {
     // getSetting: (s) => localStorage.getItem(s),
     // setSetting: (s, v) => localStorage.setItem(s, v),
     // Interact with user
-    // addCommand: window.roamAlphaAPI.ui.commandPalette.addCommand,
-    // removeCommand: window.roamAlphaAPI.ui.commandPalette.removeCommand,
+    // addCommand: ({label, callback}) => commands[label] = callback,
+    // removeCommand: ({label}) => delete commands[label]),
   });
   return unload;
 };
