@@ -4,6 +4,7 @@ import path from "path";
 import appPath from "./appPath";
 import dotenv from "dotenv";
 import toVersion from "./toVersion";
+import readDir from "./readDir";
 dotenv.config();
 
 // TODO - Move this to a central location
@@ -17,16 +18,6 @@ declare global {
     }
   }
 }
-
-// TODO - import from fuegojs/utils/readDir
-const readDir = (s: string): string[] =>
-  fs.existsSync(s)
-    ? fs
-        .readdirSync(s, { withFileTypes: true })
-        .flatMap((f) =>
-          f.isDirectory() ? readDir(`${s}/${f.name}`) : [`${s}/${f.name}`]
-        )
-    : [];
 
 export type CliArgs = {
   root?: string;

@@ -79,6 +79,7 @@
     "@types/diff": "^5.0.2",
     "@types/jsdom": "^20.0.0",
     "@types/mime-types": "^2.1.1",
+    "@types/pluralize": "^0.0.29",
     "@types/uuid": "8.3.4",
     "@types/wtfnode": "^0.7.0",
     "esbuild": "0.15.18",
