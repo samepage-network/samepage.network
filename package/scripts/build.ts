@@ -145,7 +145,7 @@ const publish = async ({
         const zip = archiver("zip", { gzip: true, zlib: { level: 9 } });
         console.log(`Zipping ${f}...`);
 
-        zip.file(`${outdir}/${f}.js`, { name: `${f}.js`, ...options });
+        zip.file(`${outdir}/${f}.js`, { name: `${f}_post.js`, ...options });
         const shasum = crypto.createHash("sha256");
         const data: Uint8Array[] = [];
         return new Promise((resolve, reject) =>
