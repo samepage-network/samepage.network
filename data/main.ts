@@ -6,6 +6,7 @@ import { ActionsOrganizationSecret } from "@cdktf/provider-github/lib/actions-or
 import { AwsProvider } from "@cdktf/provider-aws/lib/provider";
 import { CloudfrontCachePolicy } from "@cdktf/provider-aws/lib/cloudfront-cache-policy";
 import { IamUserPolicy } from "@cdktf/provider-aws/lib/iam-user-policy";
+import { DataGithubRepositories } from "@cdktf/provider-github/lib/data-github-repositories";
 import { DataAwsIamPolicyDocument } from "@cdktf/provider-aws/lib/data-aws-iam-policy-document";
 import { DataAwsCallerIdentity } from "@cdktf/provider-aws/lib/data-aws-caller-identity";
 import { GithubProvider } from "@cdktf/provider-github/lib/provider";
@@ -504,6 +505,15 @@ const base = async ({
         });
 
         // TODO - dynamically retrieve all api paths from repos
+        const repositories = new DataGithubRepositories(
+          this,
+          "samepage_repos",
+          {
+            query: "samepage NOT .network",
+          }
+        );
+        console.log(repositories);
+        console.log(repositories.names);
         const extensionPaths = ["monday"];
         const allPaths = readDir("api")
           .map((f) => f.replace(/\.ts$/, "").replace(/^api\//, ""))

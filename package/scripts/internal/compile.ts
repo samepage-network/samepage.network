@@ -126,7 +126,7 @@ const compile = ({
       .map((s) => [`process.env.${s}`, `"${process.env[s]}"`])
   );
   const backendFunctions = fs.existsSync(functionsRoot)
-    ? fs.readdirSync(functionsRoot)
+    ? fs.readdirSync(functionsRoot).map((f) => f.replace(/\.ts$/, ""))
     : [];
   const backendOutdir = path.join(root, "out");
 
@@ -176,8 +176,8 @@ const compile = ({
             define: envObject,
             entryPoints: Object.fromEntries(
               backendFunctions.map((f) => [
-                f.replace(/\.ts$/, ""),
-                path.join(functionsRoot, f),
+                f,
+                path.join(functionsRoot, `${f}.ts`),
               ])
             ),
             plugins: [
