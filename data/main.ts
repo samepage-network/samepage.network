@@ -22,6 +22,8 @@ import getMysqlConnection from "fuegojs/utils/mysql";
 
 const PLAN_OUT_FILE = "out/apply-sql.txt";
 const INVALID_COLUMN_NAMES = new Set(["key", "read"]);
+const projectName = "samepage.network";
+const safeProjectName = "samepage-network";
 
 type Column = {
   Field: string;
@@ -88,26 +90,333 @@ const getIntegerType = ({ maxValue, minValue }: ZodNumber) => {
   }
 };
 
+const compareSqlSchemas = async () => {
+  const cxn = await getMysqlConnection();
+  const actualTableResults = await cxn
+    .execute(`show tables`)
+    .then(([r]) => r as Record<string, string>[]);
+  const dbname = snakeCase(safeProjectName);
+  const actualTables = actualTableResults.map((t) => t[`Tables_in_${dbname}`]);
+  if (actualTables.some((t) => !t)) {
+    throw new Error(
+      `Detected some unexpected results from \`show tables\`. Actual: ${JSON.stringify(
+        actualTableResults,
+        null,
+        4
+      )}`
+    );
+  }
+  const tablesToDelete: string[] = [];
+  const tablesToCreate: Record<string, ZodObject<ZodRawShape>> = {};
+  const tablesToUpdate: Record<string, ZodObject<ZodRawShape>> = {};
+  const expectedTables = Object.keys(schema);
+  actualTables
+    .filter((t) => !/^_/.test(t))
+    .map((t) => {
+      return camelCase(t);
+    })
+    .map((t) => pluralize(t, 1))
+    .forEach((t) => {
+      if (!expectedTables.includes(t)) {
+        tablesToDelete.push(t);
+      }
+    });
+  const actualSet = new Set(actualTables);
+  expectedTables.forEach((_t) => {
+    const t = _t as keyof typeof schema;
+    const key = pluralize(snakeCase(t));
+    if (actualSet.has(key)) {
+      tablesToUpdate[key] = schema[t];
+    } else {
+      tablesToCreate[key] = schema[t];
+    }
+  });
+
+  const outputColumn = (c: Column) =>
+    `${c.Field}  ${c.Type}  ${c.Null === "YES" ? "NULL" : "NOT NULL"}${
+      c.Default === null ? "" : ` DEFAULT ${c.Default || `""`}`
+    }`;
+
+  const getTableInfo = (s: ZodObject<ZodRawShape>) => {
+    const shapeKeys = Object.keys(s.shape);
+    const primary = shapeKeys.find((col) =>
+      /primary/i.test(s.shape[col].description || "")
+    );
+
+    const tableMetadata = z
+      .object({
+        uniques: z.string().array().array().optional().default([]),
+        indices: z.string().array().array().optional().default([]),
+      })
+      .parse(safeJsonParse(s.description));
+
+    const uniques = shapeKeys
+      .filter((col) => /^unique$/i.test(s.shape[col].description || ""))
+      .map((e) => [snakeCase(e)])
+      .concat(tableMetadata.uniques);
+
+    const indices = shapeKeys
+      .filter((col) => /^index$/i.test(s.shape[col].description || ""))
+      .map((e) => [snakeCase(e)])
+      .concat(tableMetadata.indices);
+
+    return {
+      constraints: {
+        primary: primary && snakeCase(primary),
+        uniques,
+        indices,
+      },
+      columns: shapeKeys.map((columnName) => {
+        const shape = s.shape[columnName];
+        if (INVALID_COLUMN_NAMES.has(columnName)) {
+          throw new Error(`\`${columnName}\` is an invalid column name`);
+        }
+        const def = shape._def;
+        const nullable = shape.isOptional() || shape.isNullable();
+        const typeName = nullable ? def.innerType._def.typeName : def.typeName;
+        return {
+          Field: snakeCase(columnName),
+          Type:
+            typeName === "ZodString"
+              ? `VARCHAR(${
+                  (shape as ZodString).isUUID
+                    ? 36
+                    : (shape as ZodString).maxLength || 128
+                })`
+              : typeName === "ZodNumber"
+              ? getIntegerType(shape as ZodNumber)
+              : typeName === "ZodDate"
+              ? "DATETIME"
+              : typeName === "ZodBoolean"
+              ? "TINYINT(1)"
+              : typeName === "ZodObject"
+              ? "JSON"
+              : typeName,
+          Null: nullable ? ("YES" as const) : ("NO" as const),
+          Key: "",
+          Extra: "",
+          Default: nullable
+            ? null
+            : typeName === "ZodString"
+            ? ""
+            : typeName === "ZodNumber" || typeName === "ZodBoolean"
+            ? "0"
+            : typeName === "ZodDate"
+            ? "CURRENT_TIMESTAMP"
+            : null,
+        };
+      }),
+    };
+  };
+
+  const updates = await Promise.all(
+    Object.keys(tablesToUpdate).map((table) =>
+      Promise.all([
+        // interpolating is incorrect sql for show columns
+        cxn.execute(`SHOW COLUMNS FROM ${table}`),
+        cxn.execute(`SHOW INDEXES FROM ${table}`),
+      ]).then(([[cols], [inds]]) => {
+        const actualColumns = cols as Column[];
+        const actualIndices = inds as Index[];
+
+        const colsToDelete: string[] = [];
+        const colsToAdd: string[] = [];
+        const colsToUpdate: string[] = [];
+        const consToDelete: string[] = [];
+        const consToAdd: string[] = [];
+
+        const expectedColumns = Object.keys(tablesToUpdate[table].shape);
+        actualColumns.forEach((c) => {
+          if (!expectedColumns.includes(camelCase(c.Field))) {
+            colsToDelete.push(c.Field);
+          }
+        });
+
+        const actualColumnSet = new Set(actualColumns.map((c) => c.Field));
+        const expectedColumnInfo = getTableInfo(tablesToUpdate[table]);
+        const actualTypeByField = Object.fromEntries(
+          actualColumns.map(({ Field, ...c }) => [Field, c])
+        );
+        const expectedTypeByField = Object.fromEntries(
+          expectedColumnInfo.columns.map(({ Field, ...c }) => [
+            snakeCase(Field),
+            c,
+          ])
+        );
+        expectedColumns
+          .map((e) => snakeCase(e))
+          .forEach((c) => {
+            if (actualColumnSet.has(c)) {
+              colsToUpdate.push(c);
+            } else {
+              colsToAdd.push(c);
+            }
+          });
+
+        const indsToDrop = new Set();
+        const expectedInds = new Set(
+          expectedColumnInfo.constraints.uniques
+            .map((u) => `UC_${u.join("_")}`)
+            .concat(
+              expectedColumnInfo.constraints.indices.map(
+                (i) => `IX_${i.join("_")}`
+              )
+            )
+        );
+        actualIndices.forEach((con) => {
+          if (con.Key_name === "PRIMARY") {
+            if (expectedColumnInfo.constraints.primary !== con.Column_name) {
+              consToDelete.push(`PRIMARY KEY`);
+            }
+          } else {
+            if (
+              !expectedInds.has(con.Key_name) &&
+              !indsToDrop.has(con.Key_name)
+            ) {
+              consToDelete.push(`INDEX ${con.Key_name}`);
+              indsToDrop.add(con.Key_name);
+            }
+          }
+        });
+
+        if (
+          expectedColumnInfo.constraints.primary &&
+          !actualIndices.some(
+            (con) =>
+              con.Column_name === expectedColumnInfo.constraints.primary &&
+              con.Key_name === "PRIMARY"
+          )
+        ) {
+          consToAdd.push(
+            `PRIMARY KEY (${expectedColumnInfo.constraints.primary})`
+          );
+        }
+        expectedColumnInfo.constraints.uniques.forEach((uc) => {
+          if (
+            !actualIndices.some((con) => `UC_${uc.join("_")}` === con.Key_name)
+          ) {
+            consToAdd.push(
+              `CREATE UNIQUE INDEX UC_${uc.join("_")} on ${table} (${uc.join(
+                ","
+              )})`
+            );
+          }
+        });
+        expectedColumnInfo.constraints.indices.forEach((ix) => {
+          if (
+            !actualIndices.some((con) => `IX_${ix.join("_")}` === con.Key_name)
+          ) {
+            consToAdd.push(
+              `CREATE INDEX IX_${ix.join("_")} on ${table} (${ix.join(",")})`
+            );
+          }
+        });
+        return consToDelete
+          .sort()
+          .map((c) => `ALTER TABLE ${table} DROP ${c}`)
+          .concat(
+            colsToDelete.map((c) => `ALTER TABLE ${table} DROP COLUMN ${c}`)
+          )
+          .concat(
+            colsToAdd.map(
+              (c) =>
+                `ALTER TABLE ${table} ADD ${outputColumn({
+                  Field: c,
+                  ...expectedTypeByField[c],
+                })}`
+            )
+          )
+          .concat(
+            colsToUpdate
+              .filter(
+                (c) =>
+                  // TODO - need to compare this better - length field is actual for all fields, but not expected for ints
+                  expectedTypeByField[c].Type.replace(
+                    /\(\d+\)/,
+                    ""
+                  ).toUpperCase() !==
+                    actualTypeByField[c].Type.replace(
+                      /\(\d+\)/,
+                      ""
+                    ).toUpperCase() ||
+                  expectedTypeByField[c].Null !== actualTypeByField[c].Null ||
+                  expectedTypeByField[c].Default !==
+                    actualTypeByField[c].Default
+              )
+              .map((c) => {
+                if (process.env.DEBUG)
+                  console.log(
+                    "Column diff expected:",
+                    JSON.stringify(expectedTypeByField[c], null, 4),
+                    "actual:",
+                    JSON.stringify(actualTypeByField[c], null, 4)
+                  );
+                return `ALTER TABLE ${table} MODIFY ${outputColumn({
+                  Field: c,
+                  ...expectedTypeByField[c],
+                })}`;
+              })
+          )
+          .concat(consToAdd);
+      })
+    )
+  ).then((cols) => cols.flat());
+
+  console.log("SQL PLAN:");
+  console.log("");
+
+  const queries = tablesToDelete
+    .map((s) => `DROP TABLE ${pluralize(snakeCase(s))}`)
+    .concat(
+      Object.entries(tablesToCreate).map(([k, s]) => {
+        const {
+          columns,
+          constraints: { primary, uniques, indices },
+        } = getTableInfo(s);
+        return `CREATE TABLE IF NOT EXISTS ${k} (
+${columns.map((c) => `  ${outputColumn(c)},`).join("\n")}
+
+  ${[
+    primary && `PRIMARY KEY (${primary})`,
+    ...uniques.map((uc) => `UNIQUE INDEX UC_${uc.join("_")} (${uc.join(",")})`),
+    ...indices.map((ix) => `INDEX IX_${ix.join("_")} (${ix.join(",")})`),
+  ]
+    .filter((c) => !!c)
+    .join(",\n  ")}
+) ENGINE InnoDB,
+  CHARSET utf8mb4,
+  COLLATE utf8mb4_unicode_ci;`;
+      })
+    )
+    .concat(updates);
+  if (queries.length) {
+    queries.forEach((q) => console.log(">", q, "\n\n"));
+    console.log("");
+    console.log("Ready to apply...");
+  } else {
+    console.log("No migrations to apply.");
+  }
+  if (!fs.existsSync(path.dirname(PLAN_OUT_FILE)))
+    fs.mkdirSync(path.dirname(PLAN_OUT_FILE));
+  fs.writeFileSync(PLAN_OUT_FILE, queries.join(";\n\n"));
+
+  cxn.destroy();
+};
+
 const base = async ({
-  projectName,
-  safeProjectName = projectName.replace(/\./g, "-"),
   clerkDnsId,
   // @deprecated
   emailDomain,
   emailSettings = "OFF",
   variables = [],
-  schema,
   backendProps = {},
   organization = "VargasArts",
   callback,
 }: {
-  projectName: string;
-  safeProjectName?: string;
   clerkDnsId?: string;
   emailDomain?: string;
   emailSettings?: "OFF" | "OUTBOUND" | "ALL";
   variables?: string[];
-  schema?: Record<string, ZodObject<ZodRawShape>>;
   backendProps?: {
     sizes?: Record<string, string>;
   };
@@ -191,9 +500,11 @@ const base = async ({
           cachePolicyId: cachePolicy.id,
         });
 
-        const allPaths = readDir("api").map((f) =>
-          f.replace(/\.ts$/, "").replace(/^api\//, "")
-        );
+        // TODO - dynamically retrieve all api paths from repos
+        const extensionPaths = ["monday"];
+        const allPaths = readDir("api")
+          .map((f) => f.replace(/\.ts$/, "").replace(/^api\//, ""))
+          .concat(extensionPaths.map((s) => `${s}/post`));
 
         const ignorePaths = ["ws", "car", "clerk"];
         const paths = allPaths.filter(
@@ -303,330 +614,10 @@ const base = async ({
     app.synth();
   }
 
-  if (schema) {
-    const cxn = await getMysqlConnection();
-    const actualTableResults = await cxn
-      .execute(`show tables`)
-      .then(([r]) => r as Record<string, string>[]);
-    const dbname = snakeCase(safeProjectName);
-    const actualTables = actualTableResults.map(
-      (t) => t[`Tables_in_${dbname}`]
-    );
-    if (actualTables.some((t) => !t)) {
-      throw new Error(
-        `Detected some unexpected results from \`show tables\`. Actual: ${JSON.stringify(
-          actualTableResults,
-          null,
-          4
-        )}`
-      );
-    }
-    const tablesToDelete: string[] = [];
-    const tablesToCreate: Record<string, ZodObject<ZodRawShape>> = {};
-    const tablesToUpdate: Record<string, ZodObject<ZodRawShape>> = {};
-    const expectedTables = Object.keys(schema);
-    actualTables
-      .filter((t) => !/^_/.test(t))
-      .map((t) => {
-        return camelCase(t);
-      })
-      .map((t) => pluralize(t, 1))
-      .forEach((t) => {
-        if (!expectedTables.includes(t)) {
-          tablesToDelete.push(t);
-        }
-      });
-    const actualSet = new Set(actualTables);
-    expectedTables.forEach((t) => {
-      const key = pluralize(snakeCase(t));
-      if (actualSet.has(key)) {
-        tablesToUpdate[key] = schema[t];
-      } else {
-        tablesToCreate[key] = schema[t];
-      }
-    });
-
-    const outputColumn = (c: Column) =>
-      `${c.Field}  ${c.Type}  ${c.Null === "YES" ? "NULL" : "NOT NULL"}${
-        c.Default === null ? "" : ` DEFAULT ${c.Default || `""`}`
-      }`;
-
-    const getTableInfo = (s: ZodObject<ZodRawShape>) => {
-      const shapeKeys = Object.keys(s.shape);
-      const primary = shapeKeys.find((col) =>
-        /primary/i.test(s.shape[col].description || "")
-      );
-
-      const tableMetadata = z
-        .object({
-          uniques: z.string().array().array().optional().default([]),
-          indices: z.string().array().array().optional().default([]),
-        })
-        .parse(safeJsonParse(s.description));
-
-      const uniques = shapeKeys
-        .filter((col) => /^unique$/i.test(s.shape[col].description || ""))
-        .map((e) => [snakeCase(e)])
-        .concat(tableMetadata.uniques);
-
-      const indices = shapeKeys
-        .filter((col) => /^index$/i.test(s.shape[col].description || ""))
-        .map((e) => [snakeCase(e)])
-        .concat(tableMetadata.indices);
-
-      return {
-        constraints: {
-          primary: primary && snakeCase(primary),
-          uniques,
-          indices,
-        },
-        columns: shapeKeys.map((columnName) => {
-          const shape = s.shape[columnName];
-          if (INVALID_COLUMN_NAMES.has(columnName)) {
-            throw new Error(`\`${columnName}\` is an invalid column name`);
-          }
-          const def = shape._def;
-          const nullable = shape.isOptional() || shape.isNullable();
-          const typeName = nullable
-            ? def.innerType._def.typeName
-            : def.typeName;
-          return {
-            Field: snakeCase(columnName),
-            Type:
-              typeName === "ZodString"
-                ? `VARCHAR(${
-                    (shape as ZodString).isUUID
-                      ? 36
-                      : (shape as ZodString).maxLength || 128
-                  })`
-                : typeName === "ZodNumber"
-                ? getIntegerType(shape as ZodNumber)
-                : typeName === "ZodDate"
-                ? "DATETIME"
-                : typeName === "ZodBoolean"
-                ? "TINYINT(1)"
-                : typeName === "ZodObject"
-                ? "JSON"
-                : typeName,
-            Null: nullable ? ("YES" as const) : ("NO" as const),
-            Key: "",
-            Extra: "",
-            Default: nullable
-              ? null
-              : typeName === "ZodString"
-              ? ""
-              : typeName === "ZodNumber" || typeName === "ZodBoolean"
-              ? "0"
-              : typeName === "ZodDate"
-              ? "CURRENT_TIMESTAMP"
-              : null,
-          };
-        }),
-      };
-    };
-
-    const updates = await Promise.all(
-      Object.keys(tablesToUpdate).map((table) =>
-        Promise.all([
-          // interpolating is incorrect sql for show columns
-          cxn.execute(`SHOW COLUMNS FROM ${table}`),
-          cxn.execute(`SHOW INDEXES FROM ${table}`),
-        ]).then(([[cols], [inds]]) => {
-          const actualColumns = cols as Column[];
-          const actualIndices = inds as Index[];
-
-          const colsToDelete: string[] = [];
-          const colsToAdd: string[] = [];
-          const colsToUpdate: string[] = [];
-          const consToDelete: string[] = [];
-          const consToAdd: string[] = [];
-
-          const expectedColumns = Object.keys(tablesToUpdate[table].shape);
-          actualColumns.forEach((c) => {
-            if (!expectedColumns.includes(camelCase(c.Field))) {
-              colsToDelete.push(c.Field);
-            }
-          });
-
-          const actualColumnSet = new Set(actualColumns.map((c) => c.Field));
-          const expectedColumnInfo = getTableInfo(tablesToUpdate[table]);
-          const actualTypeByField = Object.fromEntries(
-            actualColumns.map(({ Field, ...c }) => [Field, c])
-          );
-          const expectedTypeByField = Object.fromEntries(
-            expectedColumnInfo.columns.map(({ Field, ...c }) => [
-              snakeCase(Field),
-              c,
-            ])
-          );
-          expectedColumns
-            .map((e) => snakeCase(e))
-            .forEach((c) => {
-              if (actualColumnSet.has(c)) {
-                colsToUpdate.push(c);
-              } else {
-                colsToAdd.push(c);
-              }
-            });
-
-          const indsToDrop = new Set();
-          const expectedInds = new Set(
-            expectedColumnInfo.constraints.uniques
-              .map((u) => `UC_${u.join("_")}`)
-              .concat(
-                expectedColumnInfo.constraints.indices.map(
-                  (i) => `IX_${i.join("_")}`
-                )
-              )
-          );
-          actualIndices.forEach((con) => {
-            if (con.Key_name === "PRIMARY") {
-              if (expectedColumnInfo.constraints.primary !== con.Column_name) {
-                consToDelete.push(`PRIMARY KEY`);
-              }
-            } else {
-              if (
-                !expectedInds.has(con.Key_name) &&
-                !indsToDrop.has(con.Key_name)
-              ) {
-                consToDelete.push(`INDEX ${con.Key_name}`);
-                indsToDrop.add(con.Key_name);
-              }
-            }
-          });
-
-          if (
-            expectedColumnInfo.constraints.primary &&
-            !actualIndices.some(
-              (con) =>
-                con.Column_name === expectedColumnInfo.constraints.primary &&
-                con.Key_name === "PRIMARY"
-            )
-          ) {
-            consToAdd.push(
-              `PRIMARY KEY (${expectedColumnInfo.constraints.primary})`
-            );
-          }
-          expectedColumnInfo.constraints.uniques.forEach((uc) => {
-            if (
-              !actualIndices.some(
-                (con) => `UC_${uc.join("_")}` === con.Key_name
-              )
-            ) {
-              consToAdd.push(
-                `CREATE UNIQUE INDEX UC_${uc.join("_")} on ${table} (${uc.join(
-                  ","
-                )})`
-              );
-            }
-          });
-          expectedColumnInfo.constraints.indices.forEach((ix) => {
-            if (
-              !actualIndices.some(
-                (con) => `IX_${ix.join("_")}` === con.Key_name
-              )
-            ) {
-              consToAdd.push(
-                `CREATE INDEX IX_${ix.join("_")} on ${table} (${ix.join(",")})`
-              );
-            }
-          });
-          return consToDelete
-            .sort()
-            .map((c) => `ALTER TABLE ${table} DROP ${c}`)
-            .concat(
-              colsToDelete.map((c) => `ALTER TABLE ${table} DROP COLUMN ${c}`)
-            )
-            .concat(
-              colsToAdd.map(
-                (c) =>
-                  `ALTER TABLE ${table} ADD ${outputColumn({
-                    Field: c,
-                    ...expectedTypeByField[c],
-                  })}`
-              )
-            )
-            .concat(
-              colsToUpdate
-                .filter(
-                  (c) =>
-                    // TODO - need to compare this better - length field is actual for all fields, but not expected for ints
-                    expectedTypeByField[c].Type.replace(
-                      /\(\d+\)/,
-                      ""
-                    ).toUpperCase() !==
-                      actualTypeByField[c].Type.replace(
-                        /\(\d+\)/,
-                        ""
-                      ).toUpperCase() ||
-                    expectedTypeByField[c].Null !== actualTypeByField[c].Null ||
-                    expectedTypeByField[c].Default !==
-                      actualTypeByField[c].Default
-                )
-                .map((c) => {
-                  if (process.env.DEBUG)
-                    console.log(
-                      "Column diff expected:",
-                      JSON.stringify(expectedTypeByField[c], null, 4),
-                      "actual:",
-                      JSON.stringify(actualTypeByField[c], null, 4)
-                    );
-                  return `ALTER TABLE ${table} MODIFY ${outputColumn({
-                    Field: c,
-                    ...expectedTypeByField[c],
-                  })}`;
-                })
-            )
-            .concat(consToAdd);
-        })
-      )
-    ).then((cols) => cols.flat());
-
-    console.log("SQL PLAN:");
-    console.log("");
-
-    const queries = tablesToDelete
-      .map((s) => `DROP TABLE ${pluralize(snakeCase(s))}`)
-      .concat(
-        Object.entries(tablesToCreate).map(([k, s]) => {
-          const {
-            columns,
-            constraints: { primary, uniques, indices },
-          } = getTableInfo(s);
-          return `CREATE TABLE IF NOT EXISTS ${k} (
-${columns.map((c) => `  ${outputColumn(c)},`).join("\n")}
-
-  ${[
-    primary && `PRIMARY KEY (${primary})`,
-    ...uniques.map((uc) => `UNIQUE INDEX UC_${uc.join("_")} (${uc.join(",")})`),
-    ...indices.map((ix) => `INDEX IX_${ix.join("_")} (${ix.join(",")})`),
-  ]
-    .filter((c) => !!c)
-    .join(",\n  ")}
-) ENGINE InnoDB,
-  CHARSET utf8mb4,
-  COLLATE utf8mb4_unicode_ci;`;
-        })
-      )
-      .concat(updates);
-    if (queries.length) {
-      queries.forEach((q) => console.log(">", q, "\n\n"));
-      console.log("");
-      console.log("Ready to apply...");
-    } else {
-      console.log("No migrations to apply.");
-    }
-    if (!fs.existsSync(path.dirname(PLAN_OUT_FILE)))
-      fs.mkdirSync(path.dirname(PLAN_OUT_FILE));
-    fs.writeFileSync(PLAN_OUT_FILE, queries.join(";\n\n"));
-
-    cxn.destroy();
-  }
+  await compareSqlSchemas();
 };
 
 base({
-  schema,
-  projectName: "samepage.network",
   emailSettings: "OUTBOUND",
   clerkDnsId: "l7zkq208u6ys",
   organization: "SamePage",

@@ -35,7 +35,8 @@ execSync("npm install", { stdio: "inherit" });
 execSync("git add --all", { stdio: "inherit" });
 execSync("git commit -m 'SamePage Initial Commit'", { stdio: "inherit" });
 execSync(
-  "git remote add origin https://github.com/samepage-network/google-samepage.git",
+  `git remote add origin https://github.com/samepage-network/${id}-samepage.git`,
   { stdio: "inherit" }
 );
+// create repo on github first
 // execSync("git push origin main", { stdio: "inherit" });
