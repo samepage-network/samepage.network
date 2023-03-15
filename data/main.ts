@@ -512,8 +512,10 @@ const base = async ({
             query: "samepage NOT .network",
           }
         );
-        console.log(repositories.count);
-        console.log(repositories.fullNames);
+        console.log(
+          repositories.node.children.length,
+          repositories.node.children.map((c) => c.node.id)
+        );
         const extensionPaths = ["monday"];
         const allPaths = readDir("api")
           .map((f) => f.replace(/\.ts$/, "").replace(/^api\//, ""))

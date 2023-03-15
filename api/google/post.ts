@@ -20,13 +20,15 @@ const logic = async () => {
       header: {
         title: `Board ${index + 1}`,
       },
-      sections: {
-        widgets: card.map((item) => ({
-          textParagraph: {
-            text: `Item: ${item.name} (${item.id})`,
-          },
-        })),
-      },
+      sections: [
+        {
+          widgets: card.map((item) => ({
+            textParagraph: {
+              text: `Item: ${item.name} (${item.id})`,
+            },
+          })),
+        },
+      ],
     },
   }));
   return {
