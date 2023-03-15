@@ -6,16 +6,21 @@ import getPackageName from "./internal/getPackageName";
 import axios from "axios";
 import mimeTypes from "mime-types";
 import path from "path";
+import { Lambda, GetFunctionResponse } from "@aws-sdk/client-lambda";
+import archiver from "archiver";
+import crypto from "crypto";
 
 const publish = async ({
   root = ".",
   review,
   version,
+  backendFunctions,
 }: {
   root?: string;
   review?: string;
   version?: string;
-} = {}): Promise<number> => {
+  backendFunctions?: string[];
+} = {}): Promise<void> => {
   const token = process.env.GITHUB_TOKEN;
   if (token) {
     const destPath = getPackageName();
@@ -103,15 +108,95 @@ const publish = async ({
     );
   }
 
-  if (review && fs.existsSync(path.join(root, review))) {
-    await import(`${root}/${review.replace(/\.[jt]s$/, "")}`)
-      .then(
-        //@ts-ignore
-        (mod) => typeof mod.default === "function" && mod.default()
-      )
-      .catch((e) => console.error(e));
+  if (backendFunctions?.length) {
+    const lambda = new Lambda({});
+    const outdir = "out";
+    const options = {
+      date: new Date("01-01-1970"),
+    };
+    const getFunction = ({
+      FunctionName,
+      trial = 0,
+    }: {
+      FunctionName: string;
+      trial?: number;
+    }): Promise<GetFunctionResponse> =>
+      lambda
+        .getFunction({
+          FunctionName,
+        })
+        .catch((e) => {
+          if (trial < 100) {
+            console.warn(
+              `Function ${FunctionName} not found on trial ${trial}. Trying again...`
+            );
+            return new Promise((resolve) =>
+              setTimeout(
+                () => resolve(getFunction({ FunctionName, trial: trial + 1 })),
+                10000
+              )
+            );
+          } else {
+            throw e;
+          }
+        });
+    await Promise.all(
+      backendFunctions.map((f) => {
+        const zip = archiver("zip", { gzip: true, zlib: { level: 9 } });
+        console.log(`Zipping ${f}...`);
+
+        zip.file(`${outdir}/${f}.js`, { name: `${f}.js`, ...options });
+        const shasum = crypto.createHash("sha256");
+        const data: Uint8Array[] = [];
+        return new Promise((resolve, reject) =>
+          zip
+            .on("data", (d) => {
+              data.push(d);
+              shasum.update(d);
+            })
+            .on("end", () => {
+              console.log(`Zip of ${f} complete (${data.length}).`);
+              const sha256 = shasum.digest("base64");
+              // const FunctionName = `extensions-${id}-${f}_post`;
+              const FunctionName = `samepage-network_${f}_post`;
+              getFunction({
+                FunctionName,
+              })
+                .then((l) => {
+                  if (sha256 === l.Configuration?.CodeSha256) {
+                    return `No need to upload ${FunctionName}, shas match.`;
+                  } else {
+                    return lambda
+                      .updateFunctionCode({
+                        FunctionName,
+                        Publish: true,
+                        ZipFile: Buffer.concat(data),
+                      })
+                      .then(
+                        (upd) =>
+                          `Succesfully uploaded ${FunctionName} at ${upd.LastModified}`
+                      );
+                  }
+                })
+                .then(console.log)
+                .then(resolve)
+                .catch((e) => {
+                  console.error(`deploy of ${f} failed:`);
+                  reject(e);
+                });
+            })
+            .finalize()
+        );
+      })
+    );
   }
-  return 0;
+
+  if (review && fs.existsSync(path.join(root, review))) {
+    await import(`${root}/${review.replace(/\.[jt]s$/, "")}`).then(
+      //@ts-ignore
+      (mod) => typeof mod.default === "function" && mod.default()
+    );
+  }
 };
 
 const build = (
@@ -127,14 +212,19 @@ const build = (
     `${envExisting.replace(/VERSION=[\d-]+\n/gs, "")}VERSION=${version}\n`
   );
   return compile({ ...args, opts: { minify: true } })
-    .then(() =>
+    .then(({ backendFunctions }) =>
       args.dry
-        ? Promise.resolve(0)
-        : publish({ review: args.review, version, root: args.root })
+        ? Promise.resolve()
+        : publish({
+            review: args.review,
+            version,
+            root: args.root,
+            backendFunctions,
+          })
     )
-    .then((exitCode) => {
+    .then(() => {
       console.log("done");
-      return exitCode;
+      return 0;
     });
 };
 

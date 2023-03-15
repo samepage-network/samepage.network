@@ -1,9 +1,8 @@
 import chokidar from "chokidar";
 import compile, { CliArgs } from "./internal/compile";
-import type { BuildInvalidate } from "esbuild";
 
 const dev = (args: CliArgs) => {
-  let rebuilder: BuildInvalidate | undefined;
+  let rebuilder: (() => Promise<void>) | undefined;
   process.env.NODE_ENV = process.env.NODE_ENV || "development";
   return new Promise((resolve) => {
     chokidar
