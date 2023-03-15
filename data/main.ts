@@ -5,6 +5,9 @@ import { App, TerraformStack, RemoteBackend, TerraformVariable } from "cdktf";
 import { ActionsOrganizationSecret } from "@cdktf/provider-github/lib/actions-organization-secret";
 import { AwsProvider } from "@cdktf/provider-aws/lib/provider";
 import { CloudfrontCachePolicy } from "@cdktf/provider-aws/lib/cloudfront-cache-policy";
+import { IamUserPolicy } from "@cdktf/provider-aws/lib/iam-user-policy";
+import { DataAwsIamPolicyDocument } from "@cdktf/provider-aws/lib/data-aws-iam-policy-document";
+import { DataAwsCallerIdentity } from "@cdktf/provider-aws/lib/data-aws-caller-identity";
 import { GithubProvider } from "@cdktf/provider-github/lib/provider";
 import { ActionsSecret } from "@cdktf/provider-github/lib/actions-secret";
 import { AwsServerlessBackend } from "@dvargas92495/aws-serverless-backend";
@@ -520,6 +523,31 @@ const base = async ({
             sizes: backendProps?.sizes,
           }
         );
+        const callerIdentity = new DataAwsCallerIdentity(this, "tf_caller", {});
+        const additionalPolicy = new DataAwsIamPolicyDocument(
+          this,
+          "additional_deploy_policy",
+          {
+            statement: [
+              {
+                actions: [
+                  "lambda:UpdateFunctionCode",
+                  "lambda:GetFunction",
+                  "lambda:EnableReplication*",
+                ],
+                resources: extensionPaths.flatMap((e) => [
+                  `arn:aws:lambda:us-east-1:${callerIdentity.accountId}:function:samepage-network_${e}_post`,
+                  `arn:aws:lambda:us-east-1:${callerIdentity.accountId}:function:samepage-network_${e}_post:*`,
+                ]),
+              },
+            ],
+          }
+        );
+        new IamUserPolicy(this, "deploy_additional", {
+          name: "deploy_additional",
+          user: "samepage.network-deploy",
+          policy: additionalPolicy.json,
+        });
 
         const wsPaths = allPaths
           .filter((p) => /^ws/.test(p))

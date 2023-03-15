@@ -128,6 +128,7 @@ const compile = ({
   const backendFunctions = fs.existsSync(functionsRoot)
     ? fs.readdirSync(functionsRoot)
     : [];
+  const backendOutdir = path.join(root, "out");
 
   return Promise.all(
     [
@@ -169,7 +170,7 @@ const compile = ({
       backendFunctions.length
         ? esbuild.build({
             bundle: true,
-            outdir,
+            outdir: backendOutdir,
             platform: "node",
             external: ["aws-sdk", "canvas", "@aws-sdk/*"],
             define: envObject,
@@ -179,6 +180,33 @@ const compile = ({
                 path.join(functionsRoot, f),
               ])
             ),
+            plugins: [
+              {
+                name: "lambda-adapter",
+                setup(build) {
+                  build.onLoad(
+                    {
+                      filter: /^.*\.ts$/,
+                    },
+                    async (args) => {
+                      const originalContent = fs
+                        .readFileSync(args.path)
+                        .toString();
+                      const defaultExport = originalContent.match(
+                        /export\s+default\s+([^\s;]+)/
+                      )?.[1];
+                      const contents = defaultExport
+                        ? `${originalContent}export const handler = ${defaultExport};`
+                        : originalContent;
+                      return {
+                        contents,
+                        loader: "js",
+                      };
+                    }
+                  );
+                },
+              },
+            ],
           })
         : []
     )
