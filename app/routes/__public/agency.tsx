@@ -114,7 +114,7 @@ const AgencyPage = () => {
           <div className="flex pb-8 pt-4 justify-center items-center">
             <a
               className="no-underline border-b border-dashed border-b-black text-sm font-semibold"
-              href={"https://cal.com/samepage/meeting"}
+              href={"https://cal.com/samepage/discovery"}
             >
               Book a call
             </a>

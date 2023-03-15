@@ -35,7 +35,7 @@ We are looking for initial partners that currently:
 - Manages the team on at least one of the referenced workspace apps
 - Wastes 10+ hours/month on manual effort across apps
 
-If you're not sure about whether or not we should work together and would like to learn more, please book a call with us on our [calendar](https://cal.com/samepage/meeting).
+If you're not sure about whether or not we should work together and would like to learn more, please book a call with us on our [calendar](https://cal.com/samepage/discovery).
 
 ## How to get started
 
