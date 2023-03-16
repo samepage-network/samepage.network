@@ -127,7 +127,7 @@ const publish = async ({
         .catch((e) => {
           if (trial < 100) {
             console.warn(
-              `Function ${FunctionName} not found on trial ${trial}. Trying again...`
+              `Function ${FunctionName} not found on trial ${trial} due to ${e}. Trying again...`
             );
             return new Promise((resolve) =>
               setTimeout(

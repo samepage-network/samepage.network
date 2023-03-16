@@ -922,14 +922,9 @@ const setupInfrastructure = async (): Promise<void> => {
                   "lambda:GetFunction",
                   "lambda:EnableReplication*",
                 ],
-                resources: extensionPaths.flatMap((e) => [
-                  `arn:aws:lambda:us-east-1:${
-                    callerIdentity.accountId
-                  }:function:samepage-network_${e.replace(/\//g, "-")}_post`,
-                  `arn:aws:lambda:us-east-1:${
-                    callerIdentity.accountId
-                  }:function:samepage-network_${e.replace(/\//g, "-")}_post:*`,
-                ]),
+                resources: [
+                  `arn:aws:lambda:us-east-1:${callerIdentity.accountId}:function:samepage-network_extensions-*`,
+                ],
               },
             ],
           }
