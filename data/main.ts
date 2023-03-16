@@ -808,11 +808,7 @@ const setupInfrastructure = async (): Promise<void> => {
               {
                 actions: ["lambda:UpdateFunctionCode", "lambda:GetFunction"],
                 resources: [
-                  `${restApi.executionArn
-                    .replace("execute-api", "lambda")
-                    .split(":")
-                    .slice(0, 5)
-                    .join(":")}:function:${safeProjectName}_*`,
+                  `arn:aws:lambda:us-east-1:${callerIdentity.accountId}:function:samepage-network_*`,
                 ],
               },
             ],
