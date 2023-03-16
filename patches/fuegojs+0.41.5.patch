@@ -1,0 +1,46 @@
+diff --git a/node_modules/fuegojs/commands/api.js b/node_modules/fuegojs/commands/api.js
+index 3c266ec..6cfd2ee 100644
+--- a/node_modules/fuegojs/commands/api.js
++++ b/node_modules/fuegojs/commands/api.js
+@@ -109,7 +109,7 @@ const rebuilders = {};
+ const dependencies = {};
+ const api = ({ tunnel, path = "api", out = "build", }) => {
+     process.env.NODE_ENV = process.env.NODE_ENV || "development";
+-    const entryRegex = new RegExp(`^${path}[\\\\/]((ws[/\\\\][a-z0-9-]+)|([a-z0-9-]+[/\\\\])*(get|post|put|delete)|[a-z0-9-]+)\\.[tj]s$`);
++    const entryRegex = new RegExp(`^${path}[\\\\/]((ws[/\\\\][a-z0-9-]+)|(:?[a-z0-9-]+[/\\\\])*(get|post|put|delete)|[a-z0-9-]+)\\.[tj]s$`);
+     const wsRegex = new RegExp(`^${path}[\\\\/]ws[/\\\\][a-z0-9-]+\\.[tj]s$`);
+     console.log("Preparing the API build from", path, "in", process.env.NODE_ENV, "mode...");
+     return (0, prepareApiBuild_1.default)(out).then((opts) => {
+@@ -465,7 +465,9 @@ const api = ({ tunnel, path = "api", out = "build", }) => {
+                 return () => Promise.resolve();
+             };
+             const closeWsServer = startWebSocketServer();
+-            app.use((req, res) => res
++            app.use((req, res) => {
++                console.error(`Route not found: ${req.method} - ${req.path}`);
++                res
+                 .header("Access-Control-Allow-Origin", "*")
+                 .header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+                 .status(404)
+@@ -473,7 +475,7 @@ const api = ({ tunnel, path = "api", out = "build", }) => {
+                 currentRoute: `${req.method} - ${req.path}`,
+                 error: "Route not found.",
+                 statusCode: 404,
+-            }));
++            })});
+             const appServer = app.listen(port, () => {
+                 console.log(`API server listening on port ${port}...`);
+                 if (tunnel) {
+diff --git a/node_modules/fuegojs/commands/publish.js b/node_modules/fuegojs/commands/publish.js
+index c0e6818..2653f7d 100644
+--- a/node_modules/fuegojs/commands/publish.js
++++ b/node_modules/fuegojs/commands/publish.js
+@@ -16,7 +16,7 @@ const getFunction = ({ FunctionName, trial = 0, }) => lambda
+ })
+     .catch((e) => {
+     if (trial < 100) {
+-        console.warn(`Function ${FunctionName} not found on trial ${trial}. Trying again...`);
++        console.warn(`Function ${FunctionName} not found on trial ${trial} due to ${e}. Trying again...`);
+         return new Promise((resolve) => setTimeout(() => resolve(getFunction({ FunctionName, trial: trial + 1 })), 10000));
+     }
+     else {
