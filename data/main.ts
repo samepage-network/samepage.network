@@ -731,6 +731,7 @@ const setupInfrastructure = async (): Promise<void> => {
                 type: "AWS_PROXY",
                 integrationHttpMethod: "POST",
                 uri: lambdaFunctions[p].invokeArn,
+                dependsOn: [apiResources[resources[p]]],
               }
             )
         );
