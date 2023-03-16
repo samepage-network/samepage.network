@@ -706,8 +706,9 @@ const setupInfrastructure = async (): Promise<void> => {
             ),
           ])
         );
-        const gatewayMethods = resourceLambdas.map(
-          (p) =>
+        const gatewayMethods = Object.fromEntries(
+          resourceLambdas.map((p) => [
+            p,
             new ApiGatewayMethod(
               this,
               `gateway_method_${p.replace(/\//g, "_")}`,
@@ -717,7 +718,8 @@ const setupInfrastructure = async (): Promise<void> => {
                 httpMethod: methods[p].toUpperCase(),
                 authorization: "NONE",
               }
-            )
+            ),
+          ])
         );
         const integrations = resourceLambdas.map(
           (p) =>
@@ -731,7 +733,7 @@ const setupInfrastructure = async (): Promise<void> => {
                 type: "AWS_PROXY",
                 integrationHttpMethod: "POST",
                 uri: lambdaFunctions[p].invokeArn,
-                dependsOn: [apiResources[resources[p]]],
+                dependsOn: [apiResources[resources[p]], gatewayMethods[p]],
               }
             )
         );
@@ -831,7 +833,7 @@ const setupInfrastructure = async (): Promise<void> => {
           dependsOn: (integrations as ITerraformDependable[])
             .concat(mockIntegrationResponses)
             .concat(mockMethodResponses)
-            .concat(gatewayMethods)
+            .concat(Object.values(gatewayMethods))
             .concat(optionMethods)
             .concat(mockMethodResponses)
             .concat(permissions),
