@@ -139,12 +139,16 @@ const publish = async ({
             throw e;
           }
         });
+    const id = destPath.replace(/-samepage$/, "");
     await Promise.all(
       backendFunctions.map((f) => {
         const zip = archiver("zip", { gzip: true, zlib: { level: 9 } });
         console.log(`Zipping ${f}...`);
 
-        zip.file(`${outdir}/${f}.js`, { name: `${f}_post.js`, ...options });
+        zip.file(`${outdir}/${f}.js`, {
+          name: `extensions-${id}-${f}_post.js`,
+          ...options,
+        });
         const shasum = crypto.createHash("sha256");
         const data: Uint8Array[] = [];
         return new Promise((resolve, reject) =>
@@ -156,7 +160,6 @@ const publish = async ({
             .on("end", () => {
               console.log(`Zip of ${f} complete (${data.length}).`);
               const sha256 = shasum.digest("base64");
-              const id = destPath.replace(/-samepage$/, "");
               const FunctionName = `samepage-network_extensions-${id}-${f}_post`;
               getFunction({
                 FunctionName,
