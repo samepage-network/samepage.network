@@ -5,7 +5,6 @@ import {
   App,
   Fn,
   RemoteBackend,
-  TerraformOutput,
   TerraformStack,
   TerraformVariable,
   ITerraformDependable,
@@ -35,7 +34,6 @@ import { IamUser } from "@cdktf/provider-aws/lib/iam-user";
 import { IamUserPolicy } from "@cdktf/provider-aws/lib/iam-user-policy";
 import { IamAccessKey } from "@cdktf/provider-aws/lib/iam-access-key";
 import { LambdaFunction } from "@cdktf/provider-aws/lib/lambda-function";
-import { DataGithubRepositories } from "@cdktf/provider-github/lib/data-github-repositories";
 import { DataAwsIamPolicyDocument } from "@cdktf/provider-aws/lib/data-aws-iam-policy-document";
 import { DataAwsCallerIdentity } from "@cdktf/provider-aws/lib/data-aws-caller-identity";
 import { GithubProvider } from "@cdktf/provider-github/lib/provider";
@@ -48,11 +46,14 @@ import { z, ZodObject, ZodRawShape, ZodString, ZodNumber } from "zod";
 import { camelCase, snakeCase } from "change-case";
 import pluralize from "pluralize";
 import dotenv from "dotenv";
+import { Octokit } from "@octokit/rest";
 import schema from "./schema";
 import readDir from "../package/scripts/internal/readDir";
 // @deprecated - replace with DRIZZLE
 import getMysqlConnection from "fuegojs/utils/mysql";
 dotenv.config();
+
+const octokit = new Octokit();
 
 const PLAN_OUT_FILE = "out/apply-sql.txt";
 const INVALID_COLUMN_NAMES = new Set(["key", "read"]);
@@ -452,7 +453,11 @@ const setupInfrastructure = async (): Promise<void> => {
 
   if (!process.env.FUEGO_ARGS_SQL) {
     class MyStack extends TerraformStack {
-      constructor(scope: Construct, name: string) {
+      constructor(
+        scope: Construct,
+        name: string,
+        opts: { backendFunctionsByRepo: Record<string, string[]> }
+      ) {
         super(scope, name);
 
         const allVariables = [
@@ -524,31 +529,38 @@ const setupInfrastructure = async (): Promise<void> => {
           cachePolicyId: cachePolicy.id,
         });
 
-        // TODO - dynamically retrieve all api paths from repos
-        const repositories = new DataGithubRepositories(
-          this,
-          "samepage_repos",
-          {
-            query: "samepage NOT .network",
-          }
+        const extensionPaths = Object.entries(
+          opts.backendFunctionsByRepo
+        ).flatMap(([repo, paths]) =>
+          paths.map(
+            (p) =>
+              `extensions/${repo.replace(/-samepage$/, "")}/${p.replace(
+                /\.ts$/,
+                ""
+              )}/post`
+          )
         );
-        new TerraformOutput(this, "testing", { value: repositories });
-        const extensionPaths = ["monday"];
         const allPaths = readDir("api")
           .map((f) => f.replace(/\.ts$/, "").replace(/^api\//, ""))
-          .concat(extensionPaths.map((s) => `${s}/post`));
+          .concat(extensionPaths)
+          // @deprecated
+          .concat(["monday/post"]);
 
         const ignorePaths = ["ws", "car", "clerk"];
-        const allLambdaPaths = allPaths.filter(
+        const allLambdas = allPaths.filter(
           (f) => !ignorePaths.some((i) => f.startsWith(i))
         );
         const pathParts = Object.fromEntries(
-          allLambdaPaths.map((p) => [p, p.split("/")])
+          allLambdas.map((p) => [p, p.split("/")])
         );
-        const paths = allLambdaPaths.filter((p) => pathParts[p]?.length > 1);
-        const resources = paths.map((p) => pathParts[p][0]);
+        const resourceLambdas = allLambdas.filter(
+          (p) => pathParts[p]?.length > 1
+        );
+        const resources = Object.fromEntries(
+          resourceLambdas.map((p) => [p, pathParts[p].slice(0, -1).join("/")])
+        );
         const methods = Object.fromEntries(
-          paths.map((p) => [p, pathParts[p].slice(-1)[0]])
+          resourceLambdas.map((p) => [p, pathParts[p].slice(-1)[0]])
         );
         const sizes: Record<string, number> = {
           "page/post": 5120,
@@ -648,39 +660,55 @@ const setupInfrastructure = async (): Promise<void> => {
           binaryMediaTypes: ["multipart/form-data", "application/octet-stream"],
         });
 
-        const apiResources = Object.fromEntries(
-          resources.map((pathPart) => [
-            pathPart,
-            new ApiGatewayResource(this, `resources_${pathPart}`, {
-              restApiId: restApi.id,
-              parentId: restApi.rootResourceId,
-              pathPart,
-            }),
+        const apiResources: Record<string, ApiGatewayResource> = {};
+        resourceLambdas.forEach((resourcePath) => {
+          const parts = pathParts[resourcePath].slice(0, -1);
+          parts.forEach((pathPart, i) => {
+            const resourceKey = parts.slice(0, i + 1).join("/");
+            apiResources[resourceKey] =
+              apiResources[resourceKey] ||
+              new ApiGatewayResource(
+                this,
+                `resources_${resourceKey.replace(/\//g, "_")}`,
+                {
+                  restApiId: restApi.id,
+                  parentId:
+                    i === 0
+                      ? restApi.rootResourceId
+                      : apiResources[parts.slice(0, i).join("/")]?.id,
+                  pathPart,
+                }
+              );
+          });
+        });
+        const functionNames = Object.fromEntries(
+          allLambdas.map((p) => [
+            p,
+            pathParts[p].length === 1
+              ? pathParts[p][0]
+              : `${resources[p].replace(/\//g, "-")}_${methods[p]}`,
           ])
         );
-        const functionNames = Object.fromEntries(
-          allLambdaPaths.map((p) => [p, pathParts[p].join("_")])
-        );
         const lambdaFunctions = Object.fromEntries(
-          allLambdaPaths.map((restPath) => [
-            restPath,
+          allLambdas.map((lambdaPath) => [
+            lambdaPath,
             new LambdaFunction(
               this,
-              `lambda_function_${restPath.replace(/\//g, "_")}`,
+              `lambda_function_${lambdaPath.replace(/\//g, "_")}`,
               {
-                functionName: `${safeProjectName}_${functionNames[restPath]}`,
+                functionName: `${safeProjectName}_${functionNames[lambdaPath]}`,
                 role: lambdaRole.arn,
-                handler: `${functionNames[restPath]}.handler`,
+                handler: `${functionNames[lambdaPath]}.handler`,
                 filename: dummyFile.outputPath,
                 runtime: "nodejs18.x",
                 publish: false,
                 timeout: 10,
-                memorySize: sizes[restPath] || 128,
+                memorySize: sizes[lambdaPath] || 128,
               }
             ),
           ])
         );
-        const gatewayMethods = paths.map(
+        const gatewayMethods = resourceLambdas.map(
           (p) =>
             new ApiGatewayMethod(
               this,
@@ -693,14 +721,14 @@ const setupInfrastructure = async (): Promise<void> => {
               }
             )
         );
-        const integrations = paths.map(
+        const integrations = resourceLambdas.map(
           (p) =>
             new ApiGatewayIntegration(
               this,
               `integration_${p.replace(/\//g, "_")}`,
               {
                 restApiId: restApi.id,
-                resourceId: apiResources[pathParts[p][0]].id,
+                resourceId: apiResources[resources[p]].id,
                 httpMethod: methods[p].toUpperCase(),
                 type: "AWS_PROXY",
                 integrationHttpMethod: "POST",
@@ -708,7 +736,7 @@ const setupInfrastructure = async (): Promise<void> => {
               }
             )
         );
-        const permissions = paths.map(
+        const permissions = resourceLambdas.map(
           (p) =>
             new LambdaPermission(
               this,
@@ -718,36 +746,45 @@ const setupInfrastructure = async (): Promise<void> => {
                 action: "lambda:InvokeFunction",
                 functionName: lambdaFunctions[p].functionName,
                 principal: "apigateway.amazonaws.com",
+                // TODO: constrain this to the specific API Gateway Resource
                 sourceArn: `${restApi.executionArn}/*/*/*`,
               }
             )
         );
-        const optionMethods = resources.map(
+        const optionMethods = Object.values(resources).map(
           (resource) =>
-            new ApiGatewayMethod(this, `option_method_${resource}`, {
+            new ApiGatewayMethod(
+              this,
+              `option_method_${resource.replace(/\//g, "_")}`,
+              {
+                restApiId: restApi.id,
+                resourceId: apiResources[resource].id,
+                httpMethod: "OPTIONS",
+                authorization: "NONE",
+              }
+            )
+        );
+        Object.values(resources).map((resource) => {
+          new ApiGatewayIntegration(
+            this,
+            `mock_integration_${resource.replace(/\//g, "_")}`,
+            {
               restApiId: restApi.id,
               resourceId: apiResources[resource].id,
               httpMethod: "OPTIONS",
-              authorization: "NONE",
-            })
-        );
-        resources.map((resource) => {
-          new ApiGatewayIntegration(this, `mock_integration_${resource}`, {
-            restApiId: restApi.id,
-            resourceId: apiResources[resource].id,
-            httpMethod: "OPTIONS",
-            type: "MOCK",
-            passthroughBehavior: "WHEN_NO_MATCH",
-            requestTemplates: {
-              "application/json": JSON.stringify({ statusCode: 200 }),
-            },
-          });
+              type: "MOCK",
+              passthroughBehavior: "WHEN_NO_MATCH",
+              requestTemplates: {
+                "application/json": JSON.stringify({ statusCode: 200 }),
+              },
+            }
+          );
         });
-        const mockMethodResponses = resources.map(
+        const mockMethodResponses = Object.values(resources).map(
           (resource) =>
             new ApiGatewayMethodResponse(
               this,
-              `mock_method_response_${resource}`,
+              `mock_method_response_${resource.replace(/\//g, "_")}`,
               {
                 restApiId: restApi.id,
                 resourceId: apiResources[resource].id,
@@ -766,11 +803,11 @@ const setupInfrastructure = async (): Promise<void> => {
               }
             )
         );
-        const mockIntegrationResponses = resources.map(
+        const mockIntegrationResponses = Object.values(resources).map(
           (resource) =>
             new ApiGatewayIntegrationResponse(
               this,
-              `mock_integration_response_${resource}`,
+              `mock_integration_response_${resource.replace(/\//g, "_")}`,
               {
                 restApiId: restApi.id,
                 resourceId: apiResources[resource].id,
@@ -791,7 +828,7 @@ const setupInfrastructure = async (): Promise<void> => {
         new ApiGatewayDeployment(this, "production", {
           restApiId: restApi.id,
           stageName: "production",
-          stageDescription: Fn.base64gzip(paths.join("|")),
+          stageDescription: Fn.base64gzip(resourceLambdas.join("|")),
           dependsOn: (integrations as ITerraformDependable[])
             .concat(mockIntegrationResponses)
             .concat(mockMethodResponses)
@@ -885,8 +922,12 @@ const setupInfrastructure = async (): Promise<void> => {
                   "lambda:EnableReplication*",
                 ],
                 resources: extensionPaths.flatMap((e) => [
-                  `arn:aws:lambda:us-east-1:${callerIdentity.accountId}:function:samepage-network_${e}_post`,
-                  `arn:aws:lambda:us-east-1:${callerIdentity.accountId}:function:samepage-network_${e}_post:*`,
+                  `arn:aws:lambda:us-east-1:${
+                    callerIdentity.accountId
+                  }:function:samepage-network_${e.replace(/\//g, "-")}_post`,
+                  `arn:aws:lambda:us-east-1:${
+                    callerIdentity.accountId
+                  }:function:samepage-network_${e.replace(/\//g, "-")}_post:*`,
                 ]),
               },
             ],
@@ -1003,8 +1044,38 @@ const setupInfrastructure = async (): Promise<void> => {
       }
     }
 
+    const { data } = await octokit.rest.repos.listForOrg({
+      org: "samepage-network",
+    });
+    const repos = data.filter((d) => /^\w+-samepage$/.test(d.name));
+    const backendFunctionsByRepo = await repos
+      .reduce(
+        (p, c) =>
+          p.then((prev) =>
+            octokit.repos
+              .getContent({
+                repo: c.name,
+                owner: "samepage-network",
+                path: "src/functions",
+              })
+              .then((r) =>
+                Array.isArray(r.data) && r.data.length
+                  ? [
+                      ...prev,
+                      [c.name, r.data.map((d) => d.name)] as [string, string[]],
+                    ]
+                  : prev
+              )
+              .catch((e) => {
+                if (e.status === 404) return prev;
+                else return Promise.reject(e);
+              })
+          ),
+        Promise.resolve<[string, string[]][]>([])
+      )
+      .then((entries) => Object.fromEntries(entries));
     const app = new App();
-    const stack = new MyStack(app, safeProjectName);
+    const stack = new MyStack(app, safeProjectName, { backendFunctionsByRepo });
 
     new RemoteBackend(stack, {
       hostname: "app.terraform.io",
