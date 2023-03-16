@@ -1,17 +1,45 @@
 import fs from "fs";
 import path from "path";
 import { Construct } from "constructs";
-import { App, TerraformStack, RemoteBackend, TerraformVariable } from "cdktf";
+import {
+  App,
+  Fn,
+  RemoteBackend,
+  TerraformOutput,
+  TerraformStack,
+  TerraformVariable,
+  ITerraformDependable,
+} from "cdktf";
+import { DataArchiveFile } from "@cdktf/provider-archive/lib/data-archive-file";
+import { ArchiveProvider } from "@cdktf/provider-archive/lib/provider";
 import { ActionsOrganizationSecret } from "@cdktf/provider-github/lib/actions-organization-secret";
 import { AwsProvider } from "@cdktf/provider-aws/lib/provider";
+import { ApiGatewayRestApi } from "@cdktf/provider-aws/lib/api-gateway-rest-api";
+import { ApiGatewayResource } from "@cdktf/provider-aws/lib/api-gateway-resource";
+import { ApiGatewayMethod } from "@cdktf/provider-aws/lib/api-gateway-method";
+import { ApiGatewayMethodResponse } from "@cdktf/provider-aws/lib/api-gateway-method-response";
+import { ApiGatewayIntegrationResponse } from "@cdktf/provider-aws/lib/api-gateway-integration-response";
+import { ApiGatewayIntegration } from "@cdktf/provider-aws/lib/api-gateway-integration";
+import { ApiGatewayDeployment } from "@cdktf/provider-aws/lib/api-gateway-deployment";
+import { ApiGatewayDomainName } from "@cdktf/provider-aws/lib/api-gateway-domain-name";
+import { ApiGatewayBasePathMapping } from "@cdktf/provider-aws/lib/api-gateway-base-path-mapping";
+import { AcmCertificate } from "@cdktf/provider-aws/lib/acm-certificate";
+import { AcmCertificateValidation } from "@cdktf/provider-aws/lib/acm-certificate-validation";
+import { LambdaPermission } from "@cdktf/provider-aws/lib/lambda-permission";
+import { Route53Record } from "@cdktf/provider-aws/lib/route53-record";
 import { CloudfrontCachePolicy } from "@cdktf/provider-aws/lib/cloudfront-cache-policy";
+import { IamPolicy } from "@cdktf/provider-aws/lib/iam-policy";
+import { IamRole } from "@cdktf/provider-aws/lib/iam-role";
+import { IamRolePolicyAttachment } from "@cdktf/provider-aws/lib/iam-role-policy-attachment";
+import { IamUser } from "@cdktf/provider-aws/lib/iam-user";
 import { IamUserPolicy } from "@cdktf/provider-aws/lib/iam-user-policy";
+import { IamAccessKey } from "@cdktf/provider-aws/lib/iam-access-key";
+import { LambdaFunction } from "@cdktf/provider-aws/lib/lambda-function";
 import { DataGithubRepositories } from "@cdktf/provider-github/lib/data-github-repositories";
 import { DataAwsIamPolicyDocument } from "@cdktf/provider-aws/lib/data-aws-iam-policy-document";
 import { DataAwsCallerIdentity } from "@cdktf/provider-aws/lib/data-aws-caller-identity";
 import { GithubProvider } from "@cdktf/provider-github/lib/provider";
 import { ActionsSecret } from "@cdktf/provider-github/lib/actions-secret";
-import { AwsServerlessBackend } from "@dvargas92495/aws-serverless-backend";
 import { AwsClerk } from "@dvargas92495/aws-clerk";
 import { AwsEmail } from "@dvargas92495/aws-email";
 import { AwsWebsocket } from "@dvargas92495/aws-websocket";
@@ -19,15 +47,18 @@ import { AwsStaticSite } from "@dvargas92495/aws-static-site";
 import { z, ZodObject, ZodRawShape, ZodString, ZodNumber } from "zod";
 import { camelCase, snakeCase } from "change-case";
 import pluralize from "pluralize";
+import dotenv from "dotenv";
 import schema from "./schema";
 import readDir from "../package/scripts/internal/readDir";
 // @deprecated - replace with DRIZZLE
 import getMysqlConnection from "fuegojs/utils/mysql";
+dotenv.config();
 
 const PLAN_OUT_FILE = "out/apply-sql.txt";
 const INVALID_COLUMN_NAMES = new Set(["key", "read"]);
 const projectName = "samepage.network";
 const safeProjectName = "samepage-network";
+const clerkDnsId = "l7zkq208u6ys";
 
 type Column = {
   Field: string;
@@ -407,26 +438,7 @@ ${columns.map((c) => `  ${outputColumn(c)},`).join("\n")}
   cxn.destroy();
 };
 
-const base = async ({
-  clerkDnsId,
-  // @deprecated
-  emailDomain,
-  emailSettings = "OFF",
-  variables = [],
-  backendProps = {},
-  organization = "VargasArts",
-  callback,
-}: {
-  clerkDnsId?: string;
-  emailDomain?: string;
-  emailSettings?: "OFF" | "OUTBOUND" | "ALL";
-  variables?: string[];
-  backendProps?: {
-    sizes?: Record<string, string>;
-  };
-  organization?: string;
-  callback?: (this: Construct) => Promise<void>;
-}): Promise<void> => {
+const setupInfrastructure = async (): Promise<void> => {
   const fuegoArgs = Object.keys(process.env).filter((k) =>
     k.startsWith("FUEGO_ARGS_")
   );
@@ -443,9 +455,16 @@ const base = async ({
       constructor(scope: Construct, name: string) {
         super(scope, name);
 
-        const allVariables = ["database_url"]
-          .concat(clerkDnsId ? ["clerk_api_key"] : [])
-          .concat(variables);
+        const allVariables = [
+          "database_url",
+          "clerk_api_key",
+          "convertkit_api_key",
+          "staging_clerk_api_key",
+          "web3_storage_api_key",
+          "roadmap_roam_token",
+          "stripe_webhook_secret",
+          "svix_secret",
+        ];
         const aws_access_token = new TerraformVariable(
           this,
           "aws_access_token",
@@ -476,6 +495,7 @@ const base = async ({
           token: process.env.GITHUB_TOKEN,
           owner: process.env.GITHUB_REPOSITORY_OWNER,
         });
+        new ArchiveProvider(this, "archive", {});
 
         const cachePolicy = new CloudfrontCachePolicy(this, "cache_policy", {
           name: `${safeProjectName}-cache-policy`,
@@ -512,30 +532,351 @@ const base = async ({
             query: "samepage NOT .network",
           }
         );
-        console.log(
-          repositories.node.children.length,
-          repositories.node.children.map((c) => c.node.id)
-        );
+        new TerraformOutput(this, "testing", { value: repositories });
         const extensionPaths = ["monday"];
         const allPaths = readDir("api")
           .map((f) => f.replace(/\.ts$/, "").replace(/^api\//, ""))
           .concat(extensionPaths.map((s) => `${s}/post`));
 
         const ignorePaths = ["ws", "car", "clerk"];
-        const paths = allPaths.filter(
+        const allLambdaPaths = allPaths.filter(
           (f) => !ignorePaths.some((i) => f.startsWith(i))
         );
-        const backend = new AwsServerlessBackend(
+        const pathParts = Object.fromEntries(
+          allLambdaPaths.map((p) => [p, p.split("/")])
+        );
+        const paths = allLambdaPaths.filter((p) => pathParts[p]?.length > 1);
+        const resources = paths.map((p) => pathParts[p][0]);
+        const methods = Object.fromEntries(
+          paths.map((p) => [p, pathParts[p].slice(-1)[0]])
+        );
+        const sizes: Record<string, number> = {
+          "page/post": 5120,
+          "upload-to-ipfs": 5120,
+        };
+
+        const callerIdentity = new DataAwsCallerIdentity(this, "tf_caller", {});
+        // lambda resource requires either filename or s3... wow
+        const dummyFile = new DataArchiveFile(this, "dummy", {
+          type: "zip",
+          outputPath: "./dummy.zip",
+          source: [
+            {
+              content: "// TODO IMPLEMENT",
+              filename: "dummy.js",
+            },
+          ],
+        });
+
+        const assumeLambdaPolicy = new DataAwsIamPolicyDocument(
           this,
-          "aws-serverless-backend",
+          "assume_lambda_policy",
           {
-            apiName: safeProjectName,
-            domain: projectName,
-            paths,
-            sizes: backendProps?.sizes,
+            statement: [
+              {
+                actions: ["sts:AssumeRole"],
+                principals: [
+                  { identifiers: ["lambda.amazonaws.com"], type: "Service" },
+                ],
+              },
+            ],
           }
         );
-        const callerIdentity = new DataAwsCallerIdentity(this, "tf_caller", {});
+
+        const lamdaExecutionPolicyDocument = new DataAwsIamPolicyDocument(
+          this,
+          "lambda_execution_policy_document",
+          {
+            statement: [
+              {
+                actions: [
+                  "cloudfront:CreateInvalidation",
+                  "cloudfront:GetInvalidation",
+                  "cloudfront:ListDistributions",
+                  "dynamodb:BatchGetItem",
+                  "dynamodb:GetItem",
+                  "dynamodb:Query",
+                  "dynamodb:Scan",
+                  "dynamodb:BatchWriteItem",
+                  "dynamodb:PutItem",
+                  "dynamodb:UpdateItem",
+                  "dynamodb:DeleteItem",
+                  "execute-api:Invoke",
+                  "execute-api:ManageConnections",
+                  "lambda:InvokeFunction",
+                  "logs:CreateLogStream",
+                  "logs:PutLogEvents",
+                  "logs:CreateLogGroup",
+                  "s3:GetObject",
+                  "s3:ListBucket",
+                  "s3:PutObject",
+                  "s3:DeleteObject",
+                  "ses:sendEmail",
+                ],
+                resources: ["*"],
+              },
+              {
+                actions: ["sts:AssumeRole"],
+                resources: [
+                  `arn:aws:iam::${callerIdentity.accountId}:role/${safeProjectName}-lambda-execution`,
+                ],
+              },
+            ],
+          }
+        );
+        const lamdaExecutionPolicy = new IamPolicy(
+          this,
+          "lambda_execution_policy",
+          {
+            name: `${safeProjectName}-lambda-execution`,
+            policy: lamdaExecutionPolicyDocument.json,
+          }
+        );
+        const lambdaRole = new IamRole(this, "lambda_role", {
+          name: `${safeProjectName}-lambda-execution`,
+          assumeRolePolicy: assumeLambdaPolicy.json,
+        });
+        new IamRolePolicyAttachment(this, "test-attach", {
+          role: lambdaRole.name,
+          policyArn: lamdaExecutionPolicy.arn,
+        });
+        const restApi = new ApiGatewayRestApi(this, "rest_api", {
+          name: safeProjectName,
+          endpointConfiguration: {
+            types: ["REGIONAL"],
+          },
+          binaryMediaTypes: ["multipart/form-data", "application/octet-stream"],
+        });
+
+        const apiResources = Object.fromEntries(
+          resources.map((pathPart) => [
+            pathPart,
+            new ApiGatewayResource(this, `resources_${pathPart}`, {
+              restApiId: restApi.id,
+              parentId: restApi.rootResourceId,
+              pathPart,
+            }),
+          ])
+        );
+        const functionNames = Object.fromEntries(
+          allLambdaPaths.map((p) => [p, pathParts[p].join("_")])
+        );
+        const lambdaFunctions = Object.fromEntries(
+          allLambdaPaths.map((restPath) => [
+            restPath,
+            new LambdaFunction(
+              this,
+              `lambda_function_${restPath.replace(/\//g, "_")}`,
+              {
+                functionName: `${safeProjectName}_${functionNames[restPath]}`,
+                role: lambdaRole.arn,
+                handler: `${functionNames[restPath]}.handler`,
+                filename: dummyFile.outputPath,
+                runtime: "nodejs18.x",
+                publish: false,
+                timeout: 10,
+                memorySize: sizes[restPath] || 128,
+              }
+            ),
+          ])
+        );
+        const gatewayMethods = paths.map(
+          (p) =>
+            new ApiGatewayMethod(
+              this,
+              `gateway_method_${p.replace(/\//g, "_")}`,
+              {
+                restApiId: restApi.id,
+                resourceId: apiResources[pathParts[p][0]].id,
+                httpMethod: methods[p].toUpperCase(),
+                authorization: "NONE",
+              }
+            )
+        );
+        const integrations = paths.map(
+          (p) =>
+            new ApiGatewayIntegration(
+              this,
+              `integration_${p.replace(/\//g, "_")}`,
+              {
+                restApiId: restApi.id,
+                resourceId: apiResources[pathParts[p][0]].id,
+                httpMethod: methods[p].toUpperCase(),
+                type: "AWS_PROXY",
+                integrationHttpMethod: "POST",
+                uri: lambdaFunctions[p].invokeArn,
+              }
+            )
+        );
+        const permissions = paths.map(
+          (p) =>
+            new LambdaPermission(
+              this,
+              `apigw_lambda_${p.replace(/\//g, "_")}`,
+              {
+                statementId: "AllowExecutionFromAPIGateway",
+                action: "lambda:InvokeFunction",
+                functionName: lambdaFunctions[p].functionName,
+                principal: "apigateway.amazonaws.com",
+                sourceArn: `${restApi.executionArn}/*/*/*`,
+              }
+            )
+        );
+        const optionMethods = resources.map(
+          (resource) =>
+            new ApiGatewayMethod(this, `option_method_${resource}`, {
+              restApiId: restApi.id,
+              resourceId: apiResources[resource].id,
+              httpMethod: "OPTIONS",
+              authorization: "NONE",
+            })
+        );
+        resources.map((resource) => {
+          new ApiGatewayIntegration(this, `mock_integration_${resource}`, {
+            restApiId: restApi.id,
+            resourceId: apiResources[resource].id,
+            httpMethod: "OPTIONS",
+            type: "MOCK",
+            passthroughBehavior: "WHEN_NO_MATCH",
+            requestTemplates: {
+              "application/json": JSON.stringify({ statusCode: 200 }),
+            },
+          });
+        });
+        const mockMethodResponses = resources.map(
+          (resource) =>
+            new ApiGatewayMethodResponse(
+              this,
+              `mock_method_response_${resource}`,
+              {
+                restApiId: restApi.id,
+                resourceId: apiResources[resource].id,
+                httpMethod: "OPTIONS",
+                statusCode: "200",
+                responseModels: {
+                  "application/json": "Empty",
+                },
+                responseParameters: {
+                  "method.response.header.Access-Control-Allow-Headers": true,
+                  "method.response.header.Access-Control-Allow-Methods": true,
+                  "method.response.header.Access-Control-Allow-Origin": true,
+                  "method.response.header.Access-Control-Allow-Credentials":
+                    true,
+                },
+              }
+            )
+        );
+        const mockIntegrationResponses = resources.map(
+          (resource) =>
+            new ApiGatewayIntegrationResponse(
+              this,
+              `mock_integration_response_${resource}`,
+              {
+                restApiId: restApi.id,
+                resourceId: apiResources[resource].id,
+                httpMethod: "OPTIONS",
+                statusCode: "200",
+                responseParameters: {
+                  "method.response.header.Access-Control-Allow-Headers":
+                    "'Authorization,Content-Type'",
+                  "method.response.header.Access-Control-Allow-Methods":
+                    "'GET,OPTIONS,POST,PUT,DELETE'",
+                  "method.response.header.Access-Control-Allow-Origin": "'*'",
+                  "method.response.header.Access-Control-Allow-Credentials":
+                    "'true'",
+                },
+              }
+            )
+        );
+        new ApiGatewayDeployment(this, "production", {
+          restApiId: restApi.id,
+          stageName: "production",
+          stageDescription: Fn.base64gzip(paths.join("|")),
+          dependsOn: (integrations as ITerraformDependable[])
+            .concat(mockIntegrationResponses)
+            .concat(mockMethodResponses)
+            .concat(gatewayMethods)
+            .concat(optionMethods)
+            .concat(mockMethodResponses)
+            .concat(permissions),
+        });
+        const lambdaDeployPolicyDocument = new DataAwsIamPolicyDocument(
+          this,
+          "deploy_policy",
+          {
+            statement: [
+              {
+                actions: ["lambda:UpdateFunctionCode", "lambda:GetFunction"],
+                resources: [
+                  `${restApi.executionArn
+                    .replace("execute-api", "lambda")
+                    .split(":")
+                    .slice(0, 5)
+                    .join(":")}:function:${safeProjectName}_*`,
+                ],
+              },
+            ],
+          }
+        );
+        const updateLambdaUser = new IamUser(this, "update_lambda_user", {
+          name: `${safeProjectName}-lambda`,
+          path: "/",
+        });
+        const updateLambdaKey = new IamAccessKey(this, "update_lambda_key", {
+          user: updateLambdaUser.name,
+        });
+        new IamUserPolicy(this, "update_lambda_user_policy", {
+          user: updateLambdaUser.name,
+          policy: lambdaDeployPolicyDocument.json,
+        });
+        const apiCertificate = new AcmCertificate(this, "api_certificate", {
+          domainName: "api.samepage.network",
+          validationMethod: "DNS",
+          lifecycle: {
+            createBeforeDestroy: true,
+          },
+        });
+        const apiCertRecord = new Route53Record(this, "api_cert", {
+          name: apiCertificate.domainValidationOptions.get(0)
+            .resourceRecordName,
+          type: apiCertificate.domainValidationOptions.get(0)
+            .resourceRecordType,
+          zoneId: staticSite.route53ZoneIdOutput,
+          records: [
+            apiCertificate.domainValidationOptions.get(0).resourceRecordValue,
+          ],
+          ttl: 60,
+        });
+        const apiCertValidation = new AcmCertificateValidation(
+          this,
+          "api_certificate_validation",
+          {
+            certificateArn: apiCertificate.arn,
+            validationRecordFqdns: [apiCertRecord.fqdn],
+          }
+        );
+        const apiDomain = new ApiGatewayDomainName(this, "api_domain_name", {
+          domainName: "api.samepage.network",
+          certificateArn: apiCertValidation.certificateArn,
+        });
+        new Route53Record(this, "api_record", {
+          name: apiDomain.domainName,
+          type: "A",
+          zoneId: staticSite.route53ZoneIdOutput,
+          alias: [
+            {
+              evaluateTargetHealth: true,
+              name: apiDomain.cloudfrontDomainName,
+              zoneId: apiDomain.cloudfrontZoneId,
+            },
+          ],
+        });
+        new ApiGatewayBasePathMapping(scope, "api_mapping", {
+          apiId: restApi.id,
+          stageName: "production",
+          domainName: apiDomain.domainName,
+        });
+
         const additionalPolicy = new DataAwsIamPolicyDocument(
           this,
           "additional_deploy_policy",
@@ -564,27 +905,21 @@ const base = async ({
         const wsPaths = allPaths
           .filter((p) => /^ws/.test(p))
           .map((p) => p.replace(/^ws\//, ""));
-        if (wsPaths.length) {
-          new AwsWebsocket(this, "aws-websocket", {
-            name: safeProjectName,
-            paths: wsPaths,
-          });
-        }
+        new AwsWebsocket(this, "aws-websocket", {
+          name: safeProjectName,
+          paths: wsPaths,
+        });
 
-        if (clerkDnsId) {
-          new AwsClerk(this, "aws_clerk", {
-            zoneId: staticSite.route53ZoneIdOutput,
-            clerkId: clerkDnsId,
-          });
-        }
+        new AwsClerk(this, "aws_clerk", {
+          zoneId: staticSite.route53ZoneIdOutput,
+          clerkId: clerkDnsId,
+        });
 
-        if (emailSettings !== "OFF" || emailDomain) {
-          new AwsEmail(this, "aws_email", {
-            zoneId: staticSite.route53ZoneIdOutput,
-            domain: emailDomain || projectName,
-            inbound: emailSettings === "ALL",
-          });
-        }
+        new AwsEmail(this, "aws_email", {
+          zoneId: staticSite.route53ZoneIdOutput,
+          domain: projectName,
+          inbound: false,
+        });
 
         new ActionsSecret(this, "tf_aws_access_key", {
           repository: projectName,
@@ -598,28 +933,32 @@ const base = async ({
           plaintextValue: aws_secret_token.value,
         });
 
-        new ActionsSecret(this, "deploy_aws_access_key", {
+        const accessKey = new ActionsSecret(this, "deploy_aws_access_key", {
           repository: projectName,
           secretName: "DEPLOY_AWS_ACCESS_KEY",
           plaintextValue: staticSite.deployIdOutput,
         });
 
-        new ActionsSecret(this, "deploy_aws_access_secret", {
-          repository: projectName,
-          secretName: "DEPLOY_AWS_ACCESS_SECRET",
-          plaintextValue: staticSite.deploySecretOutput,
-        });
+        const accessSecret = new ActionsSecret(
+          this,
+          "deploy_aws_access_secret",
+          {
+            repository: projectName,
+            secretName: "DEPLOY_AWS_ACCESS_SECRET",
+            plaintextValue: staticSite.deploySecretOutput,
+          }
+        );
 
         new ActionsSecret(this, "lambda_aws_access_key", {
           repository: projectName,
           secretName: "LAMBDA_AWS_ACCESS_KEY",
-          plaintextValue: backend.accessKeyOutput,
+          plaintextValue: updateLambdaKey.id,
         });
 
         new ActionsSecret(this, "lambda_aws_access_secret", {
           repository: projectName,
           secretName: "LAMBDA_AWS_ACCESS_SECRET",
-          plaintextValue: backend.secretKeyOutput,
+          plaintextValue: updateLambdaKey.secret,
         });
 
         new ActionsSecret(this, "cloudfront_distribution_id", {
@@ -637,15 +976,43 @@ const base = async ({
             plaintextValue: tf_secret.value,
           });
         });
+
+        const samePageTestPassword = new TerraformVariable(
+          this,
+          "samepage_test_password",
+          {
+            type: "string",
+          }
+        );
+        new ActionsOrganizationSecret(this, `deploy_aws_access_key_secret`, {
+          visibility: "all",
+          secretName: "SAMEPAGE_AWS_ACCESS_KEY",
+          plaintextValue: (accessKey as ActionsSecret).plaintextValue,
+        });
+        new ActionsOrganizationSecret(this, `deploy_aws_access_secret_secret`, {
+          visibility: "all",
+          secretName: "SAMEPAGE_AWS_ACCESS_SECRET",
+          plaintextValue: (accessSecret as ActionsSecret).plaintextValue,
+        });
+        new ActionsOrganizationSecret(this, `samepage_test_password_secret`, {
+          visibility: "all",
+          secretName: "SAMEPAGE_TEST_PASSWORD",
+          plaintextValue: samePageTestPassword.value,
+        });
+
+        // TODO migrate google verification route53 record
+        // - standard TXT record
+        // - google._domainkey TXT record
+        // - _dmarc TXT record
       }
     }
 
     const app = new App();
     const stack = new MyStack(app, safeProjectName);
-    await callback?.bind(stack)();
+
     new RemoteBackend(stack, {
       hostname: "app.terraform.io",
-      organization,
+      organization: "SamePage",
       workspaces: {
         name: safeProjectName,
       },
@@ -654,60 +1021,12 @@ const base = async ({
     app.synth();
   }
 
-  await compareSqlSchemas();
+  if (!process.env.FUEGO_ARGS_TF) await compareSqlSchemas();
 };
 
-base({
-  emailSettings: "OUTBOUND",
-  clerkDnsId: "l7zkq208u6ys",
-  organization: "SamePage",
-  variables: [
-    "convertkit_api_key",
-    "staging_clerk_api_key",
-    "web3_storage_api_key",
-    "roadmap_roam_token",
-    "stripe_webhook_secret",
-    "svix_secret",
-  ],
-  backendProps: {
-    sizes: {
-      "page/post": "5120",
-      "upload-to-ipfs": "5120",
-    },
-  },
-  async callback() {
-    const accessKey = this.node.children.find(
-      (c) => c.node.id === "deploy_aws_access_key"
-    );
-    const accessSecret = this.node.children.find(
-      (c) => c.node.id === "deploy_aws_access_secret"
-    );
-    const samePageTestPassword = new TerraformVariable(
-      this,
-      "samepage_test_password",
-      {
-        type: "string",
-      }
-    );
-    new ActionsOrganizationSecret(this, `deploy_aws_access_key_secret`, {
-      visibility: "all",
-      secretName: "SAMEPAGE_AWS_ACCESS_KEY",
-      plaintextValue: (accessKey as ActionsSecret).plaintextValue,
-    });
-    new ActionsOrganizationSecret(this, `deploy_aws_access_secret_secret`, {
-      visibility: "all",
-      secretName: "SAMEPAGE_AWS_ACCESS_SECRET",
-      plaintextValue: (accessSecret as ActionsSecret).plaintextValue,
-    });
-    new ActionsOrganizationSecret(this, `samepage_test_password_secret`, {
-      visibility: "all",
-      secretName: "SAMEPAGE_TEST_PASSWORD",
-      plaintextValue: samePageTestPassword.value,
-    });
-
-    // TODO migrate google verification route53 record
-    // - standard TXT record
-    // - google._domainkey TXT record
-    // - _dmarc TXT record
-  },
-});
+// If you ever need to move resources locally, here are the steps:
+// - cd node_modules/cdktf.out/stacks/samepage-network
+// - terraform init
+// - move the state in the config
+// - terraform state mv old new
+setupInfrastructure();
