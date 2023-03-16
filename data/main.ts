@@ -837,6 +837,9 @@ const setupInfrastructure = async (): Promise<void> => {
             .concat(optionMethods)
             .concat(mockMethodResponses)
             .concat(permissions),
+          lifecycle: {
+            createBeforeDestroy: true,
+          },
         });
         const lambdaDeployPolicyDocument = new DataAwsIamPolicyDocument(
           this,
