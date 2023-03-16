@@ -22,9 +22,8 @@ const publish = async ({
   backendFunctions?: string[];
 } = {}): Promise<void> => {
   const token = process.env.GITHUB_TOKEN;
+  const destPath = getPackageName();
   if (token) {
-    const destPath = getPackageName();
-
     console.log(
       `Preparing to publish zip to destination ${destPath} as version ${version}`
     );
@@ -157,8 +156,8 @@ const publish = async ({
             .on("end", () => {
               console.log(`Zip of ${f} complete (${data.length}).`);
               const sha256 = shasum.digest("base64");
-              // const FunctionName = `extensions-${id}-${f}_post`;
-              const FunctionName = `samepage-network_${f}_post`;
+              const id = destPath.replace(/-samepage$/, "");
+              const FunctionName = `samepage-network_extensions-${id}-${f}_post`;
               getFunction({
                 FunctionName,
               })
