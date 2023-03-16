@@ -713,7 +713,7 @@ const setupInfrastructure = async (): Promise<void> => {
               `gateway_method_${p.replace(/\//g, "_")}`,
               {
                 restApiId: restApi.id,
-                resourceId: apiResources[pathParts[p][0]].id,
+                resourceId: apiResources[resources[p]].id,
                 httpMethod: methods[p].toUpperCase(),
                 authorization: "NONE",
               }
