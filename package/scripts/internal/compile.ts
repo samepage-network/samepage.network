@@ -200,7 +200,7 @@ const compile = ({
                         : originalContent;
                       return {
                         contents,
-                        loader: "js",
+                        loader: "ts",
                       };
                     }
                   );

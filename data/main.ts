@@ -542,9 +542,7 @@ const setupInfrastructure = async (): Promise<void> => {
         );
         const allPaths = readDir("api")
           .map((f) => f.replace(/\.ts$/, "").replace(/^api\//, ""))
-          .concat(extensionPaths)
-          // @deprecated
-          .concat(["monday/post"]);
+          .concat(extensionPaths);
 
         const ignorePaths = ["ws", "car", "clerk"];
         const allLambdas = allPaths.filter(
