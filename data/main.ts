@@ -721,7 +721,7 @@ const setupInfrastructure = async (): Promise<void> => {
             ),
           ])
         );
-        const integrations = resourceLambdas.map(
+        resourceLambdas.map(
           (p) =>
             new ApiGatewayIntegration(
               this,
@@ -737,7 +737,7 @@ const setupInfrastructure = async (): Promise<void> => {
               }
             )
         );
-        const permissions = resourceLambdas.map(
+        resourceLambdas.map(
           (p) =>
             new LambdaPermission(
               this,
@@ -752,7 +752,7 @@ const setupInfrastructure = async (): Promise<void> => {
               }
             )
         );
-        const optionMethods = Object.values(resources).map(
+        Object.values(resources).map(
           (resource) =>
             new ApiGatewayMethod(
               this,
@@ -781,8 +781,9 @@ const setupInfrastructure = async (): Promise<void> => {
             }
           );
         });
-        const mockMethodResponses = Object.values(resources).map(
-          (resource) =>
+        const mockMethodResponses = Object.fromEntries(
+          Object.values(resources).map((resource) => [
+            resource,
             new ApiGatewayMethodResponse(
               this,
               `mock_method_response_${resource.replace(/\//g, "_")}`,
@@ -802,9 +803,10 @@ const setupInfrastructure = async (): Promise<void> => {
                     true,
                 },
               }
-            )
+            ),
+          ])
         );
-        const mockIntegrationResponses = Object.values(resources).map(
+        Object.values(resources).map(
           (resource) =>
             new ApiGatewayIntegrationResponse(
               this,
@@ -823,6 +825,10 @@ const setupInfrastructure = async (): Promise<void> => {
                   "method.response.header.Access-Control-Allow-Credentials":
                     "'true'",
                 },
+                dependsOn: [
+                  apiResources[resource],
+                  mockMethodResponses[resource],
+                ],
               }
             )
         );
@@ -830,13 +836,7 @@ const setupInfrastructure = async (): Promise<void> => {
           restApiId: restApi.id,
           stageName: "production",
           stageDescription: Fn.base64gzip(resourceLambdas.join("|")),
-          dependsOn: (integrations as ITerraformDependable[])
-            .concat(mockIntegrationResponses)
-            .concat(mockMethodResponses)
-            .concat(Object.values(gatewayMethods))
-            .concat(optionMethods)
-            .concat(mockMethodResponses)
-            .concat(permissions),
+          dependsOn: Object.values(gatewayMethods),
           lifecycle: {
             createBeforeDestroy: true,
           },

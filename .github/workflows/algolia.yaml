@@ -11,7 +11,6 @@ on:
 env:
   ALGOLIA_ADMIN_KEY: ${{ secrets.ALGOLIA_ADMIN_KEY }}
   ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
-  NODE_ENV: production
 
 jobs:
   deploy:
@@ -24,3 +23,5 @@ jobs:
       # this retains the property of 1-1 relation between top level directory and .github/workflows
       - name: Update Algolia Index
         run: ts-node scripts/algolia.ts
+        env:
+          NODE_ENV: production

@@ -35,7 +35,7 @@ const logic = async ({ id, file, ...body }: { id: string; file: string }) => {
       {}
     );
   });
-  return JSON.parse(result.body);
+  return result.body ? JSON.parse(result.body) : {};
 };
 
 export const handler = createAPIGatewayProxyHandler(logic);
