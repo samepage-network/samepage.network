@@ -469,6 +469,8 @@ const setupInfrastructure = async (): Promise<void> => {
           "roadmap_roam_token",
           "stripe_webhook_secret",
           "svix_secret",
+          "algolia_app_id",
+          "algolia_admin_key",
         ];
         const aws_access_token = new TerraformVariable(
           this,
@@ -765,22 +767,23 @@ const setupInfrastructure = async (): Promise<void> => {
               }
             )
         );
-        Object.values(resources).map((resource) => {
-          new ApiGatewayIntegration(
-            this,
-            `mock_integration_${resource.replace(/\//g, "_")}`,
-            {
-              restApiId: restApi.id,
-              resourceId: apiResources[resource].id,
-              httpMethod: "OPTIONS",
-              type: "MOCK",
-              passthroughBehavior: "WHEN_NO_MATCH",
-              requestTemplates: {
-                "application/json": JSON.stringify({ statusCode: 200 }),
-              },
-            }
-          );
-        });
+        const mockIntegrations = Object.values(resources).map(
+          (resource) =>
+            new ApiGatewayIntegration(
+              this,
+              `mock_integration_${resource.replace(/\//g, "_")}`,
+              {
+                restApiId: restApi.id,
+                resourceId: apiResources[resource].id,
+                httpMethod: "OPTIONS",
+                type: "MOCK",
+                passthroughBehavior: "WHEN_NO_MATCH",
+                requestTemplates: {
+                  "application/json": JSON.stringify({ statusCode: 200 }),
+                },
+              }
+            )
+        );
         const mockMethodResponses = Object.fromEntries(
           Object.values(resources).map((resource) => [
             resource,
@@ -836,9 +839,9 @@ const setupInfrastructure = async (): Promise<void> => {
           restApiId: restApi.id,
           stageName: "production",
           stageDescription: Fn.base64gzip(resourceLambdas.join("|")),
-          dependsOn: (gatewayIntegrations as ITerraformDependable[]).concat(
-            mockIntegrationResponses
-          ),
+          dependsOn: (gatewayIntegrations as ITerraformDependable[])
+            .concat(mockIntegrations)
+            .concat(mockIntegrationResponses),
           lifecycle: {
             createBeforeDestroy: true,
           },
