@@ -22,6 +22,6 @@ jobs:
       # TODO - can move to be a part of app.yaml in the future
       # this retains the property of 1-1 relation between top level directory and .github/workflows
       - name: Update Algolia Index
-        run: ts-node scripts/algolia.ts
+        run: npx ts-node scripts/algolia.ts
         env:
           NODE_ENV: production

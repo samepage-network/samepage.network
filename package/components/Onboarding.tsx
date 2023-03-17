@@ -284,14 +284,9 @@ const Onboarding = ({
             <div className="mb-4 flex-grow max-w-sm m-auto">
               <p>
                 You're about to connect your notebook to SamePage - the
-                inter-tool protocol for thought.
+                inter-app collaboration network.
               </p>
               <p className="mb-4">We're excited to have you!</p>
-              <p className="text-xs italic opacity-50">
-                Note: By adding your notebook to SamePage, the name of your{" "}
-                {appsById[app].workspaceLabel} will be reachable by other
-                notebooks on the SamePage Network.
-              </p>
             </div>
             <Button
               text={"Get Started"}

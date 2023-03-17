@@ -9,9 +9,8 @@ const logic = async ({ id, file, ...body }: { id: string; file: string }) => {
   // use hashing to make this smarter
   //   if (!fs.existsSync(outdir)) {
   Object.keys(require.cache)
-    .filter((k) => k.includes(`${id}-samepage/out`))
+    .filter((k) => k.endsWith(`${id}-samepage/out/${file}.js`))
     .forEach((k) => {
-      console.log("deleting", k);
       delete require.cache[k];
     });
   await nodeCompile({

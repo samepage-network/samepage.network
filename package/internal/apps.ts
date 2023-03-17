@@ -32,6 +32,18 @@ const APPS = [
     workspaceLabel: "workspace",
     development: true,
   },
+  {
+    id: 5,
+    name: "Google",
+    workspaceLabel: "workspace",
+    development: true,
+  },
+  {
+    id: 6,
+    name: "Monday",
+    workspaceLabel: "workspace",
+    development: true,
+  },
 ] as const;
 
 export const appsById = Object.fromEntries(APPS.map(({ id, ...a }) => [id, a]));
