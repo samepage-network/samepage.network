@@ -1,6 +1,3 @@
-// TODO - we need to offload this data into its own table. Here's why
-// - This is used in a public page - we can't have these reads choking up the live tables.
-// - This page itself will be more performant as the expensive parts of each query happens in the background.
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {

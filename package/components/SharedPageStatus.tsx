@@ -257,7 +257,6 @@ const SharedPageStatus = ({
   notebookPageId,
   portalContainer,
   defaultOpenInviteDialog,
-  onCopy = (s) => window.navigator.clipboard.writeText(s),
 }: OverlayProps<SharedPageStatusProps>) => {
   const [loading, setLoading] = React.useState(false);
   return (
@@ -376,57 +375,6 @@ const SharedPageStatus = ({
             }}
           />
         </Tooltip>
-        <Tooltip content={"Copy IPFS Link"} portalContainer={portalContainer}>
-          <AnchorButton
-            aria-label="ipfs"
-            style={{ width: 30 }}
-            disabled={loading}
-            icon={
-              <Icon
-                icon={
-                  <svg
-                    width="18px"
-                    height="18px"
-                    viewBox="0 0 24 24"
-                    role="img"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M12 0 1.608 6v12L12 24l10.392-6V6zm-1.073 1.445h.001a1.8 1.8 0 0 0 2.138 0l7.534 4.35a1.794 1.794 0 0 0 0 .403l-7.535 4.35a1.8 1.8 0 0 0-2.137 0l-7.536-4.35a1.795 1.795 0 0 0 0-.402zM21.324 7.4c.109.08.226.147.349.201v8.7a1.8 1.8 0 0 0-1.069 1.852l-7.535 4.35a1.8 1.8 0 0 0-.349-.2l-.009-8.653a1.8 1.8 0 0 0 1.07-1.851zm-18.648.048 7.535 4.35a1.8 1.8 0 0 0 1.069 1.852v8.7c-.124.054-.24.122-.349.202l-7.535-4.35a1.8 1.8 0 0 0-1.069-1.852v-8.7a1.85 1.85 0 0 0 .35-.202z" />
-                  </svg>
-                }
-              />
-            }
-            minimal
-            onClick={() => {
-              setLoading(true);
-              apiClient<{ cid: string }>({
-                method: "get-ipfs-cid",
-                notebookPageId,
-              })
-                .then(({ cid }) => {
-                  onCopy(`https://${cid}.ipfs.w3s.link`);
-                  dispatchAppEvent({
-                    type: "log",
-                    content: `Copied IPFS Link!`,
-                    id: "copied-ipfs-link",
-                    intent: "success",
-                  });
-                })
-                .catch((e) =>
-                  dispatchAppEvent({
-                    type: "log",
-                    content: `Failed to find IPFS link for page: ${e.message}`,
-                    id: "copied-ipfs-failed",
-                    intent: "error",
-                  })
-                )
-                .finally(() => setLoading(false));
-            }}
-          />
-        </Tooltip>
-      </span>
-      <span className="italic opacity-50 text-xs">
-        Note: Pages shared on SamePage are publically available
       </span>
     </span>
   );

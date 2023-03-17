@@ -92,7 +92,7 @@ const processMessageSchema = z.discriminatedUnion("type", [
     request: z.string(),
   }),
   z.object({
-    type: z.literal("ipfs"),
+    type: z.literal("getSharedPage"),
     notebookPageId: z.string(),
   }),
   z.object({
@@ -436,7 +436,7 @@ const createTestSamePageClient = async ({
           sendResponse();
         } else if (message.type === "awaitLog") {
           await awaitLog(message.id).then(sendResponse);
-        } else if (message.type === "ipfs") {
+        } else if (message.type === "getSharedPage") {
           await apiClient<{ state: string }>({
             method: "get-shared-page",
             notebookPageId: message.notebookPageId,

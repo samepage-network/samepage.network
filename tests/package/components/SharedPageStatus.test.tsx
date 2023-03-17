@@ -166,7 +166,10 @@ test("Shared Page Status Manual sync failed", async () => {
   );
 });
 
-test("Shared Page Status IPFS link copied", async () => {
+// We are skipping this for now bc public files by default is not desirable by end users
+// We also probably never want this on the Shared Page Status. It's a niche feature
+// Instead, we'll probably want a custom backup service.
+test.skip("Shared Page Status IPFS link copied", async () => {
   const { user, screen } = await setupSharedPageStatus();
 
   global.fetch = (_) =>
@@ -180,7 +183,7 @@ test("Shared Page Status IPFS link copied", async () => {
   );
 });
 
-test("Shared Page Status IPFS link failed", async () => {
+test.skip("Shared Page Status IPFS link failed", async () => {
   const { user, screen } = await setupSharedPageStatus();
 
   global.fetch = (_) =>

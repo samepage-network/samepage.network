@@ -936,6 +936,7 @@ WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`
         cxn.destroy();
         return { success: true };
       }
+      // TODO: Currently unused
       case "get-ipfs-cid": {
         const { notebookPageId } = args;
         const { cid } = await getSharedPage({
