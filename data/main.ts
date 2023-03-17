@@ -540,14 +540,13 @@ const setupInfrastructure = async (): Promise<void> => {
               )}/post`
           )
         );
-        const allPaths = readDir("api")
+        const ignorePaths = ["ws", "car", "clerk", "extensions"];
+        const apiPaths = readDir("api");
+        const allLambdas = apiPaths
+          .filter((f) => !ignorePaths.some((i) => f.startsWith(i)))
           .map((f) => f.replace(/\.ts$/, "").replace(/^api\//, ""))
           .concat(extensionPaths);
 
-        const ignorePaths = ["ws", "car", "clerk"];
-        const allLambdas = allPaths.filter(
-          (f) => !ignorePaths.some((i) => f.startsWith(i))
-        );
         const pathParts = Object.fromEntries(
           allLambdas.map((p) => [p, p.split("/")])
         );
@@ -938,9 +937,9 @@ const setupInfrastructure = async (): Promise<void> => {
           policy: additionalPolicy.json,
         });
 
-        const wsPaths = allPaths
+        const wsPaths = apiPaths
           .filter((p) => /^ws/.test(p))
-          .map((p) => p.replace(/^ws\//, ""));
+          .map((p) => p.replace(/^ws\//, "").replace(/\.ts$/, ""));
         new AwsWebsocket(this, "aws-websocket", {
           name: safeProjectName,
           paths: wsPaths,

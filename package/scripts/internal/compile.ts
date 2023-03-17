@@ -5,6 +5,7 @@ import appPath from "./appPath";
 import dotenv from "dotenv";
 import toVersion from "./toVersion";
 import readDir from "./readDir";
+import nodeCompile from "./nodeCompile";
 dotenv.config();
 
 // TODO - Move this to a central location
@@ -168,45 +169,11 @@ const compile = ({
       }),
     ].concat(
       backendFunctions.length
-        ? esbuild.build({
-            bundle: true,
+        ? nodeCompile({
             outdir: backendOutdir,
-            platform: "node",
-            external: ["aws-sdk", "canvas", "@aws-sdk/*"],
+            functions: backendFunctions,
+            root: functionsRoot,
             define: envObject,
-            entryPoints: Object.fromEntries(
-              backendFunctions.map((f) => [
-                f,
-                path.join(functionsRoot, `${f}.ts`),
-              ])
-            ),
-            plugins: [
-              {
-                name: "lambda-adapter",
-                setup(build) {
-                  build.onLoad(
-                    {
-                      filter: /^.*\.ts$/,
-                    },
-                    async (args) => {
-                      const originalContent = fs
-                        .readFileSync(args.path)
-                        .toString();
-                      const defaultExport = originalContent.match(
-                        /export\s+default\s+([^\s;]+)/
-                      )?.[1];
-                      const contents = defaultExport
-                        ? `${originalContent}export const handler = ${defaultExport};`
-                        : originalContent;
-                      return {
-                        contents,
-                        loader: "ts",
-                      };
-                    }
-                  );
-                },
-              },
-            ],
           })
         : []
     )
