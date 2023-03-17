@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v3
       - name: install
         run: npm install
-      # TODO - can move to be a part of app.yaml/`fuego build` in the future
+      # TODO - can move to be a part of app.yaml in the future
       # this retains the property of 1-1 relation between top level directory and .github/workflows
       - name: Update Algolia Index
         run: ts-node scripts/algolia.ts

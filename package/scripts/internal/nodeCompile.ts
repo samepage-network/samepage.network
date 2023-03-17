@@ -2,16 +2,32 @@ import esbuild from "esbuild";
 import path from "path";
 import fs from "fs";
 
+const IGNORE_ENV = ["HOME"];
+const getDotEnvObject = (): Record<string, string> => {
+  const env = {
+    ...Object.fromEntries(
+      Object.entries(process.env)
+        .filter(([k]) => !/[()]/.test(k))
+        .filter(([k]) => !IGNORE_ENV.includes(k))
+    ),
+  };
+  return Object.fromEntries(
+    Object.keys(env).map((k) => [`process.env.${k}`, JSON.stringify(env[k])])
+  );
+};
+
 const nodeCompile = ({
-  outdir,
+  outdir = "build",
   functions,
-  root,
-  define,
+  root = "api",
+  define = getDotEnvObject(),
+  opts = {},
 }: {
-  outdir: string;
+  outdir?: string;
   functions: string[];
-  root: string;
-  define: Record<string, string>;
+  root?: string;
+  define?: Record<string, string>;
+  opts?: esbuild.BuildOptions;
 }) =>
   esbuild.build({
     bundle: true,
@@ -47,6 +63,7 @@ const nodeCompile = ({
         },
       },
     ],
+    ...opts,
   });
 
 export default nodeCompile;
