@@ -1,4 +1,4 @@
-import createAPIGatewayProxyHandler from "~/data/createAPIGatewayProxyHandler.server";
+import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
 import APPS from "package/internal/apps";
 
 const logic = () => ({

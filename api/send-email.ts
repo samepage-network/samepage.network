@@ -1,4 +1,4 @@
-import sendEmail from "~/data/sendEmail.server";
+import sendEmail from "package/backend/sendEmail.server";
 import React from "react";
 import InviteCodeEmail from "~/components/InviteCodeEmail";
 import WelcomeEmail from "~/components/WelcomeEmail";

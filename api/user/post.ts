@@ -1,9 +1,9 @@
 import { users } from "@clerk/clerk-sdk-node";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { Webhook } from "svix";
-import emailError from "~/data/emailError.server";
+import emailError from "package/backend/emailError.server";
 import Stripe from "stripe";
-import sendEmail from "~/data/sendEmail.server";
+import sendEmail from "package/backend/sendEmail.server";
 import WelcomeEmail from "~/components/WelcomeEmail";
 import NewUserEmail from "~/components/NewUserEmail";
 import { subscribe } from "~/data/subscribeToConvertkitAction.server";

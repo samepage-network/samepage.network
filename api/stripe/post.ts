@@ -1,11 +1,11 @@
 import { APIGatewayProxyEvent, APIGatewayProxyHandler } from "aws-lambda";
 import { AxiosRequestHeaders } from "axios";
 import Stripe from "stripe";
-import sendEmail from "~/data/sendEmail.server";
+import sendEmail from "package/backend/sendEmail.server";
 import NewCustomerEmail from "~/components/NewCustomerEmail";
 import SubscriptionUpdateEmail from "~/components/SubscriptionUpdateEmail";
 import { users } from "@clerk/clerk-sdk-node";
-import emailError from "~/data/emailError.server";
+import emailError from "package/backend/emailError.server";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   maxNetworkRetries: 3,
@@ -95,8 +95,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           email: customerEmail,
           status: subscription.status,
           id: subscription.id,
-          feedback: subscription.cancellation_details?.feedback
-            || undefined,
+          feedback: subscription.cancellation_details?.feedback || undefined,
         }),
       });
       return {

@@ -1,5 +1,5 @@
-import createAPIGatewayProxyHandler from "~/data/createAPIGatewayProxyHandler.server";
-import sendEmail from "~/data/sendEmail.server";
+import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
+import sendEmail from "package/backend/sendEmail.server";
 import { appsById } from "package/internal/apps";
 import { z } from "zod";
 import getMysql from "fuegojs/utils/mysql";

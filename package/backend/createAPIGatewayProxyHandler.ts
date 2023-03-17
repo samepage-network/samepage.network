@@ -34,7 +34,7 @@ const createAPIGatewayProxyHandler =
           logic({
             ...(event.requestContext.authorizer || {}),
             requestId: context.awsRequestId,
-            ...(event.pathParameters),
+            ...event.pathParameters,
             ...(event.queryStringParameters || {}),
             ...JSON.parse(event.body || "{}"),
           })
