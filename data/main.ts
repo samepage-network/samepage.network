@@ -7,6 +7,7 @@ import {
   RemoteBackend,
   TerraformStack,
   TerraformVariable,
+  ITerraformDependable,
 } from "cdktf";
 import { DataArchiveFile } from "@cdktf/provider-archive/lib/data-archive-file";
 import { ArchiveProvider } from "@cdktf/provider-archive/lib/provider";
@@ -720,7 +721,7 @@ const setupInfrastructure = async (): Promise<void> => {
             ),
           ])
         );
-        resourceLambdas.map(
+        const gatewayIntegrations = resourceLambdas.map(
           (p) =>
             new ApiGatewayIntegration(
               this,
@@ -805,7 +806,7 @@ const setupInfrastructure = async (): Promise<void> => {
             ),
           ])
         );
-        Object.values(resources).map(
+        const mockIntegrationResponses = Object.values(resources).map(
           (resource) =>
             new ApiGatewayIntegrationResponse(
               this,
@@ -835,7 +836,9 @@ const setupInfrastructure = async (): Promise<void> => {
           restApiId: restApi.id,
           stageName: "production",
           stageDescription: Fn.base64gzip(resourceLambdas.join("|")),
-          dependsOn: Object.values(gatewayMethods),
+          dependsOn: (gatewayIntegrations as ITerraformDependable[]).concat(
+            mockIntegrationResponses
+          ),
           lifecycle: {
             createBeforeDestroy: true,
           },

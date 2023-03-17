@@ -14,7 +14,6 @@ import Automerge from "automerge";
 import { RequestBody, Schema } from "../../../package/internal/types";
 import getRandomNotebookPageId from "../../utils/getRandomNotebookPageId";
 import wrapSchema from "../../../package/utils/wrapSchema";
-import downloadSharedPage from "~/data/downloadSharedPage.server";
 import mockState from "../../utils/mockState";
 import getRandomWorkspace from "../../utils/getRandomWorkspace";
 import getRandomAccount from "../../utils/getRandomAccount";
@@ -646,14 +645,15 @@ test("Sharing pages should be available in file system", async () => {
   });
   expect(r.state).toEqual(state);
 
-  const r2 = await mockLambda({
-    method: "get-ipfs-cid",
-    notebookPageId,
-    notebookUuid,
-    token,
-  });
-  const ipfs = await downloadSharedPage({ cid: r2.cid });
-  expect(binaryToBase64(ipfs.body)).toEqual(state);
+  // TODO - wnfs or noosphere
+  // const r2 = await mockLambda({
+  //   method: "get-ipfs-cid",
+  //   notebookPageId,
+  //   notebookUuid,
+  //   token,
+  // });
+  // const ipfs = await downloadSharedPage({ id: r2.cid, source: "ipfs" });
+  // expect(binaryToBase64(ipfs.body)).toEqual(state);
 });
 
 test("Shared pages should be receptive to updates", async () => {

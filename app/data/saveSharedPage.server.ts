@@ -1,9 +1,10 @@
 import Automerge from "automerge";
-import type { LatestSchema, Memo } from "package/internal/types";
+import type { Memo } from "package/internal/types";
 import { encode } from "@ipld/dag-cbor";
 import { CID } from "multiformats";
 import uploadFile from "~/data/uploadFile.server";
 import invokeAsync from "./invokeAsync.server";
+// import invokeAsync from "./invokeAsync.server";
 
 const saveSharedPage = async ({
   uuid,
@@ -12,14 +13,12 @@ const saveSharedPage = async ({
 }: {
   uuid: string;
   cid?: string;
-  doc: Automerge.FreezeObject<LatestSchema> | string | Automerge.BinaryDocument;
+  doc: string | Automerge.BinaryDocument;
 }) => {
   const body =
     typeof doc === "string"
       ? (new Uint8Array(Buffer.from(doc, "base64")) as Automerge.BinaryDocument)
-      : doc instanceof Uint8Array
-      ? doc
-      : Automerge.save(doc);
+      : doc;
 
   const encoded = encode<Memo>({
     body,
@@ -30,11 +29,14 @@ const saveSharedPage = async ({
     Key: `data/pages/${uuid}`,
     Body: encoded,
   });
+
   return invokeAsync({
     path: "upload-to-ipfs",
     data: {
       uuid,
       type: "pages",
+      // TODO: upload to ipfs via E2EE using wnfs or noosphere
+      dry: true,
     },
   });
 };

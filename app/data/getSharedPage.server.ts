@@ -1,7 +1,7 @@
 import { NotFoundError } from "~/data/errors.server";
 import getMysql from "fuegojs/utils/mysql";
 
-type SharedPage = { uuid: string; version: number; cid: string };
+type SharedPage = { uuid: string; cid: string };
 type SharedPageInput = {
   notebookPageId: string;
   requestId: string;

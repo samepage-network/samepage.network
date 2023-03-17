@@ -53,8 +53,8 @@ export const handler = async (
   const files = [new File([encoded], "data")];
   const [cid] = await Promise.all([
     dry
-      // REPLACE with api/ipfs/car/post.ts
-      ? pack({
+      ? // REPLACE with api/ipfs/car/post.ts
+        pack({
           input: files.map(toImportCandidate),
           blockstore: new MemoryBlockStore(),
           wrapWithDirectory: false,

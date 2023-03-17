@@ -20,7 +20,7 @@ test.beforeAll(async () => {
 });
 
 const log = (...args: Parameters<typeof console.log>) =>
-  process.env.DEBUG && w(...args);
+  process.env.DEBUG && console.log(...args);
 
 const forkSamePageClient = ({
   workspace,
@@ -191,9 +191,9 @@ test("Full integration test of extensions", async () => {
   await test.step("Init Page", async () => client1.send({ type: "share" }));
 
   const client1Ipfs = (n = notebookPageId) =>
-    client1.send({ type: "ipfs", notebookPageId: n });
+    client1.send({ type: "getSharedPage", notebookPageId: n });
   const client2Ipfs = (n = notebookPageId) =>
-    client2.send({ type: "ipfs", notebookPageId: n });
+    client2.send({ type: "getSharedPage", notebookPageId: n });
   await test.step("Client 1 loads intial data correctly from IPFS", () =>
     expect.poll(client1Ipfs).toEqual({
       content: "First entry in page\n",

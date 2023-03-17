@@ -16,8 +16,9 @@ const downloadSharedPage = async ({ cid }: { cid: string }): Promise<Memo> => {
       parent: null,
     };
   }
+  const Key = `data/ipfs/${cid}`;
   return downloadFileBuffer({
-    Key: `data/ipfs/${cid}`,
+    Key,
   })
     .then((fil) => {
       return new Uint8Array(fil);
@@ -27,7 +28,7 @@ const downloadSharedPage = async ({ cid }: { cid: string }): Promise<Memo> => {
       return decoded;
     })
     .catch((e) => {
-      console.error(`Failed to read file: data/ipfs/${cid}`);
+      console.error(`Failed to read file: ${Key}`);
       throw e;
     });
 };

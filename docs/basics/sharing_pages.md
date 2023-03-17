@@ -29,9 +29,7 @@ Once a page is initialized on SamePage, a status bar should appear beneath the p
 
 ![](/images/docs/basics/status.png)
 
-One important thing to note is that once you share a page on SamePage, you should consider that page as being **publicly available**. This is because it is hosted on the decentralized web, allowing users to access this data from anywhere, without needing SamePage's servers, immutably forever. The last icon on the status bar is a public link to your data on the decentralized web. On our [view](https://samepage.network/view) page, one could see what data is behind this link. We plan to support end-to-end encryption for private data in future versions of SamePage. Also note that while the page is considered public, the public link for the file is a random string of characters that is provably hard to guess.
-
-The other icons between the SamePage logo and the public link to your data from left to right are as follows:
+The icons after the SamePage logo from left to right are as follows:
 - `Invite Notebook` - This triggers the same modal from the initialization step for sharing a page with more notebooks.
 - `View History` - This opens a sidebar of all versions of your shared page, with clickable snapshots of the data.
 - `Disconnect Shared Page` - This will disconnect your notebook from the shared page. Note: this **does not delete** the page from being available on the decentralized web. It merely disconnects the page in _your_ notebook from receiving future updates. 
