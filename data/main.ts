@@ -754,8 +754,9 @@ const setupInfrastructure = async (): Promise<void> => {
               }
             )
         );
-        Object.values(resources).map(
-          (resource) =>
+        const mockMethods = Object.fromEntries(
+          Object.values(resources).map((resource) => [
+            resource,
             new ApiGatewayMethod(
               this,
               `option_method_${resource.replace(/\//g, "_")}`,
@@ -765,7 +766,8 @@ const setupInfrastructure = async (): Promise<void> => {
                 httpMethod: "OPTIONS",
                 authorization: "NONE",
               }
-            )
+            ),
+          ])
         );
         const mockIntegrations = Object.values(resources).map(
           (resource) =>
@@ -805,6 +807,7 @@ const setupInfrastructure = async (): Promise<void> => {
                   "method.response.header.Access-Control-Allow-Credentials":
                     true,
                 },
+                dependsOn: [apiResources[resource], mockMethods[resource]],
               }
             ),
           ])
