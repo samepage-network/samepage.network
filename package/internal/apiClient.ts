@@ -1,24 +1,11 @@
 import type { RequestBody } from "./types";
-import getNodeEnv from "./getNodeEnv";
 import { getSetting } from "./registry";
+import getApiUrl from "../utils/getApiUrl";
 
 export type HandleFetchArgs = {
   path?: string;
   domain?: string;
   data?: Record<string, unknown>;
-};
-
-const getApiUrl = () => {
-  const env = getNodeEnv();
-  const defaultUrl =
-    env === "development" || env === "test"
-      ? "http://localhost:3003"
-      : "https://api.samepage.network";
-  try {
-    return process.env.API_URL || defaultUrl;
-  } catch {
-    return defaultUrl;
-  }
 };
 
 const handleFetch = <T extends Record<string, unknown> = Record<string, never>>(

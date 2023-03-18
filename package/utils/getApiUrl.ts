@@ -1,4 +1,4 @@
-import getNodeEnv from "package/internal/getNodeEnv";
+import getNodeEnv from "../internal/getNodeEnv";
 
 const getApiUrl = () => {
   const env = getNodeEnv();
