@@ -53,7 +53,7 @@ import readDir from "../package/scripts/internal/readDir";
 import getMysqlConnection from "fuegojs/utils/mysql";
 dotenv.config();
 
-const octokit = new Octokit();
+const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
 const PLAN_OUT_FILE = "out/apply-sql.txt";
 const INVALID_COLUMN_NAMES = new Set(["key", "read"]);

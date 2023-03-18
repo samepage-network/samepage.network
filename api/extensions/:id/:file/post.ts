@@ -11,6 +11,7 @@ const logic = async ({ id, file, ...body }: { id: string; file: string }) => {
   Object.keys(require.cache)
     .filter((k) => k.endsWith(`${id}-samepage/out/${file}.js`))
     .forEach((k) => {
+      console.log("clear", k);
       delete require.cache[k];
     });
   await nodeCompile({
@@ -34,7 +35,12 @@ const logic = async ({ id, file, ...body }: { id: string; file: string }) => {
       {}
     );
   });
-  return result.body ? JSON.parse(result.body) : {};
+  return result.body && result.statusCode < 400
+    ? JSON.parse(result.body)
+    : Promise.reject(new Error(result.body));
 };
 
-export const handler = createAPIGatewayProxyHandler(logic);
+export const handler = createAPIGatewayProxyHandler({
+  logic,
+  allowedOrigins: [/.*/],
+});
