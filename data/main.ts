@@ -769,8 +769,9 @@ const setupInfrastructure = async (): Promise<void> => {
             ),
           ])
         );
-        const mockIntegrations = Object.values(resources).map(
-          (resource) =>
+        const mockIntegrations = Object.fromEntries(
+          Object.values(resources).map((resource) => [
+            resource,
             new ApiGatewayIntegration(
               this,
               `mock_integration_${resource.replace(/\//g, "_")}`,
@@ -784,7 +785,8 @@ const setupInfrastructure = async (): Promise<void> => {
                   "application/json": JSON.stringify({ statusCode: 200 }),
                 },
               }
-            )
+            ),
+          ])
         );
         const mockMethodResponses = Object.fromEntries(
           Object.values(resources).map((resource) => [
@@ -833,6 +835,7 @@ const setupInfrastructure = async (): Promise<void> => {
                 },
                 dependsOn: [
                   apiResources[resource],
+                  mockIntegrations[resource],
                   mockMethodResponses[resource],
                 ],
               }
@@ -843,7 +846,7 @@ const setupInfrastructure = async (): Promise<void> => {
           stageName: "production",
           stageDescription: Fn.base64gzip(resourceLambdas.join("|")),
           dependsOn: (gatewayIntegrations as ITerraformDependable[])
-            .concat(mockIntegrations)
+            .concat(Object.values(mockIntegrations))
             .concat(mockIntegrationResponses),
           lifecycle: {
             createBeforeDestroy: true,
