@@ -94,7 +94,7 @@ const PublicPage: React.FC = () => {
             {authed ? (
               <UserButton
                 userProfileMode={"navigation"}
-                afterSignOutUrl={"/"}
+                afterSignOutUrl={"/?refresh=true"}
               />
             ) : (
               <ButtonLink to={"/signup"}>Get Started</ButtonLink>

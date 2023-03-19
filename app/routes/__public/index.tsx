@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import type { ActionFunction } from "@remix-run/node";
-import { Link, useFetcher } from "@remix-run/react";
+import { Link, useFetcher, useSearchParams } from "@remix-run/react";
 import subscribeToConvertkitAction from "~/data/subscribeToConvertkitAction.server";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
@@ -86,6 +86,7 @@ const Feature = ({
 const Home: React.FC = () => {
   const fetcher = useFetcher();
   const formRef = useRef<HTMLFormElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
     if (
       fetcher.data?.success &&
@@ -95,6 +96,12 @@ const Home: React.FC = () => {
       formRef.current.reset();
     }
   }, [formRef, fetcher]);
+  useEffect(() => {
+    if (searchParams.has("refresh")) {
+      searchParams.delete("refresh");
+      setSearchParams(searchParams);
+    }
+  }, [searchParams, setSearchParams]);
   return (
     <div className={"w-full"}>
       <div

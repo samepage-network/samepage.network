@@ -4,7 +4,7 @@ import remixAuthedLoader from "~/data/remixAuthedLoader.server";
 import getMeta from "~/components/getMeta";
 
 const LoginPage: React.FC = () => (
-  <SignIn path="/login" redirectUrl={"/install"} />
+  <SignIn path="/login" afterSignInUrl={"/install?refresh=true"} />
 );
 
 export const loader = remixAuthedLoader;

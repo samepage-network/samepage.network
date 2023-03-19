@@ -9,7 +9,7 @@ const UserFooter = () => {
   const user = useUser();
   return (
     <>
-      <UserButton />
+      <UserButton afterSignOutUrl={"/?refresh=true"} />
       <div className="ml-4">
         {user.user?.firstName} {user.user?.lastName}
       </div>

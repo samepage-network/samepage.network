@@ -1,5 +1,5 @@
 import APPS from "package/internal/apps";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "@remix-run/react";
 import OverlayImg from "~/components/OverlayImg";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
@@ -120,6 +120,12 @@ const InstallPage = () => {
     searchParams.get("id") || userApps[0].id
   );
   const name = userApps.find((a) => a.id === selectedApp)?.name;
+  useEffect(() => {
+    if (searchParams.has("refresh")) {
+      searchParams.delete("refresh");
+      setSearchParams(searchParams);
+    }
+  }, [searchParams, setSearchParams]);
 
   return (
     <div className="flex flex-col items-center max-w-4xl w-full mb-16">
