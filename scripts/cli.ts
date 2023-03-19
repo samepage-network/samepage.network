@@ -2,7 +2,7 @@
 // import init from "./commands/init";
 import build from "./commands/build";
 import deploy from "./commands/deploy";
-// import dev from "./commands/dev";
+import dev from "./commands/dev";
 import compile from "./commands/compile";
 // import publish from "./commands/publish";
 import api from "./commands/api";
@@ -58,8 +58,8 @@ const run = async (command: string, args: string[]): Promise<number> => {
       return build(opts);
     case "deploy":
       return deploy(opts);
-    // case "dev":
-    //   return dev(opts);
+    case "dev":
+      return dev(opts);
 
     // API
     case "compile":

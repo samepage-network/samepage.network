@@ -12,7 +12,7 @@
     "api": "ts-node scripts/cli.ts api",
     "prebuild": "npm run generate:css -- --minify",
     "build": "ts-node scripts/cli.ts build",
-    "dev": "fuego dev",
+    "dev": "ts-node scripts/cli.ts dev",
     "format": "prettier --write \"**/*.tsx\"",
     "generate:css": "tailwindcss -o ./app/tailwind.css",
     "postinstall": "fuego postinstall && patch-package",
