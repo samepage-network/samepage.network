@@ -36,7 +36,7 @@ const nodeCompile = ({
     external: ["aws-sdk", "canvas", "@aws-sdk/*", "esbuild"],
     define,
     entryPoints: Object.fromEntries(
-      functions.map((f) => [f, path.join(root, `${f}.ts`)])
+      functions.map((f) => [f, path.join(root, `${f.replace(/\.ts$/, "")}.ts`)])
     ),
     plugins: [
       {

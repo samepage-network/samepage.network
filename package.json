@@ -9,7 +9,7 @@
   "license": "MIT",
   "sideEffects": false,
   "scripts": {
-    "api": "fuego api --tunnel samepage",
+    "api": "ts-node scripts/cli.ts api --tunnel samepage",
     "prebuild": "npm run generate:css -- --minify",
     "build": "fuego build",
     "dev": "fuego dev",

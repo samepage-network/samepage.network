@@ -76,15 +76,13 @@ const inlineTryCatch = <T>(tryFcn: () => T, catchFcn: (e: Error) => T): T => {
 
 const rebuilders: Record<string, BuildInvalidate> = {};
 const dependencies: Record<string, Set<string>> = {};
+const path = "api";
+const out = "build";
 
 const api = ({
   tunnel,
-  path = "api",
-  out = "build",
 }: {
   tunnel?: string;
-  path?: string;
-  out?: string;
 }): Promise<number> => {
   process.env.NODE_ENV = process.env.NODE_ENV || "development";
 
@@ -398,8 +396,8 @@ const api = ({
         if (entryRegex.test(file)) {
           console.log(`building ${file}...`);
           dependencies[file] = new Set([file]);
-          // TODO
           nodeCompile({
+            root: '.',
             functions: [file],
             opts: {
               incremental: true,
