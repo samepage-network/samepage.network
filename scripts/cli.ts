@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // import init from "./commands/init";
 import build from "./commands/build";
-// import deploy from "./commands/deploy";
+import deploy from "./commands/deploy";
 // import dev from "./commands/dev";
 import compile from "./commands/compile";
 // import publish from "./commands/publish";
@@ -56,8 +56,8 @@ const run = async (command: string, args: string[]): Promise<number> => {
     // APP
     case "build":
       return build(opts);
-    // case "deploy":
-    //   return deploy(opts);
+    case "deploy":
+      return deploy(opts);
     // case "dev":
     //   return dev(opts);
 
