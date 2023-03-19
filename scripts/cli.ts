@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // import init from "./commands/init";
-// import build from "./commands/build";
+import build from "./commands/build";
 // import deploy from "./commands/deploy";
 // import dev from "./commands/dev";
 import compile from "./commands/compile";
@@ -54,8 +54,8 @@ const run = async (command: string, args: string[]): Promise<number> => {
     }, {} as Record<string, string | string[] | boolean>);
   switch (command) {
     // APP
-    // case "build":
-    //   return build(opts);
+    case "build":
+      return build(opts);
     // case "deploy":
     //   return deploy(opts);
     // case "dev":

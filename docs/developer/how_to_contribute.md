@@ -13,18 +13,20 @@ This is our main [monorepo](https://github.com/samepage-network/samepage.network
 
 ### Architecture
 
-The repository contains several top level directories that roughly correspond to a separate _deployment target_. Each deployment target has a github action in the `.github/workflows` directory that watches for changes in the corresponding directory on the `main` branch and runs its deployment when it does. This is a pattern enforced by the application framework that SamePage uses, [FuegoJS](https://github.com/dvargas92495/fuegojs), which is a framework built on top of [Remix](https://remix.run), [Terraform](https://terraform.io), and [AWS](https://aws.amazon.com/).
+The repository contains several top level directories that roughly correspond to a separate _deployment target_. Each deployment target has a github action in the `.github/workflows` directory that watches for changes in the corresponding directory on the `main` branch and runs its deployment when it does. 
 
 The top level directories are as follows:
 - `api` - Each file in this directory represents an [AWS Lambda](https://aws.amazon.com/lambda/) function deployed to our [API gateway](https://aws.amazon.com/api-gateway/). The files within the `ws` subdirectory are deployed to our WebSocket Gateway.
-- `app` - The files contained in this directory make up the Remix web application.
+- `app` - The files contained in this directory make up the [Remix](https://remix.run) web application.
 - `data` - Defines our SQL and infrastructure schema in a declarative format, using [Zod](https://zod.dev) and the [CDK for Terraform](https://www.terraform.io/cdktf). 
 - `package` - Defines all of the packages that we publish to `npm`, to be used by extensions for each supported tool for thought. The entire directory is published as a single `samepage` package, as well as individual `@samepage` scoped packages.
+- `scripts` - One off scripts that are run within CI and locally to help serve the developer experience for SamePage.
+- `template` - Directory we use to generate each additional extension repo.
 - `tests` - The suite of tests to protect against regression on our network or packages. Patterns and conventions around testing are still under active development.
 
 The following directories also exist but are expected to be temporary:
 - `docs` & `public` - Hosts the static content used by `app`. Expected to migrate into that directory.
-- `scripts` - One off scripts that are expected to be turned into `FuegoJS` contributions.
+- `patches` - Changes made to dependent node modules that we should push upstream to improve the libraries we use.
 
 ### Setup
 

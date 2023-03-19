@@ -79,11 +79,7 @@ const dependencies: Record<string, Set<string>> = {};
 const path = "api";
 const out = "build";
 
-const api = ({
-  tunnel,
-}: {
-  tunnel?: string;
-}): Promise<number> => {
+const api = ({}: {}): Promise<number> => {
   process.env.NODE_ENV = process.env.NODE_ENV || "development";
 
   const entryRegex = new RegExp(
@@ -397,7 +393,7 @@ const api = ({
           console.log(`building ${file}...`);
           dependencies[file] = new Set([file]);
           nodeCompile({
-            root: '.',
+            root: ".",
             functions: [file],
             opts: {
               incremental: true,
@@ -484,18 +480,16 @@ const api = ({
     });
     const appServer = app.listen(port, () => {
       console.log(`API server listening on port ${port}...`);
-      if (tunnel) {
-        ngrok
-          .connect({
-            addr: port,
-            subdomain: tunnel,
-          })
-          .then((url) => {
-            console.log("Started local ngrok tunneling:");
-            console.log(url);
-            return 0;
-          });
-      }
+      ngrok
+        .connect({
+          addr: port,
+          subdomain: "samepage",
+        })
+        .then((url) => {
+          console.log("Started local ngrok tunneling:");
+          console.log(url);
+          return 0;
+        });
     });
     const startWebSocketServer = () => {
       const wss = new WebSocketServer({ server: appServer }, () => {

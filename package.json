@@ -9,9 +9,9 @@
   "license": "MIT",
   "sideEffects": false,
   "scripts": {
-    "api": "ts-node scripts/cli.ts api --tunnel samepage",
+    "api": "ts-node scripts/cli.ts api",
     "prebuild": "npm run generate:css -- --minify",
-    "build": "fuego build",
+    "build": "ts-node scripts/cli.ts build",
     "dev": "fuego dev",
     "format": "prettier --write \"**/*.tsx\"",
     "generate:css": "tailwindcss -o ./app/tailwind.css",
