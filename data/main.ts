@@ -20,6 +20,7 @@ import { ApiGatewayMethodResponse } from "@cdktf/provider-aws/lib/api-gateway-me
 import { ApiGatewayIntegrationResponse } from "@cdktf/provider-aws/lib/api-gateway-integration-response";
 import { ApiGatewayIntegration } from "@cdktf/provider-aws/lib/api-gateway-integration";
 import { ApiGatewayDeployment } from "@cdktf/provider-aws/lib/api-gateway-deployment";
+import { ApiGatewayStage } from "@cdktf/provider-aws/lib/api-gateway-stage";
 import { ApiGatewayDomainName } from "@cdktf/provider-aws/lib/api-gateway-domain-name";
 import { ApiGatewayBasePathMapping } from "@cdktf/provider-aws/lib/api-gateway-base-path-mapping";
 import { AcmCertificate } from "@cdktf/provider-aws/lib/acm-certificate";
@@ -839,21 +840,30 @@ const setupInfrastructure = async (): Promise<void> => {
               }
             )
         );
-        new ApiGatewayDeployment(this, "production", {
+        const deployment = new ApiGatewayDeployment(this, "production", {
           restApiId: restApi.id,
-          stageName: "production",
-          stageDescription: Fn.base64gzip(resourceLambdas.join("|")),
-          dependsOn: (gatewayIntegrations as ITerraformDependable[])
-            .concat(Object.values(apiResources))
-            .concat(Object.values(gatewayMethods))
-            .concat(Object.values(mockMethods))
-            .concat(Object.values(mockIntegrations))
-            .concat(Object.values(mockMethodResponses))
-            .concat(mockIntegrationResponses)
-            .concat({ fqn: "aws_api_gateway_method.option_method_*" }),
+          triggers: {
+            redeployment: Fn.sha1(
+              Fn.jsonencode(
+                (gatewayIntegrations as { id: string }[])
+                  .concat(Object.values(apiResources))
+                  .concat(Object.values(gatewayMethods))
+                  .concat(Object.values(mockMethods))
+                  .concat(Object.values(mockIntegrations))
+                  .concat(Object.values(mockMethodResponses))
+                  .concat(mockIntegrationResponses)
+                  .map((t) => t.id)
+              )
+            ),
+          },
           lifecycle: {
             createBeforeDestroy: true,
           },
+        });
+        new ApiGatewayStage(this, "production_stage", {
+          deploymentId: deployment.id,
+          restApiId: restApi.id,
+          stageName: "production",
         });
         const lambdaDeployPolicyDocument = new DataAwsIamPolicyDocument(
           this,
