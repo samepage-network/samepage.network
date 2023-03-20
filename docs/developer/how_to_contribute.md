@@ -36,7 +36,7 @@ The following directories also exist but are expected to be temporary:
 1. Copy the `.env.default` file to `.env`, and replace the values that are marked `TODO`
     1. `CLERK_API_KEY` - Get from `@dvargas92495`
 1. Ensure you have a local instance of `mysql` running, with a user with username and password both with the value `samepage_network`, running on port 3306, and a database created called `mysql`.
-1. Apply the SamePage schema to your local `mysql` instance by running `npx fuego plan --sql`, followed by `npx fuego apply --sql`.
+1. Apply the SamePage schema to your local `mysql` instance by running `npx ts-node scripts/cli.ts plan --sql`, followed by `npx ts-node scripts/cli.ts apply --sql`.
 1. `npm start` to run the app.
 
 ### Contributing

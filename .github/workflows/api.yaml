@@ -34,4 +34,4 @@ jobs:
       - name: build
         run: npx ts-node scripts/cli.ts compile
       - name: deploy
-        run: npx fuego publish
+        run: npx ts-node scripts/cli.ts update

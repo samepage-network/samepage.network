@@ -94,87 +94,85 @@
     "tailwindcss": "3.0.24",
     "wtfnode": "^0.9.1"
   },
-  "fuego": {
-    "package": {
-      "description": "Utilities that help your TFT's extension interface with the SamePage Network",
-      "peerDependencies": {
-        "@aws-sdk/client-ses": "^3.278.0",
-        "@aws-sdk/client-s3": "^3.100.0",
-        "@aws-sdk/client-lambda": "^3.278.0",
-        "@blueprintjs/core": ">=3.50.4",
-        "@blueprintjs/select": ">=3.18.6",
-        "@ipld/dag-cbor": "^7.0.3",
-        "@playwright/test": "1.29.0",
-        "@types/jsdom": "^20.0.0",
-        "@types/moo": ">=0.5.5",
-        "@types/react": ">=17",
-        "@types/react-dom": ">=17",
-        "@types/uuid": "3.4.0",
-        "automerge": "^1.0.1-preview.7",
-        "archiver": "^5.3.1",
-        "axios": ">=0.27.2 <1",
-        "chokidar": ">=3.5.3",
-        "c8": "^7.12.0",
-        "diff": "^5.1.0",
-        "dotenv": "10.0.0",
-        "esbuild": "0.15.18",
-        "jsdom": "^20.0.0",
-        "markdown-to-jsx": "^7.1.7",
-        "moo": "^0.5.0",
-        "node-fetch": "^2.6.7",
-        "patch-package": "^6.5.0",
-        "react": ">=17",
-        "react-dom": ">=17",
-        "ws": "^7.5.9",
-        "zod": "^3.19.1"
+  "package": {
+    "description": "Utilities that help your TFT's extension interface with the SamePage Network",
+    "peerDependencies": {
+      "@aws-sdk/client-ses": "^3.278.0",
+      "@aws-sdk/client-s3": "^3.100.0",
+      "@aws-sdk/client-lambda": "^3.278.0",
+      "@blueprintjs/core": ">=3.50.4",
+      "@blueprintjs/select": ">=3.18.6",
+      "@ipld/dag-cbor": "^7.0.3",
+      "@playwright/test": "1.29.0",
+      "@types/jsdom": "^20.0.0",
+      "@types/moo": ">=0.5.5",
+      "@types/react": ">=17",
+      "@types/react-dom": ">=17",
+      "@types/uuid": "3.4.0",
+      "automerge": "^1.0.1-preview.7",
+      "archiver": "^5.3.1",
+      "axios": ">=0.27.2 <1",
+      "chokidar": ">=3.5.3",
+      "c8": "^7.12.0",
+      "diff": "^5.1.0",
+      "dotenv": "10.0.0",
+      "esbuild": "0.15.18",
+      "jsdom": "^20.0.0",
+      "markdown-to-jsx": "^7.1.7",
+      "moo": "^0.5.0",
+      "node-fetch": "^2.6.7",
+      "patch-package": "^6.5.0",
+      "react": ">=17",
+      "react-dom": ">=17",
+      "ws": "^7.5.9",
+      "zod": "^3.19.1"
+    },
+    "bin": {
+      "samepage": "./scripts/cli.js"
+    },
+    "scoped": {
+      "external": {
+        "name": "@samepage/external",
+        "description": "Utilities that help develop SamePage compatible external extensions",
+        "peerDependencies": {
+          "@samepage/internal": "*"
+        }
       },
-      "bin": {
-        "samepage": "./scripts/cli.js"
+      "internal": {
+        "name": "@samepage/internal",
+        "description": "Utilities used across modules - not meant for use by users directly",
+        "peerDependencies": {
+          "zod": "^3.19.1"
+        }
       },
-      "scoped": {
-        "external": {
-          "name": "@samepage/external",
-          "description": "Utilities that help develop SamePage compatible external extensions",
-          "peerDependencies": {
-            "@samepage/internal": "*"
-          }
+      "scripts": {
+        "name": "@samepage/scripts",
+        "description": "Scripts that help develop application extensions.",
+        "peerDependencies": {
+          "@aws-sdk/client-s3": "^3.100.0",
+          "@aws-sdk/client-lambda": "^3.278.0",
+          "@samepage/testing": "*",
+          "archiver": "^5.3.1",
+          "axios": ">=0.27.2 <1",
+          "chokidar": ">=3.5.3",
+          "dotenv": "10.0.0",
+          "esbuild": "0.15.18"
         },
-        "internal": {
-          "name": "@samepage/internal",
-          "description": "Utilities used across modules - not meant for use by users directly",
-          "peerDependencies": {
-            "zod": "^3.19.1"
-          }
-        },
-        "scripts": {
-          "name": "@samepage/scripts",
-          "description": "Scripts that help develop application extensions.",
-          "peerDependencies": {
-            "@aws-sdk/client-s3": "^3.100.0",
-            "@aws-sdk/client-lambda": "^3.278.0",
-            "@samepage/testing": "*",
-            "archiver": "^5.3.1",
-            "axios": ">=0.27.2 <1",
-            "chokidar": ">=3.5.3",
-            "dotenv": "10.0.0",
-            "esbuild": "0.15.18"
-          },
-          "bin": {
-            "samepage-scripts": "./cli.js"
-          }
-        },
-        "testing": {
-          "name": "@samepage/testing",
-          "description": "Utilities that help with testing SamePage-compatible extensions",
-          "peerDependencies": {
-            "@playwright/test": "1.29.0",
-            "@testing-library/react": "^13.4.0",
-            "@testing-library/user-event": "^14.4.3",
-            "@types/jsdom": "^20.0.0",
-            "c8": "^7.12.0",
-            "dotenv": "10.0.0",
-            "jsdom": "^20.0.0"
-          }
+        "bin": {
+          "samepage-scripts": "./cli.js"
+        }
+      },
+      "testing": {
+        "name": "@samepage/testing",
+        "description": "Utilities that help with testing SamePage-compatible extensions",
+        "peerDependencies": {
+          "@playwright/test": "1.29.0",
+          "@testing-library/react": "^13.4.0",
+          "@testing-library/user-event": "^14.4.3",
+          "@types/jsdom": "^20.0.0",
+          "c8": "^7.12.0",
+          "dotenv": "10.0.0",
+          "jsdom": "^20.0.0"
         }
       }
     }

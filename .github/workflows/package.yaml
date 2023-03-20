@@ -5,7 +5,7 @@ on:
     branches: main
     paths:
       - "package/**"
-      - scripts/package.js
+      - scripts/commands/package.ts
       - ".github/workflows/package.yaml"
 
 env:
@@ -19,7 +19,8 @@ jobs:
       - name: install
         run: npm install
       - name: package
-        run: node scripts/package.js
+        run: npx ts-node scripts/cli.ts package
+      # TODO - move all below to npx ts-node scripts/cli.  
       - name: publish
         run: npm publish --access public
         working-directory: dist/internal

@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-// import init from "./commands/init";
+// import new from "./commands/new";
 import build from "./commands/build";
 import deploy from "./commands/deploy";
 import dev from "./commands/dev";
 import compile from "./commands/compile";
-// import publish from "./commands/publish";
+import update from "./commands/update";
 import api from "./commands/api";
-// import postinstall from "./commands/postinstall";
 // import apply from "./commands/apply";
 // import plan from "./commands/plan";
+import packageCmd from "./commands/package";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -64,8 +64,8 @@ const run = async (command: string, args: string[]): Promise<number> => {
     // API
     case "compile":
       return compile(opts);
-    // case "publish":
-    //   return publish(opts);
+    case "update":
+      return update(opts);
     case "api":
       return api(opts);
 
@@ -77,6 +77,10 @@ const run = async (command: string, args: string[]): Promise<number> => {
     // case "sync":
     //   console.log("Coming soon!");
     //   return 0;
+
+    // NPM
+    case "package":
+      return packageCmd(opts);
 
     // MISC
     // case "init":

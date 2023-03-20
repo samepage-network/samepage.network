@@ -39,8 +39,8 @@ jobs:
           /usr/local/opt/mysql/bin/mysql.server start
           mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'" -uroot
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
-          npx fuego plan --sql
-          npx fuego apply --sql --bare
+          npx ts-node scripts/cli.ts plan --sql
+          npx ts-node scripts/cli.ts apply --sql --bare
           mysql -e "INSERT INTO samepage_network.quotas (uuid, value, field) VALUES (UUID(), 100, 0), (UUID(), 3, 1)" -uroot -proot
       - name: inspect cache for PW
         run: ls ~/.cache

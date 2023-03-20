@@ -30,11 +30,11 @@ jobs:
       - name: install
         run: npm install --force
       - name: plan
-        run: npx fuego plan
+        run: npx ts-node scripts/cli.ts plan
       # temporary hack until I figure out better planetscale workflows
       - name: hack
         run: rm out/apply-sql.txt
       - name: apply
-        run: npx fuego apply
+        run: npx ts-node scripts/cli.ts apply
         env:
           NODE_ENV: production

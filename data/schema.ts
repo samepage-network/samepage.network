@@ -33,7 +33,7 @@ const pageNotebookLink = z
     notebookPageId: z.string(),
     // possibly redundant with cid, though it saves a download
     version: z.number(),
-    // .default(true), need to update fuego to handle defaults
+    // .default(true), need to update schema diff to handle defaults
     open: z.boolean(),
     invitedBy: z.string().uuid().describe("index"),
     invitedDate: z.date(),
