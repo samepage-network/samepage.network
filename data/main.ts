@@ -7,7 +7,6 @@ import {
   RemoteBackend,
   TerraformStack,
   TerraformVariable,
-  ITerraformDependable,
 } from "cdktf";
 import { DataArchiveFile } from "@cdktf/provider-archive/lib/data-archive-file";
 import { ArchiveProvider } from "@cdktf/provider-archive/lib/provider";
