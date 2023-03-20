@@ -186,6 +186,7 @@ test.beforeAll(() => {
       privateMetadata: {};
     }
   > = {};
+  // @ts-ignore
   clerk.request = (async (opts) => {
     if (opts.path === "/users" && opts.method === "GET") {
       return Object.values(users).filter((u) =>
@@ -236,6 +237,7 @@ test.beforeAll(() => {
     } else {
       throw new Error(`Unknown opts: ${opts.method} ${opts.path}`);
     }
+    // @ts-ignore
   }) as typeof clerk.request;
 });
 

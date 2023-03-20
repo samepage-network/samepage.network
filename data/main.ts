@@ -846,6 +846,9 @@ const setupInfrastructure = async (): Promise<void> => {
           stageName: "production",
           stageDescription: Fn.base64gzip(resourceLambdas.join("|")),
           dependsOn: (gatewayIntegrations as ITerraformDependable[])
+            .concat(Object.values(gatewayMethods))
+            .concat(Object.values(mockMethodResponses))
+            .concat(Object.values(mockMethods))
             .concat(Object.values(mockIntegrations))
             .concat(mockIntegrationResponses),
           lifecycle: {

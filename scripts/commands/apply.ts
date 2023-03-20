@@ -144,7 +144,7 @@ const migrate = async (cxn: mysql.Connection): Promise<number> => {
     });
 };
 
-const PLAN_OUT_FILE = "out";
+const PLAN_OUT_FILE = "out/apply-sql.txt";
 
 const apply = async ({
   sql,
