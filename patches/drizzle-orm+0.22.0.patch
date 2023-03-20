@@ -1,0 +1,54 @@
+diff --git a/node_modules/drizzle-orm/mysql-core/db.d.ts b/node_modules/drizzle-orm/mysql-core/db.d.ts
+index a1bd7f6..8bd898f 100644
+--- a/node_modules/drizzle-orm/mysql-core/db.d.ts
++++ b/node_modules/drizzle-orm/mysql-core/db.d.ts
+@@ -31,5 +31,6 @@ export declare class MySqlDatabase<TQueryResult extends QueryResultHKT, TSession
+     execute<T extends {
+         [column: string]: any;
+     } = ResultSetHeader>(query: SQLWrapper): Promise<QueryResultKind<TQueryResult, T>>;
++    end(): void;
+ }
+ //# sourceMappingURL=db.d.ts.map
+\ No newline at end of file
+diff --git a/node_modules/drizzle-orm/mysql-core/db.js b/node_modules/drizzle-orm/mysql-core/db.js
+index f792bb3..4861e47 100644
+--- a/node_modules/drizzle-orm/mysql-core/db.js
++++ b/node_modules/drizzle-orm/mysql-core/db.js
+@@ -44,6 +44,9 @@ class MySqlDatabase {
+     execute(query) {
+         return this.session.execute(query.getSQL());
+     }
++    end() {
++        return this.session.end();
++    }
+ }
+ exports.MySqlDatabase = MySqlDatabase;
+ //# sourceMappingURL=db.js.map
+\ No newline at end of file
+diff --git a/node_modules/drizzle-orm/mysql2/session.d.ts b/node_modules/drizzle-orm/mysql2/session.d.ts
+index 691a625..26092ab 100644
+--- a/node_modules/drizzle-orm/mysql2/session.d.ts
++++ b/node_modules/drizzle-orm/mysql2/session.d.ts
+@@ -30,6 +30,7 @@ export declare class MySql2Session extends MySqlSession {
+     prepareQuery<T extends PreparedQueryConfig = PreparedQueryConfig>(query: Query, fields: SelectFieldsOrdered | undefined, name: string | undefined): PreparedQuery<T>;
+     query(query: string, params: unknown[]): Promise<MySqlQueryResult>;
+     queryObjects<T extends MySqlQueryResultType = MySqlQueryResultType>(query: string, params: unknown[]): Promise<MySqlQueryResult>;
++    end(): void;
+ }
+ export interface MySql2QueryResultHKT extends QueryResultHKT {
+     type: MySqlRawQueryResult;
+diff --git a/node_modules/drizzle-orm/mysql2/session.js b/node_modules/drizzle-orm/mysql2/session.js
+index 1332954..facda58 100644
+--- a/node_modules/drizzle-orm/mysql2/session.js
++++ b/node_modules/drizzle-orm/mysql2/session.js
+@@ -96,6 +96,9 @@ class MySql2Session extends session_1.MySqlSession {
+             return this.client.query(query, params);
+         });
+     }
++    end() {
++        this.client.end();
++    }
+ }
+ exports.MySql2Session = MySql2Session;
+ //# sourceMappingURL=session.js.map
+\ No newline at end of file

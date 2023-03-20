@@ -440,9 +440,7 @@ ${columns.map((c) => `  ${outputColumn(c)},`).join("\n")}
 };
 
 const setupInfrastructure = async (): Promise<void> => {
-  const args = Object.keys(process.env).filter((k) =>
-    k.startsWith("ARGS_")
-  );
+  const args = Object.keys(process.env).filter((k) => k.startsWith("ARGS_"));
   if (args.length) {
     console.log("Args:");
     args.forEach((f) => console.log("-", f, "=", process.env[f]));
@@ -846,11 +844,13 @@ const setupInfrastructure = async (): Promise<void> => {
           stageName: "production",
           stageDescription: Fn.base64gzip(resourceLambdas.join("|")),
           dependsOn: (gatewayIntegrations as ITerraformDependable[])
+            .concat(Object.values(apiResources))
             .concat(Object.values(gatewayMethods))
-            .concat(Object.values(mockMethodResponses))
             .concat(Object.values(mockMethods))
             .concat(Object.values(mockIntegrations))
-            .concat(mockIntegrationResponses),
+            .concat(Object.values(mockMethodResponses))
+            .concat(mockIntegrationResponses)
+            .concat({ fqn: "aws_api_gateway_method.option_method_*" }),
           lifecycle: {
             createBeforeDestroy: true,
           },

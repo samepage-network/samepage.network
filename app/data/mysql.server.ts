@@ -24,7 +24,7 @@ const createConnection = (id = v4()) => {
     });
 };
 
-const getMysqlConnection = async (_cxn?: mysql.Connection | string) => {
+const getMysql = async (_cxn?: mysql.Connection | string) => {
   const cxn =
     typeof _cxn === "undefined"
       ? await createConnection()
@@ -34,4 +34,4 @@ const getMysqlConnection = async (_cxn?: mysql.Connection | string) => {
   return drizzle(cxn);
 };
 
-export default getMysqlConnection;
+export default getMysql;

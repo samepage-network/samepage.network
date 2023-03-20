@@ -7,7 +7,8 @@ import { handler as discHandler } from "../../../api/ws/ondisconnect";
 import { v4 } from "uuid";
 import messageNotebook from "~/data/messageNotebook.server";
 import createNotebook from "~/data/createNotebook.server";
-import getMysql from "fuegojs/utils/mysql";
+import getMysql from "~/data/mysql.server";
+import { eq } from "drizzle-orm/expressions";
 import deleteNotebook from "~/data/deleteNotebook.server";
 import binaryToBase64 from "../../../package/internal/binaryToBase64";
 import Automerge from "automerge";
@@ -17,6 +18,7 @@ import wrapSchema from "../../../package/utils/wrapSchema";
 import mockState from "../../utils/mockState";
 import getRandomWorkspace from "../../utils/getRandomWorkspace";
 import getRandomAccount from "../../utils/getRandomAccount";
+import { notebooks } from "../../../data/schema";
 
 // upload to ipfs loses out on a core to run in the background
 // test.describe.configure({ mode: "parallel", });
@@ -311,8 +313,8 @@ test("Messages from deleted notebooks should return Unknown", async () => {
     await mockRandomNotebook();
   await messageNotebook({ source, target });
   const cxn = await getMysql();
-  await cxn.execute(`DELETE FROM notebooks WHERE uuid = ?`, [source]);
-  cxn.destroy();
+  await cxn.delete(notebooks).where(eq(notebooks.uuid, source));
+  cxn.end();
 
   const { messages } = await mockLambda({
     method: "get-unmarked-messages",

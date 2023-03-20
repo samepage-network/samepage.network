@@ -44,7 +44,7 @@
     "@babel/preset-react": "^7.18.6",
     "@blueprintjs/core": "^4.17.4",
     "@blueprintjs/select": "^4.6.6",
-    "@clerk/clerk-sdk-node": "^4.5.14",
+    "@clerk/clerk-sdk-node": "4.5.14",
     "@clerk/remix": "1.0.2",
     "@docsearch/react": "^3.3.0",
     "@dvargas92495/codemirror": "5.65.11",
