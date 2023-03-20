@@ -28,7 +28,7 @@ const plan = async ({ sql }: { sql?: boolean }): Promise<number> => {
       stdio: "inherit",
       env: {
         ...process.env,
-        FUEGO_ARGS_SQL: `true`,
+        ARGS_SQL: `true`,
       },
     });
   } else {

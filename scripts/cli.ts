@@ -6,8 +6,8 @@ import dev from "./commands/dev";
 import compile from "./commands/compile";
 import update from "./commands/update";
 import api from "./commands/api";
-// import apply from "./commands/apply";
-// import plan from "./commands/plan";
+import apply from "./commands/apply";
+import plan from "./commands/plan";
 import packageCmd from "./commands/package";
 import dotenv from "dotenv";
 dotenv.config();
@@ -70,10 +70,10 @@ const run = async (command: string, args: string[]): Promise<number> => {
       return api(opts);
 
     // DATA
-    // case "plan":
-    //   return plan(opts);
-    // case "apply":
-    //   return apply(opts);
+    case "plan":
+      return plan(opts);
+    case "apply":
+      return apply(opts);
     // case "sync":
     //   console.log("Coming soon!");
     //   return 0;

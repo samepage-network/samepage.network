@@ -440,18 +440,18 @@ ${columns.map((c) => `  ${outputColumn(c)},`).join("\n")}
 };
 
 const setupInfrastructure = async (): Promise<void> => {
-  const fuegoArgs = Object.keys(process.env).filter((k) =>
-    k.startsWith("FUEGO_ARGS_")
+  const args = Object.keys(process.env).filter((k) =>
+    k.startsWith("ARGS_")
   );
-  if (fuegoArgs.length) {
-    console.log("Fuego Args:");
-    fuegoArgs.forEach((f) => console.log("-", f, "=", process.env[f]));
+  if (args.length) {
+    console.log("Args:");
+    args.forEach((f) => console.log("-", f, "=", process.env[f]));
   } else {
-    console.log("No fuego args configured. Running...");
+    console.log("No args configured. Running...");
   }
   console.log("");
 
-  if (!process.env.FUEGO_ARGS_SQL) {
+  if (!process.env.ARGS_SQL) {
     class MyStack extends TerraformStack {
       constructor(
         scope: Construct,
@@ -1098,7 +1098,7 @@ const setupInfrastructure = async (): Promise<void> => {
     app.synth();
   }
 
-  if (!process.env.FUEGO_ARGS_TF) await compareSqlSchemas();
+  if (!process.env.ARGS_TF) await compareSqlSchemas();
 };
 
 // If you ever need to move resources locally, here are the steps:
