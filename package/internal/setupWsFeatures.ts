@@ -94,7 +94,7 @@ const getWsUrl = () => {
   const env = getNodeEnv();
   const defaultUrl =
     env === "development" || env === "test"
-      ? "ws://127.0.0.1:3004"
+      ? "ws://127.0.0.1:3003"
       : "wss://ws.samepage.network";
   try {
     return process.env.WEB_SOCKET_URL || defaultUrl;

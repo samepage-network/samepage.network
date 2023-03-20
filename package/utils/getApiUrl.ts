@@ -4,7 +4,7 @@ const getApiUrl = () => {
   const env = getNodeEnv();
   const defaultUrl =
     env === "development" || env === "test"
-      ? "https://samepage.ngrok.io"
+      ? "http://localhost:3003"
       : "https://api.samepage.network";
   try {
     return process.env.API_URL || defaultUrl;

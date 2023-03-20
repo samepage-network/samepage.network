@@ -492,9 +492,7 @@ const api = ({}: {}): Promise<number> => {
         });
     });
     const startWebSocketServer = () => {
-      const wss = new WebSocketServer({ server: appServer }, () => {
-        console.log(`WS server listening on port ${port}...`);
-      });
+      const wss = new WebSocketServer({ server: appServer });
       wss.on("connection", (ws) => {
         const connectionId = v4();
         console.log("new ws connection", connectionId);
@@ -558,7 +556,6 @@ const api = ({}: {}): Promise<number> => {
           wss.close();
         });
     };
-
     const closeWsServer = wsEntries.length
       ? startWebSocketServer()
       : Promise.resolve;

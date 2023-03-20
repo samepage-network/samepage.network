@@ -18,7 +18,7 @@ test("Full integration test of web app", async ({ page }) => {
   page.on("console", (msg) => {
     console.log(`CONSOLE: (${msg.type()}) "${msg.text().slice(0, 50)}"`);
   });
-  const app = spawn("node", ["./node_modules/.bin/fuego", "dev"], {
+  const app = spawn("npx", ["ts-node", "scripts/cli.ts", "dev"], {
     env: { ...process.env, NODE_ENV: "development", DEBUG: undefined },
   });
 

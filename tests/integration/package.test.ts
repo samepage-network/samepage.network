@@ -117,7 +117,7 @@ const forkSamePageClient = ({
 //     .then((r) => console.log("api kill", r.data));
 test("Full integration test of extensions", async () => {
   test.setTimeout(60000);
-  const api = spawn("node", ["./node_modules/.bin/fuego", "api"], {
+  const api = spawn("npx", ["ts-node", "scripts/cli.ts", "api"], {
     env: {
       ...process.env,
       NODE_ENV: "development",
@@ -129,10 +129,6 @@ test("Full integration test of extensions", async () => {
     },
   });
   const spawnCallbacks: { test: RegExp; callback: () => unknown }[] = [];
-
-  const wsReady = new Promise<void>((resolve) =>
-    spawnCallbacks.push({ test: /WS server listening/, callback: resolve })
-  );
 
   api.stdout.on("data", (s) => {
     spawnCallbacks.filter((c) => c.test.test(s)).forEach((c) => c.callback());
@@ -149,8 +145,7 @@ test("Full integration test of extensions", async () => {
   cleanup = async () => {
     api.kill();
   };
-  await test.step("Wait for local network to be ready", () =>
-    Promise.all([wsReady, apiReady]));
+  await test.step("Wait for local network to be ready", () => apiReady);
 
   const notebookPageId = await getRandomNotebookPageId();
 
