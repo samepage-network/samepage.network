@@ -393,8 +393,7 @@ const api = ({}: {}): Promise<number> => {
           console.log(`building ${file}...`);
           dependencies[file] = new Set([file]);
           nodeCompile({
-            root: ".",
-            functions: [file],
+            functions: [file.replace(/^api\//, "").replace(/\.ts$/, "")],
             opts: {
               incremental: true,
               plugins: [

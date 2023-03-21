@@ -3,7 +3,7 @@ import path from "path";
 import { Construct } from "constructs";
 import {
   App,
-  Fn,
+  // Fn,
   RemoteBackend,
   TerraformStack,
   TerraformVariable,
@@ -19,7 +19,7 @@ import { ApiGatewayMethodResponse } from "@cdktf/provider-aws/lib/api-gateway-me
 import { ApiGatewayIntegrationResponse } from "@cdktf/provider-aws/lib/api-gateway-integration-response";
 import { ApiGatewayIntegration } from "@cdktf/provider-aws/lib/api-gateway-integration";
 import { ApiGatewayDeployment } from "@cdktf/provider-aws/lib/api-gateway-deployment";
-import { ApiGatewayStage } from "@cdktf/provider-aws/lib/api-gateway-stage";
+// import { ApiGatewayStage } from "@cdktf/provider-aws/lib/api-gateway-stage";
 import { ApiGatewayDomainName } from "@cdktf/provider-aws/lib/api-gateway-domain-name";
 import { ApiGatewayBasePathMapping } from "@cdktf/provider-aws/lib/api-gateway-base-path-mapping";
 import { AcmCertificate } from "@cdktf/provider-aws/lib/acm-certificate";
@@ -721,7 +721,8 @@ const setupInfrastructure = async (): Promise<void> => {
             ),
           ])
         );
-        const gatewayIntegrations = resourceLambdas.map(
+        //const gatewayIntegrations = 
+        resourceLambdas.map(
           (p) =>
             new ApiGatewayIntegration(
               this,
@@ -812,7 +813,8 @@ const setupInfrastructure = async (): Promise<void> => {
             ),
           ])
         );
-        const mockIntegrationResponses = Object.values(resources).map(
+        //const mockIntegrationResponses = 
+        Object.values(resources).map(
           (resource) =>
             new ApiGatewayIntegrationResponse(
               this,
@@ -839,31 +841,34 @@ const setupInfrastructure = async (): Promise<void> => {
               }
             )
         );
-        const deployment = new ApiGatewayDeployment(this, "production", {
+        //const deployment = 
+        new ApiGatewayDeployment(this, "production", {
           restApiId: restApi.id,
-          triggers: {
-            redeployment: Fn.sha1(
-              Fn.jsonencode(
-                (gatewayIntegrations as { id: string }[])
-                  .concat(Object.values(apiResources))
-                  .concat(Object.values(gatewayMethods))
-                  .concat(Object.values(mockMethods))
-                  .concat(Object.values(mockIntegrations))
-                  .concat(Object.values(mockMethodResponses))
-                  .concat(mockIntegrationResponses)
-                  .map((t) => t.id)
-              )
-            ),
-          },
+          stageName: "production",
+          stageDescription: "H4sIAAAAAAAA/2TJUQoDIQyE4SPlTEKHVKhOSFJQ8PDLovu0T/MxfzELUeSCOz3EGLmsKI6cY25GerVz/wO+hZHoUdlDlNQf5MuGV2vsnzKfuesFAAD//wEAAP//yQKb8HkAAAA=",
+          // triggers: {
+          //   redeployment: Fn.sha1(
+          //     Fn.jsonencode(
+          //       (gatewayIntegrations as { id: string }[])
+          //         .concat(Object.values(apiResources))
+          //         .concat(Object.values(gatewayMethods))
+          //         .concat(Object.values(mockMethods))
+          //         .concat(Object.values(mockIntegrations))
+          //         .concat(Object.values(mockMethodResponses))
+          //         .concat(mockIntegrationResponses)
+          //         .map((t) => t.id)
+          //     )
+          //   ),
+          // },
           lifecycle: {
             createBeforeDestroy: true,
           },
         });
-        new ApiGatewayStage(this, "production_stage", {
-          deploymentId: deployment.id,
-          restApiId: restApi.id,
-          stageName: "production",
-        });
+        // new ApiGatewayStage(this, "production_stage", {
+        //   deploymentId: deployment.id,
+        //   restApiId: restApi.id,
+        //   stageName: "production",
+        // });
         const lambdaDeployPolicyDocument = new DataAwsIamPolicyDocument(
           this,
           "deploy_policy",
