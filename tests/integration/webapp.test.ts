@@ -71,13 +71,14 @@ test.afterEach(async ({ page }) => {
         fs.writeFileSync(`${covPath}/${f}`, JSON.stringify(data));
       } else {
         console.error(
-          "Failed to find cache in ",
+          "Failed to find cache in",
           f,
           "Found:",
           Object.keys(data["source-map-cache"]).filter((k) =>
             k.includes("app/server/build")
           )
         );
+        fs.rmSync(f);
       }
     });
 

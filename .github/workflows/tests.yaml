@@ -13,6 +13,7 @@ env:
   CLERK_API_KEY: ${{ secrets.STAGING_CLERK_API_KEY }}
   CLERK_FRONTEND_API: clerk.in.horse-0.lcl.dev
   DATABASE_URL: mysql://root:root@127.0.0.1:3306/samepage_network
+  NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
   ORIGIN: http://localhost:3000
   SVIX_SECRET: ${{ secrets.SVIX_SECRET }}
   WEB3_STORAGE_API_KEY: ${{ secrets.WEB3_STORAGE_API_KEY }}
@@ -42,6 +43,7 @@ jobs:
           npx ts-node scripts/cli.ts plan --sql
           npx ts-node scripts/cli.ts apply --sql --bare
           mysql -e "INSERT INTO samepage_network.quotas (uuid, value, field) VALUES (UUID(), 100, 0), (UUID(), 3, 1)" -uroot -proot
+          npx ngrok config add-authtoken $NGROK_AUTH_TOKEN
       - name: inspect cache for PW
         run: ls ~/.cache
       # We separated unit tests and integration tests because c8 was having a hard time consolidating reports - but code cov wasn't!
