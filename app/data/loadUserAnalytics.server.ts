@@ -1,19 +1,19 @@
-import getMysql from "fuegojs/utils/mysql";
+import { tokens } from "data/schema";
+import getMysql from "~/data/mysql.server";
+import { sql } from "drizzle-orm/sql";
 
 const loadUserAnalytics = async ({ requestId }: { requestId: string }) => {
   const cxn = await getMysql(requestId);
   const _data = await cxn
-    .execute(
-      `
-SELECT 
-  DATE_FORMAT(t.created_date, '%Y-%m-%d') as date,
-  COUNT(t.user_id) as users 
-FROM tokens t
-GROUP BY date 
-ORDER BY date;
-      `
-    )
-    .then(([r]) => r as { date: string; users: number }[]);
+    .select({
+      date: sql<string>`DATE_FORMAT(${tokens.createdDate}, '%Y-%m-%d')`.as(
+        "date"
+      ),
+      users: sql<number>`COUNT(DISTINCT ${tokens.userId})`,
+    })
+    .from(tokens)
+    .groupBy(sql`date`)
+    .orderBy(sql`date`);
   let total = 0;
   const data = _data
     .map((d) => {
@@ -23,6 +23,7 @@ ORDER BY date;
       };
     })
     .concat([{ users: total, date: new Date().valueOf() }]);
+  await cxn.end();
   return { data };
 };
 

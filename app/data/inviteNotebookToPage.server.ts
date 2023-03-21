@@ -1,7 +1,9 @@
 import messageNotebook from "./messageNotebook.server";
-import getMysql from "fuegojs/utils/mysql";
+import getMysql from "~/data/mysql.server";
 import getNotebookByUuid from "./getNotebookByUuid.server";
 import { appsById } from "package/internal/apps";
+import { pageNotebookLinks } from "data/schema";
+import { sql } from "drizzle-orm/sql";
 
 const inviteNotebookToPage = async ({
   requestId,
@@ -17,11 +19,16 @@ const inviteNotebookToPage = async ({
   targetNotebookUuid: string;
 }) => {
   const cxn = await getMysql(requestId);
-  await cxn.execute(
-    `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, version, open, invited_by, invited_date, notebook_uuid)
-        VALUES (UUID(), ?, ?, 0, 1, ?, ?, ?)`,
-    [pageUuid, notebookPageId, notebookUuid, new Date(), targetNotebookUuid]
-  );
+  await cxn.insert(pageNotebookLinks).values({
+    uuid: sql`UUID()`,
+    pageUuid,
+    notebookPageId,
+    version: 0,
+    open: true,
+    invitedBy: notebookUuid,
+    invitedDate: new Date(),
+    notebookUuid: targetNotebookUuid,
+  });
   return messageNotebook({
     source: notebookUuid,
     target: targetNotebookUuid,

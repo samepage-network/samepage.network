@@ -1,7 +1,13 @@
 import { NotFoundError } from "~/data/errors.server";
-import getMysqlConnection from "fuegojs/utils/mysql";
+import getMysql from "~/data/mysql.server";
 import { appsById } from "package/internal/apps";
-import { AppId } from "package/internal/types";
+import {
+  notebooks,
+  pageNotebookLinks,
+  tokenNotebookLinks,
+  tokens,
+} from "data/schema";
+import { eq, and, desc } from "drizzle-orm/expressions";
 
 const getUserNotebookProfile = async ({
   context: { requestId },
@@ -10,35 +16,38 @@ const getUserNotebookProfile = async ({
   params: Record<string, string | undefined>;
   context: { requestId: string };
 }) => {
-  const cxn = await getMysqlConnection(requestId);
-  const [results] = await cxn.execute(
-    `SELECT n.app, n.workspace, n.uuid, t.value as token FROM notebooks n
-    LEFT JOIN token_notebook_links l ON n.uuid = l.notebook_uuid
-    LEFT JOIN tokens t ON t.uuid = l.token_uuid
-  WHERE n.uuid = ?`,
-    [uuid]
-  );
-  const [notebook] = results as {
-    app: AppId;
-    workspace: string;
-    uuid: string;
-    token: string;
-  }[];
+  const cxn = await getMysql(requestId);
+  const [notebook] = await cxn
+    .select({
+      app: notebooks.app,
+      workspace: notebooks.workspace,
+      uuid: notebooks.uuid,
+      token: tokens.value,
+    })
+    .from(notebooks)
+    .leftJoin(
+      tokenNotebookLinks,
+      eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
+    )
+    .leftJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
+    .where(eq(notebooks.uuid, uuid));
   if (!notebook)
     throw new NotFoundError(`Could not find notebook by uuid: ${uuid}`);
   const pages = await cxn
-    .execute(
-      `SELECT p.page_uuid, p.notebook_page_id FROM page_notebook_links p
-    WHERE p.notebook_uuid = ? AND p.open = 0 ORDER BY p.invited_date DESC LIMIT 10`,
-      [uuid]
+    .select({
+      uuid: pageNotebookLinks.pageUuid,
+      title: pageNotebookLinks.notebookPageId,
+    })
+    .from(pageNotebookLinks)
+    .where(
+      and(
+        eq(pageNotebookLinks.notebookUuid, uuid),
+        eq(pageNotebookLinks.open, false)
+      )
     )
-    .then(([a]) =>
-      (a as { page_uuid: string; notebook_page_id: string }[]).map((m) => ({
-        uuid: m.page_uuid,
-        title: m.notebook_page_id,
-      }))
-    );
-  cxn.destroy();
+    .orderBy(desc(pageNotebookLinks.invitedDate))
+    .limit(10);
+  await cxn.end();
   return {
     notebook: {
       ...notebook,

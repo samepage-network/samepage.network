@@ -1,4 +1,6 @@
-import getMysqlConnection from "fuegojs/utils/mysql";
+import { pageNotebookLinks } from "data/schema";
+import getMysqlConnection from "~/data/mysql.server";
+import { eq } from "drizzle-orm/expressions";
 
 const disconnectNotebookFromPage = ({
   uuid,
@@ -8,8 +10,8 @@ const disconnectNotebookFromPage = ({
   requestId: string;
 }) =>
   getMysqlConnection(requestId).then(async (cxn) => {
-    await cxn.execute(`DELETE FROM page_notebook_links WHERE uuid = ?`, [uuid]);
-    cxn.destroy();
+    await cxn.delete(pageNotebookLinks).where(eq(pageNotebookLinks.uuid, uuid));
+    await cxn.end();
     return { success: true };
   });
 

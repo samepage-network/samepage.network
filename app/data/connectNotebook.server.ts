@@ -1,8 +1,11 @@
 import { ConflictError } from "~/data/errors.server";
-import getMysql from "fuegojs/utils/mysql";
+import getMysql from "~/data/mysql.server";
 import type { Notebook } from "package/internal/types";
 import getOrGenerateNotebookUuid from "./getOrGenerateNotebookUuid.server";
 import getQuota from "./getQuota.server";
+import { notebooks, tokenNotebookLinks } from "data/schema";
+import { eq } from "drizzle-orm/expressions";
+import { sql } from "drizzle-orm/sql";
 
 const connectNotebook = async ({
   requestId,
@@ -14,17 +17,16 @@ const connectNotebook = async ({
   tokenUuid: string;
 } & Notebook) => {
   const cxn = await getMysql(requestId);
-  const [results] = await cxn.execute(
-    `SELECT l.uuid, l.notebook_uuid, n.app, n.workspace FROM token_notebook_links l
-        LEFT JOIN notebooks n ON n.uuid = l.notebook_uuid
-        where l.token_uuid = ?`,
-    [tokenUuid]
-  );
-  const tokenLinks = results as ({
-    uuid: string;
-    notebook_uuid: string;
-    user_id: string;
-  } & Notebook)[];
+  const tokenLinks = await cxn
+    .select({
+      uuid: tokenNotebookLinks.uuid,
+      notebook_uuid: tokenNotebookLinks.notebookUuid,
+      app: notebooks.app,
+      workspace: notebooks.workspace,
+    })
+    .from(tokenNotebookLinks)
+    .leftJoin(notebooks, eq(notebooks.uuid, tokenNotebookLinks.notebookUuid))
+    .where(eq(tokenNotebookLinks.tokenUuid, tokenUuid));
   const existingTokenLink = tokenLinks.find(
     (tl) => tl.app === app && tl.workspace === workspace
   );
@@ -46,11 +48,13 @@ const connectNotebook = async ({
     app,
     workspace,
   });
-  await cxn.execute(
-    `INSERT INTO token_notebook_links (uuid, token_uuid, notebook_uuid)
-        VALUES (UUID(), ?, ?)`,
-    [tokenUuid, newNotebookUuid]
-  );
+  await cxn
+    .insert(tokenNotebookLinks)
+    .values({
+      uuid: sql`UUID()`,
+      tokenUuid,
+      notebookUuid: newNotebookUuid,
+    });
   return { notebookUuid: newNotebookUuid };
 };
 

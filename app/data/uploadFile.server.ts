@@ -26,8 +26,8 @@ const uploadFile = ({
     else if (Body instanceof Buffer || Body instanceof Uint8Array)
       fs.writeFileSync(path, Body);
     else if (Body instanceof Readable) Body.pipe(fs.createWriteStream(path));
-    else if (Body instanceof Blob)
-      Body.stream().pipe(fs.createWriteStream(path));
+    // else if (Body instanceof Blob)
+    //   Body.stream().pipeTo(fs.createWriteStream(path));
     // else if (Body instanceof ReadableStream) Body.pipeTo(fs.createWriteStream(path));
     return Promise.resolve(true);
   }

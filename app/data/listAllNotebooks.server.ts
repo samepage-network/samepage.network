@@ -1,29 +1,38 @@
-import getMysqlConnection from "fuegojs/utils/mysql";
-import { Notebook } from "package/internal/types";
+import getMysqlConnection from "~/data/mysql.server";
+import {
+  notebooks,
+  pageNotebookLinks,
+  tokenNotebookLinks,
+  tokens,
+} from "data/schema";
+import { sql } from "drizzle-orm";
+import { eq } from "drizzle-orm/expressions";
 
 const listAllNotebooks = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
-  const notebooks = await cxn
-    .execute(
-      `SELECT n.*, t.value as token, COUNT(pnl.uuid) as pages FROM notebooks n
-    LEFT JOIN token_notebook_links l ON n.uuid = l.notebook_uuid
-    LEFT JOIN tokens t ON t.uuid = l.token_uuid
-    INNER JOIN page_notebook_links pnl ON pnl.notebook_uuid = n.uuid
-    GROUP BY n.uuid, n.app, n.workspace, t.value
-    LIMIT 10`,
-      []
+  const notebookRecords = await cxn
+    .select({
+      uuid: notebooks.uuid,
+      app: notebooks.app,
+      workspace: notebooks.workspace,
+      value: tokens.value,
+      pages: sql`COUNT(${pageNotebookLinks.uuid})`,
+    })
+    .from(notebooks)
+    .leftJoin(
+      tokenNotebookLinks,
+      eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
     )
-    .then(
-      ([r]) =>
-        r as ({
-          uuid: string;
-          token: string;
-          pages: number;
-        } & Notebook)[]
-    );
-  cxn.destroy();
+    .leftJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
+    .innerJoin(
+      pageNotebookLinks,
+      eq(pageNotebookLinks.notebookUuid, notebooks.uuid)
+    )
+    .groupBy(notebooks.uuid, notebooks.app, notebooks.workspace, tokens.value)
+    .limit(10);
+  await cxn.end();
   return {
-    notebooks,
+    notebooks: notebookRecords,
   };
 };
 

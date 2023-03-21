@@ -26,6 +26,7 @@
     "noEmit": true,
     "paths": {
       "~/*": ["./app/*"],
+      "data/*": ["./data/*"],
       "package/*": ["./package/*"]
     }
   },

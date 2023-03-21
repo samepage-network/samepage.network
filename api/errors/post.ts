@@ -2,14 +2,15 @@ import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyH
 import sendEmail from "package/backend/sendEmail.server";
 import { appsById } from "package/internal/apps";
 import { z } from "zod";
-import getMysql from "fuegojs/utils/mysql";
-import { Notebook } from "package/internal/types";
+import getMysql from "~/data/mysql.server";
+import { eq } from "drizzle-orm/expressions";
 import ExtensionErrorEmail from "~/components/ExtensionErrorEmail";
 import { v4 } from "uuid";
 import uploadFile from "~/data/uploadFile.server";
 import EmailLayout from "~/components/EmailLayout";
 import parseZodError from "package/utils/parseZodError";
 import axios from "axios";
+import { notebooks } from "data/schema";
 
 const zBody = z.discriminatedUnion("method", [
   z.object({
@@ -56,11 +57,10 @@ const logic = async (body: Record<string, unknown>) => {
       const { notebookUuid, data, stack, version, type } = args;
       const cxn = await getMysql();
       const [notebook] = await cxn
-        .execute(
-          `SELECT n.app, n.workspace FROM notebooks n WHERE n.uuid = ?`,
-          [notebookUuid]
-        )
-        .then(([n]) => n as Notebook[]);
+        .select({ app: notebooks.app, workspace: notebooks.workspace })
+        .from(notebooks)
+        .where(eq(notebooks.uuid, notebookUuid));
+      await cxn.end();
       const { latest, file = "main.js" } = await axios
         .get<{
           tag_name: string;

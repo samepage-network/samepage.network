@@ -1,7 +1,7 @@
 import uploadFile from "~/data/uploadFile.server";
 import postError from "~/data/postError.server";
 import { v4 } from "uuid";
-import getMysqlConnection from "fuegojs/utils/mysql";
+import getMysql from "~/data/mysql.server";
 import { downloadFileContent } from "~/data/downloadFile.server";
 import type { AppId } from "package/internal/types";
 import postToConnection from "~/data/postToConnection.server";
@@ -14,6 +14,8 @@ import type {
 import getNotebookUuids from "~/data/getNotebookUuids.server";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
 import { Operation } from "package/internal/messages";
+import { ongoingMessages, onlineClients } from "data/schema";
+import { eq } from "drizzle-orm/expressions";
 
 export type WSEvent = Pick<APIGatewayProxyEvent, "body"> & {
   requestContext: Pick<APIGatewayProxyEvent["requestContext"], "connectionId">;
@@ -37,7 +39,7 @@ const dataHandler = async (
     const propArgs = props as
       | { app: AppId; workspace: string }
       | { notebookUuid: string; token: string };
-    const cxn = await getMysqlConnection(requestId);
+    const cxn = await getMysql(requestId);
     "notebookUuid" in propArgs
       ? await authenticateNotebook({ ...propArgs, requestId })
       : await Promise.resolve();
@@ -52,11 +54,11 @@ const dataHandler = async (
 
     // one downside of inserting here instead of onconnect is the clock drift on created date
     // a client could theoretically connect without authenticate and would get free usage
-    await cxn.execute(
-      `INSERT INTO online_clients (id, created_date, notebook_uuid) 
-      VALUES (?,?,?)`,
-      [clientId, new Date(), notebookUuid]
-    );
+    await cxn.insert(onlineClients).values({
+      id: clientId,
+      createdDate: new Date(),
+      notebookUuid: notebookUuid,
+    });
     await postToConnection({
       ConnectionId: clientId,
       Data: {
@@ -64,7 +66,7 @@ const dataHandler = async (
         success: true,
       },
     });
-    cxn.destroy();
+    await cxn.end();
   } else if (operation === "PING") {
     return postToConnection({
       ConnectionId: clientId,
@@ -75,12 +77,11 @@ const dataHandler = async (
       proxyOperation: Operation;
     } & ({ workspace: string; app: AppId } | { notebookUuid: string }) &
       Record<string, string>;
-    const cxn = await getMysqlConnection(requestId);
+    const cxn = await getMysql(requestId);
     const [source] = await cxn
-      .execute(`SELECT notebook_uuid FROM online_clients WHERE id = ?`, [
-        clientId,
-      ])
-      .then(([a]) => a as { notebook_uuid: string }[])
+      .select({ notebookUuid: onlineClients.notebookUuid })
+      .from(onlineClients)
+      .where(eq(onlineClients.id, clientId))
       .catch((e) => {
         console.error("Failed to find online client", e.message);
         return [];
@@ -98,7 +99,7 @@ const dataHandler = async (
     return (
       source
         ? messageNotebook({
-            source: source.notebook_uuid,
+            source: source.notebookUuid,
             target,
             operation: proxyOperation,
             data: proxyData,
@@ -109,7 +110,9 @@ const dataHandler = async (
             event,
             Message: `Could not find online client with id: ${clientId}`,
           })
-    ).finally(() => cxn.destroy());
+    ).finally(async () => {
+      await cxn.end();
+    });
   } else {
     return postError({
       event,
@@ -127,24 +130,23 @@ export const wsHandler = async (
   if (total === 1) return dataHandler(event, message, messageUuid, requestId);
   else {
     const uuid = v4();
-    const cxn = await getMysqlConnection(requestId);
+    const cxn = await getMysql(requestId);
     await Promise.all([
       uploadFile({
         Body: message,
         Key: `data/ongoing/${messageUuid}/${uuid}`,
       }),
-      cxn.execute(
-        `INSERT INTO ongoing_messages (uuid, chunk, message_uuid) VALUES (?,?,?)`,
-        [uuid, chunk, messageUuid]
-      ),
+      cxn.insert(ongoingMessages).values({
+        uuid,
+        chunk,
+        messageUuid,
+      }),
     ]);
 
     const chunks = await cxn
-      .execute(
-        `SELECT uuid, chunk FROM ongoing_messages WHERE message_uuid = ?`,
-        [messageUuid]
-      )
-      .then(([c]) => c as { uuid: string; chunk: number }[]);
+      .select({ uuid: ongoingMessages.uuid, chunk: ongoingMessages.chunk })
+      .from(ongoingMessages)
+      .where(eq(ongoingMessages.messageUuid, messageUuid));
     if (chunks.length === total) {
       return Promise.all(
         chunks.map((c) =>
@@ -173,6 +175,8 @@ export const wsHandler = async (
           requestId
         )
       );
+    } else {
+      return cxn.end();
     }
   }
 };

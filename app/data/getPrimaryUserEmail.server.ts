@@ -1,6 +1,7 @@
 import { users } from "@clerk/clerk-sdk-node";
 
-const getPrimaryUserEmail = (id: string) => {
+const getPrimaryUserEmail = (id: string | null) => {
+  if (!id) return Promise.resolve(undefined);
   return users
     .getUser(id)
     .then(

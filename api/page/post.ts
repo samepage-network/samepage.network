@@ -1,6 +1,5 @@
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
 import {
-  Notebook,
   zAuthHeaders,
   zAuthenticatedBody,
   zUnauthenticatedBody,
@@ -19,7 +18,9 @@ import {
   UnauthorizedError,
 } from "~/data/errors.server";
 import catchError from "~/data/catchError.server";
-import getMysql from "fuegojs/utils/mysql";
+import getMysql from "~/data/mysql.server";
+import { eq, and, ne, gt, inArray, isNull } from "drizzle-orm/expressions";
+import { sql } from "drizzle-orm/sql";
 import { downloadFileContent } from "~/data/downloadFile.server";
 import uploadFile from "~/data/uploadFile.server";
 import { v4 } from "uuid";
@@ -40,6 +41,16 @@ import getQuota from "~/data/getQuota.server";
 import { encode } from "@ipld/dag-cbor";
 import clerk, { users } from "@clerk/clerk-sdk-node";
 import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
+import {
+  clientSessions,
+  messages,
+  notebooks,
+  pageNotebookLinks,
+  pages,
+  quotas,
+  tokenNotebookLinks,
+  tokens,
+} from "data/schema";
 
 const zMethod = zUnauthenticatedBody
   .and(zBaseHeaders)
@@ -70,13 +81,18 @@ const validatePageQuota = async ({
 }) => {
   const cxn = await getMysql(requestId);
   const pageQuota = await getQuota({ requestId, field: "Pages", tokenUuid });
-  const totalPages = await cxn
-    .execute(
-      `SELECT COUNT(page_uuid) as total FROM page_notebook_links WHERE notebook_uuid = ? AND open = 0`,
-      [notebookUuid]
-    )
-    .then(([t]) => (t as { total: number }[])[0].total);
-  if (totalPages >= pageQuota) {
+  const [{ total }] = await cxn
+    .select({
+      total: sql<number>`COUNT(${pageNotebookLinks.pageUuid})`,
+    })
+    .from(pageNotebookLinks)
+    .where(
+      and(
+        eq(pageNotebookLinks.notebookUuid, notebookUuid),
+        eq(pageNotebookLinks.open, false)
+      )
+    );
+  if (total >= pageQuota) {
     throw new ConflictError(
       `Maximum number of pages allowed to be connected to this notebook on this plan is ${pageQuota}.`
     );
@@ -94,23 +110,35 @@ const getRecentNotebooks = async ({
 }) => {
   const cxn = await getMysql(requestId);
   const email = await cxn
-    .execute(`SELECT user_id from tokens where uuid = ?`, [tokenUuid])
+    .select({ userId: tokens.userId })
+    .from(tokens)
+    .where(eq(tokens.uuid, tokenUuid))
     .then(([t]) => {
-      const userId = (t as { user_id: string }[])[0]?.user_id;
+      const userId = t?.userId;
       return userId ? getPrimaryUserEmail(userId) : "";
     })
     .catch(() => "");
+
   return (
     cxn
+      .select({
+        uuid: notebooks.uuid,
+        workspace: notebooks.workspace,
+        app: notebooks.app,
+      })
+      .from(notebooks)
+      .innerJoin(
+        tokenNotebookLinks,
+        eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
+      )
+      .where(
+        and(
+          eq(tokenNotebookLinks.tokenUuid, tokenUuid),
+          ne(notebooks.uuid, notebookUuid)
+        )
+      )
       // TODO - create better hueristics here for recent notebooks, prob its own LRU cache table
       // OR we create a contacts table and load those notebooks here
-      .execute(
-        `SELECT n.* FROM notebooks n 
-         INNER JOIN token_notebook_links l on l.notebook_uuid = n.uuid
-         WHERE l.token_uuid = ? AND n.uuid != ?`,
-        [tokenUuid, notebookUuid]
-      )
-      .then(([a]) => a as ({ uuid: string } & Notebook)[])
       .then((recents) =>
         Object.values(
           Object.fromEntries(
@@ -137,7 +165,7 @@ const logic = async (req: Record<string, unknown>) => {
     );
   const { requestId, ...args } = result.data;
   const cxn = await getMysql(requestId);
-  console.log("Received method:", args.method);
+  console.log("Received method:", args.method, requestId);
   try {
     if (args.method === "create-notebook") {
       const { app, workspace, email, password } = args;
@@ -162,7 +190,7 @@ const logic = async (req: Record<string, unknown>) => {
         workspace,
         userId,
       });
-      cxn.destroy();
+      await cxn.end();
       return { notebookUuid, token };
     } else if (args.method === "add-notebook") {
       const { app, workspace, email, password } = args;
@@ -189,11 +217,10 @@ const logic = async (req: Record<string, unknown>) => {
       if (!passwordResponse.verified) {
         throw new ForbiddenError(`Incorrect password for this email`);
       }
-      const tokenRecord = await cxn
-        .execute(`SELECT t.uuid, t.value FROM tokens t WHERE t.user_id = ?`, [
-          userId,
-        ])
-        .then(([a]) => (a as { uuid: string; value: string }[])[0]);
+      const [tokenRecord] = await cxn
+        .select({ uuid: tokens.uuid, value: tokens.value })
+        .from(tokens)
+        .where(eq(tokens.userId, userId));
       if (!tokenRecord) {
         throw new InternalServorError(
           `Could not find token to use for this user. Please contact support@samepage.network for help.`
@@ -205,7 +232,7 @@ const logic = async (req: Record<string, unknown>) => {
         app,
         workspace,
       });
-      cxn.destroy();
+      await cxn.end();
       return { notebookUuid: response.notebookUuid, token: tokenRecord.value };
     } else if (args.method === "ping") {
       // uptime checker
@@ -225,71 +252,80 @@ const logic = async (req: Record<string, unknown>) => {
         const currentDate = new Date();
         const currentMonth = currentDate.getMonth();
         const currentYear = currentDate.getFullYear();
-        const startDate = new Date(currentYear, currentMonth, 1).toJSON();
+        const startDate = new Date(currentYear, currentMonth, 1);
 
         return getMysql(requestId)
           .then(async (cxn) => {
-            const [sessions, messages, notebooks, [quotas]] = await Promise.all(
-              [
+            const [sessions, messageRecords, notebookRecords, quotaRecords] =
+              await Promise.all([
                 cxn
-                  .execute(
-                    `SELECT id, created_date, end_date FROM client_sessions WHERE notebook_uuid = ? AND created_date > ?`,
-                    [notebookUuid, startDate]
-                  )
-                  .then(
-                    ([items]) =>
-                      items as {
-                        id: string;
-                        created_date: Date;
-                        end_date: Date;
-                      }[]
-                  ),
-                cxn
-                  .execute(
-                    `SELECT uuid FROM messages WHERE source = ? AND created_date > ?`,
-                    [notebookUuid, startDate]
-                  )
-                  .then(([items]) => items as { uuid: string }[]),
-                cxn
-                  .execute(
-                    `SELECT uuid FROM token_notebook_links WHERE notebook_uuid = ?`,
-                    [notebookUuid]
-                  )
-                  .then(([links]) => links as { uuid: string }[])
-                  .then((links) =>
-                    cxn.execute(
-                      `SELECT n.uuid, n.app, n.workspace, COUNT(l.uuid) as pages
-                FROM page_notebook_links l
-                INNER JOIN notebooks n ON l.notebook_uuid = n.uuid
-                INNER JOIN token_notebook_links tl ON tl.notebook_uuid = n.uuid
-                WHERE l.open = 0 AND tl.uuid IN (${links
-                  .map(() => "?")
-                  .join(",")})
-                GROUP BY n.uuid, n.app, n.workspace`,
-                      links.map((l) => l.uuid)
+                  .select({
+                    id: clientSessions.id,
+                    created_date: clientSessions.createdDate,
+                    end_date: clientSessions.endDate,
+                  })
+                  .from(clientSessions)
+                  .where(
+                    and(
+                      eq(clientSessions.notebookUuid, notebookUuid),
+                      gt(clientSessions.createdDate, startDate)
                     )
-                  )
-                  .then(
-                    ([results]) =>
-                      results as ({ uuid: string; pages: number } & Notebook)[]
                   ),
-                cxn.execute(
-                  `SELECT field, value FROM quotas where stripe_id is null`
-                ),
-              ]
-            );
-            cxn.destroy();
+                cxn
+                  .select({ uuid: messages.uuid })
+                  .from(messages)
+                  .where(
+                    and(
+                      eq(messages.source, notebookUuid),
+                      gt(messages.createdDate, startDate)
+                    )
+                  ),
+                cxn
+                  .select({ uuid: tokenNotebookLinks.uuid })
+                  .from(tokenNotebookLinks)
+                  .where(eq(tokenNotebookLinks.notebookUuid, notebookUuid))
+                  .then((links) =>
+                    cxn
+                      .select({
+                        uuid: notebooks.uuid,
+                        app: notebooks.app,
+                        workspace: notebooks.workspace,
+                        pages: sql<number>`COUNT(${pageNotebookLinks.uuid})`,
+                      })
+                      .from(pageNotebookLinks)
+                      .innerJoin(
+                        notebooks,
+                        eq(pageNotebookLinks.notebookUuid, notebooks.uuid)
+                      )
+                      .innerJoin(
+                        tokenNotebookLinks,
+                        eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
+                      )
+                      .where(
+                        and(
+                          eq(pageNotebookLinks.open, false),
+                          inArray(
+                            tokenNotebookLinks.uuid,
+                            links.map((l) => l.uuid)
+                          )
+                        )
+                      )
+                  ),
+                cxn
+                  .select({ field: quotas.field, value: quotas.value })
+                  .from(quotas)
+                  .where(isNull(quotas.stripeId)),
+              ]);
+            await cxn.end();
             return {
               minutes: sessions.reduce(
                 (p, c) => differenceInMinutes(c.end_date, c.created_date) + p,
                 0
               ),
-              messages: messages.length,
-              notebooks,
+              messages: messageRecords.length,
+              notebooks: notebookRecords,
               quotas: Object.fromEntries(
-                (quotas as { field: number; value: number }[]).map(
-                  (q) => [QUOTAS[q.field], q.value] as const
-                )
+                quotaRecords.map((q) => [QUOTAS[q.field], q.value] as const)
               ),
             };
           })
@@ -303,17 +339,16 @@ const logic = async (req: Record<string, unknown>) => {
           }).then((r) => r || "{}"),
           getMysql(requestId).then((cxn) => {
             return cxn
-              .execute(
-                `SELECT n.*, m.operation FROM messages m LEFT JOIN notebooks n ON n.uuid = m.source WHERE m.uuid = ?`,
-                [messageUuid]
-              )
-              .then(([args]) => {
-                cxn.destroy();
-                return args as (Notebook & {
-                  uuid: string;
-                  operation: string;
-                })[];
-              });
+              .select({
+                uuid: notebooks.uuid,
+                app: notebooks.app,
+                workspace: notebooks.workspace,
+                operation: messages.operation,
+              })
+              .from(messages)
+              .leftJoin(notebooks, eq(notebooks.uuid, messages.source))
+              .where(eq(messages.uuid, messageUuid))
+              .then((args) => cxn.end().then(() => args));
           }),
         ])
           .then(([Data, [msg]]) => {
@@ -335,59 +370,57 @@ const logic = async (req: Record<string, unknown>) => {
       }
       case "init-shared-page": {
         const { notebookPageId, state } = args;
-        const [results] = await cxn.execute(
-          `SELECT page_uuid FROM page_notebook_links WHERE notebook_uuid = ? AND notebook_page_id = ?`,
-          [notebookUuid, notebookPageId]
-        );
-        const [link] = results as { page_uuid: string }[];
+        const [link] = await cxn
+          .select({ page_uuid: pageNotebookLinks.pageUuid })
+          .from(pageNotebookLinks)
+          .where(
+            and(
+              eq(pageNotebookLinks.notebookUuid, notebookUuid),
+              eq(pageNotebookLinks.notebookPageId, notebookPageId)
+            )
+          );
         if (link) return { id: link.page_uuid, created: false };
         await validatePageQuota({ requestId, notebookUuid, tokenUuid });
 
         const pageUuid = v4();
-        await cxn.execute(
-          `INSERT INTO pages (uuid)
-            VALUES (?)`,
-          [pageUuid]
-        );
+        await cxn.insert(pages).values({ uuid: pageUuid });
         const linkUuid = v4();
-        await cxn.execute(
-          `INSERT INTO page_notebook_links (uuid, page_uuid, notebook_page_id, version, open, invited_by, invited_date, notebook_uuid, cid)
-            VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)`,
-          [
-            linkUuid,
-            pageUuid,
-            notebookPageId,
-            0,
-            notebookUuid,
-            new Date(),
-            notebookUuid,
-            "",
-          ]
-        );
+        await cxn.insert(pageNotebookLinks).values({
+          uuid: linkUuid,
+          pageUuid,
+          notebookPageId,
+          version: 0,
+          open: false,
+          invitedBy: notebookUuid,
+          invitedDate: new Date(),
+          notebookUuid,
+          cid: "",
+        });
         await saveSharedPage({
           uuid: linkUuid,
           doc: state,
         });
-        cxn.destroy();
+        await cxn.end();
         return { created: true, id: pageUuid };
       }
       case "join-shared-page": {
         const { notebookPageId } = args;
         const results = await cxn
-          .execute(
-            `SELECT uuid, page_uuid, invited_by FROM page_notebook_links WHERE notebook_page_id = ? AND notebook_uuid = ? AND open = 1`,
-            [notebookPageId, notebookUuid]
-          )
-          .then(
-            ([a]) =>
-              a as {
-                uuid: string;
-                page_uuid: string;
-                invited_by: string;
-              }[]
+          .select({
+            uuid: pageNotebookLinks.uuid,
+            page_uuid: pageNotebookLinks.pageUuid,
+            invited_by: pageNotebookLinks.invitedBy,
+          })
+          .from(pageNotebookLinks)
+          .where(
+            and(
+              eq(pageNotebookLinks.notebookPageId, notebookPageId),
+              eq(pageNotebookLinks.notebookUuid, notebookUuid),
+              eq(pageNotebookLinks.open, true)
+            )
           );
         if (!results.length) {
-          cxn.destroy();
+          await cxn.end();
           return {
             found: false,
             reason: "Failed to find invite",
@@ -395,30 +428,32 @@ const logic = async (req: Record<string, unknown>) => {
         }
         const { uuid, page_uuid, invited_by } = results[0];
         const invitedByResults = await cxn
-          .execute(
-            `SELECT cid FROM page_notebook_links WHERE page_uuid = ? AND open = 0 AND notebook_uuid = ?`,
-            [page_uuid, invited_by]
-          )
-          .then(
-            ([a]) =>
-              a as {
-                cid: string;
-              }[]
+          .select({ cid: pageNotebookLinks.cid })
+          .from(pageNotebookLinks)
+          .where(
+            and(
+              eq(pageNotebookLinks.pageUuid, page_uuid),
+              eq(pageNotebookLinks.open, false),
+              eq(pageNotebookLinks.notebookUuid, invited_by)
+            )
           );
         if (!invitedByResults.length) {
-          cxn.destroy();
+          await cxn.end();
           return {
             found: false,
             reason: "Invited by notebook no longer connected to page",
           };
         }
         await validatePageQuota({ requestId, notebookUuid, tokenUuid });
-        await cxn.execute(
-          `UPDATE page_notebook_links SET open = 0 WHERE uuid = ?`,
-          [uuid]
-        );
+        await cxn
+          .update(pageNotebookLinks)
+          .set({ open: false })
+          .where(eq(pageNotebookLinks.uuid, uuid));
+        const [{ cid }] = invitedByResults;
+        if (!cid)
+          throw new InternalServorError(`Could not find cid for ${cid}`);
         const { body: state } = await downloadSharedPage({
-          cid: invitedByResults[0].cid,
+          cid,
         });
         await saveSharedPage({ doc: state, uuid });
         await messageNotebook({
@@ -431,7 +466,7 @@ const logic = async (req: Record<string, unknown>) => {
           },
           requestId,
         });
-        cxn.destroy();
+        await cxn.end();
         const b64State = Buffer.from(state).toString("base64");
         return {
           state: b64State,
@@ -440,11 +475,17 @@ const logic = async (req: Record<string, unknown>) => {
       }
       case "revert-page-join": {
         const { notebookPageId } = args;
-        await cxn.execute(
-          `UPDATE page_notebook_links SET open = 1 WHERE notebook_page_id = ? AND notebook_uuid = ? AND open = 0`,
-          [notebookPageId, notebookUuid]
-        );
-        cxn.destroy();
+        await cxn
+          .update(pageNotebookLinks)
+          .set({ open: true })
+          .where(
+            and(
+              eq(pageNotebookLinks.notebookPageId, notebookPageId),
+              eq(pageNotebookLinks.notebookUuid, notebookUuid),
+              eq(pageNotebookLinks.open, false)
+            )
+          );
+        await cxn.end();
         return {
           success: true,
         };
@@ -457,21 +498,18 @@ const logic = async (req: Record<string, unknown>) => {
           requestId,
         });
         if (!changes.length) {
-          cxn.destroy();
+          await cxn.end();
           return { success: false };
         }
         await cxn
-          .execute(
-            `SELECT notebook_uuid, notebook_page_id FROM page_notebook_links WHERE page_uuid = ? AND open = 0`,
-            [pageUuid]
-          )
-          .then(([r]) => {
-            const clients = (
-              r as {
-                notebook_page_id: string;
-                notebook_uuid: string;
-              }[]
-            ).filter((item) => {
+          .select({
+            notebook_uuid: pageNotebookLinks.notebookUuid,
+            notebook_page_id: pageNotebookLinks.notebookPageId,
+          })
+          .from(pageNotebookLinks)
+          .where(eq(pageNotebookLinks.pageUuid, pageUuid))
+          .then((r) => {
+            const clients = r.filter((item) => {
               return notebookUuid !== item.notebook_uuid;
             });
             return Promise.all(
@@ -489,17 +527,22 @@ const logic = async (req: Record<string, unknown>) => {
               )
             );
           });
-        const [result] = await cxn.execute(
-          `SELECT uuid FROM page_notebook_links WHERE notebook_uuid = ? AND notebook_page_id = ?`,
-          [notebookUuid, notebookPageId]
-        );
+        const [result] = await cxn
+          .select({ uuid: pageNotebookLinks.uuid })
+          .from(pageNotebookLinks)
+          .where(
+            and(
+              eq(pageNotebookLinks.notebookUuid, notebookUuid),
+              eq(pageNotebookLinks.notebookPageId, notebookPageId)
+            )
+          );
         await saveSharedPage({
           cid,
           doc: state,
-          uuid: (result as { uuid: string }[])[0].uuid,
+          uuid: result.uuid,
         });
 
-        cxn.destroy();
+        await cxn.end();
         return {
           success: true,
         };
@@ -511,30 +554,35 @@ const logic = async (req: Record<string, unknown>) => {
           notebookPageId,
           requestId,
         });
-        const [results] = await cxn.execute(
-          `SELECT uuid FROM page_notebook_links WHERE notebook_uuid = ? AND notebook_page_id = ?`,
-          [notebookUuid, notebookPageId]
-        );
+        const [result] = await cxn
+          .select({ uuid: pageNotebookLinks.uuid })
+          .from(pageNotebookLinks)
+          .where(
+            and(
+              eq(pageNotebookLinks.notebookPageId, notebookPageId),
+              eq(pageNotebookLinks.notebookUuid, notebookUuid)
+            )
+          );
         const state = await (inputState
           ? saveSharedPage({
               doc: inputState,
               cid,
-              uuid: (results as { uuid: string }[])[0].uuid,
+              uuid: result.uuid,
             }).then(() => inputState)
           : downloadSharedPage({ cid }).then((b) =>
               Buffer.from(b.body).toString("base64")
             ));
         const notebooks = await cxn
-          .execute(
-            `SELECT notebook_page_id, notebook_uuid FROM page_notebook_links WHERE page_uuid = ? AND open = 0`,
-            [pageUuid]
-          )
-          .then(
-            ([r]) =>
-              r as {
-                notebook_page_id: string;
-                notebook_uuid: string;
-              }[]
+          .select({
+            notebook_page_id: pageNotebookLinks.notebookPageId,
+            notebook_uuid: pageNotebookLinks.notebookUuid,
+          })
+          .from(pageNotebookLinks)
+          .where(
+            and(
+              eq(pageNotebookLinks.pageUuid, pageUuid),
+              eq(pageNotebookLinks.open, false)
+            )
           );
         await Promise.all(
           notebooks
@@ -554,7 +602,7 @@ const logic = async (req: Record<string, unknown>) => {
               })
             )
         );
-        cxn.destroy();
+        await cxn.end();
 
         return {
           success: true,
@@ -570,19 +618,19 @@ const logic = async (req: Record<string, unknown>) => {
                 .then((us) =>
                   us.length
                     ? cxn
-                        .execute(
-                          `SELECT n.uuid FROM notebooks n 
-                    INNER JOIN token_notebook_links tnl ON tnl.notebook_uuid = n.uuid
-                    INNER JOIN tokens t ON t.uuid = tnl.token_uuid
-                    WHERE t.user_id = ?
-                    LIMIT 1`,
-                          [us[0].id]
+                        .select({ uuid: notebooks.uuid })
+                        .from(notebooks)
+                        .innerJoin(
+                          tokenNotebookLinks,
+                          eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
                         )
-
-                        .then(
-                          ([records]) =>
-                            (records as { uuid: string }[])[0]?.uuid
+                        .innerJoin(
+                          tokens,
+                          eq(tokens.uuid, tokenNotebookLinks.tokenUuid)
                         )
+                        .where(eq(tokens.userId, us[0].id))
+                        .limit(1)
+                        .then(([records]) => records?.uuid)
                     : ""
                 )
             : "");
@@ -619,55 +667,76 @@ const logic = async (req: Record<string, unknown>) => {
             notebookUuid,
           })
             .catch(catchError("Failed to invite notebook to a shared page"))
-            .finally(() => cxn.destroy());
+            .finally(async () => {
+              await cxn.end();
+            });
         });
       }
       case "remove-page-invite": {
         const { notebookPageId, target } = args;
         const { linkUuid, invitedBy } = await (typeof target === "string"
           ? cxn
-              .execute(
-                `SELECT l.uuid 
-FROM page_notebook_links l
-INNER JOIN notebooks n ON n.uuid = l.notebook_uuid
-WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
-                [target, notebookPageId, notebookUuid]
+              .select({ uuid: pageNotebookLinks.uuid })
+              .from(pageNotebookLinks)
+              .innerJoin(
+                notebooks,
+                eq(notebooks.uuid, pageNotebookLinks.notebookUuid)
+              )
+              .where(
+                and(
+                  eq(notebooks.uuid, target),
+                  eq(pageNotebookLinks.notebookPageId, notebookPageId),
+                  eq(pageNotebookLinks.open, true),
+                  eq(pageNotebookLinks.invitedBy, notebookUuid)
+                )
               )
               .then(([invitedByLink]) => ({
                 invitedBy: notebookUuid,
-                linkUuid: (invitedByLink as { uuid: string }[])[0]?.uuid,
+                linkUuid: invitedByLink?.uuid,
               }))
           : typeof target === "object"
           ? cxn
-              .execute(
-                `SELECT l.uuid 
-      FROM page_notebook_links l
-      INNER JOIN notebooks n ON n.uuid = l.notebook_uuid
-      WHERE n.workspace = ? AND n.app = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`,
-                [target.workspace, target.app, notebookPageId, notebookUuid]
+              .select({ uuid: pageNotebookLinks.uuid })
+              .from(pageNotebookLinks)
+              .innerJoin(
+                notebooks,
+                eq(notebooks.uuid, pageNotebookLinks.notebookUuid)
+              )
+              .where(
+                and(
+                  eq(notebooks.workspace, target.workspace),
+                  eq(notebooks.app, target.app),
+                  eq(pageNotebookLinks.notebookPageId, notebookPageId),
+                  eq(pageNotebookLinks.open, true),
+                  eq(pageNotebookLinks.invitedBy, notebookUuid)
+                )
               )
               .then(([invitedByLink]) => ({
                 invitedBy: notebookUuid,
-                linkUuid: (invitedByLink as { uuid: string }[])[0]?.uuid,
+                linkUuid: invitedByLink?.uuid,
               }))
           : cxn
-              .execute(
-                `SELECT uuid, invited_by
-      FROM page_notebook_links
-      WHERE notebook_uuid = ? AND notebook_page_id = ? AND open = 1`,
-                [notebookUuid, notebookPageId]
+              .select({
+                uuid: pageNotebookLinks.uuid,
+                invitedBy: pageNotebookLinks.invitedBy,
+              })
+              .from(pageNotebookLinks)
+              .where(
+                and(
+                  eq(pageNotebookLinks.notebookUuid, notebookUuid),
+                  eq(pageNotebookLinks.notebookPageId, notebookPageId),
+                  eq(pageNotebookLinks.open, true)
+                )
               )
-              .then(async ([record]) => {
-                const link = (
-                  record as { uuid: string; invited_by: string }[]
-                )[0];
-                return { linkUuid: link?.uuid, invitedBy: link?.invited_by };
+              .then(async ([link]) => {
+                return { linkUuid: link?.uuid, invitedBy: link?.invitedBy };
               }));
         if (!linkUuid) {
           throw new NotFoundError(`Could not find valid invite to remove.`);
         }
         return cxn
-          .execute(`DELETE FROM page_notebook_links WHERE uuid = ?`, [linkUuid])
+          .delete(pageNotebookLinks)
+          .where(eq(pageNotebookLinks.uuid, linkUuid))
           .then(() =>
             messageNotebook({
               source: notebookUuid,
@@ -683,7 +752,9 @@ WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`
           )
           .then(() => ({ success: true }))
           .catch(catchError("Failed to remove a shared page"))
-          .finally(() => cxn.destroy());
+          .finally(async () => {
+            await cxn.end();
+          });
       }
       case "list-page-notebooks": {
         const { notebookPageId } = args;
@@ -694,34 +765,37 @@ WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`
           requestId,
         });
         const clients = await cxn
-          .execute(
-            `SELECT n.app, n.workspace, n.uuid, l.version, l.open, CASE 
-            WHEN l.notebook_uuid = l.invited_by THEN 1
+          .select({
+            app: notebooks.app,
+            workspace: notebooks.workspace,
+            uuid: notebooks.uuid,
+            version: pageNotebookLinks.version,
+            open: pageNotebookLinks.open,
+            user: tokens.userId,
+            priority: sql<number>`CASE 
+            WHEN ${pageNotebookLinks.notebookUuid} = ${pageNotebookLinks.invitedBy} THEN 1
             ELSE 2 
-          END as priority, t.user_id as user FROM page_notebook_links l 
-                INNER JOIN notebooks n ON n.uuid = l.notebook_uuid 
-                INNER JOIN token_notebook_links tl ON tl.notebook_uuid = n.uuid
-                INNER JOIN tokens t ON t.uuid = tl.token_uuid
-                WHERE l.page_uuid = ?
-                ORDER BY priority, l.invited_date`,
-            [pageUuid]
+          END`.as("priority"),
+          })
+          .from(pageNotebookLinks)
+          .innerJoin(
+            notebooks,
+            eq(notebooks.uuid, pageNotebookLinks.notebookUuid)
           )
-          .then(
-            ([res]) =>
-              res as (Notebook & {
-                version: number;
-                open: 0 | 1;
-                uuid: string;
-                user: string;
-              })[]
-          );
+          .innerJoin(
+            tokenNotebookLinks,
+            eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
+          )
+          .innerJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
+          .where(eq(pageNotebookLinks.pageUuid, pageUuid))
+          .orderBy(sql`priority`, pageNotebookLinks.invitedDate);
         const clientUuids = new Set(clients.map((c) => c.uuid));
         const recents = await getRecentNotebooks({
           requestId,
           notebookUuid,
           tokenUuid,
         });
-        cxn.destroy();
+        await cxn.end();
         const emailsByIds = await users
           .getUserList({ userId: clients.map((u) => u.user) })
           .then((us) =>
@@ -751,23 +825,24 @@ WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`
           notebookUuid,
           tokenUuid,
         });
-        cxn.destroy();
+        await cxn.end();
         return {
           notebooks,
         };
       }
       case "list-shared-pages": {
         const notebookPageIds = await cxn
-          .execute(
-            `SELECT l.notebook_page_id 
-              FROM page_notebook_links l
-              INNER JOIN pages p ON l.page_uuid = p.uuid
-          WHERE l.notebook_uuid = ? AND l.open = 0`,
-            [notebookUuid]
+          .select({ notebookPageId: pageNotebookLinks.notebookPageId })
+          .from(pageNotebookLinks)
+          .innerJoin(pages, eq(pages.uuid, pageNotebookLinks.pageUuid))
+          .where(
+            and(
+              eq(pageNotebookLinks.notebookUuid, notebookUuid),
+              eq(pageNotebookLinks.open, false)
+            )
           )
-          .then(([r]) => r as { notebook_page_id: string }[])
-          .then((r) => r.map(({ notebook_page_id }) => notebook_page_id));
-        cxn.destroy();
+          .then((r) => r.map(({ notebookPageId }) => notebookPageId));
+        await cxn.end();
         return { notebookPageIds };
       }
       case "disconnect-shared-page": {
@@ -779,15 +854,21 @@ WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`
             requestId,
           })
             .then(() =>
-              cxn.execute(
-                `DELETE FROM page_notebook_links WHERE notebook_uuid = ? AND notebook_page_id = ?`,
-                [notebookUuid, notebookPageId]
-              )
+              cxn
+                .delete(pageNotebookLinks)
+                .where(
+                  and(
+                    eq(pageNotebookLinks.notebookUuid, notebookUuid),
+                    eq(pageNotebookLinks.notebookPageId, notebookPageId)
+                  )
+                )
             )
             // TODO: Let errbody know
             .then(() => ({ success: true }))
             .catch(catchError("Failed to disconnect a shared page"))
-            .finally(() => cxn.destroy())
+            .finally(async () => {
+              await cxn.end();
+            })
         );
       }
       // @deprecated
@@ -900,21 +981,24 @@ WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`
       case "link-different-page": {
         const { oldNotebookPageId, newNotebookPageId } = args;
         const [result] = await cxn
-          .execute(
-            `SELECT uuid FROM page_notebook_links WHERE notebook_uuid = ? AND notebook_page_id = ?`,
-            [notebookUuid, oldNotebookPageId]
-          )
-          .then(([a]) => a as { uuid: string }[]);
+          .select({ uuid: pageNotebookLinks.uuid })
+          .from(pageNotebookLinks)
+          .where(
+            and(
+              eq(pageNotebookLinks.notebookUuid, notebookUuid),
+              eq(pageNotebookLinks.notebookPageId, oldNotebookPageId)
+            )
+          );
         if (!result) {
           throw new NotFoundError(
             `Couldn't find old notebook page id: ${oldNotebookPageId}`
           );
         }
-        await cxn.execute(
-          `UPDATE page_notebook_links SET notebook_page_id = ? WHERE uuid = ?`,
-          [newNotebookPageId, result.uuid]
-        );
-        cxn.destroy();
+        await cxn
+          .update(pageNotebookLinks)
+          .set({ notebookPageId: newNotebookPageId })
+          .where(eq(pageNotebookLinks.uuid, result.uuid));
+        await cxn.end();
         return { success: true };
       }
       case "save-page-version": {
@@ -924,16 +1008,21 @@ WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`
           notebookPageId,
           requestId,
         });
-        const [results] = await cxn.execute(
-          `SELECT uuid FROM page_notebook_links WHERE notebook_uuid = ? AND notebook_page_id = ?`,
-          [notebookUuid, notebookPageId]
-        );
+        const [result] = await cxn
+          .select({ uuid: pageNotebookLinks.uuid })
+          .from(pageNotebookLinks)
+          .where(
+            and(
+              eq(pageNotebookLinks.notebookUuid, notebookUuid),
+              eq(pageNotebookLinks.notebookPageId, notebookPageId)
+            )
+          );
         await saveSharedPage({
           cid,
           doc: state,
-          uuid: (results as { uuid: string }[])[0].uuid,
+          uuid: result.uuid,
         });
-        cxn.destroy();
+        await cxn.end();
         return { success: true };
       }
       // TODO: Currently unused
@@ -944,7 +1033,7 @@ WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`
           notebookPageId,
           requestId,
         });
-        cxn.destroy();
+        await cxn.end();
         return { cid };
       }
       case "get-shared-page": {
@@ -955,50 +1044,55 @@ WHERE n.uuid = ? AND l.notebook_page_id = ? AND l.open = 1 AND l.invited_by = ?`
           notebookPageId,
         });
         const { body: state } = await downloadSharedPage({ cid });
-        cxn.destroy();
+        await cxn.end();
         return { state: Buffer.from(state).toString("base64") };
       }
       case "get-unmarked-messages": {
         return {
           messages: await cxn
-            .execute(
-              `SELECT m.uuid, m.operation, n.app, n.workspace, m.metadata FROM messages m
-              LEFT JOIN notebooks n ON n.uuid = m.source 
-              WHERE m.target = ? AND m.marked = 0`,
-              [notebookUuid]
+            .select({
+              uuid: messages.uuid,
+              operation: messages.operation,
+              metadata: messages.metadata,
+              app: notebooks.app,
+              workspace: notebooks.workspace,
+            })
+            .from(messages)
+            .leftJoin(notebooks, eq(messages.source, notebooks.uuid))
+            .where(
+              and(eq(messages.target, notebookUuid), eq(messages.marked, false))
             )
-            .then(([r]) =>
-              (
-                r as ({
-                  uuid: string;
-                  operation: Operation;
-                  metadata: null | Record<string, string>;
-                } & Notebook)[]
-              ).map(({ uuid, operation, metadata, ...source }) => {
+            .then(async (r) => {
+              await cxn.end();
+              return r.map(({ uuid, operation, metadata, ...source }) => {
                 return messageToNotification({
-                  operation,
+                  operation: operation as Operation,
                   source,
-                  data: metadata || {},
+                  data: (metadata || {}) as Record<string, string>,
                   uuid,
                 });
-              })
-            ),
+              });
+            }),
         };
       }
       case "mark-message-read": {
         const { messageUuid } = args;
-        await cxn.execute(`UPDATE messages SET marked = ? WHERE uuid = ?`, [
-          1,
-          messageUuid,
-        ]);
-        cxn.destroy();
+        await cxn
+          .update(messages)
+          .set({ marked: true })
+          .where(eq(messages.uuid, messageUuid));
+        await cxn.end();
         return { success: true };
       }
     }
   } catch (e) {
-    cxn.destroy();
+    await cxn.end();
     return catchError(`Failed to process method: ${args.method}`)(e as Error);
   }
+  // Why does this not work?
+  // finally {
+  //   await cxn.end();
+  // }
 };
 
 export const handler = createAPIGatewayProxyHandler({

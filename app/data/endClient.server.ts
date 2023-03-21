@@ -1,4 +1,6 @@
-import getMysqlConnection from "fuegojs/utils/mysql";
+import { clientSessions, onlineClients } from "data/schema";
+import getMysqlConnection from "~/data/mysql.server";
+import { eq } from "drizzle-orm/expressions";
 
 const endClient = (
   id: string,
@@ -8,25 +10,21 @@ const endClient = (
   console.log("ending", id, "for", reason);
   return getMysqlConnection(requestId).then(async (cxn) => {
     const [source] = await cxn
-      .execute(`SELECT * FROM online_clients WHERE id = ?`, [id])
-      .then(
-        ([res]) =>
-          res as {
-            id: string;
-            created_date: Date;
-            notebook_uuid: string;
-          }[]
-      );
+      .select()
+      .from(onlineClients)
+      .where(eq(onlineClients.id, id));
     if (source) {
       const now = new Date();
       await Promise.all([
-        cxn.execute(`DELETE FROM online_clients WHERE id = ?`, [source.id]),
+        cxn.delete(onlineClients).where(eq(onlineClients.id, id)),
         // should only happen in a race condition where endClient is called from disconnection and missed message
-        cxn.execute(
-          `INSERT INTO client_sessions (id, created_date, end_date, disconnected_by, notebook_uuid)
-            VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE id=id`,
-          [source.id, source.created_date, now, reason, source.notebook_uuid]
-        ),
+        cxn.insert(clientSessions).values({
+          id: source.id,
+          createdDate: source.createdDate,
+          endDate: now,
+          disconnectedBy: reason,
+          notebookUuid: source.notebookUuid,
+        }),
       ]);
     }
   });

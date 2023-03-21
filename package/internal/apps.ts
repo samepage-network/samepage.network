@@ -5,7 +5,13 @@
 // - SamePage/Main
 // - SamePage/Org
 // - etc.
-const APPS = [
+type App = {
+  id: number;
+  name: string;
+  workspaceLabel: string;
+  development?: true;
+};
+const APPS: App[] = [
   {
     id: 0,
     name: "SamePage",
@@ -44,7 +50,7 @@ const APPS = [
     workspaceLabel: "workspace",
     development: true,
   },
-] as const;
+];
 
 export const appsById = Object.fromEntries(APPS.map(({ id, ...a }) => [id, a]));
 export const appIdByName = Object.fromEntries(

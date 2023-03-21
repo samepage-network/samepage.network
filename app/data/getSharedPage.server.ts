@@ -1,12 +1,14 @@
+import { pageNotebookLinks, pages } from "data/schema";
 import { NotFoundError } from "~/data/errors.server";
-import getMysql from "fuegojs/utils/mysql";
+import getMysql from "~/data/mysql.server";
+import { eq, and } from "drizzle-orm/expressions";
 
 type SharedPage = { uuid: string; cid: string };
 type SharedPageInput = {
   notebookPageId: string;
   requestId: string;
   notebookUuid: string;
-  open?: 0 | 1 | null;
+  open?: boolean | null;
 };
 type GetSharedPage<T> = T extends SharedPageInput & { safe: true }
   ? Promise<SharedPage | undefined>
@@ -16,23 +18,21 @@ const getSharedPage = <T extends SharedPageInput & { safe?: true }>({
   safe,
   requestId,
   notebookUuid,
-  open = 0,
+  open = false,
 }: T): GetSharedPage<T> =>
   getMysql(requestId).then((cxn) =>
     cxn
-      .execute(
-        `SELECT p.uuid, l.cid
-        FROM page_notebook_links l 
-        INNER JOIN pages p ON p.uuid = l.page_uuid
-        WHERE notebook_uuid = ? AND notebook_page_id = ?${
-          open === null ? "" : " AND open = ?"
-        }`,
-        ([notebookUuid, notebookPageId] as (string | number)[]).concat(
-          open === null ? [] : [open]
+      .select({ uuid: pages.uuid, cid: pageNotebookLinks.cid })
+      .from(pageNotebookLinks)
+      .innerJoin(pages, eq(pages.uuid, pageNotebookLinks.pageUuid))
+      .where(
+        and(
+          eq(pageNotebookLinks.notebookUuid, notebookUuid),
+          eq(pageNotebookLinks.notebookPageId, notebookPageId),
+          open === null ? undefined : eq(pageNotebookLinks.open, open)
         )
       )
-      .then(([results]) => {
-        const [link] = results as SharedPage[];
+      .then(([link]) => {
         if (!link) {
           if (safe) return undefined;
           else

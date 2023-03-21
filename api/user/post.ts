@@ -7,9 +7,12 @@ import sendEmail from "package/backend/sendEmail.server";
 import WelcomeEmail from "~/components/WelcomeEmail";
 import NewUserEmail from "~/components/NewUserEmail";
 import { subscribe } from "~/data/subscribeToConvertkitAction.server";
-import getMysqlConnection from "fuegojs/utils/mysql";
+import getMysql from "~/data/mysql.server";
 import { v4 } from "uuid";
 import randomString from "~/data/randomString.server";
+import { tokens } from "data/schema";
+import { sql } from "drizzle-orm/sql";
+import { eq } from "drizzle-orm/expressions";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2022-11-15",
@@ -61,27 +64,28 @@ export const handler = async (
       const email = email_addresses.find(
         (e: { id: string }) => e.id === primary_email_address_id
       ).email_address;
-      return getMysqlConnection()
+      return getMysql()
         .then((cxn) =>
           cxn
-            .execute(
-              `SELECT COUNT(uuid) as count FROM tokens WHERE user_id = ?`,
-              [id]
-            )
+            .select({
+              count: sql`COUNT(uuid)`,
+            })
+            .from(tokens)
+            .where(eq(tokens.userId, id))
             .then(async ([a]) =>
-              !(a as [{ count: number }])[0]?.count
-                ? await cxn.execute(
-                    `INSERT INTO tokens (uuid, value, created_date, user_id)
-          VALUES (?, ?, ?, ?)`,
-                    [
-                      v4(),
-                      await randomString({ length: 12, encoding: "base64" }),
-                      new Date(created_at),
-                      id,
-                    ]
-                  )
+              !a?.count
+                ? await cxn.insert(tokens).values({
+                    uuid: v4(),
+                    value: await randomString({
+                      length: 12,
+                      encoding: "base64",
+                    }),
+                    createdDate: new Date(created_at),
+                    userId: id,
+                  })
                 : Promise.resolve()
             )
+            .then(() => cxn.end())
         )
         .then(() =>
           stripe.customers.list({

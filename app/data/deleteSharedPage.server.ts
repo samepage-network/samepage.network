@@ -1,20 +1,21 @@
-import getMysqlConnection from "fuegojs/utils/mysql";
+import getMysql from "~/data/mysql.server";
 import { S3 } from "@aws-sdk/client-s3";
+import { pageNotebookLinks, pages } from "data/schema";
+import { eq } from "drizzle-orm/expressions";
 
 const s3 = new S3({ region: "us-east-1" });
 
 const deleteSharedPage = async (uuid: string, requestId: string) => {
-  const cxn = await getMysqlConnection(requestId);
+  const cxn = await getMysql(requestId);
   await Promise.all([
-    cxn.execute(`DELETE FROM page_notebook_links WHERE page_uuid = ?`, [uuid]),
-    // TODO - delete page helper
+    cxn.delete(pageNotebookLinks).where(eq(pageNotebookLinks.pageUuid, uuid)),
     s3.deleteObject({
       Bucket: "samepage.network",
       Key: `data/page/${uuid}.json`,
     }),
   ]);
-  await cxn.execute(`DELETE FROM pages WHERE uuid = ?`, [uuid]);
-  cxn.destroy();
+  await cxn.delete(pages).where(eq(pages.uuid, uuid));
+  await cxn.end();
   return { success: true };
 };
 

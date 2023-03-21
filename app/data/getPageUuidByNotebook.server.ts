@@ -1,5 +1,7 @@
-import getMysqlConnection from "fuegojs/utils/mysql";
+import getMysqlConnection from "~/data/mysql.server";
 import { NotFoundError } from "~/data/errors.server";
+import { pageNotebookLinks } from "data/schema";
+import { and, eq } from "drizzle-orm/expressions";
 
 const getPageUuidByNotebook = async ({
   uuid,
@@ -12,21 +14,16 @@ const getPageUuidByNotebook = async ({
 }) => {
   const cxn = await getMysqlConnection(requestId);
   const pageUuid = await cxn
-    .execute(
-      `SELECT l.page_uuid
-       FROM page_notebook_links l 
-       WHERE notebook_uuid = ? AND notebook_page_id = ?`,
-      [uuid, notebookPageId]
+    .select({ page_uuid: pageNotebookLinks.pageUuid })
+    .from(pageNotebookLinks)
+    .where(
+      and(
+        eq(pageNotebookLinks.notebookUuid, uuid),
+        eq(pageNotebookLinks.notebookPageId, notebookPageId)
+      )
     )
-    .then(
-      ([r]) =>
-        (
-          r as {
-            page_uuid: string;
-          }[]
-        )[0]?.page_uuid
-    );
-  cxn.destroy();
+    .then(([r]) => r?.page_uuid);
+  await cxn.end();
   if (!pageUuid) {
     throw new NotFoundError(
       `Notebook ${uuid} not connected to page ${notebookPageId}`

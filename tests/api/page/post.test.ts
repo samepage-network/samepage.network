@@ -138,7 +138,7 @@ const logsCaught = [
   {
     label: "receiving method",
     type: "log",
-    regex: /^Received method:/,
+    regex: /^Recasdfeived method:/,
     count: 0,
   },
   {
@@ -314,7 +314,7 @@ test("Messages from deleted notebooks should return Unknown", async () => {
   await messageNotebook({ source, target });
   const cxn = await getMysql();
   await cxn.delete(notebooks).where(eq(notebooks.uuid, source));
-  cxn.end();
+  await cxn.end();
 
   const { messages } = await mockLambda({
     method: "get-unmarked-messages",

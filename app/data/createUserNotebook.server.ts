@@ -1,6 +1,8 @@
+import { tokens } from "data/schema";
 import { ConflictError } from "~/data/errors.server";
-import getMysql from "fuegojs/utils/mysql";
+import getMysql from "~/data/mysql.server";
 import connectNotebook from "./connectNotebook.server";
+import { eq } from "drizzle-orm/expressions";
 
 const createUserNotebook = async ({
   requestId,
@@ -13,8 +15,10 @@ const createUserNotebook = async ({
 }) => {
   const cxn = await getMysql(requestId);
   const tokenUuid = await cxn
-    .execute(`SELECT uuid FROM tokens where user_id = ?`, [userId])
-    .then(([r]) => (r as { uuid: string }[])[0]?.uuid);
+    .select({ uuid: tokens.uuid })
+    .from(tokens)
+    .where(eq(tokens.userId, userId))
+    .then(([r]) => r?.uuid);
   if (!tokenUuid)
     throw new ConflictError(
       `Missing a preexisting notebook. Make sure you install SamePage onto one of your existing tools for thought before creating a test one here.`
@@ -25,7 +29,7 @@ const createUserNotebook = async ({
     app: 0,
     workspace,
   });
-  cxn.destroy();
+  await cxn.end();
   return { notebookUuid, tokenUuid };
 };
 

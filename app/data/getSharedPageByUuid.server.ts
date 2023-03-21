@@ -1,9 +1,11 @@
-import getMysqlConnection from "fuegojs/utils/mysql";
-import type { AppId, InitialSchema, Schema } from "package/internal/types";
+import getMysqlConnection from "~/data/mysql.server";
+import type { InitialSchema, Schema } from "package/internal/types";
 import Automerge from "automerge";
 import downloadSharedPage from "./downloadSharedPage.server";
 import { NotFoundError } from "~/data/errors.server";
 import unwrapSchema from "package/utils/unwrapSchema";
+import { notebooks, pageNotebookLinks } from "data/schema";
+import { eq } from "drizzle-orm/expressions";
 
 const DEFAULT_SCHEMA: InitialSchema = {
   content: "",
@@ -12,31 +14,24 @@ const DEFAULT_SCHEMA: InitialSchema = {
 
 const getSharedPageByUuid = async (uuid: string, requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
-  const notebooks = await cxn
-    .execute(
-      `SELECT n.app, n.workspace, l.open, l.notebook_page_id, l.uuid, l.cid 
-       FROM page_notebook_links l 
-       INNER JOIN notebooks n ON n.uuid = l.notebook_uuid
-       WHERE page_uuid = ?`,
-      [uuid]
-    )
-    .then(
-      ([r]) =>
-        r as {
-          app: AppId;
-          workspace: string;
-          notebook_page_id: string;
-          uuid: string;
-          cid: string;
-          open: 1 | 0;
-        }[]
-    );
-  if (!notebooks.length) {
-    cxn.destroy();
+  const notebookRecords = await cxn
+    .select({
+      app: notebooks.app,
+      workspace: notebooks.workspace,
+      uuid: pageNotebookLinks.uuid,
+      cid: pageNotebookLinks.cid,
+      open: pageNotebookLinks.open,
+      notebookPageId: pageNotebookLinks.notebookPageId,
+    })
+    .from(pageNotebookLinks)
+    .innerJoin(notebooks, eq(notebooks.uuid, pageNotebookLinks.notebookUuid))
+    .where(eq(pageNotebookLinks.pageUuid, uuid));
+  if (!notebookRecords.length) {
+    await cxn.end();
     throw new NotFoundError(`No notebooks connected to page ${uuid}`);
   }
   const pages = await Promise.all(
-    notebooks.map((n) =>
+    notebookRecords.map((n) =>
       n.cid
         ? downloadSharedPage({ cid: n.cid }).then((d) => {
             if (d.body.length === 0)
@@ -57,7 +52,7 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
   ).then((pages) =>
     Object.fromEntries(pages.map(({ cid, ...rest }) => [cid, rest]))
   );
-  cxn.destroy();
+  await cxn.end();
   return {
     notebooks,
     pages,

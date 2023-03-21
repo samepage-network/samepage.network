@@ -1,6 +1,13 @@
-import getMysqlConnection from "fuegojs/utils/mysql";
+import getMysql from "~/data/mysql.server";
 import { appsById } from "package/internal/apps";
-import { Notebook } from "package/internal/types";
+import {
+  notebooks,
+  onlineClients,
+  tokens,
+  tokenNotebookLinks,
+} from "data/schema";
+import { desc, like, eq, and } from "drizzle-orm/mysql-core/expressions";
+import { sql } from "drizzle-orm/sql";
 
 const columns = [
   { Header: "App", accessor: "app" },
@@ -20,47 +27,52 @@ const listNotebooksForUser = async ({
   const index = Number(searchParams["index"] || "1") - 1;
   const size = Number(searchParams["size"]) || 10;
   const search = searchParams["search"] || "";
-  const cxn = await getMysqlConnection(requestId);
-  const pagination = [size, index * size];
-  const args = search
-    ? ([search] as (string | number)[]).concat(pagination)
-    : pagination;
+  const cxn = await getMysql(requestId);
   const data = await cxn
-    .execute(
-      `SELECT n.uuid, n.app as app, n.workspace as workspace, MAX(c.created_date) as created_date, MAX(t.value) as token
-  FROM notebooks n 
-  LEFT JOIN online_clients c ON n.uuid = c.notebook_uuid
-  LEFT JOIN token_notebook_links l ON n.uuid = l.notebook_uuid
-  LEFT JOIN tokens t ON t.uuid = l.token_uuid
-  WHERE t.user_id = ?${search ? ` AND n.workspace LIKE CONCAT("%",?,"%")` : ""}
-  GROUP BY n.uuid
-  ORDER BY created_date DESC, app, workspace
-  LIMIT ? OFFSET ?`,
-      // TODO: this is insane
-      ([userId] as (string | number)[]).concat(
-        process.env.NODE_ENV === "development"
-          ? args.map((a) => a.toString())
-          : args
+    .select({
+      uuid: notebooks.uuid,
+      app: notebooks.app,
+      workspace: notebooks.workspace,
+      created_date: sql<Date>`MAX(${onlineClients.createdDate})`.as(
+        "created_date"
+      ),
+      token: sql<string>`MAX(${tokens.value})`,
+    })
+    .from(notebooks)
+    .leftJoin(onlineClients, eq(notebooks.uuid, onlineClients.notebookUuid))
+    .leftJoin(
+      tokenNotebookLinks,
+      eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
+    )
+    .leftJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
+    // TODO - sql injection
+    .where(
+      and(
+        eq(tokens.userId, userId),
+        search
+          ? like(notebooks.workspace, sql`CONCAT('%', ${search}, '%')`)
+          : undefined
       )
     )
-    .then(
-      ([r]) =>
-        r as ({
-          created_date: Date | null;
-          uuid: string;
-          token: string;
-        } & Notebook)[]
-    );
-  const [count] = await cxn
-    .execute(
-      `SELECT COUNT(n.uuid) as total FROM notebooks n 
-       LEFT JOIN token_notebook_links l ON n.uuid = l.notebook_uuid
-       LEFT JOIN tokens t ON t.uuid = l.token_uuid
-      WHERE t.user_id = ?`,
-      [userId]
+    .groupBy(notebooks.uuid)
+    .orderBy(
+      desc(sql`created_date`),
+      desc(sql`invited_date`),
+      notebooks.app,
+      notebooks.workspace
     )
-    .then(([a]) => a as { total: number }[]);
-  cxn.destroy();
+    .limit(size)
+    .offset(index * size);
+  const [count] = await cxn
+    .select({ total: sql`COUNT(${notebooks.uuid})` })
+    .from(notebooks)
+    .leftJoin(
+      tokenNotebookLinks,
+      eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
+    )
+    .leftJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
+    .where(eq(tokens.userId, userId));
+  await cxn.end();
   return {
     columns,
     count: count.total,

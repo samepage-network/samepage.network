@@ -1,6 +1,6 @@
 import type { WSHandler } from "./sendmessage";
 // import emailError from "~/data/emailError.server";
-// import getMysqlConnection from "fuegojs/utils/mysql";
+// import getMysqlConnection from "~/data/mysql.server";
 
 export const handler: WSHandler = (event) => {
   const id = event.requestContext?.connectionId || "";

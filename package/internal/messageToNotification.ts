@@ -1,6 +1,6 @@
 import { appsById } from "./apps";
 import MESSAGES, { Operation } from "./messages";
-import { Notebook, Notification } from "./types";
+import { Notification } from "./types";
 
 const messageToNotification = ({
   uuid,
@@ -9,7 +9,7 @@ const messageToNotification = ({
   data,
 }: {
   uuid: string;
-  source: Notebook | { app: null; workspace: null };
+  source: { app: null | number; workspace: null | string };
   operation: Operation;
   data: Record<string, string>;
 }): Notification => {

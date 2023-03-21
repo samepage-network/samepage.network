@@ -9,6 +9,7 @@ import {
   varchar,
   json,
 } from "drizzle-orm/mysql-core";
+import { sql } from "drizzle-orm/sql";
 import { z } from "zod";
 
 const uuidField = z.string().uuid();
@@ -18,8 +19,8 @@ const uuidIndex = uuidField.describe("index");
 
 export const tokens = mysqlTable("tokens", {
   uuid: varchar("uuid", { length: 36 }).primaryKey(),
-  value: varchar("value", { length: 256 }),
-  userId: varchar("user_id", { length: 36 }),
+  value: varchar("value", { length: 256 }).notNull(),
+  userId: varchar("user_id", { length: 36 }).notNull(),
   createdDate: datetime("created_date"),
 });
 
@@ -55,8 +56,8 @@ const tokenNotebookLink = z
 
 export const notebooks = mysqlTable("notebooks", {
   uuid: varchar("uuid", { length: 36 }).primaryKey(),
-  workspace: varchar("workspace", { length: 256 }),
-  app: tinyint("app"),
+  workspace: varchar("workspace", { length: 256 }).notNull(),
+  app: tinyint("app").notNull(),
 });
 
 const notebook = z.object({
@@ -69,13 +70,13 @@ export const pageNotebookLinks = mysqlTable(
   "page_notebook_links",
   {
     uuid: varchar("uuid", { length: 36 }).primaryKey(),
-    pageUuid: varchar("page_uuid", { length: 36 }),
-    notebookPageId: varchar("notebook_page_id", { length: 256 }),
-    version: int("version"),
-    open: boolean("open"),
-    invitedBy: varchar("invited_by", { length: 256 }),
-    invitedDate: datetime("invited_date"),
-    notebookUuid: varchar("notebook_uuid", { length: 36 }),
+    pageUuid: varchar("page_uuid", { length: 36 }).notNull(),
+    notebookPageId: varchar("notebook_page_id", { length: 256 }).notNull(),
+    version: int("version").notNull(),
+    open: boolean("open").notNull(),
+    invitedBy: varchar("invited_by", { length: 256 }).notNull(),
+    invitedDate: datetime("invited_date").notNull(),
+    notebookUuid: varchar("notebook_uuid", { length: 36 }).notNull(),
     cid: varchar("cid", { length: 256 }),
   },
   (links) => ({
@@ -109,7 +110,9 @@ const pageNotebookLink = z
 
 export const pages = mysqlTable("pages", {
   uuid: varchar("uuid", { length: 36 }).primaryKey(),
-  createdDate: datetime("created_date"),
+  createdDate: datetime("created_date")
+    .notNull()
+    .default(sql`now()`),
 });
 
 const page = z.object({
@@ -119,8 +122,8 @@ const page = z.object({
 
 export const onlineClients = mysqlTable("online_clients", {
   id: varchar("id", { length: 36 }).primaryKey(),
-  createdDate: datetime("created_date"),
-  notebookUuid: varchar("notebook_uuid", { length: 36 }),
+  createdDate: datetime("created_date").notNull(),
+  notebookUuid: varchar("notebook_uuid", { length: 36 }).notNull(),
 });
 
 const onlineClient = z.object({
@@ -131,10 +134,10 @@ const onlineClient = z.object({
 
 export const clientSessions = mysqlTable("client_sessions", {
   id: varchar("id", { length: 36 }).primaryKey(),
-  createdDate: datetime("created_date"),
-  endDate: datetime("end_date"),
-  disconnectedBy: varchar("disconnected_by", { length: 36 }),
-  notebookUuid: varchar("notebook_uuid", { length: 36 }),
+  createdDate: datetime("created_date").notNull(),
+  endDate: datetime("end_date").notNull(),
+  disconnectedBy: varchar("disconnected_by", { length: 36 }).notNull(),
+  notebookUuid: varchar("notebook_uuid", { length: 36 }).notNull(),
 });
 
 const clientSession = z.object({
@@ -149,11 +152,11 @@ export const messages = mysqlTable(
   "messages",
   {
     uuid: varchar("uuid", { length: 36 }).primaryKey(),
-    createdDate: datetime("created_date"),
-    marked: boolean("marked"),
-    source: varchar("source", { length: 36 }),
-    target: varchar("target", { length: 36 }),
-    operation: varchar("operation", { length: 256 }),
+    createdDate: datetime("created_date").notNull(),
+    marked: boolean("marked").notNull(),
+    source: varchar("source", { length: 36 }).notNull(),
+    target: varchar("target", { length: 36 }).notNull(),
+    operation: varchar("operation", { length: 256 }).notNull(),
     metadata: json("metadata"),
   },
   (msgs) => ({
@@ -177,8 +180,8 @@ export const ongoingMessages = mysqlTable(
   "ongoing_messages",
   {
     uuid: varchar("uuid", { length: 36 }).primaryKey(),
-    chunk: int("chunk"),
-    messageUuid: varchar("message_uuid", { length: 36 }),
+    chunk: int("chunk").notNull(),
+    messageUuid: varchar("message_uuid", { length: 36 }).notNull(),
   },
   (msgs) => ({
     chunkMessageIndex: uniqueIndex("UC_chunk_message_uuid").on(
@@ -198,10 +201,10 @@ const ongoingMessage = z
 
 export const quotas = mysqlTable("quotas", {
   uuid: varchar("uuid", { length: 36 }).primaryKey(),
-  value: int("value"),
-  field: tinyint("field"),
+  value: int("value").notNull(),
+  field: tinyint("field").notNull(),
   stripeId: varchar("stripe_id", { length: 256 }),
-})
+});
 
 const quota = z.object({
   uuid,
@@ -212,10 +215,10 @@ const quota = z.object({
 
 export const interviews = mysqlTable("interviews", {
   uuid: varchar("uuid", { length: 36 }).primaryKey(),
-  completed: boolean("completed"),
-  link: varchar("link", { length: 256 }),
-  date: datetime("date"),
-  email: varchar("email", { length: 256 }),
+  completed: boolean("completed").notNull(),
+  link: varchar("link", { length: 256 }).notNull(),
+  date: datetime("date").notNull(),
+  email: varchar("email", { length: 256 }).notNull(),
 });
 
 const interview = z.object({

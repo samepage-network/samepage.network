@@ -1,6 +1,21 @@
-import getMysqlConnection from "fuegojs/utils/mysql";
+import getMysqlConnection from "~/data/mysql.server";
 import { appsById } from "package/internal/apps";
-import { Notebook } from "package/internal/types";
+import {
+  clientSessions,
+  messages,
+  notebooks,
+  onlineClients,
+  tokenNotebookLinks,
+  tokens,
+} from "data/schema";
+import { sql } from "drizzle-orm/sql";
+import {
+  desc,
+  like,
+  eq,
+  isNotNull,
+  gt,
+} from "drizzle-orm/mysql-core/expressions";
 
 const listNotebooks = async (
   requestId: string,
@@ -10,74 +25,68 @@ const listNotebooks = async (
   const size = Number(searchParams["size"]) || 10;
   const search = searchParams["search"] || "";
   const cxn = await getMysqlConnection(requestId);
-  const pagination = [size, index * size];
-  const args = search
-    ? ([search] as (string | number)[]).concat(pagination)
-    : pagination;
   const data = await cxn
-    .execute(
-      `SELECT n.uuid, n.app as app, n.workspace as workspace, MAX(c.created_date) as created_date, MAX(t.created_date) as invited_date, MAX(t.value) as token
-  FROM notebooks n 
-  LEFT JOIN online_clients c ON n.uuid = c.notebook_uuid
-  LEFT JOIN token_notebook_links l ON n.uuid = l.notebook_uuid
-  LEFT JOIN tokens t ON t.uuid = l.token_uuid
-  ${search ? `WHERE n.workspace LIKE CONCAT("%",?,"%")` : ""}
-  GROUP BY n.uuid
-  ORDER BY created_date DESC, invited_date DESC, app, workspace
-  LIMIT ? OFFSET ?`,
-      // TODO: this is insane
-      process.env.NODE_ENV === "development"
-        ? args.map((a) => a.toString())
-        : args
+    .select({
+      uuid: notebooks.uuid,
+      app: notebooks.app,
+      workspace: notebooks.workspace,
+      created_date: sql<Date>`MAX(${onlineClients.createdDate})`.as("created_date"),
+      invited_date: sql<Date>`MAX(${tokens.createdDate})`.as("invited_date"),
+      token: sql<string>`MAX(${tokens.value})`,
+    })
+    .from(notebooks)
+    .leftJoin(onlineClients, eq(notebooks.uuid, onlineClients.notebookUuid))
+    .leftJoin(
+      tokenNotebookLinks,
+      eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
     )
-    .then(
-      ([r]) =>
-        r as ({
-          created_date: Date | null;
-          uuid: string;
-          invited_date: Date | null;
-          token: string;
-        } & Notebook)[]
-    );
+    .leftJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
+    // TODO - sql injection
+    .where(
+      search
+        ? like(notebooks.workspace, sql`CONCAT('%', ${search}, '%')`)
+        : undefined
+    )
+    .groupBy(notebooks.uuid)
+    .orderBy(
+      desc(sql`created_date`),
+      desc(sql`invited_date`),
+      notebooks.app,
+      notebooks.workspace
+    )
+    .limit(size)
+    .offset(index * size);
   const [count] = await cxn
-    .execute(`SELECT COUNT(n.uuid) as total FROM notebooks n`)
-    .then(([a]) => a as { total: number }[]);
+    .select({ total: sql`COUNT(${notebooks.uuid})` })
+    .from(notebooks);
   const stats = await Promise.all([
     cxn
-      .execute(`SELECT COUNT(id) as online FROM online_clients`)
-      .then(
-        ([a]) => ["online", (a as { online: number }[])[0].online] as const
-      ),
+      .select({ online: sql`COUNT(${onlineClients.id})` })
+      .from(onlineClients)
+      .then(([a]) => ["online", a.online] as const),
     cxn
-      .execute(
-        `SELECT COUNT(t.value) as accepted FROM tokens t 
-        LEFT JOIN token_notebook_links l ON l.token_uuid = t.uuid
-        LEFT JOIN notebooks n ON l.notebook_uuid = n.uuid
-        WHERE n.app is not null`
+      .select({ accepted: sql`COUNT(${tokens.value})` })
+      .from(tokens)
+      .leftJoin(
+        tokenNotebookLinks,
+        eq(tokens.uuid, tokenNotebookLinks.tokenUuid)
       )
-      .then(
-        ([a]) =>
-          ["accepted", (a as { accepted: number }[])[0].accepted] as const
-      ),
+      .leftJoin(notebooks, eq(notebooks.uuid, tokenNotebookLinks.notebookUuid))
+      .where(isNotNull(notebooks.app))
+      .then(([a]) => ["accepted", a.accepted] as const),
     cxn
-      .execute(
-        `SELECT COUNT(id) as sessions FROM client_sessions WHERE end_date > DATE_SUB(NOW(), INTERVAL 1 DAY)`
-      )
-      .then(
-        ([a]) =>
-          ["sessions", (a as { sessions: number }[])[0].sessions] as const
-      ),
+      .select({ sessions: sql`COUNT(${clientSessions.id})` })
+      .from(clientSessions)
+      .where(gt(clientSessions.endDate, sql`DATE_SUB(NOW(), INTERVAL 1 DAY)`))
+      .then(([a]) => ["sessions", a.sessions] as const),
     cxn
-      .execute(
-        `SELECT COUNT(uuid) as messages FROM messages WHERE created_date > DATE_SUB(NOW(), INTERVAL 1 DAY)`
-      )
-      .then(
-        ([a]) =>
-          ["messages", (a as { messages: number }[])[0].messages] as const
-      ),
+      .select({ messages: sql`COUNT(${messages.uuid})` })
+      .from(messages)
+      .where(gt(messages.createdDate, sql`DATE_SUB(NOW(), INTERVAL 1 DAY)`))
+      .then(([a]) => ["messages", a.messages] as const),
   ]).then((entries) => Object.fromEntries(entries));
   stats["total"] = count.total;
-  cxn.destroy();
+  await cxn.end();
   return {
     columns: [
       { Header: "App", accessor: "app" },

@@ -1,6 +1,8 @@
 import { Notebook } from "package/internal/types";
-import getMysql from "fuegojs/utils/mysql";
+import getMysql from "~/data/mysql.server";
 import { v4 } from "uuid";
+import { notebooks, tokenNotebookLinks } from "data/schema";
+import { eq, and, isNull } from "drizzle-orm/expressions";
 
 const getOrGenerateNotebookUuid = async ({
   requestId,
@@ -8,22 +10,26 @@ const getOrGenerateNotebookUuid = async ({
   app,
 }: { requestId: string } & Notebook) => {
   const cxn = await getMysql(requestId);
-  const [existingNotebooks] = await cxn.execute(
-    `SELECT n.uuid FROM notebooks n
-    LEFT JOIN token_notebook_links l ON l.notebook_uuid = n.uuid
-    where n.workspace = ? and n.app = ? and l.token_uuid is NULL`,
-    [workspace, app]
-  );
-  const [potentialNotebookUuid] = existingNotebooks as { uuid: string }[];
+  const [potentialNotebookUuid] = await cxn
+    .select({ uuid: notebooks.uuid })
+    .from(notebooks)
+    .leftJoin(
+      tokenNotebookLinks,
+      eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
+    )
+    .where(
+      and(
+        eq(notebooks.workspace, workspace),
+        eq(notebooks.app, app),
+        isNull(tokenNotebookLinks.tokenUuid)
+      )
+    );
   return (
     potentialNotebookUuid?.uuid ||
     Promise.resolve(v4()).then((uuid) =>
       cxn
-        .execute(
-          `INSERT INTO notebooks (uuid, app, workspace)
-    VALUES (?, ?, ?)`,
-          [uuid, app, workspace]
-        )
+        .insert(notebooks)
+        .values({ uuid, app, workspace })
         .then(() => uuid)
     )
   );

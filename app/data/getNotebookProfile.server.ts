@@ -1,8 +1,15 @@
 import { NotFoundError } from "~/data/errors.server";
-import getMysqlConnection from "fuegojs/utils/mysql";
+import getMysql from "~/data/mysql.server";
 import { appsById } from "package/internal/apps";
-import { AppId } from "package/internal/types";
 import getPrimaryUserEmail from "./getPrimaryUserEmail.server";
+import {
+  messages,
+  notebooks,
+  pageNotebookLinks,
+  tokenNotebookLinks,
+  tokens,
+} from "data/schema";
+import { eq, desc } from "drizzle-orm/expressions";
 
 const getNotebookProfile = async ({
   context: { requestId },
@@ -11,71 +18,74 @@ const getNotebookProfile = async ({
   params: Record<string, string | undefined>;
   context: { requestId: string };
 }) => {
-  const cxn = await getMysqlConnection(requestId);
-  const [results] = await cxn.execute(
-    `SELECT n.app, n.workspace, n.uuid, t.created_date, t.user_id FROM notebooks n
-    LEFT JOIN token_notebook_links l ON n.uuid = l.notebook_uuid
-    LEFT JOIN tokens t ON t.uuid = l.token_uuid
-  WHERE n.uuid = ?`,
-    [uuid]
-  );
-  const [notebook] = results as {
-    app: AppId;
-    workspace: string;
-    uuid: string;
-    user_id: string;
-  }[];
+  const cxn = await getMysql(requestId);
+  const [notebook] = await cxn
+    .select({
+      app: notebooks.app,
+      workspace: notebooks.workspace,
+      uuid: notebooks.uuid,
+      createdDate: tokens.createdDate,
+      userId: tokens.userId,
+    })
+    .from(notebooks)
+    .leftJoin(
+      tokenNotebookLinks,
+      eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
+    )
+    .leftJoin(tokens, eq(tokenNotebookLinks.tokenUuid, tokens.uuid))
+    .where(eq(notebooks.uuid, uuid));
   if (!notebook)
     throw new NotFoundError(`Could not find notebook by uuid: ${uuid}`);
   const pages = await cxn
-    .execute(
-      `SELECT p.page_uuid, p.notebook_page_id FROM page_notebook_links p
-    WHERE p.notebook_uuid = ? ORDER BY p.invited_date DESC LIMIT 10`,
-      [uuid]
-    )
-    .then(([a]) =>
-      (a as { page_uuid: string; notebook_page_id: string }[]).map((m) => ({
-        uuid: m.page_uuid,
-        title: m.notebook_page_id,
+    .select({
+      uuid: pageNotebookLinks.pageUuid,
+      title: pageNotebookLinks.notebookPageId,
+    })
+    .from(pageNotebookLinks)
+    .where(eq(pageNotebookLinks.notebookUuid, uuid))
+    .orderBy(desc(pageNotebookLinks.invitedDate))
+    .limit(10);
+  const outgoingMessages = await cxn
+    .select({
+      source: messages.source,
+      createdDate: messages.createdDate,
+      marked: messages.marked,
+    })
+    .from(messages)
+    .where(eq(messages.target, uuid))
+    .orderBy(desc(messages.createdDate))
+    .limit(10)
+    .then((a) =>
+      a.map((m) => ({
+        source: m.source,
+        date: m.createdDate.valueOf(),
+        read: !!m.marked,
       }))
     );
-  const outgoingMessages = await cxn
-    .execute(
-      `SELECT m.source, m.created_date, m.marked FROM messages m
-  WHERE m.target = ? ORDER BY m.created_date DESC LIMIT 10`,
-      [uuid]
-    )
-    .then(([a]) =>
-      (a as { source: string; created_date: Date; marked: 0 | 1 }[]).map(
-        (m) => ({
-          source: m.source,
-          date: m.created_date.valueOf(),
-          read: !!m.marked,
-        })
-      )
-    );
   const incomingMessages = await cxn
-    .execute(
-      `SELECT m.target, m.created_date, m.marked FROM messages m
-  WHERE m.source = ? ORDER BY m.created_date DESC LIMIT 10`,
-      [uuid]
-    )
-    .then(([a]) =>
-      (a as { target: string; created_date: Date; marked: 0 | 1 }[]).map(
-        (m) => ({
-          target: m.target,
-          date: m.created_date.valueOf(),
-          read: !!m.marked,
-        })
-      )
+    .select({
+      target: messages.target,
+      created_date: messages.createdDate,
+      marked: messages.marked,
+    })
+    .from(messages)
+    .where(eq(messages.source, uuid))
+    .orderBy(desc(messages.createdDate))
+    .limit(10)
+    .then((a) =>
+      a.map((m) => ({
+        target: m.target,
+        date: m.created_date.valueOf(),
+        read: m.marked,
+      }))
     );
-  cxn.destroy();
+  await cxn.end();
   return {
     notebook: {
       workspace: notebook.workspace,
       uuid: notebook.uuid,
       app: appsById[notebook.app].name,
-      email: await getPrimaryUserEmail(notebook.user_id),
+      email: await getPrimaryUserEmail(notebook.userId),
     },
     outgoingMessages,
     incomingMessages,

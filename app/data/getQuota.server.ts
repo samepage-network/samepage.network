@@ -1,10 +1,12 @@
 import QUOTAS from "./quotas.server";
-import getMysql from "fuegojs/utils/mysql";
+import getMysql from "~/data/mysql.server";
 import { users } from "@clerk/clerk-sdk-node";
 import Stripe from "stripe";
+import { quotas, tokens } from "data/schema";
+import { eq, and, isNull } from "drizzle-orm/expressions";
 
 type BackendContext = {
-  quotas: { [p: string]: { [k in typeof QUOTAS[number]]?: number } };
+  quotas: { [p: string]: { [k in (typeof QUOTAS)[number]]?: number } };
 };
 
 export const globalContext: Record<string, BackendContext> = {};
@@ -18,13 +20,15 @@ const getQuota = async ({
   tokenUuid,
 }: {
   requestId: string;
-  field: typeof QUOTAS[number];
+  field: (typeof QUOTAS)[number];
   tokenUuid: string;
 }) => {
   const cxn = await getMysql(requestId);
   const userId = await cxn
-    .execute(`SELECT user_id FROM tokens WHERE uuid = ?`, [tokenUuid])
-    .then(([r]) => (r as { user_id: string }[])[0]?.user_id);
+    .select({ user_id: tokens.userId })
+    .from(tokens)
+    .where(eq(tokens.uuid, tokenUuid))
+    .then(([r]) => r?.user_id);
   const stripeId = userId
     ? await users
         .getUser(userId)
@@ -50,16 +54,16 @@ const getQuota = async ({
   const storedValue = quotasInThisPlan?.[field];
   if (typeof storedValue !== "undefined") return storedValue;
   return cxn
-    .execute(
-      `SELECT value FROM quotas WHERE field = ? AND stripe_id ${
-        stripeId ? "= ?" : "IS NULL"
-      }`,
-      ([QUOTAS.indexOf(field)] as (string | number)[]).concat(
-        stripeId ? [stripeId] : []
+    .select({ value: quotas.value })
+    .from(quotas)
+    .where(
+      and(
+        eq(quotas.field, QUOTAS.indexOf(field)),
+        stripeId ? eq(quotas.stripeId, stripeId) : isNull(quotas.stripeId)
       )
     )
     .then(([q]) => {
-      const { value } = (q as { value: number }[])[0];
+      const { value } = q;
       if (quotasInThisPlan) quotasInThisPlan[field] = value;
       else context.quotas[stripeId] = { [field]: value };
       return value;

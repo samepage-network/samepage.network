@@ -1,4 +1,7 @@
-import getMysql from "fuegojs/utils/mysql";
+import getMysql from "~/data/mysql.server";
+import { sql } from "drizzle-orm/sql";
+import { pageNotebookLinks } from "data/schema";
+import { like } from "drizzle-orm/mysql-core/expressions";
 
 const searchPageNotebookLinks = async ({
   data,
@@ -10,13 +13,15 @@ const searchPageNotebookLinks = async ({
   const search = data["search"]?.[0];
   const cxn = await getMysql(requestId);
   const results = await cxn
-    .execute(
-      `SELECT DISTINCT page_uuid as uuid, notebook_page_id 
-      FROM page_notebook_links 
-      WHERE notebook_page_id LIKE CONCAT("%",?,"%")`,
-      [search]
-    )
-    .then(([a]) => a as { uuid: string; notebook_page_id: string }[]);
+    .select({
+      uuid: sql`DISTINCT ${pageNotebookLinks.uuid}`,
+      notebook_page_id: pageNotebookLinks.notebookPageId,
+    })
+    .from(pageNotebookLinks)
+    .where(
+      // TODO - sql injection
+      like(pageNotebookLinks.notebookPageId, sql`CONCAT("%", ${search}, "%")`)
+    );
   return {
     results,
   };
