@@ -3,8 +3,12 @@ import path from "path";
 import { execSync } from "child_process";
 import { Octokit } from "@octokit/rest";
 import readDir from "../../package/scripts/internal/readDir";
+import dotenv from "dotenv";
+dotenv.config();
 
-const octokit = new Octokit();
+const octokit = new Octokit({
+  auth: process.env.GITHUB_TOKEN,
+});
 
 const init = async ({
   id = "help",
@@ -53,10 +57,15 @@ const init = async ({
   );
   await octokit.users
     .getAuthenticated()
-    .then((r) => {
+    .then(async (r) => {
       if (r.data.name === "samepage-network") {
         console.log("Creating repo on github");
-        // create repo on github first
+        const repo = await octokit.repos.createInOrg({
+          org: "samepage-network",
+          name: `${id}-samepage`,
+          visibility: "public",
+        });
+        console.log("Created repo at", repo.data.html_url);
         // execSync("git push origin main", { stdio: "inherit" });
       } else {
         console.log("Cannot create repo on github. Logged in as", r.data.name);

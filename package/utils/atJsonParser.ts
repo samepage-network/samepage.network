@@ -372,17 +372,19 @@ const atJsonParser = ({
       processColumn(nextColumn);
 
       if (nextColumn.states.length === 0) {
+        const errorInfo = getError(table, token);
         if (process.env.NODE_ENV === "production") {
           sendExtensionError({
             type: "At JSON Parser encountered an unexpected token",
             data: {
               input: content,
+              errorInfo,
             },
           });
         } else {
           errorLogCharts(table);
         }
-        throw new Error(getError(table, token));
+        throw new Error(errorInfo);
       }
 
       current++;

@@ -185,6 +185,9 @@ const NotificationContainer = () => {
         className={`rounded-full h-6 w-6 cursor-pointer shadow-xl ${
           status === "CONNECTED" ? "" : "bg-opacity-50"
         }`}
+        style={{
+          opacity: status === "CONNECTED" || isOpen ? 1 : 0.5,
+        }}
       />
     </div>
   );
