@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// import new from "./commands/new";
+import init from "./commands/init";
 import build from "./commands/build";
 import deploy from "./commands/deploy";
 import dev from "./commands/dev";
@@ -81,12 +81,16 @@ const run = async (command: string, args: string[]): Promise<number> => {
     // NPM
     case "package":
       return packageCmd(opts);
+      // case "publish":
+      //   console.log("Coming soon!");
+      //   return 0;
+      // case "watch":
+      //   console.log("Coming soon!");
+      //   return 0;
 
     // MISC
-    // case "init":
-    //   return init(opts);
-    // case "postinstall":
-    //   return postinstall();
+    case "init":
+      return init(opts);
     // case "test":
     //   console.log("Coming soon!");
     //   return 0;

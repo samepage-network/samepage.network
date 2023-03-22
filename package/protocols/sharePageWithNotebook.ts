@@ -760,35 +760,53 @@ const setupSharePageWithNotebook = ({
     label?: string;
     notebookPageId: string;
   }) => {
-    const doc = await calculateState(notebookPageId);
-    const zResult = await zInitialSchema.safeParseAsync(doc);
-    if (zResult.success) {
-      return updatePage({
-        notebookPageId,
-        label,
-        callback: async (oldDoc) => {
-          changeAutomergeDoc(oldDoc, zResult.data);
-        },
-      });
-    } else {
-      // For now, just email error and run updatePage as normal. Should result in pairs of emails being sent I think.
-      return sendExtensionError({
-        type: "Failed to calculate valid document",
-        data: {
-          notebookPageId,
-          doc,
-          errors: zResult.error,
-          message: parseZodError(zResult.error),
-        },
-      }).then((data) =>
-        dispatchAppEvent({
-          type: "log",
-          intent: "error",
-          content: `Failed to parse document. Error report ${data.messageId} has been sent to support@samepage.network`,
-          id: `calculate-error`,
-        })
+    return calculateState(notebookPageId)
+      .then(async (doc) => {
+        const zResult = await zInitialSchema.safeParseAsync(doc);
+        if (zResult.success) {
+          return updatePage({
+            notebookPageId,
+            label,
+            callback: async (oldDoc) => {
+              changeAutomergeDoc(oldDoc, zResult.data);
+            },
+          });
+        } else {
+          // For now, just email error and run updatePage as normal. Should result in pairs of emails being sent I think.
+          return sendExtensionError({
+            type: "Failed to calculate valid document",
+            data: {
+              notebookPageId,
+              doc,
+              errors: zResult.error,
+              message: parseZodError(zResult.error),
+            },
+          }).then((data) =>
+            dispatchAppEvent({
+              type: "log",
+              intent: "error",
+              content: `Failed to parse document. Error report ${data.messageId} has been sent to support@samepage.network`,
+              id: `calculate-parse-error`,
+            })
+          );
+        }
+      })
+      .catch((e) =>
+        sendExtensionError({
+          type: "Failed to calculate document",
+          data: {
+            notebookPageId,
+          },
+          error: e,
+        }).then((data) =>
+          dispatchAppEvent({
+            type: "log",
+            intent: "error",
+            content: `Failed to calculate document. Error report ${data.messageId} has been sent to support@samepage.network`,
+            id: `calculate-error`,
+          })
+        )
       );
-    }
   };
 
   return {

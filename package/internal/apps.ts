@@ -50,6 +50,12 @@ const APPS: App[] = [
     workspaceLabel: "workspace",
     development: true,
   },
+  {
+    id: 7,
+    name: "GitHub",
+    workspaceLabel: "repository",
+    development: true,
+  },
 ];
 
 export const appsById = Object.fromEntries(APPS.map(({ id, ...a }) => [id, a]));

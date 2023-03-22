@@ -428,7 +428,7 @@ const createTestSamePageClient = async ({
           // @ts-expect-error
           calculateState = async () => ({
             content: "Invalid",
-            annotations: [{ type: "block", start: 0, end: 7 }],
+            annotations: [{ type: "invalid", start: 0, end: 7 }],
           });
           sendResponse();
         } else if (message.type === "fixCalculate") {

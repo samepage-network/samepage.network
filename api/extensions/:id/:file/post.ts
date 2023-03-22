@@ -6,14 +6,12 @@ import dotenv from "dotenv";
 const logic = async ({ id, file, ...body }: { id: string; file: string }) => {
   const root = `${process.cwd()}/../${id}-samepage`;
   const outdir = `${root}/out`;
-  // use hashing to make this smarter
-  //   if (!fs.existsSync(outdir)) {
   Object.keys(require.cache)
     .filter((k) => k.endsWith(`${id}-samepage/out/${file}.js`))
     .forEach((k) => {
-      console.log("clear", k);
       delete require.cache[k];
     });
+  // todo: build this in the extension repos
   await nodeCompile({
     outdir,
     functions: [file],
@@ -24,17 +22,19 @@ const logic = async ({ id, file, ...body }: { id: string; file: string }) => {
       )
     ),
   });
-  //   }
-  const result = await import(`${outdir}/${file}.js`).then((module) => {
-    return module.handler(
-      {
-        body: JSON.stringify(body),
-        headers: {},
-        requestContext: {},
-      },
-      {}
-    );
-  });
+  const rand = Math.random();
+  const result = await import(`${outdir}/${file}.js?bust=${rand}`).then(
+    (module) => {
+      return module.handler(
+        {
+          body: JSON.stringify(body),
+          headers: {},
+          requestContext: {},
+        },
+        {}
+      );
+    }
+  );
   return result.body && result.statusCode < 400
     ? JSON.parse(result.body)
     : Promise.reject(new Error(result.body));

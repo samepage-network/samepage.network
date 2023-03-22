@@ -616,7 +616,7 @@ test("Full integration test of extensions", async () => {
     await client1.send({ type: "breakCalculate" });
     const awaitBreak = client1.send({
       type: "awaitLog",
-      id: "calculate-error",
+      id: "calculate-parse-error",
     });
     await client1.send({
       type: "refresh",

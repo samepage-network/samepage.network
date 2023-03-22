@@ -226,17 +226,26 @@ export const createTextAtJson: PostProcess = (data) => {
 };
 
 export const combineAtJsons = (d: InputData) => {
-  const [first, second] = d as [InitialSchema, InitialSchema];
-  return {
-    content: `${first.content}${second.content}`,
-    annotations: first.annotations.concat(
-      second.annotations.map((a) => ({
-        ...a,
-        start: a.start + first.content.length,
-        end: a.end + first.content.length,
-      }))
-    ),
-  };
+  return d.reduce<InitialSchema>(
+    (total, current) => ({
+      content: `${total.content}${
+        "content" in current ? current.content : current.value
+      }`,
+      annotations: total.annotations.concat(
+        "annotations" in current
+          ? current.annotations.map((a) => ({
+              ...a,
+              start: a.start + total.content.length,
+              end: a.end + total.content.length,
+            }))
+          : []
+      ),
+    }),
+    {
+      content: "",
+      annotations: [],
+    } as InitialSchema
+  );
 };
 
 export const head: PostProcess = (d) => d[0] as InitialSchema;
