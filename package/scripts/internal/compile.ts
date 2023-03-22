@@ -95,7 +95,8 @@ const compile = ({
   entry = [],
 }: CliArgs & { opts?: esbuild.BuildOptions }) => {
   const srcRoot = path.join(root, "src");
-  const functionsRoot = path.join(srcRoot, "functions");
+  const apiRoot = path.join(srcRoot, "api");
+  const legacyApiRoot = path.join(srcRoot, "functions");
   const rootDir = fs
     .readdirSync(srcRoot, { withFileTypes: true })
     .filter((f) => f.isFile())
@@ -126,8 +127,11 @@ const compile = ({
       .filter((s) => !!process.env[s])
       .map((s) => [`process.env.${s}`, `"${process.env[s]}"`])
   );
-  const backendFunctions = fs.existsSync(functionsRoot)
-    ? fs.readdirSync(functionsRoot).map((f) => f.replace(/\.ts$/, ""))
+  const apiFunctions = fs.existsSync(apiRoot)
+    ? fs.readdirSync(apiRoot).map((f) => f.replace(/\.ts$/, ""))
+    : [];
+  const legacyApiFunctions = fs.existsSync(legacyApiRoot)
+    ? fs.readdirSync(legacyApiRoot).map((f) => f.replace(/\.ts$/, ""))
     : [];
   const backendOutdir = path.join(root, "out");
 
@@ -167,17 +171,32 @@ const compile = ({
         metafile: analyze,
         ...opts,
       }),
-    ].concat(
-      backendFunctions.length
-        ? nodeCompile({
-            outdir: backendOutdir,
-            functions: backendFunctions,
-            root: functionsRoot,
-            define: envObject,
-          })
-        : []
-    )
-  ).then(async ([r]) => {
+    ]
+      .concat(
+        apiFunctions.length
+          ? [
+              nodeCompile({
+                outdir: backendOutdir,
+                functions: apiFunctions,
+                root: apiRoot,
+                define: envObject,
+              }),
+            ]
+          : []
+      )
+      .concat(
+        legacyApiFunctions.length
+          ? [
+              nodeCompile({
+                outdir: backendOutdir,
+                functions: legacyApiFunctions,
+                root: legacyApiRoot,
+                define: envObject,
+              }),
+            ]
+          : []
+      )
+  ).then(async ([r, nodeResult]) => {
     if (r.metafile) {
       const text = await esbuild.analyzeMetafile(r.metafile);
       const files = text
@@ -336,9 +355,11 @@ const compile = ({
           fs.cpSync(appPath(f), path.join(mirror, path.relative(outdir, f)))
         );
       }
+      nodeResult?.rebuild?.();
     };
     finish();
     const { rebuild: rebuilder } = r;
+    const backendFunctions = apiFunctions.concat(legacyApiFunctions);
     return rebuilder
       ? {
           rebuild: () => rebuilder().then(finish),
