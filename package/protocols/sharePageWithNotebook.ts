@@ -59,6 +59,7 @@ const setupSharePageWithNotebook = ({
   doesPageExist = () => Promise.resolve(false),
   applyState = () => Promise.resolve(),
   calculateState = () => Promise.resolve({ annotations: [], content: "" }),
+  onConnect,
 }: {
   overlayProps?: {
     viewSharedPageProps?: ViewSharedPagesProps;
@@ -80,6 +81,7 @@ const setupSharePageWithNotebook = ({
     state: InitialSchema
   ) => Promise<unknown>;
   calculateState?: (notebookPageId: string) => Promise<InitialSchema>;
+  onConnect?: () => () => void;
 } = {}) => {
   const { viewSharedPageProps, sharedPageStatusProps } = overlayProps;
 
@@ -248,6 +250,7 @@ const setupSharePageWithNotebook = ({
       actorId: getActorId(),
     });
 
+  let offConnect: (() => void) | undefined;
   const offAppEvent = onAppEvent("connection", (e) => {
     if (e.status === "CONNECTED") {
       if (sharedPageStatusProps) {
@@ -285,6 +288,7 @@ const setupSharePageWithNotebook = ({
           sharedPageObserver.disconnect();
         };
       }
+
       registerNotificationActions({
         operation: "SHARE_PAGE",
         actions: {
@@ -363,6 +367,7 @@ const setupSharePageWithNotebook = ({
             }),
         },
       });
+
       addNotebookListener({
         operation: "SHARE_PAGE",
         handler: (e, source, uuid) => {
@@ -432,91 +437,99 @@ const setupSharePageWithNotebook = ({
           if (!has(notebookPageId)) return;
 
           const executeUpdate = () =>
-            load(notebookPageId).then((oldDoc) => {
-              const binaryChanges = changes.map(
-                (c) => base64ToBinary(c) as Automerge.BinaryChange
-              );
-              const [newDoc, patch] = Automerge.applyChanges(
-                oldDoc,
-                binaryChanges
-              );
-              set(notebookPageId, newDoc);
-              if (patch.pendingChanges) {
-                const storedChanges = Automerge.getAllChanges(newDoc).map((c) =>
-                  Automerge.decodeChange(c)
+            load(notebookPageId)
+              .then((oldDoc) => {
+                const binaryChanges = changes.map(
+                  (c) => base64ToBinary(c) as Automerge.BinaryChange
                 );
-                const existingDependencies = Object.fromEntries(
-                  storedChanges.map((c) => [`${c.actor}~${c.seq}`, c.hash])
+                const [newDoc, patch] = Automerge.applyChanges(
+                  oldDoc,
+                  binaryChanges
                 );
-                const me = Automerge.getActorId(newDoc);
-                if (
-                  Object.entries(dependencies).some(
-                    ([actor, { seq, hash }]) =>
-                      actor !== me &&
-                      existingDependencies[`${actor}~${seq}`] &&
-                      existingDependencies[`${actor}~${seq}`] !== hash
-                  )
-                ) {
-                  dispatchAppEvent({
-                    type: "log",
-                    id: "share-page-corrupted",
-                    content: `It looks like your version of the shared page ${notebookPageId} is corrupted and will cease to apply updates from other notebooks in the future. To resolve this issue, ask one of the other connected notebooks to manually sync the page.`,
-                    intent: "error",
-                  });
-                } else {
-                  const storedHashes = new Set(
-                    storedChanges.map((c) => c.hash || "")
+                set(notebookPageId, newDoc);
+                if (patch.pendingChanges) {
+                  const storedChanges = Automerge.getAllChanges(newDoc).map(
+                    (c) => Automerge.decodeChange(c)
                   );
-                  const actorsToRequest = Object.entries(patch.clock).filter(
-                    ([actor, seq]) => {
-                      if (me === actor) {
-                        return false;
-                      }
-                      const dependentHashFromActor =
-                        existingDependencies[`${actor}~${seq}`];
-                      return !(
-                        dependentHashFromActor &&
-                        storedHashes.has(dependentHashFromActor)
-                      );
-                    }
+                  const existingDependencies = Object.fromEntries(
+                    storedChanges.map((c) => [`${c.actor}~${c.seq}`, c.hash])
                   );
-                  if (!actorsToRequest.length && !Automerge.isFrozen(newDoc)) {
-                    const missingDependencies = binaryChanges
-                      .map((c) => Automerge.decodeChange(c))
-                      .flatMap((c) => c.deps)
-                      .filter((c) => !storedHashes.has(c));
-                    throw new HandlerError(
-                      "No actors to request and still waiting for changes",
-                      {
-                        missingDependencies,
-                        binaryDocument: binaryToBase64(Automerge.save(newDoc)),
-                        notebookPageId,
+                  const me = Automerge.getActorId(newDoc);
+                  if (
+                    Object.entries(dependencies).some(
+                      ([actor, { seq, hash }]) =>
+                        actor !== me &&
+                        existingDependencies[`${actor}~${seq}`] &&
+                        existingDependencies[`${actor}~${seq}`] !== hash
+                    )
+                  ) {
+                    dispatchAppEvent({
+                      type: "log",
+                      id: "share-page-corrupted",
+                      content: `It looks like your version of the shared page ${notebookPageId} is corrupted and will cease to apply updates from other notebooks in the future. To resolve this issue, ask one of the other connected notebooks to manually sync the page.`,
+                      intent: "error",
+                    });
+                  } else {
+                    const storedHashes = new Set(
+                      storedChanges.map((c) => c.hash || "")
+                    );
+                    const actorsToRequest = Object.entries(patch.clock).filter(
+                      ([actor, seq]) => {
+                        if (me === actor) {
+                          return false;
+                        }
+                        const dependentHashFromActor =
+                          existingDependencies[`${actor}~${seq}`];
+                        return !(
+                          dependentHashFromActor &&
+                          storedHashes.has(dependentHashFromActor)
+                        );
                       }
                     );
-                  } else {
-                    actorsToRequest.forEach(([actor]) => {
-                      sendToNotebook({
-                        target: parseActorId(actor),
-                        operation: "REQUEST_PAGE_UPDATE",
-                        data: {
+                    if (
+                      !actorsToRequest.length &&
+                      !Automerge.isFrozen(newDoc)
+                    ) {
+                      const missingDependencies = binaryChanges
+                        .map((c) => Automerge.decodeChange(c))
+                        .flatMap((c) => c.deps)
+                        .filter((c) => !storedHashes.has(c));
+                      throw new HandlerError(
+                        "No actors to request and still waiting for changes",
+                        {
+                          missingDependencies,
+                          binaryDocument: binaryToBase64(
+                            Automerge.save(newDoc)
+                          ),
                           notebookPageId,
-                          seq: patch.clock[actor],
-                        },
+                        }
+                      );
+                    } else {
+                      actorsToRequest.forEach(([actor]) => {
+                        sendToNotebook({
+                          target: parseActorId(actor),
+                          operation: "REQUEST_PAGE_UPDATE",
+                          data: {
+                            notebookPageId,
+                            seq: patch.clock[actor],
+                          },
+                        });
                       });
-                    });
+                    }
                   }
                 }
-              }
-              if (Object.keys(patch.diffs.props).length) {
-                saveAndApply(notebookPageId, newDoc);
-              }
-              if (pendingUpdates[notebookPageId].length === 0) {
-                delete pendingUpdates[notebookPageId];
-                return Promise.resolve();
-              } else {
-                return pendingUpdates[notebookPageId].shift()?.();
-              }
-            });
+                if (Object.keys(patch.diffs.props).length) {
+                  saveAndApply(notebookPageId, newDoc);
+                }
+              })
+              .finally(() => {
+                if (pendingUpdates[notebookPageId].length === 0) {
+                  delete pendingUpdates[notebookPageId];
+                  return Promise.resolve();
+                } else {
+                  return pendingUpdates[notebookPageId].shift()?.();
+                }
+              });
           if (!pendingUpdates[notebookPageId]) {
             pendingUpdates[notebookPageId] = [];
             return executeUpdate();
@@ -712,6 +725,8 @@ const setupSharePageWithNotebook = ({
             intent: "error",
           })
         );
+
+      offConnect = onConnect?.();
     } else if (e.status === "DISCONNECTED") {
       unload();
     }
@@ -719,6 +734,7 @@ const setupSharePageWithNotebook = ({
 
   const unload = () => {
     clear();
+    offConnect?.();
     Object.values(componentUnmounts).forEach((u) => u());
     removeNotebookListener({ operation: "SHARE_PAGE_RESPONSE" });
     removeNotebookListener({ operation: "SHARE_PAGE_UPDATE" });
