@@ -19,7 +19,7 @@ import { ApiGatewayMethodResponse } from "@cdktf/provider-aws/lib/api-gateway-me
 import { ApiGatewayIntegrationResponse } from "@cdktf/provider-aws/lib/api-gateway-integration-response";
 import { ApiGatewayIntegration } from "@cdktf/provider-aws/lib/api-gateway-integration";
 import { ApiGatewayDeployment } from "@cdktf/provider-aws/lib/api-gateway-deployment";
-import { ApiGatewayStage } from "@cdktf/provider-aws/lib/api-gateway-stage";
+// import { ApiGatewayStage } from "@cdktf/provider-aws/lib/api-gateway-stage";
 import { ApiGatewayDomainName } from "@cdktf/provider-aws/lib/api-gateway-domain-name";
 import { ApiGatewayBasePathMapping } from "@cdktf/provider-aws/lib/api-gateway-base-path-mapping";
 import { AcmCertificate } from "@cdktf/provider-aws/lib/acm-certificate";
@@ -840,8 +840,10 @@ const setupInfrastructure = async (): Promise<void> => {
               }
             )
         );
-        const deployment = new ApiGatewayDeployment(this, "production", {
+        // const deployment = 
+        new ApiGatewayDeployment(this, "production", {
           restApiId: restApi.id,
+          stageName: "production",
           triggers: {
             redeployment: Fn.sha1(
               Fn.jsonencode(
@@ -860,11 +862,12 @@ const setupInfrastructure = async (): Promise<void> => {
             createBeforeDestroy: true,
           },
         });
-        new ApiGatewayStage(this, "production_stage", {
-          deploymentId: deployment.id,
-          restApiId: restApi.id,
-          stageName: "production",
-        });
+        // Needs to tf import the current stage into it
+        // new ApiGatewayStage(this, "production_stage", {
+        //   deploymentId: deployment.id,
+        //   restApiId: restApi.id,
+        //   stageName: "production",
+        // });
         const lambdaDeployPolicyDocument = new DataAwsIamPolicyDocument(
           this,
           "deploy_policy",
