@@ -51,29 +51,18 @@ const init = async ({
   execSync("npm install", { stdio: "inherit" });
   execSync("git add --all", { stdio: "inherit" });
   execSync("git commit -m 'SamePage Initial Commit'", { stdio: "inherit" });
+
+  const repo = await octokit.repos.createInOrg({
+    org: "samepage-network",
+    name: `${id}-samepage`,
+    visibility: "public",
+  });
+  console.log("Created repo at", repo.data.html_url);
   execSync(
-    `git remote add origin https://github.com/samepage-network/${id}-samepage.git`,
+    `git remote add origin ${repo.data.html_url}.git`,
     { stdio: "inherit" }
   );
-  await octokit.users
-    .getAuthenticated()
-    .then(async (r) => {
-      if (r.data.name === "samepage-network") {
-        console.log("Creating repo on github");
-        const repo = await octokit.repos.createInOrg({
-          org: "samepage-network",
-          name: `${id}-samepage`,
-          visibility: "public",
-        });
-        console.log("Created repo at", repo.data.html_url);
-        // execSync("git push origin main", { stdio: "inherit" });
-      } else {
-        console.log("Cannot create repo on github. Logged in as", r.data.name);
-      }
-    })
-    .catch((e) =>
-      console.error("Failed to get the authenticated user", e.response.data)
-    );
+  execSync("git push origin main", { stdio: "inherit" });
   return 0;
 };
 

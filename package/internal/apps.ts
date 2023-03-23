@@ -56,6 +56,12 @@ const APPS: App[] = [
     workspaceLabel: "repository",
     development: true,
   },
+  {
+    id: 8,
+    name: "Airtable",
+    workspaceLabel: "base",
+    development: true,
+  },
 ];
 
 export const appsById = Object.fromEntries(APPS.map(({ id, ...a }) => [id, a]));
