@@ -138,7 +138,7 @@ const logsCaught = [
   {
     label: "receiving method",
     type: "log",
-    regex: /^Recasdfeived method:/,
+    regex: /^Received method:/,
     count: 0,
   },
   {

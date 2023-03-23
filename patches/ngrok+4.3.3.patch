@@ -1,0 +1,18 @@
+diff --git a/node_modules/ngrok/src/client.js b/node_modules/ngrok/src/client.js
+index 95cd729..dde3a54 100644
+--- a/node_modules/ngrok/src/client.js
++++ b/node_modules/ngrok/src/client.js
+@@ -36,10 +36,11 @@ class NgrokClient {
+           response
+         );
+       } catch (e) {
++        console.error("ERROR", e)
+         clientError = new NgrokClientError(
+-          error.response.body,
++          error.response?.body || "No error response found",
+           error.response,
+-          error.response.body
++          error.response?.body || "No error response found",
+         );
+       }
+       throw clientError;

@@ -11,7 +11,6 @@ test.beforeEach(async ({ page }) => {
     resetOnNavigation: false,
   });
 });
-let pid: number | undefined;
 
 // TODO: include app/routes + app/components again when properly code covering
 test("Full integration test of web app", async ({ page }) => {
@@ -25,8 +24,6 @@ test("Full integration test of web app", async ({ page }) => {
   const appReady = new Promise<void>((resolve) =>
     app.stdout.on("data", (s) => {
       if (/Remix App Server started at/.test(s)) {
-        console.log("APP Process", app.pid);
-        pid = app.pid;
         resolve();
       }
       console.log(`APP Message: ${s as string}`);
@@ -52,15 +49,15 @@ test("Full integration test of web app", async ({ page }) => {
   await new Promise((resolve) => {
     app.on("exit", resolve);
     app.kill();
-  });
+  }).then(() => console.log("APP Process exited"));
 });
 
 test.afterEach(async ({ page }) => {
   // fix the sources in coverage file from app
   fs.readdirSync(covPath)
-    .filter((f) => new RegExp(`-${pid}-`).test(f))
     .forEach((f) => {
-      const content = fs.readFileSync(`${covPath}/${f}`).toString();
+      const contentPath = `${covPath}/${f}`;
+      const content = fs.readFileSync(contentPath).toString();
       const data = JSON.parse(content);
       const cacheKey = `file://${process.cwd()}/app/server/build/index.js`;
       const cache = data["source-map-cache"][cacheKey]?.data;
@@ -68,17 +65,7 @@ test.afterEach(async ({ page }) => {
         cache.sources = cache.sources.map((s: string) =>
           s.replace(/file:\/\//, "")
         );
-        fs.writeFileSync(`${covPath}/${f}`, JSON.stringify(data));
-      } else {
-        console.error(
-          "Failed to find cache in",
-          f,
-          "Found:",
-          Object.keys(data["source-map-cache"]).filter((k) =>
-            k.includes("app/server/build")
-          )
-        );
-        fs.rmSync(f);
+        fs.writeFileSync(contentPath, JSON.stringify(data));
       }
     });
 
