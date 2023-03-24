@@ -13,7 +13,7 @@
     "postinstall": "patch-package",
     "lint": "eslint . --ext .ts,.tsx",
     "start": "ts-node scripts/cli.ts start",
-    "test": "c8 --reporter=lcov --reporter=text --all --include app --include api --include package --exclude app/routes --exclude app/components --exclude app/server/build --exclude node_modules --exclude-after-remap playwright test --config=package/testing/playwright.config.ts",
+    "test": "ts-node scripts/cli.ts test",
     "db": "mysql --database samepage_network -uroot -proot"
   },
   "keywords": [
