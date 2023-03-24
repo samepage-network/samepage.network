@@ -33,7 +33,7 @@ jobs:
         run: npx ts-node scripts/cli.ts plan
       # temporary hack until I figure out better planetscale workflows
       - name: hack
-        run: rm out/apply-sql.txt
+        run: rm out/migrations/apply.sql
       - name: apply
         run: npx ts-node scripts/cli.ts apply
         env:

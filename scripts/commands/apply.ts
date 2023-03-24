@@ -148,7 +148,17 @@ const apply = async ({
   const cxn = await getMysql();
   if (content.length) {
     // TODO - set up planet scale branch and merge
-    await cxn.execute(drizzleSql.raw(content));
+    const queries = content.split(";");
+    console.log("Running", queries.length, "mysql schema queries...");
+    await queries.reduce(
+      (p, c, i) =>
+        p.then(() =>
+          cxn
+            .execute(drizzleSql.raw(c))
+            .then(() => console.log("finished query", i + 1))
+        ),
+      Promise.resolve()
+    );
   } else {
     console.log("No mysql schema queries to run!");
   }
