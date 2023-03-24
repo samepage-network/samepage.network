@@ -10,6 +10,7 @@ import apply from "./commands/apply";
 import plan from "./commands/plan";
 import packageCmd from "./commands/package";
 import start from "./commands/start";
+import test from "./commands/test";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -92,9 +93,8 @@ const run = async (command: string, args: string[]): Promise<number> => {
     // MISC
     case "init":
       return init(opts);
-    // case "test":
-    //   console.log("Coming soon!");
-    //   return 0;
+    case "test":
+      return test(opts);
     case "start":
       return start({});
     default:
