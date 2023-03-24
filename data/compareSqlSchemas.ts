@@ -15,7 +15,8 @@ const compareSqlSchemas = async () => {
   );
   const migrationFile = fs
     .readdirSync(OUT_DIR)
-    .find((f) => f.startsWith("0001"));
+    .filter((f) => /^\d{4}/.test(f))
+    .sort((a, b) => parseInt(b.slice(0, 4)) - parseInt(a.slice(0, 4)))[0];
   if (migrationFile) {
     fs.cpSync(
       path.join(OUT_DIR, migrationFile),
