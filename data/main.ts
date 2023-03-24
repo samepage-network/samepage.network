@@ -703,4 +703,6 @@ const setupInfrastructure = async (): Promise<void> => {
 // - terraform init
 // - move the state in the config
 // - terraform state mv old new
-setupInfrastructure().then(compareSqlSchemas);
+setupInfrastructure().then(() =>
+  process.env.TF_ONLY ? Promise.resolve() : compareSqlSchemas()
+);

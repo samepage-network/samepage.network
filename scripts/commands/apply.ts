@@ -130,8 +130,10 @@ const PLAN_OUT_FILE = "out/migrations/apply.sql";
 
 const apply = async ({
   sql,
+  tf,
   bare,
 }: {
+  tf?: boolean;
   sql?: boolean;
   bare?: boolean;
 } = {}): Promise<number> => {
@@ -139,6 +141,12 @@ const apply = async ({
     // TODO - REMOVE
     execSync(`npx cdktf deploy --auto-approve`, {
       stdio: "inherit",
+      env: tf
+        ? {
+            ...process.env,
+            TF_ONLY: "true",
+          }
+        : { ...process.env },
     });
   }
 
@@ -148,7 +156,7 @@ const apply = async ({
   const cxn = await getMysql();
   if (content.length) {
     // TODO - set up planet scale branch and merge
-    const queries = content.split(";");
+    const queries = content.split(";").filter(Boolean);
     console.log("Running", queries.length, "mysql schema queries...");
     await queries.reduce(
       (p, c, i) =>
