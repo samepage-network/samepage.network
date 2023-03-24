@@ -35,6 +35,6 @@ jobs:
       - name: hack
         run: rm out/migrations/apply.sql
       - name: apply
-        run: npx ts-node scripts/cli.ts apply
+        run: npx ts-node scripts/cli.ts apply --tf
         env:
           NODE_ENV: production

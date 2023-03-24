@@ -1,15 +1,7 @@
 import { build as esbuild } from "esbuild";
 import { build as remixBuild } from "@remix-run/dev/dist/cli/commands";
 import getDotEnvObject from "../../package/scripts/internal/getDotEnvObject";
-
-// HOW WOULD I BUNDLE TAILWIND?
-//
-//   await tailwindcss({
-//     content: ["./app/**/*.tsx", ...(content || [])],
-//     theme: theme || { extend: {} },
-//     ...config,
-//   });
-
+import { execSync } from "child_process";
 
 type BuildArgs = {
   readable?: boolean;
@@ -17,6 +9,11 @@ type BuildArgs = {
 
 const build = async (args: BuildArgs = {}): Promise<number> => {
   process.env.NODE_ENV = process.env.NODE_ENV || "production";
+
+  // TODO - Future versions of Remix have native Tailwind support
+  execSync("npx tailwindcss -o ./app/tailwind.css --minify", {
+    stdio: "inherit",
+  });
 
   return remixBuild(process.cwd(), process.env.NODE_ENV)
     .then(() =>

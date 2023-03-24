@@ -8,7 +8,7 @@ import addSeconds from "date-fns/addSeconds";
 import differenceInMilliseconds from "date-fns/differenceInMilliseconds";
 import format from "date-fns/format";
 import { v4 } from "uuid";
-// import ngrok from "ngrok";
+import ngrok from "ngrok";
 import { BuildInvalidate } from "esbuild";
 import chokidar from "chokidar";
 import nodepath from "path";
@@ -79,7 +79,7 @@ const dependencies: Record<string, Set<string>> = {};
 const path = "api";
 const out = "build";
 
-const api = ({}: {} = {}): Promise<number> => {
+const api = ({ local }: { local?: boolean } = {}): Promise<number> => {
   process.env.NODE_ENV = process.env.NODE_ENV || "development";
 
   const entryRegex = new RegExp(
@@ -479,16 +479,17 @@ const api = ({}: {} = {}): Promise<number> => {
     });
     const appServer = app.listen(port, () => {
       console.log(`API server listening on port ${port}...`);
-      // ngrok
-      //   .connect({
-      //     addr: port,
-      //     subdomain: "samepage",
-      //   })
-      //   .then((url) => {
-      //     console.log("Started local ngrok tunneling:");
-      //     console.log(url);
-      //     return 0;
-      //   });
+      if (!local)
+        ngrok
+          .connect({
+            addr: port,
+            subdomain: "samepage",
+          })
+          .then((url) => {
+            console.log("Started local ngrok tunneling:");
+            console.log(url);
+            return 0;
+          });
     });
     const startWebSocketServer = () => {
       const wss = new WebSocketServer({ server: appServer });

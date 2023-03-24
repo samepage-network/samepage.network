@@ -34,6 +34,6 @@ jobs:
       - name: install
         run: npm install
       - name: build
-        run: npm run build
+        run: npx ts-node scripts/cli.ts build
       - name: deploy
         run: npx ts-node scripts/cli.ts deploy

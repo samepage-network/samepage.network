@@ -9,16 +9,10 @@
   "license": "MIT",
   "sideEffects": false,
   "scripts": {
-    "api": "ts-node scripts/cli.ts api",
-    "prebuild": "npm run generate:css -- --minify",
-    "build": "ts-node scripts/cli.ts build",
-    "dev": "ts-node scripts/cli.ts dev",
     "format": "prettier --write \"**/*.tsx\"",
-    "generate:css": "tailwindcss -o ./app/tailwind.css",
     "postinstall": "patch-package",
     "lint": "eslint . --ext .ts,.tsx",
-    "start": "concurrently \"npm:api\" \"npm:dev\" \"npm:tailwind\"",
-    "tailwind": "npm run generate:css -- --watch",
+    "start": "ts-node scripts/cli.ts start",
     "test": "c8 --reporter=lcov --reporter=text --all --include app --include api --include package --exclude app/routes --exclude app/components --exclude app/server/build --exclude node_modules --exclude-after-remap playwright test --config=package/testing/playwright.config.ts",
     "db": "mysql --database samepage_network -uroot -proot"
   },

@@ -4,7 +4,7 @@ import yaml from "yaml";
 import { homedir } from "os";
 import path from "path";
 import fs from "fs";
-import ngrok from "ngrok";
+import { spawn } from "child_process";
 
 const start = async ({}: {} = {}) => {
   const configPath = path.join(homedir(), ".ngrok2", "ngrok.yml");
@@ -23,16 +23,11 @@ const start = async ({}: {} = {}) => {
   };
   fs.writeFileSync(configPath, yaml.stringify(config));
   setTimeout(() => {
-    ngrok
-      .connect({
-        configPath,
-        onLogEvent: (data) => {
-          console.log("[ngrok]", data);
-        },
-      })
-      .then(console.log);
+    spawn("ngrok", ["start", "--all", "--log=stdout"], { stdio: "inherit" });
   }, 5000);
-  return Promise.all([api(), dev()]).then(() => 0);
+  return Promise.all([api({ local: true }), dev({ local: true })]).then(
+    () => 0
+  );
 };
 
 export default start;
