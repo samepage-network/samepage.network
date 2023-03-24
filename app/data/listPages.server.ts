@@ -10,7 +10,7 @@ const listPages = async ({ requestId }: { requestId: string }) => {
       notebook_uuid: pageNotebookLinks.notebookUuid,
     })
     .from(pageNotebookLinks)
-    .where(eq(pageNotebookLinks.open, false));
+    .where(eq(pageNotebookLinks.open, 0));
   await cxn.end();
   return {
     pages,

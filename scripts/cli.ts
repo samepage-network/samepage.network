@@ -9,6 +9,7 @@ import api from "./commands/api";
 import apply from "./commands/apply";
 import plan from "./commands/plan";
 import packageCmd from "./commands/package";
+import start from "./commands/start";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -81,12 +82,12 @@ const run = async (command: string, args: string[]): Promise<number> => {
     // NPM
     case "package":
       return packageCmd(opts);
-      // case "publish":
-      //   console.log("Coming soon!");
-      //   return 0;
-      // case "watch":
-      //   console.log("Coming soon!");
-      //   return 0;
+    // case "publish":
+    //   console.log("Coming soon!");
+    //   return 0;
+    // case "watch":
+    //   console.log("Coming soon!");
+    //   return 0;
 
     // MISC
     case "init":
@@ -94,9 +95,8 @@ const run = async (command: string, args: string[]): Promise<number> => {
     // case "test":
     //   console.log("Coming soon!");
     //   return 0;
-    // case "start":
-    //   console.log("Coming soon!");
-    //   return 0;
+    case "start":
+      return start({});
     default:
       console.error("Command", command, "is unsupported");
       return 1;

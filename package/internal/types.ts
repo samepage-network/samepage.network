@@ -353,6 +353,16 @@ export const zUnauthenticatedBody = z.discriminatedUnion("method", [
       password: z.string(),
     })
     .merge(zNotebook),
+  z.object({
+    method: z.literal("connect-device"),
+    email: z.string(),
+    password: z.string(),
+  }),
+  z.object({
+    method: z.literal("login-device"),
+    token: z.string(),
+    userId: z.string(),
+  }),
   z.object({ method: z.literal("ping") }),
 ]);
 

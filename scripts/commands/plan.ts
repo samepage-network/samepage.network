@@ -1,4 +1,5 @@
 import child_process from "child_process";
+import compareSqlSchemas from "../../data/compareSqlSchemas";
 import fs from "fs";
 
 const plan = async ({ sql }: { sql?: boolean }): Promise<number> => {
@@ -24,13 +25,7 @@ const plan = async ({ sql }: { sql?: boolean }): Promise<number> => {
   }
 
   if (sql) {
-    child_process.execSync(`npx ts-node-esm data/main.ts`, {
-      stdio: "inherit",
-      env: {
-        ...process.env,
-        ARGS_SQL: `true`,
-      },
-    });
+    await compareSqlSchemas();
   } else {
     // TODO - make this a non speculative plan
     child_process.execSync(`npx cdktf plan`, {

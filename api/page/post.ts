@@ -89,7 +89,7 @@ const validatePageQuota = async ({
     .where(
       and(
         eq(pageNotebookLinks.notebookUuid, notebookUuid),
-        eq(pageNotebookLinks.open, false)
+        eq(pageNotebookLinks.open, 0)
       )
     );
   if (total >= pageQuota) {
@@ -234,6 +234,98 @@ const logic = async (req: Record<string, unknown>) => {
       });
       await cxn.end();
       return { notebookUuid: response.notebookUuid, token: tokenRecord.value };
+    } else if (args.method === "connect-device") {
+      const { email, password } = args;
+      const userResponse = await users.getUserList({ emailAddress: [email] });
+      if (userResponse.length === 0) {
+        throw new UnauthorizedError(
+          `No user found with email ${email}. Please create an account first.`
+        );
+      }
+      if (userResponse.length > 1) {
+        throw new ConflictError(
+          `Multiple users found with email ${email}. Contact support@samepage.network for help.`
+        );
+      }
+      const userId = userResponse[0].id;
+      // https://github.com/clerkinc/javascript/pull/855
+      const passwordResponse = await clerk
+        .request<{ verified: true }>({
+          method: "POST",
+          path: `/users/${userId}/verify_password`,
+          bodyParams: { userId, password },
+        })
+        .catch(() => ({ verified: false }));
+      if (!passwordResponse.verified) {
+        throw new ForbiddenError(`Incorrect password for this email`);
+      }
+      const [tokenResult] = await cxn
+        .select({ value: tokens.value, uuid: tokens.uuid })
+        .from(tokens)
+        .where(eq(tokens.userId, userId));
+      if (!tokenResult) {
+        throw new InternalServorError(
+          `Could not find token to use for this user. Please contact support@samepage.network for help.`
+        );
+      }
+      const { value: token, uuid: tokenUuid } = tokenResult;
+      const notebookRecords = await cxn
+        .select({
+          uuid: notebooks.uuid,
+          workspace: notebooks.workspace,
+          app: notebooks.app,
+        })
+        .from(tokenNotebookLinks)
+        .innerJoin(
+          notebooks,
+          eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
+        )
+        .where(eq(tokenNotebookLinks.tokenUuid, tokenUuid))
+        .then((nbs) =>
+          nbs.map((r) => ({
+            uuid: r.uuid,
+            workspace: r.workspace,
+            appName: appsById[r.app].name,
+          }))
+        );
+      await cxn.end();
+      return { notebooks: notebookRecords, token, userId };
+    } else if (args.method === "login-device") {
+      const { token, userId } = args;
+      const [tokenResult] = await cxn
+        .select({ value: tokens.value, uuid: tokens.uuid })
+        .from(tokens)
+        .where(eq(tokens.userId, userId));
+      if (!tokenResult) {
+        throw new InternalServorError(
+          `Could not find token to use for this user. Please contact support@samepage.network for help.`
+        );
+      }
+      const { value: storedValue, uuid: tokenUuid } = tokenResult;
+      if (storedValue !== token) {
+        throw new ForbiddenError(`Incorrect token for this user`);
+      }
+      const notebookRecords = await cxn
+        .select({
+          uuid: notebooks.uuid,
+          workspace: notebooks.workspace,
+          app: notebooks.app,
+        })
+        .from(tokenNotebookLinks)
+        .innerJoin(
+          notebooks,
+          eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
+        )
+        .where(eq(tokenNotebookLinks.tokenUuid, tokenUuid))
+        .then((nbs) =>
+          nbs.map((r) => ({
+            uuid: r.uuid,
+            workspace: r.workspace,
+            appName: appsById[r.app].name,
+          }))
+        );
+      await cxn.end();
+      return { notebooks: notebookRecords, token, userId };
     } else if (args.method === "ping") {
       // uptime checker
       console.log("ping");
@@ -303,7 +395,7 @@ const logic = async (req: Record<string, unknown>) => {
                       )
                       .where(
                         and(
-                          eq(pageNotebookLinks.open, false),
+                          eq(pageNotebookLinks.open, 0),
                           inArray(
                             tokenNotebookLinks.uuid,
                             links.map((l) => l.uuid)
@@ -325,7 +417,9 @@ const logic = async (req: Record<string, unknown>) => {
               messages: messageRecords.length,
               notebooks: notebookRecords,
               quotas: Object.fromEntries(
-                quotaRecords.map((q) => [QUOTAS[q.field], q.value] as const)
+                quotaRecords.map(
+                  (q) => [QUOTAS[q.field || 0], q.value] as const
+                )
               ),
             };
           })
@@ -390,7 +484,7 @@ const logic = async (req: Record<string, unknown>) => {
           pageUuid,
           notebookPageId,
           version: 0,
-          open: false,
+          open: 0,
           invitedBy: notebookUuid,
           invitedDate: new Date(),
           notebookUuid,
@@ -416,7 +510,7 @@ const logic = async (req: Record<string, unknown>) => {
             and(
               eq(pageNotebookLinks.notebookPageId, notebookPageId),
               eq(pageNotebookLinks.notebookUuid, notebookUuid),
-              eq(pageNotebookLinks.open, true)
+              eq(pageNotebookLinks.open, 1)
             )
           );
         if (!results.length) {
@@ -433,7 +527,7 @@ const logic = async (req: Record<string, unknown>) => {
           .where(
             and(
               eq(pageNotebookLinks.pageUuid, page_uuid),
-              eq(pageNotebookLinks.open, false),
+              eq(pageNotebookLinks.open, 0),
               eq(pageNotebookLinks.notebookUuid, invited_by)
             )
           );
@@ -447,7 +541,7 @@ const logic = async (req: Record<string, unknown>) => {
         await validatePageQuota({ requestId, notebookUuid, tokenUuid });
         await cxn
           .update(pageNotebookLinks)
-          .set({ open: false })
+          .set({ open: 0 })
           .where(eq(pageNotebookLinks.uuid, uuid));
         const [{ cid }] = invitedByResults;
         if (!cid)
@@ -477,12 +571,12 @@ const logic = async (req: Record<string, unknown>) => {
         const { notebookPageId } = args;
         await cxn
           .update(pageNotebookLinks)
-          .set({ open: true })
+          .set({ open: 1 })
           .where(
             and(
               eq(pageNotebookLinks.notebookPageId, notebookPageId),
               eq(pageNotebookLinks.notebookUuid, notebookUuid),
-              eq(pageNotebookLinks.open, false)
+              eq(pageNotebookLinks.open, 0)
             )
           );
         await cxn.end();
@@ -581,7 +675,7 @@ const logic = async (req: Record<string, unknown>) => {
           .where(
             and(
               eq(pageNotebookLinks.pageUuid, pageUuid),
-              eq(pageNotebookLinks.open, false)
+              eq(pageNotebookLinks.open, 0)
             )
           );
         await Promise.all(
@@ -686,7 +780,7 @@ const logic = async (req: Record<string, unknown>) => {
                 and(
                   eq(notebooks.uuid, target),
                   eq(pageNotebookLinks.notebookPageId, notebookPageId),
-                  eq(pageNotebookLinks.open, true),
+                  eq(pageNotebookLinks.open, 1),
                   eq(pageNotebookLinks.invitedBy, notebookUuid)
                 )
               )
@@ -707,7 +801,7 @@ const logic = async (req: Record<string, unknown>) => {
                   eq(notebooks.workspace, target.workspace),
                   eq(notebooks.app, target.app),
                   eq(pageNotebookLinks.notebookPageId, notebookPageId),
-                  eq(pageNotebookLinks.open, true),
+                  eq(pageNotebookLinks.open, 1),
                   eq(pageNotebookLinks.invitedBy, notebookUuid)
                 )
               )
@@ -725,7 +819,7 @@ const logic = async (req: Record<string, unknown>) => {
                 and(
                   eq(pageNotebookLinks.notebookUuid, notebookUuid),
                   eq(pageNotebookLinks.notebookPageId, notebookPageId),
-                  eq(pageNotebookLinks.open, true)
+                  eq(pageNotebookLinks.open, 1)
                 )
               )
               .then(async ([link]) => {
@@ -838,7 +932,7 @@ const logic = async (req: Record<string, unknown>) => {
           .where(
             and(
               eq(pageNotebookLinks.notebookUuid, notebookUuid),
-              eq(pageNotebookLinks.open, false)
+              eq(pageNotebookLinks.open, 0)
             )
           )
           .then((r) => r.map(({ notebookPageId }) => notebookPageId));
@@ -1060,7 +1154,7 @@ const logic = async (req: Record<string, unknown>) => {
             .from(messages)
             .leftJoin(notebooks, eq(messages.source, notebooks.uuid))
             .where(
-              and(eq(messages.target, notebookUuid), eq(messages.marked, false))
+              and(eq(messages.target, notebookUuid), eq(messages.marked, 0))
             )
             .then(async (r) => {
               await cxn.end();
@@ -1079,7 +1173,7 @@ const logic = async (req: Record<string, unknown>) => {
         const { messageUuid } = args;
         await cxn
           .update(messages)
-          .set({ marked: true })
+          .set({ marked: 1 })
           .where(eq(messages.uuid, messageUuid));
         await cxn.end();
         return { success: true };
