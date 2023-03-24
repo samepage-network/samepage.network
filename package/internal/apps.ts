@@ -9,7 +9,7 @@ type App = {
   id: number;
   name: string;
   workspaceLabel: string;
-  development?: true;
+  development?: boolean;
 };
 const APPS: App[] = [
   {
@@ -36,7 +36,7 @@ const APPS: App[] = [
     id: 4,
     name: "Notion",
     workspaceLabel: "workspace",
-    development: true,
+    development: process.env.NODE_ENV === "development",
   },
   {
     id: 5,
@@ -67,6 +67,9 @@ const APPS: App[] = [
 export const appsById = Object.fromEntries(APPS.map(({ id, ...a }) => [id, a]));
 export const appIdByName = Object.fromEntries(
   APPS.map(({ id, name }) => [name, id] as const)
+);
+export const appsByCode = Object.fromEntries(
+  APPS.map((a) => [a.name.toLowerCase(), a] as const)
 );
 
 export default APPS;

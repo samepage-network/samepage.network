@@ -2,11 +2,12 @@ import APPS from "package/internal/apps";
 import { useState, useEffect } from "react";
 import { useSearchParams, Link } from "@remix-run/react";
 import OverlayImg from "~/components/OverlayImg";
+import ExternalLink from "~/components/ExternalLink";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const userApps = APPS.slice(1)
-  .filter((a) => !("development" in a))
+  .filter((a) => !a.development)
   .map(({ name }) => ({
     id: name.toLowerCase(),
     name,
@@ -15,104 +16,111 @@ const userApps = APPS.slice(1)
 type InstructionSteps = {
   title: string;
   children: "image" | React.ReactNode;
+  props?: Record<string, string>;
 }[];
 
 const Instruction = ({
   id,
   steps,
-  live,
 }: {
   id: string;
   steps: InstructionSteps;
-  live: boolean;
 }) => {
   return (
-    <>
-      {!live && (
-        <div className="italic mb-2 text-xs opacity-50">
-          This extension is still under review. These are the steps to install
-          the development version.
-        </div>
-      )}
-      <div className="flex justify-between items-start gap-8 h-full">
-        {steps.map((s, i) => (
-          <div className="flex-1 flex flex-col h-44" key={i}>
-            <h2 className="font-semibold text-xl mb-4">
-              {i + 1}. {s.title}
-            </h2>
-            <div className="flex-grow flex flex-col justify-center items-center">
-              {s.children === "image" ? (
-                <OverlayImg
-                  src={`/images/install/${id}${live ? "-live" : ""}-${
-                    i + 1
-                  }.png`}
-                />
-              ) : (
-                s.children
-              )}
-            </div>
+    <div className="flex justify-between items-start gap-8 h-full">
+      {steps.map((s, i) => (
+        <div className="flex-1 flex flex-col h-44" key={i}>
+          <h2 className="font-semibold text-xl mb-4">
+            {i + 1}. {s.title}
+          </h2>
+          <div className="flex-grow flex flex-col justify-center items-center">
+            {s.children === "image" ? (
+              <OverlayImg
+                src={`/images/install/${id}-live-${i + 1}.png`}
+                {...(s.props || {})}
+              />
+            ) : s.children === "link" ? (
+              <ExternalLink {...(s.props || {})}>Connect</ExternalLink>
+            ) : (
+              s.children
+            )}
           </div>
-        ))}
-      </div>
-    </>
+        </div>
+      ))}
+    </div>
   );
 };
 
-const INSTRUCTIONS: Record<string, { steps: InstructionSteps; live: boolean }> =
-  {
-    samepage: { steps: [], live: true },
-    roam: {
-      steps: [
-        {
-          title: "Open Roam Depot",
-          children: "image",
+const INSTRUCTIONS: Record<string, { steps: InstructionSteps }> = {
+  samepage: { steps: [] },
+  roam: {
+    steps: [
+      {
+        title: "Open Roam Depot",
+        children: "image",
+      },
+      {
+        title: "Search SamePage",
+        children: "image",
+      },
+      {
+        title: "Install!",
+        children: "image",
+      },
+    ],
+  },
+  logseq: {
+    steps: [
+      {
+        title: `Go to plugins dashboard`,
+        children: "image",
+      },
+      {
+        title: `Go to marketplace`,
+        children: "image",
+      },
+      {
+        title: `Search SamePage!`,
+        children: "image",
+      },
+    ],
+  },
+  obsidian: {
+    steps: [
+      {
+        title: `Go to Settings`,
+        children: "image",
+      },
+      {
+        title: `Browse Community Plugins`,
+        children: "image",
+      },
+      {
+        title: `Enable SamePage!`,
+        children: "image",
+      },
+    ],
+  },
+  notion: {
+    steps: [
+      {
+        title: `Click here`,
+        children: "link",
+        props: {
+          href: `https://api.notion.com/v1/oauth/authorize?client_id=1990c3a3-66ff-4a69-8d22-af684683daf5&response_type=code&owner=user&redirect_uri=https%3A%2F%2F${
+            process.env.NODE_ENV === "production"
+              ? "samepage.network"
+              : "samepage-app.ngrok.io"
+          }%2Foauth%2Fnotion`,
         },
-        {
-          title: "Search SamePage",
-          children: "image",
-        },
-        {
-          title: "Install!",
-          children: "image",
-        },
-      ],
-      live: true,
-    },
-    logseq: {
-      steps: [
-        {
-          title: `Go to plugins dashboard`,
-          children: "image",
-        },
-        {
-          title: `Go to marketplace`,
-          children: "image",
-        },
-        {
-          title: `Search SamePage!`,
-          children: "image",
-        },
-      ],
-      live: true,
-    },
-    obsidian: {
-      steps: [
-        {
-          title: `Go to Settings`,
-          children: "image",
-        },
-        {
-          title: `Browse Community Plugins`,
-          children: "image",
-        },
-        {
-          title: `Enable SamePage!`,
-          children: "image",
-        },
-      ],
-      live: true,
-    },
-  };
+      },
+      {
+        title: `Select Accessible Pages`,
+        children: "image",
+      }
+    ],
+  },
+};
 
 const InstallPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();

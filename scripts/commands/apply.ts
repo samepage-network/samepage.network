@@ -1,55 +1,35 @@
-import getMysqlConnection from "fuegojs/utils/mysql";
+import { eq } from "drizzle-orm/expressions";
+import getMysql from "../../app/data/mysql.server";
 import fs from "fs";
 import path from "path";
 import { execSync } from "child_process";
-import mysql from "mysql2/promise";
 import crypto from "crypto";
 import { v4 } from "uuid";
 import { build as esbuild } from "esbuild";
 import appPath from "../../package/scripts/internal/appPath";
 import getDotEnvObject from "../../package/scripts/internal/getDotEnvObject";
+import { sql as drizzleSql } from "drizzle-orm/sql";
+import type { MySql2Database } from "drizzle-orm/mysql2/driver";
+import { migrations } from "../../data/schema";
 
 type MigrationProps = {
-  connection: mysql.Connection;
+  connection: MySql2Database;
 };
 
-const migrate = async (cxn: mysql.Connection): Promise<number> => {
+const migrate = async (connection: MySql2Database): Promise<number> => {
   const dir = "data/migrations";
-  const connection = await getMysqlConnection(cxn);
-  const actualTableResults = await connection
-    .execute(`show tables`)
-    .then(([r]) => r as Record<string, string>[]);
-  // doing a check before create table to get around planetscale DDL block until we implement branching in our workflows
-  if (!actualTableResults.some((a) => Object.values(a)[0] === "_migrations")) {
-    await connection.execute(
-      `CREATE TABLE IF NOT EXISTS _migrations (
-        uuid           VARCHAR(36)  NOT NULL,
-        migration_name VARCHAR(191) NOT NULL,
-        started_at     DATETIME(3)  NOT NULL,
-        finished_at    DATETIME(3)  NULL,
-        checksum       VARCHAR(64)  NOT NULL,
-
-        PRIMARY KEY (uuid)
-    )`
-    );
-  }
   return connection
-    .execute(`SELECT * FROM _migrations ORDER BY started_at`)
-    .then(([results]) => {
-      const applied = (results || []) as {
-        uuid: string;
-        migration_name: string;
-        started_at: string;
-        finished_at: string;
-        checksum: string;
-      }[];
+    .select()
+    .from(migrations)
+    .orderBy(migrations.startedAt)
+    .then((applied) => {
       const runMigrations = (
         migrationsToRun: ((props: MigrationProps) => Promise<void>)[]
       ) =>
         migrationsToRun
           .reduce((p, c) => p.then(() => c({ connection })), Promise.resolve())
           .then(() => {
-            connection.destroy();
+            connection.end();
             return 0;
           });
       const outDir = appPath(path.join(".cache", "migrations"));
@@ -68,21 +48,20 @@ const migrate = async (cxn: mysql.Connection): Promise<number> => {
         index < applied.length
           ? () => {
               const a = applied[index];
-              if (a.migration_name !== m.migrationName) {
+              if (a.migrationName !== m.migrationName) {
                 return Promise.reject(
-                  `Could not find applied migration ${a.migration_name} locally. Instead found ${m.migrationName}`
+                  `Could not find applied migration ${a.migrationName} locally. Instead found ${m.migrationName}`
                 );
               }
-              if (!a.finished_at) {
+              if (!a.finishedAt) {
                 return Promise.reject(
-                  `Tried to run migration that had already started but failed. Please first remove migration record ${a.migration_name} before attempting to apply migrations again.`
+                  `Tried to run migration that had already started but failed. Please first remove migration record ${a.migrationName} before attempting to apply migrations again.`
                 );
               }
               return connection
-                .execute(`UPDATE _migrations SET checksum = ? WHERE uuid = ?`, [
-                  m.checksum,
-                  a.uuid,
-                ])
+                .update(migrations)
+                .set({ checksum: m.checksum })
+                .where(eq(migrations.uuid, a.uuid))
                 .then(() =>
                   console.log(
                     "Updated the checksum for migration",
@@ -93,10 +72,13 @@ const migrate = async (cxn: mysql.Connection): Promise<number> => {
           : (props: MigrationProps) => {
               console.log(`Running migration ${m.migrationName}`);
               return connection
-                .execute(
-                  `INSERT INTO _migrations (uuid, migration_name, checksum, started_at) VALUES (?, ?, ?, ?)`,
-                  [m.uuid, m.migrationName, m.checksum, new Date()]
-                )
+                .insert(migrations)
+                .values({
+                  uuid: m.uuid,
+                  migrationName: m.migrationName,
+                  checksum: m.checksum,
+                  startedAt: new Date().toJSON(),
+                })
                 .then(() => {
                   const outfile = path.join(outDir, `${m.migrationName}.js`);
                   return esbuild({
@@ -119,10 +101,10 @@ const migrate = async (cxn: mysql.Connection): Promise<number> => {
                   })
                 )
                 .then(() =>
-                  connection.execute(
-                    `UPDATE _migrations SET finished_at = ? WHERE uuid = ?`,
-                    [new Date(), m.uuid]
-                  )
+                  connection
+                    .update(migrations)
+                    .set({ finishedAt: new Date().toJSON() })
+                    .where(eq(migrations.uuid, m.uuid))
                 )
                 .then(() => {
                   console.log(`Finished running migration ${m.migrationName}`);
@@ -144,7 +126,7 @@ const migrate = async (cxn: mysql.Connection): Promise<number> => {
     });
 };
 
-const PLAN_OUT_FILE = "out/apply-sql.txt";
+const PLAN_OUT_FILE = "out/migrations/apply.sql";
 
 const apply = async ({
   sql,
@@ -160,29 +142,18 @@ const apply = async ({
     });
   }
 
-  const queries = fs.existsSync(PLAN_OUT_FILE)
-    ? fs
-        .readFileSync(PLAN_OUT_FILE)
-        .toString()
-        .split(";\n\n")
-        .filter((s) => !!s)
-    : [];
-  const cxn = await getMysqlConnection();
-  if (queries.length) {
-    await queries
-      .map((q, i, a) => async () => {
-        console.log(`Running query ${i + 1} of ${a.length}:`);
-        console.log(">", q);
-        await cxn.execute(q);
-        console.log("Done!");
-        console.log("");
-      })
-      .reduce((p, c) => p.then(c), Promise.resolve());
+  const content = fs.existsSync(PLAN_OUT_FILE)
+    ? fs.readFileSync(PLAN_OUT_FILE).toString()
+    : "";
+  const cxn = await getMysql();
+  if (content.length) {
+    // TODO - set up planet scale branch and merge
+    await cxn.execute(drizzleSql.raw(content));
   } else {
     console.log("No mysql schema queries to run!");
   }
   if (!bare) await migrate(cxn);
-  cxn.destroy();
+  cxn.end();
   return 0;
 };
 

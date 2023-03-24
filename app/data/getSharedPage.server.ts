@@ -8,7 +8,7 @@ type SharedPageInput = {
   notebookPageId: string;
   requestId: string;
   notebookUuid: string;
-  open?: boolean | null;
+  open?: 1 | 0 | null;
 };
 type GetSharedPage<T> = T extends SharedPageInput & { safe: true }
   ? Promise<SharedPage | undefined>
@@ -18,7 +18,7 @@ const getSharedPage = <T extends SharedPageInput & { safe?: true }>({
   safe,
   requestId,
   notebookUuid,
-  open = false,
+  open = 0,
 }: T): GetSharedPage<T> =>
   getMysql(requestId).then((cxn) =>
     cxn

@@ -42,7 +42,7 @@ const getUserNotebookProfile = async ({
     .where(
       and(
         eq(pageNotebookLinks.notebookUuid, uuid),
-        eq(pageNotebookLinks.open, false)
+        eq(pageNotebookLinks.open, 0)
       )
     )
     .orderBy(desc(pageNotebookLinks.invitedDate))
