@@ -15,7 +15,7 @@ import Select from "~/components/Select";
 import {
   Annotation,
   InitialSchema,
-  annotationSchema,
+  annotationOptions,
 } from "package/internal/types";
 import Button from "~/components/Button";
 import ChevronRightIcon from "@heroicons/react/solid/ChevronRightIcon";
@@ -23,7 +23,7 @@ import ChevronDownIcon from "@heroicons/react/solid/ChevronDownIcon";
 import { getSetting } from "package/internal/registry";
 
 const OPTIONS = Array.from(
-  annotationSchema._def.schema._def.schema.optionsMap.keys()
+  annotationOptions.map((o) => o._shape.type.value)
 ) as string[];
 
 const EditAnnotation = ({

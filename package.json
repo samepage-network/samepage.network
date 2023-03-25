@@ -52,6 +52,7 @@
     "@remix-run/react": "1.6.8",
     "@remix-run/serve": "1.6.8",
     "@types/moo": "^0.5.5",
+    "archiver": "^5.3.1",
     "automerge": "^1.0.1-preview.7",
     "axios": "0.24.0",
     "c8": "^7.12.0",
