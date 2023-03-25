@@ -1,5 +1,5 @@
 import fs from "fs";
-import { spawn, execSync } from "child_process";
+import { spawn } from "child_process";
 import { S3 } from "@aws-sdk/client-s3";
 import toVersion from "../../package/scripts/internal/toVersion";
 import mime from "mime-types";
@@ -58,20 +58,18 @@ const test = ({
     })
     .finally(() => {
       if (process.env.CI && process.env.AWS_REGION) {
-        if (!fs.existsSync("test-results")) {
-          execSync('find . -name "test-results"', { stdio: "inherit" });
-          execSync('find . -name "playwright-report"', { stdio: "inherit" });
-          execSync('find . -name "index.html"', { stdio: "inherit" });
-          return Promise.resolve();
-        }
-        if (!fs.existsSync("test-results/index.html")) {
-          execSync('find . -name "index.html"', { stdio: "inherit" });
+        if (!fs.existsSync("package/testing/playwright-report/index.html")) {
+          console.log(fs.readdirSync("package/testing/playwright-report"));
           return Promise.resolve();
         }
         const s3 = new S3({});
-        const report = fs.createReadStream("test-results/index.html");
-        const reportData = fs.existsSync("test-results/data")
-          ? fs.readdirSync("test-results/data")
+        const report = fs.createReadStream(
+          "package/testing/playwright-report/index.html"
+        );
+        const reportData = fs.existsSync(
+          "package/testing/playwright-report/data"
+        )
+          ? fs.readdirSync("package/testing/playwright-report/data")
           : [];
 
         const path = "samepage";
@@ -92,7 +90,9 @@ const test = ({
                 Bucket: "samepage.network",
                 Key: `${root}/${path}/data/${r}`,
                 ContentType: mime.lookup(r) || undefined,
-                Body: fs.createReadStream(`test-results/data/${r}`),
+                Body: fs.createReadStream(
+                  `package/testing/playwright-report/data/${r}`
+                ),
               })
             )
           )
