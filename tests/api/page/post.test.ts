@@ -130,12 +130,6 @@ const mockRandomNotebook = async (userId = v4()) => {
 let oldConsole: Partial<typeof console>;
 const logsCaught = [
   {
-    label: "mysql2 packets out of order",
-    type: "error",
-    regex: /^Warning: got packets out of order\. Expected/,
-    count: 0,
-  },
-  {
     label: "receiving method",
     type: "log",
     regex: /^Received method:/,

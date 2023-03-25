@@ -55,6 +55,17 @@ const test = ({
     })
     .finally(() => {
       if (process.env.CI && process.env.AWS_REGION) {
+        if (!fs.existsSync("playwright-report")) {
+          console.log("ls .", fs.readdirSync("."));
+          return Promise.resolve();
+        }
+        if (!fs.existsSync("playwright-report/index.html")) {
+          console.log(
+            "ls playwright-report",
+            fs.readdirSync("playwright-report")
+          );
+          return Promise.resolve();
+        }
         const s3 = new S3({});
         const report = fs.createReadStream("playwright-report/index.html");
         const reportData = fs.existsSync("playwright-report/data")

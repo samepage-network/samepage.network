@@ -165,7 +165,6 @@ const logic = async (req: Record<string, unknown>) => {
     );
   const { requestId, ...args } = result.data;
   const cxn = await getMysql(requestId);
-  console.log("Received method:", args.method, requestId);
   try {
     if (args.method === "create-notebook") {
       const { app, workspace, email, password } = args;
@@ -328,7 +327,6 @@ const logic = async (req: Record<string, unknown>) => {
       return { notebooks: notebookRecords, token, userId };
     } else if (args.method === "ping") {
       // uptime checker
-      console.log("ping");
       return { success: true };
     }
     const { notebookUuid, token } = args;
@@ -337,8 +335,7 @@ const logic = async (req: Record<string, unknown>) => {
       notebookUuid,
       token,
     });
-    console.log("authenticated notebook as", notebookUuid);
-
+    
     switch (args.method) {
       case "usage": {
         const currentDate = new Date();

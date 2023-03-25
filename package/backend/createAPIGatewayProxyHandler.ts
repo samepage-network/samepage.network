@@ -65,7 +65,6 @@ const createAPIGatewayProxyHandler =
         }
       })
       .catch((e) => {
-        console.error(e);
         const statusCode =
           typeof e.code === "number" && e.code >= 400 && e.code < 600
             ? e.code
