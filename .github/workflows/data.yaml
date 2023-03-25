@@ -6,9 +6,11 @@ on:
       - main
       - AWS_MIGRATION
     paths:
-      # We need the gh action to somehow watch for new files inserted in api
+      # We need the gh action to somehow watch for only new files inserted in api
       - "data/**"
       - ".github/workflows/data.yaml"
+      - "scripts/commands/plan.ts"
+      - "scripts/commands/apply.ts"
 
 env:
   AWS_ACCESS_KEY_ID: ${{ secrets.TF_AWS_ACCESS_KEY }}

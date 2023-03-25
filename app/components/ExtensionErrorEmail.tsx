@@ -1,6 +1,5 @@
 import EmailLayout from "./EmailLayout";
 import React from "react";
-import { appsById } from "package/internal/apps";
 
 const ExtensionErrorEmail = ({
   app,
@@ -50,9 +49,7 @@ const ExtensionErrorEmail = ({
     <div>
       Download extension{" "}
       <a
-        href={`https://github.com/samepage-network/${appsById[
-          app
-        ].name.toLowerCase()}-samepage/releases/download/${version}/${file}`}
+        href={`https://github.com/samepage-network/${app}-samepage/releases/download/${version}/${file}`}
       >
         here.
       </a>
