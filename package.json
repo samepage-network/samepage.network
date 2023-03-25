@@ -73,7 +73,7 @@
     "svix": "^0.81.0",
     "typed.js": "^2.0.12",
     "web3.storage": "4.4.0",
-    "zod": "^3.17.10"
+    "zod": "^3.21.4"
   },
   "devDependencies": {
     "@cdktf/provider-archive": "^4.0.0",

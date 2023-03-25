@@ -142,24 +142,21 @@ const codeAnnotation = annotationBase.merge(
   })
 );
 
-export const annotationOptions = [
-  blockAnnotation,
-  metadataAnnotation,
-  boldAnnotation,
-  italicsAnnotation,
-  strikethroughAnnotation,
-  highlightingAnnotation,
-  inlineAnnotation,
-  externalLinkAnnotation,
-  referenceAnnotation,
-  imageAnnotation,
-  customAnnotation,
-  codeAnnotation,
-];
-
 export const annotationSchema = z
-   // @ts-ignore
-  .discriminatedUnion("type", annotationOptions)
+  .discriminatedUnion("type", [
+    blockAnnotation,
+    metadataAnnotation,
+    boldAnnotation,
+    italicsAnnotation,
+    strikethroughAnnotation,
+    highlightingAnnotation,
+    inlineAnnotation,
+    externalLinkAnnotation,
+    referenceAnnotation,
+    imageAnnotation,
+    customAnnotation,
+    codeAnnotation,
+  ])
   .refine((a) => a.start >= 0, {
     message: "Start index must be greater than or equal to 0",
   })
