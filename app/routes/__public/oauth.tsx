@@ -3,7 +3,7 @@ import { Outlet } from "@remix-run/react";
 
 const OauthPage = (): React.ReactElement => {
   return (
-    <div className="my-32">
+    <div className="my-32 max-w-xl">
       <img
         src={"/images/logo.png"}
         className="mx-auto"

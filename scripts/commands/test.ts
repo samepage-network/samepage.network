@@ -4,7 +4,10 @@ import { S3 } from "@aws-sdk/client-s3";
 import toVersion from "../../package/scripts/internal/toVersion";
 import mime from "mime-types";
 
-const test = ({ debug }: { debug?: boolean } = {}) => {
+const test = ({
+  debug,
+  project,
+}: { debug?: boolean; project?: string } = {}) => {
   process.env.DEBUG = debug ? "true" : process.env.DEBUG;
   const args = [
     "c8",
@@ -29,7 +32,7 @@ const test = ({ debug }: { debug?: boolean } = {}) => {
     "playwright",
     "test",
     "--config=package/testing/playwright.config.ts",
-  ];
+  ].concat(project ? [`--project=${project}`] : []);
   const options = {
     stdio: "inherit" as const,
     env: process.env,

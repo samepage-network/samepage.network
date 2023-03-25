@@ -1,5 +1,6 @@
 import { dev as remixDev } from "@remix-run/dev/dist/cli/commands";
 import { spawn } from "child_process";
+import ngrok from "ngrok";
 
 type FeArgs = { port?: string; local?: boolean };
 
@@ -14,7 +15,14 @@ const dev = async (args: FeArgs = {}): Promise<number> => {
 
   if (!args.local) {
     setTimeout(() => {
-      spawn("ngrok", ["start", "dev"], { stdio: "inherit" });
+      ngrok
+        .connect({
+          subdomain: "samepage-app",
+          addr: process.env.PORT || 3000,
+        })
+        .then((url) => {
+          console.log(`Public URL: ${url}`);
+        });
     }, 5000);
   }
 

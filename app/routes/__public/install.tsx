@@ -107,11 +107,11 @@ const INSTRUCTIONS: Record<string, { steps: InstructionSteps }> = {
         title: `Click here`,
         children: "link",
         props: {
-          href: `https://api.notion.com/v1/oauth/authorize?client_id=1990c3a3-66ff-4a69-8d22-af684683daf5&response_type=code&owner=user&redirect_uri=https%3A%2F%2F${
+          href: `https://api.notion.com/v1/oauth/authorize?client_id=1990c3a3-66ff-4a69-8d22-af684683daf5&response_type=code&owner=user&redirect_uri=https://${
             process.env.NODE_ENV === "production"
               ? "samepage.network"
               : "samepage-app.ngrok.io"
-          }%2Foauth%2Fnotion`,
+          }/oauth/notion`,
         },
       },
       {
