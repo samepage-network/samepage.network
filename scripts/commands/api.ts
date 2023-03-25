@@ -16,7 +16,9 @@ import WebSocket, { Server as WebSocketServer } from "ws";
 import readDir from "../../package/scripts/internal/readDir";
 import appPath from "../../package/scripts/internal/appPath";
 import nodeCompile from "../../package/scripts/internal/nodeCompile";
+import debugMod from "debug";
 
+const debug = debugMod("api");
 const METHODS = ["get", "post", "put", "delete", "options"] as const;
 const METHOD_SET = new Set<string>(METHODS);
 type ExpressMethod = (typeof METHODS)[number];
@@ -86,7 +88,7 @@ const api = ({ local }: { local?: boolean } = {}): Promise<number> => {
     `^${path}[\\\\/]((ws[/\\\\][a-z0-9-]+)|(:?[a-z0-9-]+[/\\\\])*(get|post|put|delete)|[a-z0-9-]+)\\.[tj]s$`
   );
   const wsRegex = new RegExp(`^${path}[\\\\/]ws[/\\\\][a-z0-9-]+\\.[tj]s$`);
-  console.log(
+  debug(
     "Preparing the API build from",
     path,
     "in",
@@ -150,7 +152,7 @@ const api = ({ local }: { local?: boolean } = {}): Promise<number> => {
                     });
                 }
                 const { headers, body, params, url, ip } = req;
-                console.log(`Received Request ${method} ${route}`);
+                debug(`Received Request ${method} ${route}`);
                 const searchParams = Array.from(
                   new URL(
                     url || "",
@@ -255,7 +257,7 @@ const api = ({ local }: { local?: boolean } = {}): Promise<number> => {
                       new Date(),
                       executionTimeStarted
                     );
-                    console.log(
+                    debug(
                       `Executed ${method} ${functionName} in ${executionTime}ms`
                     );
                     return result;
@@ -322,7 +324,7 @@ const api = ({ local }: { local?: boolean } = {}): Promise<number> => {
                     });
                 }
                 const event = req.body;
-                console.log(`Received Request async ${route}`);
+                debug(`Received Request async ${route}`);
                 const executionTimeStarted = new Date();
                 const context = generateContext({
                   functionName,
@@ -340,7 +342,7 @@ const api = ({ local }: { local?: boolean } = {}): Promise<number> => {
                       new Date(),
                       executionTimeStarted
                     );
-                    console.log(
+                    debug(
                       `Executed async ${functionName} in ${executionTime}ms`
                     );
                   })
@@ -351,13 +353,13 @@ const api = ({ local }: { local?: boolean } = {}): Promise<number> => {
                 return res.status(202).json({});
               });
             }
-            console.log(
+            debug(
               `Added Route ${
                 METHOD_SET.has(method) ? method.toUpperCase() : "POST"
               } ${route}`
             );
           } else {
-            console.log(
+            debug(
               `Updated Route ${
                 METHOD_SET.has(method) ? method.toUpperCase() : "POST"
               } ${route}`
@@ -390,7 +392,7 @@ const api = ({ local }: { local?: boolean } = {}): Promise<number> => {
       .watch(paths)
       .on("add", (file) => {
         if (entryRegex.test(file)) {
-          console.log(`building ${file}...`);
+          debug(`building ${file}...`);
           dependencies[file] = new Set([file]);
           nodeCompile({
             functions: [file.replace(/^api\//, "").replace(/\.ts$/, "")],
@@ -417,23 +419,21 @@ const api = ({ local }: { local?: boolean } = {}): Promise<number> => {
               if (r.rebuild) rebuilders[file] = r.rebuild;
               return rebuildCallback(file);
             })
-            .then(() => console.log(`successfully built ${file}...`));
+            .then(() => debug(`successfully built ${file}...`));
         }
       })
       .on("change", (file) => {
         const entries = dependencies[file] || new Set();
-        console.log(
-          `File ${file} has changed. Updating ${entries.size} entries...`
-        );
+        debug(`File ${file} has changed. Updating ${entries.size} entries...`);
         entries.forEach((entry) => {
           rebuilders[entry]()
             .then(() => rebuildCallback(entry))
-            .then(() => console.log(`Rebuilt ${entry}`))
+            .then(() => debug(`Rebuilt ${entry}`))
             .catch((e) => console.error(`Failed to rebuild`, entry, e));
         });
       })
       .on("unlink", (file) => {
-        console.log(`File ${file} was removed`);
+        debug(`File ${file} was removed`);
         delete dependencies[file];
         if (entryRegex.test(file)) {
           Object.values(dependencies).forEach((deps) => deps.delete(file));
@@ -486,8 +486,8 @@ const api = ({ local }: { local?: boolean } = {}): Promise<number> => {
             subdomain: "samepage",
           })
           .then((url) => {
-            console.log("Started local ngrok tunneling:");
-            console.log(url);
+            debug("Started local ngrok tunneling:");
+            debug(url);
             return 0;
           });
     });
@@ -495,14 +495,14 @@ const api = ({ local }: { local?: boolean } = {}): Promise<number> => {
       const wss = new WebSocketServer({ server: appServer });
       wss.on("connection", (ws) => {
         const connectionId = v4();
-        console.log("new ws connection", connectionId);
+        debug("new ws connection", connectionId);
         // const messageHandlers = wsEntries.filter(
         //   (w) =>
         //     !/onconnect$/.test(w) &&
         //     !/ondisconnect$/.test(w)
         // );
         ws.on("message", (data) => {
-          console.log("new message from", connectionId);
+          debug("new message from", connectionId);
           const body = data.toString();
           const action = JSON.parse(body).action;
           const filePath = wsEntries.find((f) => f.endsWith(`/ws/${action}`));
@@ -520,7 +520,7 @@ const api = ({ local }: { local?: boolean } = {}): Promise<number> => {
           }
         });
         ws.on("close", (a: number, b: Buffer) => {
-          console.log("client closing...", a, b.toString());
+          debug("client closing...", a, b.toString());
           removeLocalSocket(connectionId);
           const filePath = wsEntries.find((f) =>
             f.endsWith(`/ws/ondisconnect`)

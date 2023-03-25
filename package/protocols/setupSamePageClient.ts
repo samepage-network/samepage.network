@@ -13,7 +13,7 @@ import type {
   JSONData,
   SamePageAPI,
 } from "../internal/types";
-import APPS, { appIdByName } from "../internal/apps";
+import { appIdByName } from "../internal/apps";
 import setupRegistry from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
 import setupWsFeatures from "../internal/setupWsFeatures";
@@ -57,7 +57,7 @@ const setupSamePageClient = ({
   getSetting?: GetSetting;
   setSetting?: SetSetting;
   workspace?: string;
-  app?: (typeof APPS)[number]["name"];
+  app?: string;
   appRoot?: HTMLElement;
   onAppLog?: (e: LogEvent) => void;
   notificationContainerPath?: string;

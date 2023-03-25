@@ -10,6 +10,8 @@ import {
   varchar,
   json,
   AnyMySqlTable,
+  serial,
+  boolean,
 } from "drizzle-orm/mysql-core";
 import {
   MySqlColumnBuilderWithAutoIncrement,
@@ -238,3 +240,19 @@ export const accessTokens = mysqlTable("access_tokens", {
   notebookUuid: varchar("notebook_uuid", { length: 36 }).notNull().default(""),
   value: varchar("value", { length: 256 }).notNull().default(""),
 });
+
+export const apps = mysqlTable(
+  "apps",
+  {
+    id: serial("id").autoincrement().primaryKey(),
+    code: varchar("code", { length: 128 }).notNull().default(""),
+    name: varchar("name", { length: 128 }).notNull().default(""),
+    live: boolean("live").notNull().default(false),
+    workspaceLabel: varchar("workspace_label", { length: 128 })
+      .notNull()
+      .default("workspace"),
+  },
+  (apps) => ({
+    codeIndex: uniqueIndex("UC_code").on(apps.code),
+  })
+);

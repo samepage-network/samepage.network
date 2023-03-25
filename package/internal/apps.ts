@@ -8,6 +8,7 @@
 type App = {
   id: number;
   name: string;
+  code: string;
   workspaceLabel: string;
   development?: boolean;
 };
@@ -68,7 +69,7 @@ const APPS: App[] = [
     workspaceLabel: "workspace",
     development: true,
   },
-];
+].map((a) => ({ ...a, code: a.name.toLowerCase() }));
 
 export const appsById = Object.fromEntries(APPS.map(({ id, ...a }) => [id, a]));
 export const appIdByName = Object.fromEntries(

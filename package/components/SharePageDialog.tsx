@@ -11,13 +11,7 @@ import {
 } from "@blueprintjs/core";
 import { MultiSelect, MultiSelect2 } from "@blueprintjs/select";
 import inviteNotebookToPage from "../utils/inviteNotebookToPage";
-// TODO - remove both of these fields when possible
-import { appIdByName, appsById } from "../internal/apps";
 import apiClient from "../internal/apiClient";
-import getLastLocalVersion from "../internal/getLastLocalVersion";
-import { workspace, app } from "../internal/registry";
-import { load } from "../utils/localAutomergeDb";
-import { AppId } from "../internal/types";
 
 const formatVersion = (s: number) =>
   s ? new Date(s * 1000).toLocaleString() : "unknown";
@@ -40,17 +34,12 @@ type ConnectedNotebooks = {
 
 type RecentNotebook = {
   uuid: string;
-  appName?: string;
-  email?: string;
-  app?: AppId;
+  appName: string;
+  email: string;
   workspace: string;
 };
 
 const MultiSelectComponent = MultiSelect2 || MultiSelect;
-
-const getApp = (r: RecentNotebook) =>
-  r.appName ||
-  (typeof r.app !== "undefined" ? appsById[r.app]?.name : "Unknown");
 
 const SharePageDialog = ({
   onClose,
@@ -115,26 +104,13 @@ const SharePageDialog = ({
   React.useEffect(() => {
     if (isOpen) {
       setLoading(true);
-      Promise.all([
-        apiClient<{
-          notebooks: ConnectedNotebooks;
-          recents: RecentNotebook[];
-        }>({
-          method: "list-page-notebooks",
-          notebookPageId,
-        }),
-        load(notebookPageId),
-      ])
-        .then(([{ notebooks, recents }, doc]) => {
-          return {
-            notebooks: notebooks.map((n) =>
-              n.workspace !== workspace || n.app !== appsById[app].name
-                ? n
-                : { ...n, version: getLastLocalVersion(doc) }
-            ),
-            recents,
-          };
-        })
+      apiClient<{
+        notebooks: ConnectedNotebooks;
+        recents: RecentNotebook[];
+      }>({
+        method: "list-page-notebooks",
+        notebookPageId,
+      })
         .then((r) => {
           setNotebooks(r.notebooks);
           setRecents(r.recents);
@@ -201,7 +177,6 @@ const SharePageDialog = ({
                           recents.concat({
                             uuid: g.uuid,
                             workspace: g.workspace,
-                            app: appIdByName[g.app],
                             appName: g.app,
                             email: g.email,
                           })
@@ -240,7 +215,7 @@ const SharePageDialog = ({
                 text={
                   <div className="text-black">
                     <div>
-                      <span className="font-bold text-base">{getApp(a)}</span>{" "}
+                      <span className="font-bold text-base">{a.appName}</span>{" "}
                       <span className="font-normal text-sm">{a.workspace}</span>
                     </div>
                     <div>
@@ -260,13 +235,14 @@ const SharePageDialog = ({
               />
             }
             tagRenderer={(a) => {
-              const appName = getApp(a);
               return !a.uuid ? (
                 <span className="font-bold text-base pr-2">{a.email}</span>
               ) : (
                 <span className="flex flex-col">
                   <span>
-                    <span className="font-bold text-base pr-2">{appName}</span>
+                    <span className="font-bold text-base pr-2">
+                      {a.appName}
+                    </span>
                     <span className="font-normal text-sm">{a.workspace}</span>
                   </span>
                   <span>
@@ -283,14 +259,7 @@ const SharePageDialog = ({
               const q = Q.toLowerCase();
               return (
                 i.workspace.toLowerCase().includes(q) ||
-                `${
-                  i.appName ||
-                  (typeof i.app !== "undefined"
-                    ? appsById[i.app]?.name
-                    : "Unknown")
-                } ${i.workspace}`
-                  .toLowerCase()
-                  .includes(q)
+                `${i.appName} ${i.workspace}`.toLowerCase().includes(q)
               );
             }}
             query={inviteQuery}

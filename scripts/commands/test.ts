@@ -55,21 +55,21 @@ const test = ({
     })
     .finally(() => {
       if (process.env.CI && process.env.AWS_REGION) {
-        if (!fs.existsSync("playwright-report")) {
+        if (!fs.existsSync("test-results'")) {
           console.log("ls .", fs.readdirSync("."));
           return Promise.resolve();
         }
-        if (!fs.existsSync("playwright-report/index.html")) {
+        if (!fs.existsSync("test-results/index.html")) {
           console.log(
-            "ls playwright-report",
-            fs.readdirSync("playwright-report")
+            "ls test-results'",
+            fs.readdirSync("test-results")
           );
           return Promise.resolve();
         }
         const s3 = new S3({});
-        const report = fs.createReadStream("playwright-report/index.html");
-        const reportData = fs.existsSync("playwright-report/data")
-          ? fs.readdirSync("playwright-report/data")
+        const report = fs.createReadStream("test-results/index.html");
+        const reportData = fs.existsSync("test-results/data")
+          ? fs.readdirSync("test-results/data")
           : [];
 
         const path = "samepage";
@@ -90,7 +90,7 @@ const test = ({
                 Bucket: "samepage.network",
                 Key: `${root}/${path}/data/${r}`,
                 ContentType: mime.lookup(r) || undefined,
-                Body: fs.createReadStream(`playwright-report/data/${r}`),
+                Body: fs.createReadStream(`test-results/data/${r}`),
               })
             )
           )
