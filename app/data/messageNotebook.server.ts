@@ -42,7 +42,6 @@ const messageNotebook = ({
       },
       operation,
     };
-    console.log("messaging", target, "found connection", ConnectionId);
     const online = ConnectionId
       ? await postToConnection({
           ConnectionId,
@@ -63,7 +62,7 @@ const messageNotebook = ({
     await cxn.insert(messages).values({
       uuid: messageUuid,
       createdDate: new Date(),
-      marked: online && !MESSAGES[operation].buttons.length,
+      marked: online && !MESSAGES[operation].buttons.length ? 1 : 0,
       source,
       target,
       operation,

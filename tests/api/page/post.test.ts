@@ -127,51 +127,7 @@ const mockRandomNotebook = async (userId = v4()) => {
   });
 };
 
-let oldConsole: Partial<typeof console>;
-const logsCaught = [
-  {
-    label: "receiving method",
-    type: "log",
-    regex: /^Received method:/,
-    count: 0,
-  },
-  {
-    label: "Authenticating notebook",
-    type: "log",
-    regex: /^authenticated notebook as/,
-    count: 0,
-  },
-  {
-    label: "messaging",
-    type: "log",
-    regex: /^messaging/,
-    count: 0,
-  },
-  {
-    regex: /^Failed to process method:/,
-    count: 0,
-    type: "error",
-    label: "API error catching",
-  },
-];
-
-const logTypes = ["error", "log", "warn"] as const;
 test.beforeAll(() => {
-  oldConsole = Object.fromEntries(logTypes.map((t) => [t, console[t]]));
-  logTypes.forEach((t) => {
-    console[t] = (...data) => {
-      const log = logsCaught.find(
-        (l) =>
-          l.type === t &&
-          l.regex.test(data.map((d = "") => d.toString()).join(" "))
-      );
-      if (log) {
-        log.count++;
-      } else {
-        oldConsole[t]?.(...data);
-      }
-    };
-  });
   // TODO - import methods directly from api/clerk/v1/*
   const users: Record<
     string,
@@ -1644,14 +1600,4 @@ test.afterEach(async () => {
     .map((n) => () => deleteNotebook({ uuid: n, requestId: v4() }))
     .reduce((p, c) => p.then(c), Promise.resolve({ success: true }));
   mockedNotebooks.clear();
-});
-
-test.afterAll(async () => {
-  logTypes.forEach((t) => {
-    const old = oldConsole[t];
-    if (old) console[t] = old;
-  });
-  logsCaught.forEach((l) => {
-    console.log("For log", l.label, "we", l.type, l.count, "times");
-  });
 });

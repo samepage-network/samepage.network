@@ -230,8 +230,8 @@ export const interviews = mysqlTable(
 export const migrations = mysqlTable("_migrations", {
   uuid: varchar("uuid", { length: 36 }).primaryKey().notNull(),
   migrationName: varchar("migration_name", { length: 191 }).notNull(),
-  startedAt: datetime("started_at", { mode: "string", fsp: 3 }).notNull(),
-  finishedAt: datetime("finished_at", { mode: "string", fsp: 3 }),
+  startedAt: datetime("started_at").notNull(),
+  finishedAt: datetime("finished_at"),
   checksum: varchar("checksum", { length: 64 }).notNull(),
 });
 

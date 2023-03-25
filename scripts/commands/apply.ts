@@ -5,15 +5,19 @@ import path from "path";
 import { execSync } from "child_process";
 import crypto from "crypto";
 import { v4 } from "uuid";
-import { build as esbuild } from "esbuild";
+// import { build as esbuild } from "esbuild";
 import appPath from "../../package/scripts/internal/appPath";
-import getDotEnvObject from "../../package/scripts/internal/getDotEnvObject";
+// import getDotEnvObject from "../../package/scripts/internal/getDotEnvObject";
 import { sql as drizzleSql } from "drizzle-orm/sql";
 import type { MySql2Database } from "drizzle-orm/mysql2/driver";
 import { migrations } from "../../data/schema";
+import * as schema from "../../data/schema";
 
 type MigrationProps = {
   connection: MySql2Database;
+  // TODO - there is a bug in drizzle that bc it uses symbols, compiled files can't accept a connection we pass in.
+  // but also... this esbuild step is unnec
+  schema: typeof schema;
 };
 
 const migrate = async (connection: MySql2Database): Promise<number> => {
@@ -27,7 +31,10 @@ const migrate = async (connection: MySql2Database): Promise<number> => {
         migrationsToRun: ((props: MigrationProps) => Promise<void>)[]
       ) =>
         migrationsToRun
-          .reduce((p, c) => p.then(() => c({ connection })), Promise.resolve())
+          .reduce(
+            (p, c) => p.then(() => c({ connection, schema })),
+            Promise.resolve()
+          )
           .then(() => {
             connection.end();
             return 0;
@@ -58,16 +65,19 @@ const migrate = async (connection: MySql2Database): Promise<number> => {
                   `Tried to run migration that had already started but failed. Please first remove migration record ${a.migrationName} before attempting to apply migrations again.`
                 );
               }
-              return connection
-                .update(migrations)
-                .set({ checksum: m.checksum })
-                .where(eq(migrations.uuid, a.uuid))
-                .then(() =>
-                  console.log(
-                    "Updated the checksum for migration",
-                    m.migrationName
-                  )
-                );
+              if (a.checksum !== m.checksum)
+                return connection
+                  .update(migrations)
+                  .set({ checksum: m.checksum })
+                  .where(eq(migrations.uuid, a.uuid))
+                  .then(() =>
+                    console.log(
+                      "Updated the checksum for migration",
+                      m.migrationName
+                    )
+                  );
+              console.log(`${m.migrationName} already applied.`);
+              return Promise.resolve();
             }
           : (props: MigrationProps) => {
               console.log(`Running migration ${m.migrationName}`);
@@ -77,33 +87,37 @@ const migrate = async (connection: MySql2Database): Promise<number> => {
                   uuid: m.uuid,
                   migrationName: m.migrationName,
                   checksum: m.checksum,
-                  startedAt: new Date().toJSON(),
+                  startedAt: new Date(),
                 })
                 .then(() => {
-                  const outfile = path.join(outDir, `${m.migrationName}.js`);
-                  return esbuild({
-                    outfile,
-                    entryPoints: [appPath(path.join(dir, m.filename))],
-                    platform: "node",
-                    bundle: true,
-                    define: getDotEnvObject(),
-                    target: "node14",
-                  }).then(() => import(outfile));
+                  // const outfile = path.join(outDir, `${m.migrationName}.js`);
+                  // return esbuild({
+                  //   outfile,
+                  //   entryPoints: [appPath(path.join(dir, m.filename))],
+                  //   platform: "node",
+                  //   bundle: true,
+                  //   define: getDotEnvObject(),
+                  //   target: "node14",
+                  // }).then(() => import(outfile));
+                  return import(path.join(outDir, m.migrationName));
                 })
                 .then(
                   (mod) =>
                     mod.migrate as (props: MigrationProps) => Promise<unknown>
                 )
                 .then((mig) =>
-                  mig(props).catch((e) => {
+                  mig(props).catch(async (e) => {
                     console.error(`Failed to run migration ${m.migrationName}`);
+                    await connection
+                      .delete(migrations)
+                      .where(eq(migrations.migrationName, m.migrationName));
                     throw e;
                   })
                 )
                 .then(() =>
                   connection
                     .update(migrations)
-                    .set({ finishedAt: new Date().toJSON() })
+                    .set({ finishedAt: new Date() })
                     .where(eq(migrations.uuid, m.uuid))
                 )
                 .then(() => {
@@ -167,6 +181,7 @@ const apply = async ({
         ),
       Promise.resolve()
     );
+    fs.rmSync(PLAN_OUT_FILE);
   } else {
     console.log("No mysql schema queries to run!");
   }
