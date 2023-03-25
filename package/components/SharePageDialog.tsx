@@ -112,8 +112,8 @@ const SharePageDialog = ({
         notebookPageId,
       })
         .then((r) => {
-          setNotebooks(r.notebooks);
-          setRecents(r.recents);
+          setNotebooks(r.notebooks || []);
+          setRecents(r.recents || []);
         })
         .catch((e) => setError(e.message))
         .finally(() => setLoading(false));

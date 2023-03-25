@@ -1,6 +1,5 @@
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
 import sendEmail from "package/backend/sendEmail.server";
-import { appsById } from "package/internal/apps";
 import { z } from "zod";
 import getMysql from "~/data/mysql.server";
 import { eq } from "drizzle-orm/expressions";
@@ -10,7 +9,7 @@ import uploadFile from "~/data/uploadFile.server";
 import EmailLayout from "~/components/EmailLayout";
 import parseZodError from "package/utils/parseZodError";
 import axios from "axios";
-import { notebooks } from "data/schema";
+import { apps, notebooks } from "data/schema";
 
 const zBody = z.discriminatedUnion("method", [
   z.object({
@@ -57,8 +56,9 @@ const logic = async (body: Record<string, unknown>) => {
       const { notebookUuid, data, stack, version, type } = args;
       const cxn = await getMysql();
       const [notebook] = await cxn
-        .select({ app: notebooks.app, workspace: notebooks.workspace })
+        .select({ app: apps.code, workspace: notebooks.workspace })
         .from(notebooks)
+        .innerJoin(apps, eq(apps.id, notebooks.app))
         .where(eq(notebooks.uuid, notebookUuid));
       await cxn.end();
       const { latest, file = "main.js" } = await axios
@@ -66,9 +66,7 @@ const logic = async (body: Record<string, unknown>) => {
           tag_name: string;
           assets: { name: string }[];
         }>(
-          `https://api.github.com/repos/samepage-network/${appsById[
-            notebook.app
-          ].name.toLowerCase()}-samepage/releases/latest`
+          `https://api.github.com/repos/samepage-network/${notebook.app}-samepage/releases/latest`
         )
         .then((r) => ({
           latest: r.data.tag_name,

@@ -1,7 +1,6 @@
 import EmailLayout from "./EmailLayout";
 import React from "react";
 import { appsById } from "package/internal/apps";
-import { AppId } from "package/internal/types";
 
 const ExtensionErrorEmail = ({
   app,
@@ -13,7 +12,7 @@ const ExtensionErrorEmail = ({
   latest,
   file,
 }: {
-  app: AppId;
+  app: string;
   workspace: string;
   data: string;
   stack: string;
@@ -31,7 +30,7 @@ const ExtensionErrorEmail = ({
       Latest: <code>{latest}</code>
     </div>
     <div>
-      App: <code>{appsById[app].name}</code>
+      App: <code>{app}</code>
     </div>
     <div>
       Workspace: <code>{workspace}</code>

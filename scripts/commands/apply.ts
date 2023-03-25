@@ -5,19 +5,13 @@ import path from "path";
 import { execSync } from "child_process";
 import crypto from "crypto";
 import { v4 } from "uuid";
-// import { build as esbuild } from "esbuild";
-import appPath from "../../package/scripts/internal/appPath";
-// import getDotEnvObject from "../../package/scripts/internal/getDotEnvObject";
 import { sql as drizzleSql } from "drizzle-orm/sql";
 import type { MySql2Database } from "drizzle-orm/mysql2/driver";
 import { migrations } from "../../data/schema";
-import * as schema from "../../data/schema";
+import appPath from "../../package/scripts/internal/appPath";
 
 type MigrationProps = {
   connection: MySql2Database;
-  // TODO - there is a bug in drizzle that bc it uses symbols, compiled files can't accept a connection we pass in.
-  // but also... this esbuild step is unnec
-  schema: typeof schema;
 };
 
 const migrate = async (connection: MySql2Database): Promise<number> => {
@@ -31,15 +25,11 @@ const migrate = async (connection: MySql2Database): Promise<number> => {
         migrationsToRun: ((props: MigrationProps) => Promise<void>)[]
       ) =>
         migrationsToRun
-          .reduce(
-            (p, c) => p.then(() => c({ connection, schema })),
-            Promise.resolve()
-          )
+          .reduce((p, c) => p.then(() => c({ connection })), Promise.resolve())
           .then(() => {
             connection.end();
             return 0;
           });
-      const outDir = appPath(path.join(".cache", "migrations"));
       const local = fs.existsSync(dir)
         ? fs.readdirSync(dir).map((f) => ({
             filename: f,
@@ -90,16 +80,7 @@ const migrate = async (connection: MySql2Database): Promise<number> => {
                   startedAt: new Date(),
                 })
                 .then(() => {
-                  // const outfile = path.join(outDir, `${m.migrationName}.js`);
-                  // return esbuild({
-                  //   outfile,
-                  //   entryPoints: [appPath(path.join(dir, m.filename))],
-                  //   platform: "node",
-                  //   bundle: true,
-                  //   define: getDotEnvObject(),
-                  //   target: "node14",
-                  // }).then(() => import(outfile));
-                  return import(path.join(outDir, m.migrationName));
+                  return import(appPath(path.join(dir, m.migrationName)));
                 })
                 .then(
                   (mod) =>
@@ -128,8 +109,6 @@ const migrate = async (connection: MySql2Database): Promise<number> => {
       if (!migrationsToRun.length) {
         console.log("No migrations to run. Exiting...");
         return 0;
-      } else if (!fs.existsSync(outDir)) {
-        fs.mkdirSync(outDir, { recursive: true });
       }
       console.log(
         "Running",

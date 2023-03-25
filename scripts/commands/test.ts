@@ -1,5 +1,5 @@
 import fs from "fs";
-import { spawn } from "child_process";
+import { spawn, execSync } from "child_process";
 import { S3 } from "@aws-sdk/client-s3";
 import toVersion from "../../package/scripts/internal/toVersion";
 import mime from "mime-types";
@@ -7,7 +7,8 @@ import mime from "mime-types";
 const test = ({
   debug,
   project,
-}: { debug?: boolean; project?: string } = {}) => {
+  file,
+}: { debug?: boolean; project?: string; file?: string } = {}) => {
   process.env.DEBUG = debug ? "true" : process.env.DEBUG;
   const args = [
     "c8",
@@ -32,7 +33,9 @@ const test = ({
     "playwright",
     "test",
     "--config=package/testing/playwright.config.ts",
-  ].concat(project ? [`--project=${project}`] : []);
+  ]
+    .concat(project ? [`--project=${project}`] : [])
+    .concat(file ? [file] : []);
   const options = {
     stdio: "inherit" as const,
     env: process.env,
@@ -55,15 +58,14 @@ const test = ({
     })
     .finally(() => {
       if (process.env.CI && process.env.AWS_REGION) {
-        if (!fs.existsSync("test-results'")) {
-          console.log("ls .", fs.readdirSync("."));
+        if (!fs.existsSync("test-results")) {
+          execSync('find . -name "test-results"', { stdio: "inherit" });
+          execSync('find . -name "playwright-report"', { stdio: "inherit" });
+          execSync('find . -name "index.html"', { stdio: "inherit" });
           return Promise.resolve();
         }
         if (!fs.existsSync("test-results/index.html")) {
-          console.log(
-            "ls test-results'",
-            fs.readdirSync("test-results")
-          );
+          execSync('find . -name "index.html"', { stdio: "inherit" });
           return Promise.resolve();
         }
         const s3 = new S3({});
