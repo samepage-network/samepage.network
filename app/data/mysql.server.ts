@@ -35,7 +35,9 @@ const getMysql = async (_cxn?: mysql.Connection | string) => {
       : typeof _cxn === "string"
       ? connectionMap[_cxn] || (await createConnection(_cxn))
       : _cxn;
-  return drizzle(cxn, { logger: !!process.env.DEBUG });
+  return drizzle(cxn, { 
+    // logger: !!process.env.DEBUG 
+  });
 };
 
 export default getMysql;

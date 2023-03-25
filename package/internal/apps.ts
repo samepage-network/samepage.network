@@ -62,6 +62,12 @@ const APPS: App[] = [
     workspaceLabel: "base",
     development: true,
   },
+  {
+    id: 9,
+    name: "OpenAI",
+    workspaceLabel: "workspace",
+    development: true,
+  },
 ];
 
 export const appsById = Object.fromEntries(APPS.map(({ id, ...a }) => [id, a]));
