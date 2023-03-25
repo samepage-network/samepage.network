@@ -82,7 +82,11 @@ const createAPIGatewayProxyHandler =
         return typeof e.name === "string" &&
           e.name &&
           process.env.NODE_ENV === "production"
-          ? emailError(e.name, e).then((id) => ({
+          ? emailError(
+              `API Gateway Error (${e.name})`,
+              e,
+              JSON.stringify(context)
+            ).then((id) => ({
               statusCode,
               body: `Unknown error - Message Id ${id}`,
               headers,
