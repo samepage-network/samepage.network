@@ -99,7 +99,7 @@ const dataHandler = async (
     return (
       source
         ? messageNotebook({
-            source: source.notebookUuid,
+            source: source.notebookUuid || "",
             target,
             operation: proxyOperation,
             data: proxyData,
