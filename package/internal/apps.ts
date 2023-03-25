@@ -36,7 +36,7 @@ const APPS: App[] = [
     id: 4,
     name: "Notion",
     workspaceLabel: "workspace",
-    development: process.env.NODE_ENV === "development",
+    development: process.env.NODE_ENV === "production",
   },
   {
     id: 5,

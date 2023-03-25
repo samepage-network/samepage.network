@@ -117,7 +117,7 @@ const INSTRUCTIONS: Record<string, { steps: InstructionSteps }> = {
       {
         title: `Select Accessible Pages`,
         children: "image",
-      }
+      },
     ],
   },
 };
