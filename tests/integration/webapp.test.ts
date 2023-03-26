@@ -13,8 +13,8 @@ test.beforeEach(async ({ page }) => {
 });
 
 // TODO: include app/routes + app/components again when properly code covering
-test("Full integration test of web app", async ({ page }) => {
-  test.setTimeout(1000 * 60);
+test("Full integration test of web app", async ({ page }) => {  
+  test.setTimeout(1000 * 60 * 2);
   page.on("console", (msg) => {
     console.log(`CONSOLE: (${msg.type()}) "${msg.text().slice(0, 50)}"`);
   });

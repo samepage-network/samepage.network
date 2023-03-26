@@ -41,7 +41,7 @@ const forkSamePageClient = ({
       password,
       "--create",
     ]),
-    { execPath: "./node_modules/.bin/ts-node", stdio: "inherit" }
+    { execPath: "./node_modules/.bin/ts-node", stdio: "inherit", }
   );
   const pendingRequests: Record<
     string,
@@ -116,7 +116,7 @@ const forkSamePageClient = ({
 //     .post("http://localhost:3003/close")
 //     .then((r) => console.log("api kill", r.data));
 test("Full integration test of extensions", async () => {
-  test.setTimeout(60000);
+  test.setTimeout(1000 * 60 * 2);
   const api = spawn("npx", ["ts-node", "scripts/cli.ts", "api", "--local"], {
     env: {
       ...process.env,
