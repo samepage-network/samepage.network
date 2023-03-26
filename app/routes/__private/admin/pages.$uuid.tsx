@@ -9,8 +9,6 @@ import disconnectNotebookFromPage from "~/data/disconnectNotebookFromPage.server
 import getSharedPageByUuid from "~/data/getSharedPageByUuid.server";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
-import { v4 } from "uuid";
-import APPS, { appsById } from "package/internal/apps";
 import { parseAndFormatActorId } from "package/internal/parseActorId";
 import { useState } from "react";
 import AtJsonRendered from "package/components/AtJsonRendered";
@@ -21,10 +19,14 @@ import getNotebookUuids from "~/data/getNotebookUuids.server";
 import { zNotebook } from "package/internal/types";
 import BaseInput from "~/components/BaseInput";
 import { z } from "zod";
+import listApps from "~/data/listApps.server";
 
 const SinglePagePage = () => {
-  const { notebooks, pages } =
-    useLoaderData<Awaited<ReturnType<typeof getSharedPageByUuid>>>();
+  const { notebooks, pages, apps } = useLoaderData<
+    Awaited<ReturnType<typeof getSharedPageByUuid>> & {
+      apps: { id: number; label: string }[];
+    }
+  >();
   const [chosenNotebook, setChosenNotebook] = useState(0);
   const { data, history } = pages[notebooks[chosenNotebook]?.cid] || {
     data: { content: "", annotations: [] },
@@ -60,8 +62,7 @@ const SinglePagePage = () => {
         <div className="flex-grow border-gray-800 flex flex-col h-full">
           <h1 className={"text-3xl py-4 flex items-center justify-between"}>
             <span className="opacity-75 text-xl italic">
-              Showing data from{" "}
-              {appsById[notebooks[chosenNotebook]?.app]?.name || "Unknown"} /{" "}
+              Showing data from {notebooks[chosenNotebook]?.app || "Unknown"} /{" "}
               {notebooks[chosenNotebook]?.workspace || "Unknown"}
             </span>
             <Switch
@@ -96,7 +97,7 @@ const SinglePagePage = () => {
                 onClick={() => setChosenNotebook(index)}
                 className={"cursor-pointer"}
               >
-                {appsById[l.app].name} / {l.workspace} / {l.notebookPageId}
+                {l.app} / {l.workspace} / {l.notebookPageId}
                 {l.open ? " (PENDING)" : ""}
               </span>
               <Form method={"delete"}>
@@ -126,10 +127,7 @@ const SinglePagePage = () => {
             value={notebooks[chosenNotebook]?.notebookPageId}
             name={"notebookPageId"}
           />
-          <Select
-            name={"app"}
-            options={APPS.map((a) => ({ id: a.id, label: a.name }))}
-          />
+          <Select name={"app"} options={apps} />
           <TextInput name={"workspace"} placeholder={"workspace"} />
           <Button>Invite</Button>
         </Form>
@@ -144,12 +142,17 @@ const SinglePagePage = () => {
 };
 
 export const loader: LoaderFunction = (args) => {
-  return remixAdminLoader(args, ({ params }) =>
-    getSharedPageByUuid(
+  return remixAdminLoader(args, async ({ params, context }) => {
+    const apps = await listApps({ requestId: context.requestId });
+    const data = await getSharedPageByUuid(
       params["uuid"] || "",
-      (args.context?.lambdaContext as Record<string, string>)?.requestId || v4()
-    )
-  );
+      context.requestId
+    );
+    return {
+      ...data,
+      apps: apps.map((a) => ({ ...a, label: a.name })),
+    };
+  });
 };
 
 export const action: ActionFunction = async (args) => {

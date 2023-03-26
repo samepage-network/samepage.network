@@ -4,7 +4,7 @@ import Automerge from "automerge";
 import downloadSharedPage from "./downloadSharedPage.server";
 import { NotFoundError } from "~/data/errors.server";
 import unwrapSchema from "package/utils/unwrapSchema";
-import { notebooks, pageNotebookLinks } from "data/schema";
+import { apps, notebooks, pageNotebookLinks } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
 
 const DEFAULT_SCHEMA: InitialSchema = {
@@ -16,7 +16,7 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
   const notebookRecords = await cxn
     .select({
-      app: notebooks.app,
+      app: apps.name,
       workspace: notebooks.workspace,
       uuid: pageNotebookLinks.uuid,
       cid: pageNotebookLinks.cid,
@@ -25,6 +25,7 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
     })
     .from(pageNotebookLinks)
     .innerJoin(notebooks, eq(notebooks.uuid, pageNotebookLinks.notebookUuid))
+    .innerJoin(apps, eq(apps.id, notebooks.app))
     .where(eq(pageNotebookLinks.pageUuid, uuid));
   if (!notebookRecords.length) {
     await cxn.end();

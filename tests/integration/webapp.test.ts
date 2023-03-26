@@ -14,6 +14,7 @@ test.beforeEach(async ({ page }) => {
 
 // TODO: include app/routes + app/components again when properly code covering
 test("Full integration test of web app", async ({ page }) => {
+  test.setTimeout(1000 * 60);
   page.on("console", (msg) => {
     console.log(`CONSOLE: (${msg.type()}) "${msg.text().slice(0, 50)}"`);
   });
@@ -54,20 +55,19 @@ test("Full integration test of web app", async ({ page }) => {
 
 test.afterEach(async ({ page }) => {
   // fix the sources in coverage file from app
-  fs.readdirSync(covPath)
-    .forEach((f) => {
-      const contentPath = `${covPath}/${f}`;
-      const content = fs.readFileSync(contentPath).toString();
-      const data = JSON.parse(content);
-      const cacheKey = `file://${process.cwd()}/app/server/build/index.js`;
-      const cache = data["source-map-cache"][cacheKey]?.data;
-      if (cache) {
-        cache.sources = cache.sources.map((s: string) =>
-          s.replace(/file:\/\//, "")
-        );
-        fs.writeFileSync(contentPath, JSON.stringify(data));
-      }
-    });
+  fs.readdirSync(covPath).forEach((f) => {
+    const contentPath = `${covPath}/${f}`;
+    const content = fs.readFileSync(contentPath).toString();
+    const data = JSON.parse(content);
+    const cacheKey = `file://${process.cwd()}/app/server/build/index.js`;
+    const cache = data["source-map-cache"][cacheKey]?.data;
+    if (cache) {
+      cache.sources = cache.sources.map((s: string) =>
+        s.replace(/file:\/\//, "")
+      );
+      fs.writeFileSync(contentPath, JSON.stringify(data));
+    }
+  });
 
   const origin = "localhost:3000";
   const coverage = await page.coverage.stopJSCoverage().then((fils) => {

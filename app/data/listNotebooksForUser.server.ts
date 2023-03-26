@@ -1,10 +1,10 @@
 import getMysql from "~/data/mysql.server";
-import { appsById } from "package/internal/apps";
 import {
   notebooks,
   onlineClients,
   tokens,
   tokenNotebookLinks,
+  apps,
 } from "data/schema";
 import { desc, like, eq, and } from "drizzle-orm/mysql-core/expressions";
 import { sql } from "drizzle-orm/sql";
@@ -31,7 +31,7 @@ const listNotebooksForUser = async ({
   const data = await cxn
     .select({
       uuid: notebooks.uuid,
-      app: notebooks.app,
+      app: apps.name,
       workspace: notebooks.workspace,
       created_date: sql<Date>`MAX(${onlineClients.createdDate})`.as(
         "created_date"
@@ -45,6 +45,7 @@ const listNotebooksForUser = async ({
       eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
     )
     .leftJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
+    .innerJoin(apps, eq(notebooks.app, apps.id))
     // TODO - sql injection
     .where(
       and(
@@ -79,7 +80,7 @@ const listNotebooksForUser = async ({
     data: data.map((d) => ({
       uuid: d.uuid,
       workspace: d.workspace || "Pending",
-      app: appsById[d.app].name,
+      app: d.app,
       connected: d.created_date ? d.created_date.valueOf() : "OFFLINE",
       token: d.token,
     })),
