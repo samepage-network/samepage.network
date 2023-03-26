@@ -9,17 +9,16 @@ import path from "path";
 import { Lambda, GetFunctionResponse } from "@aws-sdk/client-lambda";
 import archiver from "archiver";
 import crypto from "crypto";
+import esbuild from "esbuild";
 
 const publish = async ({
   root = ".",
   review,
   version,
-  backendFunctions,
 }: {
   root?: string;
   review?: string;
   version?: string;
-  backendFunctions?: string[];
 } = {}): Promise<void> => {
   const token = process.env.GITHUB_TOKEN;
   const destPath = getPackageName();
@@ -107,9 +106,12 @@ const publish = async ({
     );
   }
 
-  if (backendFunctions?.length) {
+  const backendOutdir = path.join(root, "out");
+  const backendFunctions = fs.existsSync(backendOutdir)
+    ? fs.readdirSync(backendOutdir)
+    : [];
+  if (backendFunctions.length) {
     const lambda = new Lambda({});
-    const outdir = "out";
     const options = {
       date: new Date("01-01-1970"),
     };
@@ -145,7 +147,7 @@ const publish = async ({
         const zip = archiver("zip", { gzip: true, zlib: { level: 9 } });
         console.log(`Zipping ${f}...`);
 
-        zip.file(`${outdir}/${f}.js`, {
+        zip.file(`${backendOutdir}/${f}.js`, {
           name: `extensions-${id}-${f}_post.js`,
           ...options,
         });
@@ -201,6 +203,95 @@ const publish = async ({
   }
 };
 
+const analyzeMetafile = async (metafile: esbuild.Metafile, root = ".") => {
+  const text = await esbuild.analyzeMetafile(metafile);
+  const files = text
+    .trim()
+    .split(/\n/)
+    .filter((s) => !!s.trim())
+    .map((s) => {
+      const file = s.trim();
+      const args = /([├└])?\s*([^\s]+)\s*(\d+(?:\.\d)?[kmg]?b)\s*/.exec(file);
+      if (!args) throw new Error(`Failed to parse ${file} from metadata`);
+      const [_, isFile, fileName, size] = args;
+      if (!fileName)
+        throw new Error(`Failed to parse filename from ${file} in metadata`);
+      return { isFile, fileName, size };
+    });
+  type TreeNode = {
+    fileName: string;
+    size: number;
+    children: TreeNode[];
+  };
+  const parseSize = (s: string) => {
+    const [_, value, unit] = /(\d+(?:\.\d)?)([kmg]?b)/.exec(s) || ["0", "b"];
+    const mult =
+      unit === "gb"
+        ? 1000000000
+        : unit === "mb"
+        ? 1000000
+        : unit === "kb"
+        ? 1000
+        : 1;
+    return mult * Number(value);
+  };
+  const tree: TreeNode[] = [];
+  let maxLength = 0;
+  files.forEach((file) => {
+    maxLength = Math.max(maxLength, file.fileName.length);
+    if (file.isFile) {
+      let root = tree.slice(-1)[0];
+      const parts = file.fileName.split("/");
+      parts.forEach((_, index, all) => {
+        const fileName = all.slice(0, index + 1).join("/");
+        const size = parseSize(file.size);
+        const treeNode = root.children.find((c) => c.fileName === fileName);
+        if (treeNode) {
+          treeNode.size += size;
+          root = treeNode;
+        } else {
+          const newRoot = { children: [], fileName, size };
+          root.children.push(newRoot);
+          root = newRoot;
+        }
+      });
+    } else {
+      tree.push({
+        children: [],
+        fileName: file.fileName,
+        size: parseSize(file.size),
+      });
+    }
+  });
+  const calcSize = (t: TreeNode) => {
+    if (t.children.length) {
+      t.size = t.children.reduce((p, c) => p + calcSize(c), 0);
+    }
+    return t.size;
+  };
+  tree.forEach(calcSize);
+  const printTree = (t: TreeNode[], level = 0): string[] =>
+    t
+      .sort((a, b) => b.size - a.size)
+      .flatMap((tn) => {
+        const indent = "".padStart(level * 2, " ");
+        return [
+          `${indent}${level ? "├ " : ""}${tn.fileName.padEnd(
+            maxLength + (level ? 6 : 8) - indent.length
+          )}${(tn.size >= 1000000000
+            ? `${(tn.size / 1000000000).toFixed(1)}gb`
+            : tn.size >= 1000000
+            ? `${(tn.size / 1000000).toFixed(1)}mb`
+            : tn.size >= 1000
+            ? `${(tn.size / 1000).toFixed(1)}kb`
+            : `${tn.size}b `
+          ).padStart(7, " ")}`,
+          ...printTree(tn.children, level + 1),
+        ];
+      });
+  fs.writeFileSync(path.join(root, "analyze.txt"), printTree(tree).join("\n"));
+};
+
 const build = (
   args: CliArgs & { dry?: boolean; review?: string; domain?: string } = {}
 ) => {
@@ -213,15 +304,26 @@ const build = (
     ".env",
     `${envExisting.replace(/VERSION=[\d-]+\n/gs, "")}VERSION=${version}\n`
   );
-  return compile({ ...args, opts: { minify: true } })
-    .then(({ backendFunctions }) =>
+  return compile({
+    ...args,
+    builder: (opts) =>
+      esbuild
+        .build({
+          ...opts,
+          minify: true,
+        })
+        .then(async (r) => {
+          if (!r.metafile) return;
+          return analyzeMetafile(r.metafile, args.root);
+        }),
+  })
+    .then(() =>
       args.dry
         ? Promise.resolve()
         : publish({
             review: args.review,
             version,
             root: args.root,
-            backendFunctions,
           })
     )
     .then(() => {

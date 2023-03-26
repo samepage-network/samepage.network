@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
+import debug from "debug";
 // import getRandomAccount from "../utils/getRandomAccount";
 
 const covPath = "./coverage/tmp";
@@ -13,25 +14,26 @@ test.beforeEach(async ({ page }) => {
 });
 
 // TODO: include app/routes + app/components again when properly code covering
-test("Full integration test of web app", async ({ page }) => {  
+test("Full integration test of web app", async ({ page }) => {
   test.setTimeout(1000 * 60 * 2);
+  const weblog = debug("web");
   page.on("console", (msg) => {
-    console.log(`CONSOLE: (${msg.type()}) "${msg.text().slice(0, 50)}"`);
+    weblog(`(${msg.type()}): "${msg.text().slice(0, 50)}"`);
   });
   const app = spawn("npx", ["ts-node", "scripts/cli.ts", "dev", "--local"], {
     env: { ...process.env, NODE_ENV: "development", DEBUG: undefined },
   });
 
+  const log = debug("app");
   const appReady = new Promise<void>((resolve) =>
     app.stdout.on("data", (s) => {
       if (/Remix App Server started at/.test(s)) {
         resolve();
       }
-      console.log(`APP Message: ${s as string}`);
+      log(s);
     })
   );
   app.stderr.on("data", (s) => {
-    if (/Warning: got packets out of order/.test(s)) return;
     console.error(`APP Error: ${s as string}`);
   });
 
@@ -50,7 +52,7 @@ test("Full integration test of web app", async ({ page }) => {
   await new Promise((resolve) => {
     app.on("exit", resolve);
     app.kill();
-  }).then(() => console.log("APP Process exited"));
+  }).then(() => log("APP Process exited"));
 });
 
 test.afterEach(async ({ page }) => {

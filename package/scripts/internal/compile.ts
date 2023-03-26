@@ -5,7 +5,7 @@ import appPath from "./appPath";
 import dotenv from "dotenv";
 import toVersion from "./toVersion";
 import readDir from "./readDir";
-import nodeCompile from "./nodeCompile";
+import { getOpts as getNodeOpts } from "./nodeCompile";
 dotenv.config();
 
 // TODO - Move this to a central location
@@ -93,7 +93,13 @@ const compile = ({
   finish: onFinishFile = "",
   root = ".",
   entry = [],
-}: CliArgs & { opts?: esbuild.BuildOptions }) => {
+  builder = async (opts) => {
+    await esbuild.build(opts);
+  },
+}: CliArgs & {
+  opts?: esbuild.BuildOptions;
+  builder?: (opts: esbuild.BuildOptions) => Promise<void>;
+}) => {
   const srcRoot = path.join(root, "src");
   const apiRoot = path.join(srcRoot, "api");
   const legacyApiRoot = path.join(srcRoot, "functions");
@@ -137,7 +143,7 @@ const compile = ({
 
   return Promise.all(
     [
-      esbuild.build({
+      builder({
         absWorkingDir: process.cwd(),
         entryPoints: [
           path.join(srcRoot, entryTs),
@@ -175,197 +181,94 @@ const compile = ({
       .concat(
         apiFunctions.length
           ? [
-              nodeCompile({
-                outdir: backendOutdir,
-                functions: apiFunctions,
-                root: apiRoot,
-                define: envObject,
-              }),
+              builder(
+                getNodeOpts({
+                  outdir: backendOutdir,
+                  functions: apiFunctions,
+                  root: apiRoot,
+                  define: envObject,
+                })
+              ),
             ]
           : []
       )
       .concat(
         legacyApiFunctions.length
           ? [
-              nodeCompile({
-                outdir: backendOutdir,
-                functions: legacyApiFunctions,
-                root: legacyApiRoot,
-                define: envObject,
-              }),
+              builder(
+                getNodeOpts({
+                  outdir: backendOutdir,
+                  functions: legacyApiFunctions,
+                  root: legacyApiRoot,
+                  define: envObject,
+                })
+              ),
             ]
           : []
       )
-  ).then(async ([r]) => {
-    if (r.metafile) {
-      const text = await esbuild.analyzeMetafile(r.metafile);
-      const files = text
-        .trim()
-        .split(/\n/)
-        .filter((s) => !!s.trim())
-        .map((s) => {
-          const file = s.trim();
-          const args = /([├└])?\s*([^\s]+)\s*(\d+(?:\.\d)?[kmg]?b)\s*/.exec(
-            file
-          );
-          if (!args) throw new Error(`Failed to parse ${file} from metadata`);
-          const [_, isFile, fileName, size] = args;
-          if (!fileName)
-            throw new Error(
-              `Failed to parse filename from ${file} in metadata`
-            );
-          return { isFile, fileName, size };
-        });
-      type TreeNode = {
-        fileName: string;
-        size: number;
-        children: TreeNode[];
-      };
-      const parseSize = (s: string) => {
-        const [_, value, unit] = /(\d+(?:\.\d)?)([kmg]?b)/.exec(s) || [
-          "0",
-          "b",
-        ];
-        const mult =
-          unit === "gb"
-            ? 1000000000
-            : unit === "mb"
-            ? 1000000
-            : unit === "kb"
-            ? 1000
-            : 1;
-        return mult * Number(value);
-      };
-      const tree: TreeNode[] = [];
-      let maxLength = 0;
-      files.forEach((file) => {
-        maxLength = Math.max(maxLength, file.fileName.length);
-        if (file.isFile) {
-          let root = tree.slice(-1)[0];
-          const parts = file.fileName.split("/");
-          parts.forEach((_, index, all) => {
-            const fileName = all.slice(0, index + 1).join("/");
-            const size = parseSize(file.size);
-            const treeNode = root.children.find((c) => c.fileName === fileName);
-            if (treeNode) {
-              treeNode.size += size;
-              root = treeNode;
-            } else {
-              const newRoot = { children: [], fileName, size };
-              root.children.push(newRoot);
-              root = newRoot;
-            }
-          });
-        } else {
-          tree.push({
-            children: [],
-            fileName: file.fileName,
-            size: parseSize(file.size),
-          });
-        }
+  ).then(async () => {
+    DEFAULT_FILES_INCLUDED.concat(
+      typeof include === "string" ? [include] : include || []
+    )
+      .map((f) => path.join(root, f))
+      .filter((f) => fs.existsSync(f))
+      .forEach((f) => {
+        fs.cpSync(f, path.join(outdir, path.basename(f)));
       });
-      const calcSize = (t: TreeNode) => {
-        if (t.children.length) {
-          t.size = t.children.reduce((p, c) => p + calcSize(c), 0);
-        }
-        return t.size;
-      };
-      tree.forEach(calcSize);
-      const printTree = (t: TreeNode[], level = 0): string[] =>
-        t
-          .sort((a, b) => b.size - a.size)
-          .flatMap((tn) => {
-            const indent = "".padStart(level * 2, " ");
-            return [
-              `${indent}${level ? "├ " : ""}${tn.fileName.padEnd(
-                maxLength + (level ? 6 : 8) - indent.length
-              )}${(tn.size >= 1000000000
-                ? `${(tn.size / 1000000000).toFixed(1)}gb`
-                : tn.size >= 1000000
-                ? `${(tn.size / 1000000).toFixed(1)}mb`
-                : tn.size >= 1000
-                ? `${(tn.size / 1000).toFixed(1)}kb`
-                : `${tn.size}b `
-              ).padStart(7, " ")}`,
-              ...printTree(tn.children, level + 1),
-            ];
-          });
-      fs.writeFileSync(
-        path.join(root, "analyze.txt"),
-        printTree(tree).join("\n")
+    if (css) {
+      const outCssFilename = path.join(
+        outdir,
+        `${css.replace(/.css$/, "")}.css`
+      );
+      const inputCssFiles = fs
+        .readdirSync(outdir)
+        .filter((f) => /.css$/.test(f));
+
+      if (inputCssFiles.length === 0) {
+        console.warn(`No css files in the ${outdir} directory`);
+      } else if (inputCssFiles.length === 1) {
+        fs.renameSync(path.join(outdir, inputCssFiles[0]), outCssFilename);
+      } else {
+        const baseOutput = path.basename(outCssFilename);
+        if (!inputCssFiles.includes(baseOutput))
+          fs.writeFileSync(outCssFilename, "");
+        inputCssFiles.sort().forEach((f) => {
+          if (baseOutput !== f) {
+            const cssFileContent = fs
+              .readFileSync(path.join(outdir, f))
+              .toString();
+            fs.rmSync(path.join(outdir, f));
+            fs.appendFileSync(outCssFilename, cssFileContent);
+            fs.appendFileSync(outCssFilename, "\n");
+          }
+        });
+        // hoist all imports to the top
+        const outlines = fs.readFileSync(outCssFilename).toString().split("\n");
+        const imports = outlines.filter((l) => l.startsWith("@import"));
+        const rest = outlines.filter((l) => !l.startsWith("@import"));
+        fs.writeFileSync(outCssFilename, imports.concat(rest).join("\n"));
+      }
+    }
+    if (onFinishFile && fs.existsSync(path.join(root, onFinishFile))) {
+      const customOnFinish = require(path.resolve(
+        path.join(root, onFinishFile)
+      ));
+      if (typeof customOnFinish === "function") {
+        customOnFinish();
+      }
+    }
+    if (mirror) {
+      if (!fs.existsSync(mirror)) fs.mkdirSync(mirror, { recursive: true });
+      readDir(outdir).forEach((f) =>
+        fs.cpSync(appPath(f), path.join(mirror, path.relative(outdir, f)))
       );
     }
-    const finish = () => {
-      DEFAULT_FILES_INCLUDED.concat(
-        typeof include === "string" ? [include] : include || []
-      )
-        .map((f) => path.join(root, f))
-        .filter((f) => fs.existsSync(f))
-        .forEach((f) => {
-          fs.cpSync(f, path.join(outdir, path.basename(f)));
-        });
-      if (css) {
-        const outCssFilename = path.join(
-          outdir,
-          `${css.replace(/.css$/, "")}.css`
-        );
-        const inputCssFiles = fs
-          .readdirSync(outdir)
-          .filter((f) => /.css$/.test(f));
-
-        if (inputCssFiles.length === 0) {
-          console.warn(`No css files in the ${outdir} directory`);
-        } else if (inputCssFiles.length === 1) {
-          fs.renameSync(path.join(outdir, inputCssFiles[0]), outCssFilename);
-        } else {
-          const baseOutput = path.basename(outCssFilename);
-          if (!inputCssFiles.includes(baseOutput))
-            fs.writeFileSync(outCssFilename, "");
-          inputCssFiles.sort().forEach((f) => {
-            if (baseOutput !== f) {
-              const cssFileContent = fs
-                .readFileSync(path.join(outdir, f))
-                .toString();
-              fs.rmSync(path.join(outdir, f));
-              fs.appendFileSync(outCssFilename, cssFileContent);
-              fs.appendFileSync(outCssFilename, "\n");
-            }
-          });
-          // hoist all imports to the top
-          const outlines = fs
-            .readFileSync(outCssFilename)
-            .toString()
-            .split("\n");
-          const imports = outlines.filter((l) => l.startsWith("@import"));
-          const rest = outlines.filter((l) => !l.startsWith("@import"));
-          fs.writeFileSync(outCssFilename, imports.concat(rest).join("\n"));
-        }
-      }
-      if (onFinishFile && fs.existsSync(path.join(root, onFinishFile))) {
-        const customOnFinish = require(path.resolve(
-          path.join(root, onFinishFile)
-        ));
-        if (typeof customOnFinish === "function") {
-          customOnFinish();
-        }
-      }
-      if (mirror) {
-        if (!fs.existsSync(mirror)) fs.mkdirSync(mirror, { recursive: true });
-        readDir(outdir).forEach((f) =>
-          fs.cpSync(appPath(f), path.join(mirror, path.relative(outdir, f)))
-        );
-      }
-      // nodeResult?.rebuild?.();
-    };
-    finish();
-    // const { rebuild: rebuilder } = r;
     const backendFunctions = apiFunctions.concat(legacyApiFunctions);
     return process.env.NODE_ENV === "development"
       ? {
-          rebuild: finish, //() => rebuilder().then(finish),
           backendFunctions,
         }
-      : { rebuild: () => Promise.resolve(), backendFunctions };
+      : { backendFunctions };
   });
 };
 
