@@ -55,5 +55,7 @@ jobs:
         uses: codecov/codecov-action@v3      
       - name: Integration Tests
         run: npm t -- --project integration
+        env:
+          DEBUG: api
       - name: Upload Integration Test Coverage to Codecov
         uses: codecov/codecov-action@v3
