@@ -38,7 +38,8 @@ const messageNotebook = ({
       ...data,
       source: {
         uuid: source,
-        ...sourceNotebook,
+        app: sourceNotebook.app,
+        workspace: sourceNotebook.workspace,
       },
       operation,
     };

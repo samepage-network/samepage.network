@@ -1,7 +1,6 @@
 import messageNotebook from "./messageNotebook.server";
 import getMysql from "~/data/mysql.server";
 import getNotebookByUuid from "./getNotebookByUuid.server";
-import { appsById } from "package/internal/apps";
 import { pageNotebookLinks } from "data/schema";
 import { sql } from "drizzle-orm/sql";
 
@@ -24,7 +23,7 @@ const inviteNotebookToPage = async ({
     pageUuid,
     notebookPageId,
     version: 0,
-    open: true,
+    open: 1,
     invitedBy: notebookUuid,
     invitedDate: new Date(),
     notebookUuid: targetNotebookUuid,
@@ -46,7 +45,7 @@ const inviteNotebookToPage = async ({
       success: true,
       notebook: {
         uuid: targetNotebookUuid,
-        appName: appsById[notebook.app].name,
+        appName: notebook.appName,
         workspace: notebook.workspace,
       },
     }));

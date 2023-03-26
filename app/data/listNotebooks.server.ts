@@ -1,6 +1,6 @@
 import getMysqlConnection from "~/data/mysql.server";
-import { appsById } from "package/internal/apps";
 import {
+  apps,
   clientSessions,
   messages,
   notebooks,
@@ -28,9 +28,11 @@ const listNotebooks = async (
   const data = await cxn
     .select({
       uuid: notebooks.uuid,
-      app: notebooks.app,
+      app: apps.name,
       workspace: notebooks.workspace,
-      created_date: sql<Date>`MAX(${onlineClients.createdDate})`.as("created_date"),
+      created_date: sql<Date>`MAX(${onlineClients.createdDate})`.as(
+        "created_date"
+      ),
       invited_date: sql<Date>`MAX(${tokens.createdDate})`.as("invited_date"),
       token: sql<string>`MAX(${tokens.value})`,
     })
@@ -41,6 +43,7 @@ const listNotebooks = async (
       eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
     )
     .leftJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
+    .innerJoin(apps, eq(notebooks.app, apps.id))
     // TODO - sql injection
     .where(
       search
@@ -98,7 +101,7 @@ const listNotebooks = async (
     data: data.map((d) => ({
       uuid: d.uuid,
       workspace: d.workspace || "Pending",
-      app: appsById[d.app].name,
+      app: d.app,
       connected: d.created_date ? d.created_date.valueOf() : "OFFLINE",
       invited: d.invited_date ? d.invited_date.valueOf() : "UNINVITED",
       token: d.token,
