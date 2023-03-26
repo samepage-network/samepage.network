@@ -7,7 +7,7 @@ const SignUpPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const redirect = decodeURIComponent(searchParams.get("redirect") || "");
   const afterSignInUrl = redirect || "/install?refresh=true";
-  const signInUrl = redirect ? `/signup?redirect=${redirect}` : "/login";
+  const signInUrl = redirect ? `/login?redirect=${redirect}` : "/login";
   return (
     <SignUp
       afterSignInUrl={decodeURIComponent(afterSignInUrl)}

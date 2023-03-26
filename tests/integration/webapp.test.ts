@@ -17,7 +17,7 @@ test("Full integration test of web app", async ({ page }) => {
   page.on("console", (msg) => {
     console.log(`CONSOLE: (${msg.type()}) "${msg.text().slice(0, 50)}"`);
   });
-  const app = spawn("npx", ["ts-node", "scripts/cli.ts", "dev"], {
+  const app = spawn("npx", ["ts-node", "scripts/cli.ts", "dev", "--local"], {
     env: { ...process.env, NODE_ENV: "development", DEBUG: undefined },
   });
 

@@ -6,7 +6,6 @@ import {
   zBaseHeaders,
   JSONData,
 } from "package/internal/types";
-import { appsById } from "package/internal/apps";
 import parseZodError from "package/utils/parseZodError";
 import {
   BadRequestError,
@@ -42,6 +41,7 @@ import { encode } from "@ipld/dag-cbor";
 import clerk, { users } from "@clerk/clerk-sdk-node";
 import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
 import {
+  apps,
   clientSessions,
   messages,
   notebooks,
@@ -124,13 +124,14 @@ const getRecentNotebooks = async ({
       .select({
         uuid: notebooks.uuid,
         workspace: notebooks.workspace,
-        app: notebooks.app,
+        appName: apps.name,
       })
       .from(notebooks)
       .innerJoin(
         tokenNotebookLinks,
         eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
       )
+      .innerJoin(apps, eq(apps.id, notebooks.app))
       .where(
         and(
           eq(tokenNotebookLinks.tokenUuid, tokenUuid),
@@ -147,7 +148,7 @@ const getRecentNotebooks = async ({
               {
                 uuid: r.uuid,
                 workspace: r.workspace,
-                appName: appsById[r.app].name,
+                appName: r.appName,
                 email,
               },
             ])
@@ -272,21 +273,15 @@ const logic = async (req: Record<string, unknown>) => {
         .select({
           uuid: notebooks.uuid,
           workspace: notebooks.workspace,
-          app: notebooks.app,
+          appName: apps.name,
         })
         .from(tokenNotebookLinks)
         .innerJoin(
           notebooks,
           eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
         )
-        .where(eq(tokenNotebookLinks.tokenUuid, tokenUuid))
-        .then((nbs) =>
-          nbs.map((r) => ({
-            uuid: r.uuid,
-            workspace: r.workspace,
-            appName: appsById[r.app].name,
-          }))
-        );
+        .innerJoin(apps, eq(apps.id, notebooks.app))
+        .where(eq(tokenNotebookLinks.tokenUuid, tokenUuid));
       await cxn.end();
       return { notebooks: notebookRecords, token, userId };
     } else if (args.method === "login-device") {
@@ -308,21 +303,15 @@ const logic = async (req: Record<string, unknown>) => {
         .select({
           uuid: notebooks.uuid,
           workspace: notebooks.workspace,
-          app: notebooks.app,
+          appName: apps.name,
         })
         .from(tokenNotebookLinks)
         .innerJoin(
           notebooks,
           eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
         )
-        .where(eq(tokenNotebookLinks.tokenUuid, tokenUuid))
-        .then((nbs) =>
-          nbs.map((r) => ({
-            uuid: r.uuid,
-            workspace: r.workspace,
-            appName: appsById[r.app].name,
-          }))
-        );
+        .innerJoin(apps, eq(apps.id, notebooks.app))
+        .where(eq(tokenNotebookLinks.tokenUuid, tokenUuid));
       await cxn.end();
       return { notebooks: notebookRecords, token, userId };
     } else if (args.method === "ping") {
@@ -335,7 +324,7 @@ const logic = async (req: Record<string, unknown>) => {
       notebookUuid,
       token,
     });
-    
+
     switch (args.method) {
       case "usage": {
         const currentDate = new Date();
@@ -857,7 +846,7 @@ const logic = async (req: Record<string, unknown>) => {
         });
         const clients = await cxn
           .select({
-            app: notebooks.app,
+            appName: apps.name,
             workspace: notebooks.workspace,
             uuid: notebooks.uuid,
             version: pageNotebookLinks.version,
@@ -878,6 +867,7 @@ const logic = async (req: Record<string, unknown>) => {
             eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
           )
           .innerJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
+          .innerJoin(apps, eq(apps.id, notebooks.app))
           .where(eq(pageNotebookLinks.pageUuid, pageUuid))
           .orderBy(sql`priority`, pageNotebookLinks.invitedDate);
         const clientUuids = new Set(clients.map((c) => c.uuid));
@@ -902,7 +892,7 @@ const logic = async (req: Record<string, unknown>) => {
           notebooks: clients.map((c) => ({
             uuid: c.uuid,
             workspace: c.workspace,
-            app: appsById[c.app].name,
+            app: c.appName,
             version: c.version,
             openInvite: !!c.open,
             email: emailsByIds[c.user],

@@ -17,6 +17,7 @@ env:
   ORIGIN: http://localhost:3000
   SVIX_SECRET: ${{ secrets.SVIX_SECRET }}
   WEB3_STORAGE_API_KEY: ${{ secrets.WEB3_STORAGE_API_KEY }}
+  WEB_SOCKET_URL: ws://localhost:3003
 
 jobs:
   deploy:
