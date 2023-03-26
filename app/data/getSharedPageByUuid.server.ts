@@ -54,7 +54,7 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
   );
   await cxn.end();
   return {
-    notebooks,
+    notebooks: notebookRecords,
     pages,
   };
 };

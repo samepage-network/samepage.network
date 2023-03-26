@@ -96,7 +96,7 @@ const SinglePagePage = () => {
                 onClick={() => setChosenNotebook(index)}
                 className={"cursor-pointer"}
               >
-                {appsById[l.app].name} / {l.workspace} / {l.notebook_page_id}
+                {appsById[l.app].name} / {l.workspace} / {l.notebookPageId}
                 {l.open ? " (PENDING)" : ""}
               </span>
               <Form method={"delete"}>
@@ -123,7 +123,7 @@ const SinglePagePage = () => {
           />
           <BaseInput
             type={"hidden"}
-            value={notebooks[chosenNotebook]?.notebook_page_id}
+            value={notebooks[chosenNotebook]?.notebookPageId}
             name={"notebookPageId"}
           />
           <Select

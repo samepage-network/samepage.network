@@ -1,7 +1,7 @@
 import { NotFoundError } from "~/data/errors.server";
 import getMysql from "~/data/mysql.server";
-import { appsById } from "package/internal/apps";
 import {
+  apps,
   notebooks,
   pageNotebookLinks,
   tokenNotebookLinks,
@@ -19,7 +19,7 @@ const getUserNotebookProfile = async ({
   const cxn = await getMysql(requestId);
   const [notebook] = await cxn
     .select({
-      app: notebooks.app,
+      app: apps.name,
       workspace: notebooks.workspace,
       uuid: notebooks.uuid,
       token: tokens.value,
@@ -30,6 +30,7 @@ const getUserNotebookProfile = async ({
       eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
     )
     .leftJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
+    .innerJoin(apps, eq(notebooks.app, apps.id))
     .where(eq(notebooks.uuid, uuid));
   if (!notebook)
     throw new NotFoundError(`Could not find notebook by uuid: ${uuid}`);
@@ -51,7 +52,7 @@ const getUserNotebookProfile = async ({
   return {
     notebook: {
       ...notebook,
-      app: appsById[notebook.app].name,
+      app: notebook.app,
     },
     pages,
   };
