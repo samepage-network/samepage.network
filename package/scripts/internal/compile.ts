@@ -196,7 +196,7 @@ const compile = ({
             ]
           : []
       )
-  ).then(async ([r, nodeResult]) => {
+  ).then(async ([r]) => {
     if (r.metafile) {
       const text = await esbuild.analyzeMetafile(r.metafile);
       const files = text
@@ -355,14 +355,14 @@ const compile = ({
           fs.cpSync(appPath(f), path.join(mirror, path.relative(outdir, f)))
         );
       }
-      nodeResult?.rebuild?.();
+      // nodeResult?.rebuild?.();
     };
     finish();
-    const { rebuild: rebuilder } = r;
+    // const { rebuild: rebuilder } = r;
     const backendFunctions = apiFunctions.concat(legacyApiFunctions);
-    return rebuilder
+    return process.env.NODE_ENV === "development"
       ? {
-          rebuild: () => rebuilder().then(finish),
+          rebuild: finish, //() => rebuilder().then(finish),
           backendFunctions,
         }
       : { rebuild: () => Promise.resolve(), backendFunctions };

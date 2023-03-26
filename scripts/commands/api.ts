@@ -9,13 +9,13 @@ import differenceInMilliseconds from "date-fns/differenceInMilliseconds";
 import format from "date-fns/format";
 import { v4 } from "uuid";
 import ngrok from "ngrok";
-import { BuildInvalidate } from "esbuild";
+import esbuild from "esbuild";
 import chokidar from "chokidar";
-import nodepath from "path";
+// import nodepath from "path";
 import WebSocket, { Server as WebSocketServer } from "ws";
 import readDir from "../../package/scripts/internal/readDir";
 import appPath from "../../package/scripts/internal/appPath";
-import nodeCompile from "../../package/scripts/internal/nodeCompile";
+import { getOpts } from "../../package/scripts/internal/nodeCompile";
 import debugMod from "debug";
 
 const debug = debugMod("api");
@@ -76,7 +76,7 @@ const inlineTryCatch = <T>(tryFcn: () => T, catchFcn: (e: Error) => T): T => {
   }
 };
 
-const rebuilders: Record<string, BuildInvalidate> = {};
+// const rebuilders: Record<string, BuildInvalidate> = {};
 const dependencies: Record<string, Set<string>> = {};
 const path = "api";
 const out = "build";
@@ -394,51 +394,58 @@ const api = ({ local }: { local?: boolean } = {}): Promise<number> => {
         if (entryRegex.test(file)) {
           debug(`building ${file}...`);
           dependencies[file] = new Set([file]);
-          nodeCompile({
-            functions: [file.replace(/^api\//, "").replace(/\.ts$/, "")],
-            opts: {
-              incremental: true,
-              plugins: [
-                {
-                  name: "dependency-watch",
-                  setup: (build) => {
-                    build.onLoad({ filter: /^.*$/s }, async (args) => {
-                      const dep = nodepath.relative(process.cwd(), args.path);
-                      dependencies[dep] = dependencies[dep] || new Set();
-                      if (!dependencies[dep].has(file)) {
-                        dependencies[dep].add(file);
-                      }
-                      return undefined;
-                    });
-                  },
-                },
-              ],
-            },
-          })
-            .then((r) => {
-              if (r.rebuild) rebuilders[file] = r.rebuild;
-              return rebuildCallback(file);
-            })
+          // nodeCompile({
+          //   functions: [file.replace(/^api\//, "").replace(/\.ts$/, "")],
+          //   opts: {
+          // incremental: true,
+          // plugins: [
+          //   {
+          //     name: "dependency-watch",
+          //     setup: (build) => {
+          //       build.onLoad({ filter: /^.*$/s }, async (args) => {
+          //         const dep = nodepath.relative(process.cwd(), args.path);
+          //         dependencies[dep] = dependencies[dep] || new Set();
+          //         if (!dependencies[dep].has(file)) {
+          //           dependencies[dep].add(file);
+          //         }
+          //         return undefined;
+          //       });
+          //     },
+          //   },
+          // ],
+          // },
+          // })
+          //   .then((r) => {
+          //     if (r.rebuild) rebuilders[file] = r.rebuild;
+          //     return rebuildCallback(file);
+          //   })
+          esbuild
+            .context(
+              getOpts({
+                functions: [file.replace(/^api\//, "").replace(/\.ts$/, "")],
+              })
+            )
+            .then(() => rebuildCallback(file))
             .then(() => debug(`successfully built ${file}...`));
         }
       })
       .on("change", (file) => {
         const entries = dependencies[file] || new Set();
         debug(`File ${file} has changed. Updating ${entries.size} entries...`);
-        entries.forEach((entry) => {
-          rebuilders[entry]()
-            .then(() => rebuildCallback(entry))
-            .then(() => debug(`Rebuilt ${entry}`))
-            .catch((e) => console.error(`Failed to rebuild`, entry, e));
-        });
+        // entries.forEach((entry) => {
+        //   rebuilders[entry]()
+        //     .then(() => rebuildCallback(entry))
+        //     .then(() => debug(`Rebuilt ${entry}`))
+        //     .catch((e) => console.error(`Failed to rebuild`, entry, e));
+        // });
       })
       .on("unlink", (file) => {
         debug(`File ${file} was removed`);
         delete dependencies[file];
         if (entryRegex.test(file)) {
           Object.values(dependencies).forEach((deps) => deps.delete(file));
-          rebuilders[file].dispose();
-          delete rebuilders[file];
+          // rebuilders[file].dispose();
+          // delete rebuilders[file];
         }
       });
   }).then(() => {
