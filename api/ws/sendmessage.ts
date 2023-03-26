@@ -97,9 +97,9 @@ const dataHandler = async (
     //@ts-ignore
     const { app, workspace, notebookUuid, ...proxyData } = data;
     return (
-      source
+      source && source.notebookUuid
         ? messageNotebook({
-            source: source.notebookUuid || "",
+            source: source.notebookUuid,
             target,
             operation: proxyOperation,
             data: proxyData,
