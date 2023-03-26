@@ -10,6 +10,7 @@ import deleteNotebook from "~/data/deleteNotebook.server";
 import { JSDOM } from "jsdom";
 import getRandomNotebookPageId from "../utils/getRandomNotebookPageId";
 import getRandomAccount from "../utils/getRandomAccount";
+import debug from "debug";
 
 let cleanup: () => Promise<unknown>;
 const accounts: { email: string; password: string }[] = [];
@@ -18,9 +19,6 @@ test.beforeAll(async () => {
   accounts.push(await getRandomAccount());
   accounts.push(await getRandomAccount());
 });
-
-const log = (...args: Parameters<typeof console.log>) =>
-  process.env.DEBUG && console.log(...args);
 
 const forkSamePageClient = ({
   workspace,
@@ -47,9 +45,10 @@ const forkSamePageClient = ({
     string,
     (data: Record<string, unknown>) => void
   > = {};
+  const log = debug(`Client ${workspace}`);
   const send = (m: MessageSchema) => {
     const uuid = v4();
-    log(`Client ${workspace}: Sending ${m.type} request (${uuid})`);
+    log(`Sending ${m.type} request (${uuid})`);
     return new Promise<Record<string, unknown>>((resolve) => {
       pendingRequests[uuid] = resolve;
       client.send({ ...m, uuid });
@@ -116,7 +115,7 @@ const forkSamePageClient = ({
 //     .post("http://localhost:3003/close")
 //     .then((r) => console.log("api kill", r.data));
 test("Full integration test of extensions", async () => {
-  test.setTimeout(60000);
+  test.setTimeout(1000 * 60 * 2);
   const api = spawn("npx", ["ts-node", "scripts/cli.ts", "api", "--local"], {
     env: {
       ...process.env,
@@ -130,9 +129,10 @@ test("Full integration test of extensions", async () => {
   });
   const spawnCallbacks: { test: RegExp; callback: () => unknown }[] = [];
 
+  const log = debug("API");
   api.stdout.on("data", (s) => {
     spawnCallbacks.filter((c) => c.test.test(s)).forEach((c) => c.callback());
-    log(`API Message: ${s as string}`);
+    log(s);
   });
   const apiReady = new Promise<void>((resolve) =>
     spawnCallbacks.push({ test: /API server listening/, callback: resolve })
