@@ -20,12 +20,7 @@ const nodeCompile = ({
     bundle: true,
     outdir,
     platform: "node",
-    external: [
-      "aws-sdk",
-      "canvas",
-      // "@aws-sdk/*",
-      "esbuild",
-    ],
+    external: ["aws-sdk", "canvas", "@aws-sdk/*", "esbuild"],
     define,
     entryPoints: Object.fromEntries(
       functions.map((f) => [f, path.join(root, `${f}.ts`)])

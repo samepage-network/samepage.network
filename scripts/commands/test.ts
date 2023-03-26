@@ -1,7 +1,6 @@
 import fs from "fs";
 import { spawn } from "child_process";
 import { S3 } from "@aws-sdk/client-s3";
-import toVersion from "../../package/scripts/internal/toVersion";
 import mime from "mime-types";
 
 const test = ({
@@ -73,7 +72,13 @@ const test = ({
           : [];
 
         const path = "samepage";
-        const version = toVersion();
+        const date = new Date();
+        const pad = (n: number) => n.toString().padStart(2, "0");
+        const version = `${date.getFullYear()}-${pad(
+          date.getMonth() + 1
+        )}-${pad(
+          date.getDate()
+        )}-${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}`;
         const root = "data/tests";
         const Key = `${root}/${path}/${version}.html`;
         return Promise.all(

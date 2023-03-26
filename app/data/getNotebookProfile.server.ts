@@ -1,8 +1,8 @@
 import { NotFoundError } from "~/data/errors.server";
 import getMysql from "~/data/mysql.server";
-import { appsById } from "package/internal/apps";
 import getPrimaryUserEmail from "./getPrimaryUserEmail.server";
 import {
+  apps,
   messages,
   notebooks,
   pageNotebookLinks,
@@ -21,7 +21,7 @@ const getNotebookProfile = async ({
   const cxn = await getMysql(requestId);
   const [notebook] = await cxn
     .select({
-      app: notebooks.app,
+      app: apps.name,
       workspace: notebooks.workspace,
       uuid: notebooks.uuid,
       createdDate: tokens.createdDate,
@@ -33,6 +33,7 @@ const getNotebookProfile = async ({
       eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
     )
     .leftJoin(tokens, eq(tokenNotebookLinks.tokenUuid, tokens.uuid))
+    .innerJoin(apps, eq(notebooks.app, apps.id))
     .where(eq(notebooks.uuid, uuid));
   if (!notebook)
     throw new NotFoundError(`Could not find notebook by uuid: ${uuid}`);
@@ -84,7 +85,7 @@ const getNotebookProfile = async ({
     notebook: {
       workspace: notebook.workspace,
       uuid: notebook.uuid,
-      app: appsById[notebook.app].name,
+      app: notebook.app,
       email: await getPrimaryUserEmail(notebook.userId),
     },
     outgoingMessages,

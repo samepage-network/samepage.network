@@ -44,6 +44,7 @@ jobs:
           npx ts-node scripts/cli.ts plan --sql
           npx ts-node scripts/cli.ts apply --sql --bare
           mysql -e "INSERT INTO samepage_network.quotas (uuid, value, field) VALUES (UUID(), 100, 0), (UUID(), 3, 1)" -uroot -proot
+          mysql -e "INSERT INTO samepage_network.apps (id, code, name, workspace_label, live) VALUES (0, "samepage", "SamePage", "workspace", false), (UUID(), 3, 1)" -uroot -proot
           npx ngrok authtoken NGROK_AUTH_TOKEN
       # We separated unit tests and integration tests because c8 was having a hard time consolidating reports - but code cov wasn't!
       - name: Unit Tests
