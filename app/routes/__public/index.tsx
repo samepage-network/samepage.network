@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from "react";
 import type { ActionFunction } from "@remix-run/node";
-import { Link, useFetcher, useSearchParams } from "@remix-run/react";
+import { useFetcher, useSearchParams } from "@remix-run/react";
 import subscribeToConvertkitAction from "~/data/subscribeToConvertkitAction.server";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
@@ -9,6 +9,7 @@ import Button from "~/components/Button";
 import SuccessfulActionToast from "~/components/SuccessfulActionToast";
 import MailIcon from "@heroicons/react/outline/MailIcon";
 import ButtonLink from "~/components/ButtonLink";
+import ExternalLink from "~/components/ExternalLink";
 
 const Subscribe = ({
   title,
@@ -197,12 +198,12 @@ const Home: React.FC = () => {
         >
           <p className="mt-8 font-semibold w-full text-center">
             Have another tool you'd like to see supported?{" "}
-            <Link
+            <ExternalLink
               className="text-sky-500 underline hover:no-underline cursor-pointer"
-              to={"feedback"}
+              href={"https://github.com/samepage-network/samepage.network/issues"}
             >
               Let us know!
-            </Link>
+            </ExternalLink>
           </p>
         </Feature>
         <Feature
