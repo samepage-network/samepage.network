@@ -10,6 +10,7 @@ import { Lambda, GetFunctionResponse } from "@aws-sdk/client-lambda";
 import archiver from "archiver";
 import crypto from "crypto";
 import esbuild from "esbuild";
+import appPath from "./internal/appPath";
 
 const publish = async ({
   root = ".",
@@ -196,7 +197,7 @@ const publish = async ({
   }
 
   if (review && fs.existsSync(path.join(root, review))) {
-    await import(`${root}/${review.replace(/\.[jt]s$/, "")}`).then(
+    await import(appPath(`${root}/${review.replace(/\.[jt]s$/, "")}`)).then(
       //@ts-ignore
       (mod) => typeof mod.default === "function" && mod.default()
     );
