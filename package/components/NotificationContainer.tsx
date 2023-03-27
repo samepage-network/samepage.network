@@ -32,11 +32,12 @@ const ActionButtons = ({
               action
                 .callback()
                 .catch((e) => {
-                  sendExtensionError({
-                    type: "Failed to run notification action",
-                    error: e as Error,
-                    data: { label: action.label },
-                  });
+                  if (!e.skipEmail)
+                    sendExtensionError({
+                      type: "Failed to run notification action",
+                      error: e as Error,
+                      data: { label: action.label },
+                    });
                   dispatchAppEvent({
                     type: "log",
                     id: "notification-error",

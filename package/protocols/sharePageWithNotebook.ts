@@ -38,6 +38,7 @@ import wrapSchema from "../utils/wrapSchema";
 import mergeDocs from "../utils/mergeDocs";
 import parseZodError from "../utils/parseZodError";
 import sendExtensionError from "../internal/sendExtensionError";
+import UserOnlyError from "../internal/UserOnlyError";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
@@ -293,8 +294,8 @@ const setupSharePageWithNotebook = ({
         operation: "SHARE_PAGE",
         actions: {
           accept: ({ title }) =>
-            // TODO support block or page tree as a user action
             doesPageExist(title).then(async (preexisted) => {
+              // Custom destination can be handled withing the extension's `createPage` function
               if (!preexisted) await createPage(title);
               return apiClient<
                 | { found: false; reason: string }
@@ -307,42 +308,36 @@ const setupSharePageWithNotebook = ({
                 notebookPageId: title,
               })
                 .then(async (res) => {
-                  if (res.found) {
-                    const saveDoc = (doc: Schema) =>
-                      saveAndApply(title, doc)
-                        .then(() => {
-                          initPage({
-                            notebookPageId: title,
-                          });
-                        })
-                        .catch((e) => {
-                          deleteId(title);
-                          apiClient({
-                            method: "disconnect-shared-page",
-                            notebookPageId: title,
-                          }).then(() => Promise.reject(e));
+                  if (!res.found) return Promise.reject(new UserOnlyError(res.reason));
+                  const saveDoc = (doc: Schema) =>
+                    saveAndApply(title, doc)
+                      .then(() => {
+                        initPage({
+                          notebookPageId: title,
                         });
-                    const doc = loadAutomergeFromBase64(res.state);
-                    set(title, doc);
-                    if (preexisted) {
-                      const preExistingDoc = await calculateState(title);
-                      const mergedDoc = mergeDocs(doc, preExistingDoc);
-                      await apiClient({
-                        method: "update-shared-page",
-                        changes: Automerge.getChanges(doc, mergedDoc).map(
-                          binaryToBase64
-                        ),
-                        notebookPageId: title,
-                        state: binaryToBase64(Automerge.save(mergedDoc)),
+                      })
+                      .catch((e) => {
+                        deleteId(title);
+                        apiClient({
+                          method: "disconnect-shared-page",
+                          notebookPageId: title,
+                        }).then(() => Promise.reject(e));
                       });
-                      return saveDoc(mergedDoc);
-                    }
-                    return saveDoc(doc);
-                  } else {
-                    return Promise.reject(new Error(res.reason));
-                  }
-                })
-                .then(() => {
+                  const doc = loadAutomergeFromBase64(res.state);
+                  set(title, doc);
+                  if (preexisted) {
+                    const preExistingDoc = await calculateState(title);
+                    const mergedDoc = mergeDocs(doc, preExistingDoc);
+                    await apiClient({
+                      method: "update-shared-page",
+                      changes: Automerge.getChanges(doc, mergedDoc).map(
+                        binaryToBase64
+                      ),
+                      notebookPageId: title,
+                      state: binaryToBase64(Automerge.save(mergedDoc)),
+                    });
+                    await saveDoc(mergedDoc);
+                  } else await saveDoc(doc);
                   dispatchAppEvent({
                     type: "log",
                     id: "join-page-success",
