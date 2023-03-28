@@ -58,14 +58,13 @@ const listNotebooksForUser = async ({
     .groupBy(notebooks.uuid)
     .orderBy(
       desc(sql`created_date`),
-      desc(sql`invited_date`),
       notebooks.app,
       notebooks.workspace
     )
     .limit(size)
     .offset(index * size);
   const [count] = await cxn
-    .select({ total: sql`COUNT(${notebooks.uuid})` })
+    .select({ total: sql<number>`COUNT(${notebooks.uuid})` })
     .from(notebooks)
     .leftJoin(
       tokenNotebookLinks,
