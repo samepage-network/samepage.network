@@ -2,6 +2,7 @@ import getMysql from "~/data/mysql.server";
 import { v4 } from "uuid";
 import { notebooks, tokenNotebookLinks } from "data/schema";
 import { eq, and } from "drizzle-orm/expressions";
+import { sql } from "drizzle-orm";
 
 const getOrGenerateNotebookUuid = async ({
   requestId,
@@ -29,15 +30,17 @@ const getOrGenerateNotebookUuid = async ({
         eq(tokenNotebookLinks.tokenUuid, tokenUuid)
       )
     );
-  return (
-    potentialNotebookUuid?.uuid ||
-    Promise.resolve(v4()).then((uuid) =>
-      cxn
+  if (potentialNotebookUuid) return potentialNotebookUuid.uuid;
+  const notebookUuid = v4();
+  await cxn
         .insert(notebooks)
-        .values({ uuid, app, workspace })
-        .then(() => uuid)
-    )
-  );
+        .values({ uuid: notebookUuid, app, workspace })
+  await cxn.insert(tokenNotebookLinks).values({
+    uuid: sql`UUID()`,
+    tokenUuid,
+    notebookUuid,
+  });
+  return notebookUuid;
 };
 
 export default getOrGenerateNotebookUuid;

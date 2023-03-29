@@ -7,15 +7,6 @@ import getMysql from "./mysql.server";
 const remixAuthedLoader: LoaderFunction = async ({ request }) => {
   const authData = await getAuth(request);
   const searchParams = new URL(request.url).searchParams;
-  if (!!authData.userId) {
-    return redirect("/user");
-  }
-  const redirectParam = decodeURIComponent(searchParams.get("redirect") || "");
-  if (redirectParam) {
-    return {
-      redirectUrl: redirectParam,
-    };
-  }
   const responseType = searchParams.get("response_type") || "";
   const redirectUri = searchParams.get("redirect_uri") || "";
   if (responseType === "code" && redirectUri) {
@@ -28,10 +19,21 @@ const remixAuthedLoader: LoaderFunction = async ({ request }) => {
       .where(eq(oauthClients.id, clientId));
     await cxn.end();
     if (app) {
+      const redirectUrl = `/oauth/${app.app}?client_uri=${redirectUri}`;
+      if (!!authData.userId) return redirect(redirectUrl);
       return {
         redirectUrl: `/oauth/${app.app}?client_uri=${redirectUri}`,
       };
     }
+  }
+  if (!!authData.userId) {
+    return redirect("/user");
+  }
+  const redirectParam = decodeURIComponent(searchParams.get("redirect") || "");
+  if (redirectParam) {
+    return {
+      redirectUrl: redirectParam,
+    };
   }
   return {
     redirectUrl: "/install?refresh=true",

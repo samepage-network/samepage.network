@@ -1,10 +1,4 @@
-import {
-  authorizationCodes,
-  oauthClients,
-  tokenNotebookLinks,
-  tokens,
-} from "data/schema";
-import { sql } from "drizzle-orm";
+import { authorizationCodes, oauthClients, tokens } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
 import { zBaseHeaders } from "package/internal/types";
@@ -64,14 +58,10 @@ const logic = async (args: z.infer<typeof bodySchema>) => {
     app: client.appId,
     tokenUuid,
   });
-  await cxn.insert(tokenNotebookLinks).values({
-    uuid: sql`UUID()`,
-    tokenUuid,
-    notebookUuid,
-  });
   await cxn.end();
   return {
     access_token,
+    notebookUuid,
   };
 };
 

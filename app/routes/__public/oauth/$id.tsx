@@ -12,7 +12,6 @@ import {
   apps,
   authorizationCodes,
   oauthClients,
-  tokenNotebookLinks,
   tokens,
 } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
@@ -90,11 +89,6 @@ const loadData = async ({
       app: response.data.app,
       workspace: response.data.workspace,
       tokenUuid,
-    });
-    await cxn.insert(tokenNotebookLinks).values({
-      uuid: sql`UUID()`,
-      tokenUuid,
-      notebookUuid,
     });
     await cxn.insert(accessTokens).values({
       uuid: sql`UUID()`,

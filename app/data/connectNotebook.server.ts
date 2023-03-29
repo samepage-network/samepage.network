@@ -5,7 +5,6 @@ import getOrGenerateNotebookUuid from "./getOrGenerateNotebookUuid.server";
 import getQuota from "./getQuota.server";
 import { notebooks, tokenNotebookLinks } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
-import { sql } from "drizzle-orm/sql";
 
 const connectNotebook = async ({
   requestId,
@@ -49,13 +48,6 @@ const connectNotebook = async ({
     workspace,
     tokenUuid,
   });
-  await cxn
-    .insert(tokenNotebookLinks)
-    .values({
-      uuid: sql`UUID()`,
-      tokenUuid,
-      notebookUuid: newNotebookUuid,
-    });
   return { notebookUuid: newNotebookUuid };
 };
 
