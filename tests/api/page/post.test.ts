@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import clerk, { users } from "@clerk/clerk-sdk-node";
-import { handler } from "../../../api/page/post";
+import { handler, HandlerBody } from "../../../api/page/post";
 import { globalContext } from "../../../app/data/getQuota.server";
 import { handler as wsHandler } from "../../../api/ws/sendmessage";
 import { handler as discHandler } from "../../../api/ws/ondisconnect";
@@ -12,7 +12,7 @@ import { eq } from "drizzle-orm/expressions";
 import deleteNotebook from "~/data/deleteNotebook.server";
 import binaryToBase64 from "../../../package/internal/binaryToBase64";
 import Automerge from "automerge";
-import { RequestBody, Schema } from "../../../package/internal/types";
+import { Schema } from "../../../package/internal/types";
 import getRandomNotebookPageId from "../../utils/getRandomNotebookPageId";
 import wrapSchema from "../../../package/utils/wrapSchema";
 import mockState from "../../utils/mockState";
@@ -43,7 +43,10 @@ const mockLambdaContext = ({ requestId = v4(), path = "page" }) => ({
   succeed: () => ({}),
 });
 
-const mockLambda = async (body: RequestBody, requestId = v4()) => {
+const mockLambda = async (
+  body: HandlerBody,
+  requestId = v4()
+) => {
   const path = "page";
   return test.step(`Mock Lambda: ${body.method}`, async () => {
     const res = handler(
@@ -203,6 +206,8 @@ test("Connect Notebook with same app/workspace returns same notebook uuid", asyn
     password,
     app: 0,
     workspace,
+
+    
   });
   expect(notebookUuid).toBeTruthy();
   expect(token).toBeTruthy();
