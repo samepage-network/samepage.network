@@ -1,9 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { receiveChunkedMessage } from "../../../package/internal/setupMessageHandlers";
-import {
-  InitialSchema,
-  LatestSchema,
-} from "../../../package/internal/types";
+import { InitialSchema, LatestSchema } from "../../../package/internal/types";
 import sharePageWithNotebook from "../../../package/protocols/sharePageWithNotebook";
 import { v4 } from "uuid";
 import wrapSchema from "../../../package/utils/wrapSchema";

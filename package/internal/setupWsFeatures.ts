@@ -5,8 +5,8 @@ import UsageChart, { UsageChartProps } from "../components/UsageChart";
 import type {
   ConnectionStatus,
   SendToBackend,
-  Notebook,
   Notification,
+  MessageSource,
 } from "./types";
 import apiClient from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
@@ -322,7 +322,7 @@ const setupWsFeatures = ({
             r.messages.map((msg) =>
               apiClient<{
                 data: string;
-                source: Notebook;
+                source: MessageSource;
                 operation: Operation;
               }>({
                 method: "load-message",

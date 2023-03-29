@@ -266,11 +266,13 @@ export type AppEvent =
   | PromptAccountInfoEvent
   | NotificationEvent;
 
-type MessageHandler = (
-  data: json,
-  source: Notebook & { uuid: string },
-  uuid: string
-) => void;
+export type MessageSource = {
+  uuid: string;
+  workspace: string;
+  app: number;
+  appName: string;
+};
+type MessageHandler = (data: json, source: MessageSource, uuid: string) => void;
 export type MessageHandlers = {
   [operation: string]: MessageHandler[];
 };
@@ -320,6 +322,7 @@ const zNotebookRequest = z.object({
   method: z.literal("notebook-request"),
   request: z.record(z.any()),
   targets: z.string().array(),
+  label: z.string().optional().default("Unlabelled Request"),
 });
 const zNotebookResponse = z.object({
   method: z.literal("notebook-response"),
@@ -432,6 +435,14 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
   }),
   zNotebookRequest,
   zNotebookResponse,
+  z.object({
+    method: z.literal("accept-request"),
+    requestUuid: z.string(),
+  }),
+  z.object({
+    method: z.literal("reject-request"),
+    requestUuid: z.string(),
+  }),
   z.object({
     oldNotebookPageId: z.string(),
     newNotebookPageId: z.string(),

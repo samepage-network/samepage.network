@@ -44,6 +44,7 @@ import {
   apps,
   clientSessions,
   messages,
+  notebookRequests,
   notebooks,
   pageNotebookLinks,
   pages,
@@ -424,10 +425,12 @@ const logic = async (req: Record<string, unknown>) => {
                 uuid: notebooks.uuid,
                 app: notebooks.app,
                 workspace: notebooks.workspace,
+                appName: apps.name,
                 operation: messages.operation,
               })
               .from(messages)
               .leftJoin(notebooks, eq(notebooks.uuid, messages.source))
+              .innerJoin(apps, eq(apps.id, notebooks.app))
               .where(eq(messages.uuid, messageUuid))
               .then((args) => cxn.end().then(() => args));
           }),
@@ -1011,33 +1014,71 @@ const logic = async (req: Record<string, unknown>) => {
           .catch(catchError("Failed to respond to query"));
       }
       case "notebook-request": {
-        const { request, targets } = args;
+        const { request, targets, label } = args;
         if (!targets.length) {
           return {};
         }
         return Promise.all(
           targets.map(async (target) => {
             const hash = hashNotebookRequest({ request, target });
-            const data = await downloadFileContent({
-              Key: `data/requests/${hash}.json`,
-            });
-            await messageNotebook({
-              source: notebookUuid,
-              target,
-              operation: "REQUEST",
-              data: {
-                request,
-              },
-              requestId,
-            });
-            return [target, data];
+            const [requestRecord] = await cxn
+              .select({ status: notebookRequests.status, uuid: request.uuid })
+              .from(notebookRequests)
+              .where(
+                and(
+                  eq(notebookRequests.hash, hash),
+                  eq(notebookRequests.notebookUuid, notebookUuid)
+                )
+              );
+            const messageRequest = (id: string) =>
+              messageNotebook({
+                source: notebookUuid,
+                target,
+                operation: "REQUEST",
+                data: {
+                  request,
+                  id,
+                  label,
+                },
+                requestId,
+              });
+            if (!requestRecord) {
+              const uuid = v4();
+              await cxn.insert(notebookRequests).values({
+                target,
+                notebookUuid,
+                hash,
+                uuid,
+                label,
+              });
+              await messageNotebook({
+                source: notebookUuid,
+                target,
+                operation: "REQUEST_DATA",
+                data: {
+                  request: JSON.stringify(request, null, 2),
+                  uuid,
+                  title: label,
+                },
+                requestId,
+                metadata: ["title", "request"],
+              });
+              return [target, null];
+            } else if (requestRecord.status === "rejected") {
+              return [target, "rejected"];
+            } else if (requestRecord.status === "pending") {
+              await messageRequest(requestRecord.uuid);
+              return [target, "pending"];
+            } else {
+              const data = await downloadFileContent({
+                Key: `data/requests/${hash}.json`,
+              });
+              await messageRequest(requestRecord.uuid);
+              return [target, JSON.parse(data)];
+            }
           })
         )
-          .then((entries) => {
-            return Object.fromEntries(
-              entries.filter(([, v]) => !!v).map(([k, v]) => [k, JSON.parse(v)])
-            );
-          })
+          .then(Object.fromEntries)
           .catch(catchError("Failed to request across notebooks"));
       }
       case "notebook-response": {
@@ -1059,6 +1100,46 @@ const logic = async (req: Record<string, unknown>) => {
         })
           .then(() => ({ success: true }))
           .catch(catchError("Failed to respond to request"));
+      }
+      case "accept-request": {
+        const { requestUuid } = args;
+        const [request] = await cxn
+          .select({ target: notebookRequests.target })
+          .from(notebookRequests)
+          .where(eq(notebookRequests.uuid, requestUuid));
+        if (!request) {
+          throw new NotFoundError(`Couldn't find request: ${requestUuid}`);
+        }
+        if (request.target !== notebookUuid) {
+          throw new ForbiddenError(
+            `Request ${requestUuid} is not for this notebook`
+          );
+        }
+        await cxn
+          .update(notebookRequests)
+          .set({ status: "accepted" })
+          .where(eq(notebookRequests.uuid, requestUuid));
+        return { success: true };
+      }
+      case "reject-request": {
+        const { requestUuid } = args;
+        const [request] = await cxn
+          .select({ target: notebookRequests.target })
+          .from(notebookRequests)
+          .where(eq(notebookRequests.uuid, requestUuid));
+        if (!request) {
+          throw new NotFoundError(`Couldn't find request: ${requestUuid}`);
+        }
+        if (request.target !== notebookUuid) {
+          throw new ForbiddenError(
+            `Request ${requestUuid} is not for this notebook`
+          );
+        }
+        await cxn
+          .update(notebookRequests)
+          .set({ status: "rejected" })
+          .where(eq(notebookRequests.uuid, requestUuid));
+        return { success: true };
       }
       case "link-different-page": {
         const { oldNotebookPageId, newNotebookPageId } = args;
@@ -1133,27 +1214,32 @@ const logic = async (req: Record<string, unknown>) => {
         return {
           messages: await cxn
             .select({
-              uuid: messages.uuid,
+              messageUuid: messages.uuid,
               operation: messages.operation,
               metadata: messages.metadata,
               app: notebooks.app,
               workspace: notebooks.workspace,
+              uuid: notebooks.uuid,
+              appName: apps.name,
             })
             .from(messages)
             .leftJoin(notebooks, eq(messages.source, notebooks.uuid))
+            .innerJoin(apps, eq(notebooks.app, apps.id))
             .where(
               and(eq(messages.target, notebookUuid), eq(messages.marked, 0))
             )
             .then(async (r) => {
               await cxn.end();
-              return r.map(({ uuid, operation, metadata, ...source }) => {
-                return messageToNotification({
-                  operation: operation as Operation,
-                  source,
-                  data: (metadata || {}) as Record<string, string>,
-                  uuid,
-                });
-              });
+              return r.map(
+                ({ messageUuid, operation, metadata, ...source }) => {
+                  return messageToNotification({
+                    operation: operation as Operation,
+                    source,
+                    data: (metadata || {}) as Record<string, string>,
+                    uuid: messageUuid,
+                  });
+                }
+              );
             }),
         };
       }

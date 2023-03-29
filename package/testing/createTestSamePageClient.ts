@@ -474,6 +474,7 @@ const createTestSamePageClient = async ({
           const response = await new Promise<Record<string, any>>((resolve) => {
             let cached = false;
             sendNotebookRequest({
+              label: `Test ${id}`,
               request: message.request,
               targets: [message.target],
               onResponse: (data) => {

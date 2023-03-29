@@ -56,6 +56,11 @@ const MESSAGES = {
     description: "",
     buttons: [],
   },
+  REQUEST_DATA: {
+    title: "Request For Data",
+    description: `Notebook **{app}/{workspace}** wants to read the following data: \`{title}\`. Would you like to accept?`,
+    buttons: ["accept", "reject"],
+  },
   REQUEST: {
     title: "",
     description: "",

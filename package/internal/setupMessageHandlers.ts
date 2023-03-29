@@ -1,12 +1,13 @@
 import { apiPost } from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
 import { getSetting } from "./registry";
+import sendExtensionError from "./sendExtensionError";
 import type {
   AddNotebookListener,
   MessageHandlers,
   RemoveNotebookListener,
-  Notebook,
   json,
+  MessageSource,
 } from "./types";
 
 const messageHandlers: MessageHandlers = {};
@@ -21,14 +22,14 @@ export class HandlerError extends Error {
 
 export const handleMessage = ({
   content,
-  source,
   uuid,
+  source: _source,
 }: {
   content: string;
-  source?: Notebook;
   uuid: string;
+  source?: MessageSource;
 }) => {
-  const { operation, ...props } = JSON.parse(content);
+  const { operation, source = _source, ...props } = JSON.parse(content);
   const handlers = messageHandlers[operation];
   if (!handlers?.length) {
     dispatchAppEvent({
@@ -39,11 +40,30 @@ export const handleMessage = ({
       }`,
       intent: "error",
     });
+    sendExtensionError({
+      type: "Unknown network operation",
+      data: { operation, source, uuid, props },
+    });
     return;
   }
+  // There are operations where the source is not available, so we can't send an error
+  // ex: AUTHENTICATION, ERROR
+  // if (!source) {
+  //   dispatchAppEvent({
+  //     type: "log",
+  //     id: `network-error-anonymous`,
+  //     content: `Unknown source of message`,
+  //     intent: "error",
+  //   });
+  //   sendExtensionError({
+  //     type: "Unknown source of message",
+  //     data: { operation, source, uuid, props },
+  //   });
+  //   return;
+  // }
   messageHandlers[operation].forEach((handler) => {
     try {
-      handler(props, source || props.source || "", uuid);
+      handler(props, source, uuid);
     } catch (e) {
       apiPost({
         path: "errors",
@@ -67,7 +87,7 @@ export const handleMessage = ({
 };
 
 const ongoingMessages: { [uuid: string]: string[] } = {};
-export const receiveChunkedMessage = (str: string, source?: Notebook) => {
+export const receiveChunkedMessage = (str: string) => {
   const { message, uuid, chunk, total } = JSON.parse(str);
   if (!ongoingMessages[uuid]) {
     ongoingMessages[uuid] = [];
@@ -76,7 +96,7 @@ export const receiveChunkedMessage = (str: string, source?: Notebook) => {
   ongoingMessage[chunk] = message;
   if (ongoingMessage.filter((c) => !!c).length === total) {
     delete ongoingMessages[uuid];
-    handleMessage({ content: ongoingMessage.join(""), source, uuid });
+    handleMessage({ content: ongoingMessage.join(""), uuid });
   }
 };
 

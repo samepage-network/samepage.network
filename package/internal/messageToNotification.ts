@@ -9,7 +9,12 @@ const messageToNotification = ({
   data,
 }: {
   uuid: string;
-  source: { app: null | number; workspace: null | string };
+  source: {
+    app: null | number;
+    workspace: null | string;
+    uuid: string | null;
+    appName: string | null;
+  };
   operation: Operation;
   data: Record<string, string>;
 }): Notification => {
@@ -20,14 +25,18 @@ const messageToNotification = ({
     description: (MESSAGES[operation]?.description || "Unknown")
       .replace(
         /{app}/g,
-        source.app === null ? "Unknown" : appsById[source.app].name
+        source.appName ||
+          (source.app === null ? "Unknown" : appsById[source.app].name)
       )
       .replace(
         /{workspace}/g,
         source.workspace === null ? "Unknown" : source.workspace
       )
       .replace(/{([a-z]+)}/g, (_, key) => data[key]),
-    data,
+    data: {
+      ...data,
+      source: source.uuid || "",
+    },
     buttons: MESSAGES[operation]?.buttons || [],
   };
 };

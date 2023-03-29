@@ -12,6 +12,7 @@ import {
   AnyMySqlTable,
   serial,
   boolean,
+  mysqlEnum,
 } from "drizzle-orm/mysql-core";
 import {
   MySqlColumnBuilderWithAutoIncrement,
@@ -56,16 +57,21 @@ class MySqlUnsignedSmallIntBuilder extends MySqlColumnBuilderWithAutoIncrement<
 const unsignedSmallInt = (name: string) =>
   new MySqlUnsignedSmallIntBuilder(name);
 
-const primaryUuid = () =>
-  varchar("uuid", { length: 36 }).primaryKey().default("");
+// default UUID() errors in planet scale...
+// but should be possible: https://stackoverflow.com/questions/46134550/mysql-set-default-id-uuid
+// on mysql 8.0.23
+const uuid = () => varchar("uuid", { length: 36 }).default("");
+const primaryUuid = () => uuid().primaryKey();
+const date = (prefix: string) =>
+  datetime(`${prefix}_date`)
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`);
 
 export const tokens = mysqlTable("tokens", {
   uuid: primaryUuid(),
   value: varchar("value", { length: 128 }).notNull().default(""),
   userId: varchar("user_id", { length: 128 }).notNull().default(""),
-  createdDate: datetime("created_date")
-    .notNull()
-    .default(sql`(CURRENT_TIMESTAMP)`),
+  createdDate: date("created"),
 });
 
 export const tokenNotebookLinks = mysqlTable(
@@ -123,6 +129,27 @@ export const pageNotebookLinks = mysqlTable(
     notebookPageIdIndex: uniqueIndex("UC_notebook_page_id_notebook_uuid").on(
       links.notebookPageId,
       links.notebookUuid
+    ),
+  })
+);
+
+export const notebookRequests = mysqlTable(
+  "notebook_requests",
+  {
+    uuid: primaryUuid(),
+    hash: varchar("hash", { length: 256 }).notNull().default(""),
+    notebookUuid: uuid(),
+    target: uuid(),
+    label: varchar("label", { length: 256 }).notNull().default(""),
+    status: mysqlEnum("status", ["pending", "accepted", "rejected"])
+      .notNull()
+      .default("pending"),
+    createdDate: date("created"),
+  },
+  (requests) => ({
+    notebookHashIndex: uniqueIndex("UC_notebook_uuid_hash").on(
+      requests.notebookUuid,
+      requests.hash
     ),
   })
 );

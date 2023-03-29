@@ -40,6 +40,7 @@ const messageNotebook = ({
         uuid: source,
         app: sourceNotebook.app,
         workspace: sourceNotebook.workspace,
+        appName: sourceNotebook.appName,
       },
       operation,
     };
