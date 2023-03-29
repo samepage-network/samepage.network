@@ -47,6 +47,7 @@ const connectNotebook = async ({
     requestId,
     app,
     workspace,
+    tokenUuid,
   });
   await cxn
     .insert(tokenNotebookLinks)

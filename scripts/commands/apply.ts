@@ -9,10 +9,13 @@ import { sql as drizzleSql } from "drizzle-orm/sql";
 import type { MySql2Database } from "drizzle-orm/mysql2/driver";
 import { migrations } from "../../data/schema";
 import appPath from "../../package/scripts/internal/appPath";
+import debugMod from "debug";
 
 type MigrationProps = {
   connection: MySql2Database;
 };
+
+const debug = debugMod("apply");
 
 const migrate = async (connection: MySql2Database): Promise<number> => {
   const dir = "data/migrations";
@@ -66,7 +69,7 @@ const migrate = async (connection: MySql2Database): Promise<number> => {
                       m.migrationName
                     )
                   );
-              console.log(`${m.migrationName} already applied.`);
+              debug(`${m.migrationName} already applied.`);
               return Promise.resolve();
             }
           : (props: MigrationProps) => {

@@ -7,9 +7,17 @@ import axios from "axios";
 import parseRemixContext from "~/data/parseRemixContext.server";
 import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
 import getMysql from "~/data/mysql.server";
-import { accessTokens, tokenNotebookLinks, tokens } from "data/schema";
+import {
+  accessTokens,
+  apps,
+  authorizationCodes,
+  oauthClients,
+  tokenNotebookLinks,
+  tokens,
+} from "data/schema";
 import { eq } from "drizzle-orm/expressions";
 import { sql } from "drizzle-orm/sql";
+import randomString from "~/data/randomString.server";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
@@ -73,15 +81,16 @@ const loadData = async ({
 
   if (response.success) {
     const cxn = await getMysql(requestId);
-    const notebookUuid = await getOrGenerateNotebookUuid({
-      requestId,
-      app: response.data.app,
-      workspace: response.data.workspace,
-    });
     const [{ uuid: tokenUuid }] = await cxn
       .select({ uuid: tokens.uuid })
       .from(tokens)
       .where(eq(tokens.userId, userId));
+    const notebookUuid = await getOrGenerateNotebookUuid({
+      requestId,
+      app: response.data.app,
+      workspace: response.data.workspace,
+      tokenUuid,
+    });
     await cxn.insert(tokenNotebookLinks).values({
       uuid: sql`UUID()`,
       tokenUuid,
@@ -91,7 +100,7 @@ const loadData = async ({
       uuid: sql`UUID()`,
       notebookUuid,
       value: response.data.accessToken,
-    })
+    });
     return {
       success: true,
       data: {
@@ -114,6 +123,33 @@ export const loader = async ({
   }
   const requestId = parseRemixContext(context).lambdaContext.awsRequestId;
   const searchParams = Object.fromEntries(new URL(request.url).searchParams);
+
+  // the app is using SamePage as the OAuth provider
+  if (searchParams.client_uri) {
+    const { id = "" } = params;
+    const cxn = await getMysql(requestId);
+    const [client] = await cxn
+      .select({ id: oauthClients.id })
+      .from(oauthClients)
+      .innerJoin(apps, eq(apps.id, oauthClients.appId))
+      .where(eq(apps.code, id));
+    const code = await randomString({
+      length: 18,
+      encoding: "base64url",
+    });
+    await cxn.insert(authorizationCodes).values({
+      redirectUri: searchParams.client_uri,
+      userId,
+      clientId: client.id,
+      code,
+    });
+    await cxn.end();
+    return redirect(
+      `${searchParams.client_uri}?code=${code}&state=${searchParams.state}`
+    );
+  }
+
+  // SamePage is using the app as the OAuth provider
   return loadData({ userId, requestId, params, searchParams });
 };
 

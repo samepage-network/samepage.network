@@ -1,16 +1,14 @@
 import getMeta from "~/components/getMeta";
 import { SignUp } from "@clerk/remix";
 import remixAuthedLoader from "~/data/remixAuthedLoader.server";
-import { useSearchParams } from "@remix-run/react";
+import { useLoaderData } from "@remix-run/react";
 
 const SignUpPage: React.FC = () => {
-  const [searchParams] = useSearchParams();
-  const redirect = decodeURIComponent(searchParams.get("redirect") || "");
-  const afterSignInUrl = redirect || "/install?refresh=true";
-  const signInUrl = redirect ? `/login?redirect=${redirect}` : "/login";
+  const { redirectUrl } = useLoaderData<{ redirectUrl: string }>();
+  const signInUrl = redirectUrl ? `/login?redirect=${redirectUrl}` : "/login";
   return (
     <SignUp
-      afterSignInUrl={decodeURIComponent(afterSignInUrl)}
+      afterSignInUrl={redirectUrl}
       signInUrl={signInUrl}
     />
   );

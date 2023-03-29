@@ -22,6 +22,7 @@ const createNotebook = async ({
     requestId,
     app,
     workspace,
+    tokenUuid,
   });
   await cxn.insert(tokenNotebookLinks).values({
     uuid: sql`UUID()`,

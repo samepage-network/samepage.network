@@ -37,10 +37,10 @@ export const getOpts = ({
           async (args) => {
             const originalContent = fs.readFileSync(args.path).toString();
             const defaultExport = originalContent.match(
-              /export\s+default\s+([^\s;]+)/
+              /export\s+default\s+([^;]+);/s
             )?.[1];
             const contents = defaultExport
-              ? `${originalContent}export const handler = ${defaultExport};`
+              ? `${originalContent}export const handler = ${defaultExport}`
               : originalContent;
             return {
               contents,

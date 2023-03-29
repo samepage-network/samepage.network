@@ -1,14 +1,19 @@
-import { Notebook } from "package/internal/types";
 import getMysql from "~/data/mysql.server";
 import { v4 } from "uuid";
 import { notebooks, tokenNotebookLinks } from "data/schema";
-import { eq, and, isNull } from "drizzle-orm/expressions";
+import { eq, and } from "drizzle-orm/expressions";
 
 const getOrGenerateNotebookUuid = async ({
   requestId,
   workspace,
   app,
-}: { requestId: string } & Notebook) => {
+  tokenUuid,
+}: {
+  requestId: string;
+  workspace: string;
+  app: number;
+  tokenUuid: string;
+}) => {
   const cxn = await getMysql(requestId);
   const [potentialNotebookUuid] = await cxn
     .select({ uuid: notebooks.uuid })
@@ -21,7 +26,7 @@ const getOrGenerateNotebookUuid = async ({
       and(
         eq(notebooks.workspace, workspace),
         eq(notebooks.app, app),
-        isNull(tokenNotebookLinks.tokenUuid)
+        eq(tokenNotebookLinks.tokenUuid, tokenUuid)
       )
     );
   return (

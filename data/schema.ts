@@ -256,3 +256,20 @@ export const apps = mysqlTable(
     codeIndex: uniqueIndex("UC_code").on(apps.code),
   })
 );
+
+export const oauthClients = mysqlTable("oauth_clients", {
+  id: varchar("id", { length: 36 }).primaryKey().default(""),
+  appId: int("app_id").notNull().default(0),
+  secret: varchar("secret", { length: 64 }).notNull().default(""),
+});
+
+export const authorizationCodes = mysqlTable("authorization_codes", {
+  code: varchar("code", { length: 256 }).primaryKey().default(""),
+  clientId: varchar("client_id", { length: 36 }).notNull().default(""),
+  userId: varchar("user_id", { length: 36 }).notNull().default(""),
+  redirectUri: varchar("redirect_uri", { length: 256 }).notNull().default(""),
+  expiresAt: datetime("expires_at")
+    .notNull()
+    .default(sql`(DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 1 HOUR))`),
+  scope: varchar("scope", { length: 256 }).notNull().default(""),
+});
