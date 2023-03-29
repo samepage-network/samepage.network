@@ -206,8 +206,6 @@ test("Connect Notebook with same app/workspace returns same notebook uuid", asyn
     password,
     app: 0,
     workspace,
-
-    
   });
   expect(notebookUuid).toBeTruthy();
   expect(token).toBeTruthy();

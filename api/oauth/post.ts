@@ -1,5 +1,4 @@
 import {
-  accessTokens,
   authorizationCodes,
   oauthClients,
   tokenNotebookLinks,
@@ -14,7 +13,6 @@ import { ConflictError, UnauthorizedError } from "~/data/errors.server";
 import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
 import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
 import getMysql from "~/data/mysql.server";
-import randomString from "~/data/randomString.server";
 
 const bodySchema = z
   .object({
@@ -56,8 +54,8 @@ const logic = async (args: z.infer<typeof bodySchema>) => {
   if (!email) {
     throw new ConflictError(`Failed to find primary email for user`);
   }
-  const [{ uuid: tokenUuid }] = await cxn
-    .select({ uuid: tokens.uuid })
+  const [{ uuid: tokenUuid, access_token }] = await cxn
+    .select({ uuid: tokens.uuid, access_token: tokens.value })
     .from(tokens)
     .where(eq(tokens.userId, authorization.userId));
   const notebookUuid = await getOrGenerateNotebookUuid({
@@ -71,15 +69,9 @@ const logic = async (args: z.infer<typeof bodySchema>) => {
     tokenUuid,
     notebookUuid,
   });
-  const access_token = await randomString({ length: 18, encoding: "base64url" });
-  await cxn.insert(accessTokens).values({
-    uuid: sql`UUID()`,
-    notebookUuid,
-    value: access_token,
-  });
   await cxn.end();
   return {
-    access_token: access_token,
+    access_token,
   };
 };
 

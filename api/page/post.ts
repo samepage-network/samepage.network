@@ -41,7 +41,6 @@ import { encode } from "@ipld/dag-cbor";
 import clerk, { users } from "@clerk/clerk-sdk-node";
 import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
 import {
-  accessTokens,
   apps,
   clientSessions,
   messages,
@@ -322,11 +321,9 @@ const logic = async (req: Record<string, unknown>) => {
       // uptime checker
       return { success: true };
     }
-    const { notebookUuid, token } = args;
-    const tokenUuid = await authenticateNotebook({
+    const { tokenUuid, notebookUuid } = await authenticateNotebook({
       requestId,
-      notebookUuid,
-      token,
+      ...args,
     });
 
     switch (args.method) {
@@ -1180,34 +1177,6 @@ const logic = async (req: Record<string, unknown>) => {
   // }
 };
 
-const runAuthorizer = async ({
-  authorization,
-  requestId,
-}: {
-  authorization: string;
-  requestId: string;
-}) => {
-  const [scheme, auth] = authorization.split(" ");
-  if (scheme !== "Bearer") {
-    throw new UnauthorizedError("Invalid authorization scheme");
-  }
-  if (!auth) {
-    throw new UnauthorizedError("Invalid authorization token");
-  }
-  const cxn = await getMysql(requestId);
-  return cxn
-    .select({ notebookUuid: notebooks.uuid, token: tokens.value })
-    .from(notebooks)
-    .innerJoin(accessTokens, eq(notebooks.uuid, accessTokens.notebookUuid))
-    .innerJoin(
-      tokenNotebookLinks,
-      eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
-    )
-    .innerJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
-    .where(eq(accessTokens.value, auth))
-    .then((r) => r[0] || {});
-};
-
 export const handler = createAPIGatewayProxyHandler({
   logic,
   allowedOrigins: [
@@ -1216,5 +1185,4 @@ export const handler = createAPIGatewayProxyHandler({
     "app://obsidian.md",
     /^https:\/\/([\w]+\.)?notion\.so/,
   ],
-  runAuthorizer,
 });

@@ -4,14 +4,6 @@ import type { ZodSchema } from "zod";
 
 type Logic<T, U> = (e: T) => string | U | Promise<U | string>;
 
-const defaultRunAuthorizer = async ({
-  authorization,
-}: {
-  authorization: string;
-}) => ({
-  authorization,
-});
-
 const createAPIGatewayProxyHandler =
   <T extends Record<string, unknown>, U extends Record<string, unknown>>(
     args:
@@ -20,10 +12,6 @@ const createAPIGatewayProxyHandler =
           logic: Logic<T, U>;
           allowedOrigins?: (string | RegExp)[];
           bodySchema?: ZodSchema;
-          runAuthorizer?: (e: {
-            authorization: string;
-            requestId: string;
-          }) => Promise<Record<string, string>>;
         }
   ): APIGatewayProxyHandler =>
   (event, context) => {
@@ -31,8 +19,6 @@ const createAPIGatewayProxyHandler =
       typeof args === "function" ? [] : args.allowedOrigins || []
     ).map((s) => (typeof s === "string" ? new RegExp(s) : s));
     const bodySchema = typeof args === "function" ? undefined : args.bodySchema;
-    const runAuthorizer =
-      typeof args === "function" ? defaultRunAuthorizer : args.runAuthorizer || defaultRunAuthorizer;
     const requestOrigin = event.headers.origin || event.headers.Origin || "";
     const cors = allowedOrigins.some((r) => r.test(requestOrigin))
       ? requestOrigin
@@ -52,12 +38,10 @@ const createAPIGatewayProxyHandler =
         const requestId = context.awsRequestId;
         const authorization =
           event.headers.Authorization || event.headers.authorization;
-        const authorizer = authorization
-          ? await runAuthorizer({ requestId, authorization }).catch(() => ({}))
-          : {};
         const logic = typeof args === "function" ? args : args.logic;
         const rawObject = {
-          ...(event.requestContext.authorizer || authorizer),
+          ...(event.requestContext.authorizer || {}),
+          ...(authorization ? { authorization } : {}),
           requestId,
           ...event.pathParameters,
           ...(event.queryStringParameters || {}),

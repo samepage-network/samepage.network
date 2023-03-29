@@ -1,7 +1,7 @@
-import { tokenNotebookLinks, tokens } from "data/schema";
+import { apps, notebooks, tokenNotebookLinks, tokens } from "data/schema";
 import { NotFoundError, UnauthorizedError } from "~/data/errors.server";
 import getMysql from "~/data/mysql.server";
-import { eq } from "drizzle-orm/expressions";
+import { eq, and } from "drizzle-orm/expressions";
 
 const authenticateNotebook = async (args: {
   notebookUuid: string;
@@ -10,6 +10,32 @@ const authenticateNotebook = async (args: {
 }) => {
   const { notebookUuid, token, requestId } = args;
   const cxn = await getMysql(requestId);
+  const isApp = await cxn
+    .select({ app: apps.id })
+    .from(apps)
+    .where(eq(apps.code, notebookUuid));
+
+  // This is alittle confusing, but notebookUuid can be either a uuid for a specific notebook or an app code.
+  if (isApp.length) {
+    const tokenLinks = await cxn
+      .select({
+        notebookUuid: notebooks.uuid,
+        tokenUuid: tokenNotebookLinks.tokenUuid,
+      })
+      .from(tokens)
+      .innerJoin(
+        tokenNotebookLinks,
+        eq(tokenNotebookLinks.tokenUuid, tokens.uuid)
+      )
+      .innerJoin(notebooks, eq(notebooks.uuid, tokenNotebookLinks.notebookUuid))
+      .where(and(eq(tokens.value, token), eq(notebooks.app, isApp[0].app)));
+    if (!tokenLinks.length) {
+      throw new NotFoundError(
+        `This user is not authorized to access this app: ${notebookUuid}`
+      );
+    }
+    return tokenLinks[0];
+  }
   const tokenLinks = await cxn
     .select({ token_uuid: tokenNotebookLinks.tokenUuid })
     .from(tokenNotebookLinks)
@@ -47,7 +73,7 @@ const authenticateNotebook = async (args: {
     );
   if (!authenticated)
     throw new UnauthorizedError(`Unauthorized notebook and token`);
-  return authenticated;
+  return { tokenUuid: authenticated, notebookUuid };
 };
 
 export default authenticateNotebook;
