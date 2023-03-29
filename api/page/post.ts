@@ -51,10 +51,13 @@ import {
   tokenNotebookLinks,
   tokens,
 } from "data/schema";
+import { z } from "zod";
 
-const zMethod = zUnauthenticatedBody
-  .and(zBaseHeaders)
-  .or(zAuthenticatedBody.and(zAuthHeaders).and(zBaseHeaders));
+const zhandlerBody = zUnauthenticatedBody.or(
+  zAuthenticatedBody.and(zAuthHeaders)
+);
+const handlerBody = zBaseHeaders.and(zhandlerBody);
+export type HandlerBody = z.infer<typeof zhandlerBody>;
 
 const hashNotebookRequest = ({
   target,
@@ -159,7 +162,7 @@ const getRecentNotebooks = async ({
 };
 
 const logic = async (req: Record<string, unknown>) => {
-  const result = zMethod.safeParse(req);
+  const result = handlerBody.safeParse(req);
   if (!result.success)
     throw new BadRequestError(
       `Failed to parse request. Errors:\n${parseZodError(result.error)}`
@@ -318,11 +321,9 @@ const logic = async (req: Record<string, unknown>) => {
       // uptime checker
       return { success: true };
     }
-    const { notebookUuid, token } = args;
-    const tokenUuid = await authenticateNotebook({
+    const { tokenUuid, notebookUuid } = await authenticateNotebook({
       requestId,
-      notebookUuid,
-      token,
+      ...args,
     });
 
     switch (args.method) {

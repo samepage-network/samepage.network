@@ -1,11 +1,17 @@
-import type { RequestBody } from "./types";
+import {
+  zAuthenticatedBody,
+  zAuthHeaders,
+  zUnauthenticatedBody,
+} from "./types";
 import { getSetting } from "./registry";
 import getApiUrl from "../utils/getApiUrl";
+import { z } from "zod";
 
 export type HandleFetchArgs = {
   path?: string;
   domain?: string;
   data?: Record<string, unknown>;
+  authorization?: string;
 };
 
 const handleFetch = <T extends Record<string, unknown> = Record<string, never>>(
@@ -14,12 +20,18 @@ const handleFetch = <T extends Record<string, unknown> = Record<string, never>>(
     method,
     path,
     domain,
+    authorization,
   }: Pick<RequestInit, "method"> & Omit<HandleFetchArgs, "data">
 ) => {
   const url = new URL(`${domain || getApiUrl()}/${path}`);
   return fetch(
     ...transformArgs(url, {
       method,
+      headers: authorization
+        ? {
+            Authorization: authorization,
+          }
+        : undefined,
     })
   ).then((r) => {
     if (!r.ok) {
@@ -75,6 +87,7 @@ const handleBodyFetch =
           ...init,
           body,
           headers: {
+            ...(init.headers || {}),
             "Content-Type": "application/json",
           },
           method,
@@ -88,14 +101,30 @@ export const apiPost = handleBodyFetch("POST");
 
 export const apiGet = handleUrlFetch("GET");
 
+const zMethodBody = zUnauthenticatedBody.or(
+  zAuthenticatedBody.and(
+    zAuthHeaders.partial().or(z.object({ authorization: z.string() }))
+  )
+);
+
+export type RequestBody = z.infer<typeof zMethodBody>;
+
 const apiClient = <T extends Record<string, unknown>>(data: RequestBody) =>
-  apiPost<T>({
-    path: "page",
-    data: {
-      notebookUuid: getSetting("uuid"),
-      token: getSetting("token"),
-      ...data,
-    },
-  });
+  apiPost<T>(
+    "authorization" in data
+      ? {
+          path: "page",
+          data,
+          authorization: data.authorization,
+        }
+      : {
+          path: "page",
+          data: {
+            notebookUuid: getSetting("uuid"),
+            token: getSetting("token"),
+            ...data,
+          },
+        }
+  );
 
 export default apiClient;

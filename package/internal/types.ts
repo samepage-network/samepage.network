@@ -464,12 +464,6 @@ export const zAuthHeaders = z.object({
   token: z.string(),
 });
 
-const zMethodBody = zUnauthenticatedBody.or(
-  zAuthenticatedBody.and(zAuthHeaders.partial())
-);
-
-export type RequestBody = z.infer<typeof zMethodBody>;
-
 // look into trpc.io
 // export type RequestSignature = <T extends RequestBody>(
 //   args: T
