@@ -1,5 +1,6 @@
 import type { APIGatewayProxyHandler } from "aws-lambda";
 import emailError from "./emailError.server";
+import type { ZodSchema } from "zod";
 
 type Logic<T, U> = (e: T) => string | U | Promise<U | string>;
 
@@ -7,12 +8,17 @@ const createAPIGatewayProxyHandler =
   <T extends Record<string, unknown>, U extends Record<string, unknown>>(
     args:
       | Logic<T, U>
-      | { logic: Logic<T, U>; allowedOrigins?: (string | RegExp)[] }
+      | {
+          logic: Logic<T, U>;
+          allowedOrigins?: (string | RegExp)[];
+          bodySchema?: ZodSchema;
+        }
   ): APIGatewayProxyHandler =>
   (event, context) => {
     const allowedOrigins = (
       typeof args === "function" ? [] : args.allowedOrigins || []
     ).map((s) => (typeof s === "string" ? new RegExp(s) : s));
+    const bodySchema = typeof args === "function" ? undefined : args.bodySchema;
     const requestOrigin = event.headers.origin || event.headers.Origin || "";
     const cors = allowedOrigins.some((r) => r.test(requestOrigin))
       ? requestOrigin
@@ -30,15 +36,15 @@ const createAPIGatewayProxyHandler =
     return new Promise<U | string>((resolve, reject) => {
       try {
         const logic = typeof args === "function" ? args : args.logic;
-        resolve(
-          logic({
-            ...(event.requestContext.authorizer || {}),
-            requestId: context.awsRequestId,
-            ...event.pathParameters,
-            ...(event.queryStringParameters || {}),
-            ...JSON.parse(event.body || "{}"),
-          })
-        );
+        const rawObject = {
+          ...(event.requestContext.authorizer || {}),
+          requestId: context.awsRequestId,
+          ...event.pathParameters,
+          ...(event.queryStringParameters || {}),
+          ...JSON.parse(event.body || "{}"),
+        };
+        const body = bodySchema ? bodySchema.parse(rawObject) : rawObject;
+        resolve(logic(body));
       } catch (e) {
         reject(e);
       }

@@ -98,7 +98,7 @@ export const pageNotebookLinks = mysqlTable(
   {
     uuid: primaryUuid(),
     pageUuid: varchar("page_uuid", { length: 36 }).notNull().default(""),
-    notebookPageId: varchar("notebook_page_id", { length: 128 })
+    notebookPageId: varchar("notebook_page_id", { length: 256 })
       .notNull()
       .default(""),
     version: int("version").notNull().default(0),

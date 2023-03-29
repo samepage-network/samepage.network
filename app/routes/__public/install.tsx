@@ -110,7 +110,7 @@ const INSTRUCTIONS: Record<string, { steps: InstructionSteps }> = {
           href: `https://api.notion.com/v1/oauth/authorize?client_id=1990c3a3-66ff-4a69-8d22-af684683daf5&response_type=code&owner=user&redirect_uri=https://${
             process.env.NODE_ENV === "production"
               ? "samepage.network"
-              : "samepage-app.ngrok.io"
+              : "samepage.ngrok.io"
           }/oauth/notion`,
         },
       },

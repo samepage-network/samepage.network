@@ -6,6 +6,7 @@ out
 .cache
 /app/tailwind.css
 SamePage.pem
+/public/.well-known
 /public/data
 playwright-report
 coverage

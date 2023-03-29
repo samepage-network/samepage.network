@@ -16,5 +16,11 @@
     "jsx": "react",
     "baseUrl": "."
   },
-  "include": ["./src"]
+  "include": ["./src"],
+  "ts-node": {
+    "compilerOptions": {
+      "esModuleInterop": true,
+      "module": "commonjs"
+    }
+  }
 }

@@ -13,12 +13,12 @@ const start = async ({}: {} = {}) => {
     dev: {
       proto: "http",
       addr: 3000,
-      hostname: "samepage-app.ngrok.io",
+      hostname: "samepage.ngrok.io",
     },
     api: {
       proto: "http",
       addr: 3003,
-      hostname: "samepage.ngrok.io",
+      hostname: "api.samepage.ngrok.io",
     },
   };
   fs.writeFileSync(configPath, yaml.stringify(config));

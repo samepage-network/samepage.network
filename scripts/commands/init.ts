@@ -47,6 +47,10 @@ const init = async ({
     fs.writeFileSync(f.replace(/^template/, root), content);
   });
   process.chdir(root);
+  fs.writeFileSync(
+    ".env",
+    `SAMEPAGE_TEST_PASSWORD=${process.env.SAMEPAGE_TEST_PASSWORD}`
+  );
   execSync("git init", { stdio: "inherit" });
   execSync("npm install", { stdio: "inherit" });
   execSync("git add --all", { stdio: "inherit" });
@@ -58,10 +62,9 @@ const init = async ({
     visibility: "public",
   });
   console.log("Created repo at", repo.data.html_url);
-  execSync(
-    `git remote add origin ${repo.data.html_url}.git`,
-    { stdio: "inherit" }
-  );
+  execSync(`git remote add origin ${repo.data.html_url}.git`, {
+    stdio: "inherit",
+  });
   execSync("git push origin main", { stdio: "inherit" });
   return 0;
 };

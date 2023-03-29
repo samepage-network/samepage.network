@@ -17,7 +17,7 @@ const dev = async (args: FeArgs = {}): Promise<number> => {
     setTimeout(() => {
       ngrok
         .connect({
-          subdomain: "samepage-app",
+          subdomain: "samepage",
           addr: process.env.PORT || 3000,
         })
         .then((url) => {

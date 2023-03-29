@@ -149,7 +149,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
               });
           }
           const { headers, body, params, url, ip } = req;
-          debug(`Received Request ${method} ${route}`);
+          debug(`Received Request ${method} ${req.path}`);
           const searchParams = Array.from(
             new URL(url || "", "http://example.com").searchParams.entries()
           );
@@ -407,7 +407,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
       ngrok
         .connect({
           addr: port,
-          subdomain: "samepage",
+          subdomain: "api.samepage",
         })
         .then((url) => {
           debug("Started local ngrok tunneling:");
