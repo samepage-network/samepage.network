@@ -33,16 +33,15 @@ const createAPIGatewayProxyHandler =
           )
         : {}),
     });
-    return new Promise<U | string>(async (resolve, reject) => {
+    return new Promise<U | string>((resolve, reject) => {
       try {
-        const requestId = context.awsRequestId;
         const authorization =
           event.headers.Authorization || event.headers.authorization;
         const logic = typeof args === "function" ? args : args.logic;
         const rawObject = {
           ...(event.requestContext.authorizer || {}),
           ...(authorization ? { authorization } : {}),
-          requestId,
+          requestId: context.awsRequestId,
           ...event.pathParameters,
           ...(event.queryStringParameters || {}),
           ...JSON.parse(event.body || "{}"),
