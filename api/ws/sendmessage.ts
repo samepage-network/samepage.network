@@ -16,10 +16,13 @@ import authenticateNotebook from "~/data/authenticateNotebook.server";
 import { Operation } from "package/internal/messages";
 import { ongoingMessages, onlineClients } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
+import debugMod from "debug";
 
 export type WSEvent = Pick<APIGatewayProxyEvent, "body"> & {
   requestContext: Pick<APIGatewayProxyEvent["requestContext"], "connectionId">;
 };
+
+const debug = debugMod("sendmessage");
 
 export type WSHandler = (
   event: WSEvent,
@@ -34,7 +37,7 @@ const dataHandler = async (
 ): Promise<void> => {
   const { operation, ...props } = JSON.parse(data);
   const clientId = event.requestContext?.connectionId || "";
-  console.log("received operation", operation, "from client", clientId);
+  debug("received operation", operation, "from client", clientId);
   if (operation === "AUTHENTICATION") {
     const propArgs = props as
       | { app: AppId; workspace: string }

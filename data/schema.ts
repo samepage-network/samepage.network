@@ -60,7 +60,7 @@ const unsignedSmallInt = (name: string) =>
 // default UUID() errors in planet scale...
 // but should be possible: https://stackoverflow.com/questions/46134550/mysql-set-default-id-uuid
 // on mysql 8.0.23
-const uuid = () => varchar("uuid", { length: 36 }).default("");
+const uuid = (name = "uuid") => varchar(name, { length: 36 }).default("");
 const primaryUuid = () => uuid().primaryKey();
 const date = (prefix: string) =>
   datetime(`${prefix}_date`)
@@ -138,8 +138,8 @@ export const notebookRequests = mysqlTable(
   {
     uuid: primaryUuid(),
     hash: varchar("hash", { length: 256 }).notNull().default(""),
-    notebookUuid: uuid(),
-    target: uuid(),
+    notebookUuid: uuid("notebook_uuid"),
+    target: uuid("target"),
     label: varchar("label", { length: 256 }).notNull().default(""),
     status: mysqlEnum("status", ["pending", "accepted", "rejected"])
       .notNull()

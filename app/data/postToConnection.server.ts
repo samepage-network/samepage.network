@@ -39,7 +39,7 @@ const getSender = (ConnectionId: string) => {
             return Promise.resolve();
           } else {
             // TODO = do a better job emulating AWS' web socket postToConnection behavior
-            return Promise.reject("No connection");
+            return Promise.reject(new Error("No connection"));
           }
         });
     };

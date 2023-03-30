@@ -536,7 +536,9 @@ const logic = async (req: Record<string, unknown>) => {
           .where(eq(pageNotebookLinks.uuid, uuid));
         const [{ cid }] = invitedByResults;
         if (!cid)
-          throw new InternalServorError(`Could not find cid for page ${page_uuid} invited by ${invited_by}`);
+          throw new InternalServorError(
+            `Could not find cid for page ${page_uuid} invited by ${invited_by}`
+          );
         const { body: state } = await downloadSharedPage({
           cid,
         });
@@ -1021,61 +1023,68 @@ const logic = async (req: Record<string, unknown>) => {
         }
         return Promise.all(
           targets.map(async (target) => {
-            const hash = hashNotebookRequest({ request, target });
-            const [requestRecord] = await cxn
-              .select({ status: notebookRequests.status, uuid: request.uuid })
-              .from(notebookRequests)
-              .where(
-                and(
-                  eq(notebookRequests.hash, hash),
-                  eq(notebookRequests.notebookUuid, notebookUuid)
-                )
-              );
-            const messageRequest = (id: string) =>
-              messageNotebook({
-                source: notebookUuid,
-                target,
-                operation: "REQUEST",
-                data: {
-                  request,
-                  id,
-                  label,
-                },
-                requestId,
-              });
-            if (!requestRecord) {
-              const uuid = v4();
-              await cxn.insert(notebookRequests).values({
-                target,
-                notebookUuid,
-                hash,
-                uuid,
-                label,
-              });
-              await messageNotebook({
-                source: notebookUuid,
-                target,
-                operation: "REQUEST_DATA",
-                data: {
-                  request: JSON.stringify(request, null, 2),
+            try {
+              const hash = hashNotebookRequest({ request, target });
+              const [requestRecord] = await cxn
+                .select({
+                  status: notebookRequests.status,
+                  uuid: notebookRequests.uuid,
+                })
+                .from(notebookRequests)
+                .where(
+                  and(
+                    eq(notebookRequests.hash, hash),
+                    eq(notebookRequests.notebookUuid, notebookUuid)
+                  )
+                );
+              const messageRequest = (id: string) =>
+                messageNotebook({
+                  source: notebookUuid,
+                  target,
+                  operation: "REQUEST",
+                  data: {
+                    request,
+                    id,
+                    label,
+                  },
+                  requestId,
+                });
+              if (!requestRecord) {
+                const uuid = v4();
+                await cxn.insert(notebookRequests).values({
+                  target,
+                  notebookUuid,
+                  hash,
                   uuid,
-                  title: label,
-                },
-                requestId,
-                metadata: ["title", "request"],
-              });
-              return [target, null];
-            } else if (requestRecord.status === "rejected") {
-              return [target, "rejected"];
-            } else if (requestRecord.status === "pending") {
-              await messageRequest(requestRecord.uuid);
-              return [target, "pending"];
-            } else {
-              const data = await downloadFileContent({
-                Key: `data/requests/${hash}.json`,
-              });
-              await messageRequest(requestRecord.uuid);
-              return [target, JSON.parse(data)];
+                  label,
+                });
+                await messageNotebook({
+                  source: notebookUuid,
+                  target,
+                  operation: "REQUEST_DATA",
+                  data: {
+                    request: JSON.stringify(request, null, 2),
+                    uuid,
+                    title: label,
+                  },
+                  requestId,
+                  metadata: ["title", "request"],
+                });
+                return [target, null];
+              } else if (requestRecord.status === "rejected") {
+                return [target, "rejected"];
+              } else if (requestRecord.status === "pending") {
+                await messageRequest(requestRecord.uuid);
+                return [target, "pending"];
+              } else {
+                const data = await downloadFileContent({
+                  Key: `data/requests/${hash}.json`,
+                });
+                await messageRequest(requestRecord.uuid);
+                return [target, JSON.parse(data)];
+              }
+            } catch (e) {
+              return [target, { success: false, error: (e as Error).message }];
             }
           })
         )
