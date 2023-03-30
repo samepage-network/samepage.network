@@ -39,15 +39,19 @@ const createAPIGatewayProxyHandler =
           event.headers.Authorization || event.headers.authorization;
         const logic = typeof args === "function" ? args : args.logic;
         const rawObject = {
-          ...(event.requestContext.authorizer || {}),
-          ...(authorization ? { authorization } : {}),
-          requestId: context.awsRequestId,
           ...event.pathParameters,
           ...(event.queryStringParameters || {}),
           ...JSON.parse(event.body || "{}"),
         };
         const body = bodySchema ? bodySchema.parse(rawObject) : rawObject;
-        resolve(logic(body));
+        resolve(
+          logic({
+            ...(event.requestContext.authorizer || {}),
+            ...(authorization ? { authorization } : {}),
+            requestId: context.awsRequestId,
+            ...body,
+          })
+        );
       } catch (e) {
         reject(e);
       }

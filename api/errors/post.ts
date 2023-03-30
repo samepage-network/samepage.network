@@ -71,6 +71,10 @@ const logic = async (body: Record<string, unknown>) => {
         .then((r) => ({
           latest: r.data.tag_name,
           file: r.data.assets.find((a) => /\.js$/.test(a.name))?.name,
+        }))
+        .catch((e) => ({
+          latest: `failed: ${JSON.stringify(e)}`,
+          file: undefined,
         }));
       const uuid = v4();
       await uploadFile({

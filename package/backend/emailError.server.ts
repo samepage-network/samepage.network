@@ -30,7 +30,7 @@ const emailError = (
           },
         },
         React.createElement("img", {
-          src: `${process.env.ORIGIN}/images/logo.png`,
+          src: `https://samepage.network/images/logo.png`,
           width: 128,
         })
       ),
@@ -68,7 +68,7 @@ const emailError = (
           React.createElement(
             "a",
             {
-              href: process.env.ORIGIN,
+              href: "https://samepage.network",
               style: { color: "#3ba4dc", textDecoration: "none" },
             },
             "Home"
