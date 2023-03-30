@@ -99,7 +99,7 @@ const INSTRUCTIONS: Record<string, { steps: InstructionSteps }> = {
   notion: {
     steps: [
       {
-        title: `Click here`,
+        title: `Connect your account`,
         children: "link",
         props: {
           href: `https://api.notion.com/v1/oauth/authorize?client_id=1990c3a3-66ff-4a69-8d22-af684683daf5&response_type=code&owner=user&redirect_uri=https://${
@@ -118,7 +118,7 @@ const INSTRUCTIONS: Record<string, { steps: InstructionSteps }> = {
   github: {
     steps: [
       {
-        title: `Click here`,
+        title: `Connect your account`,
         children: "link",
         props: {
           href: ``,
@@ -136,7 +136,7 @@ const InstallPage = () => {
   // yes this is confusing. the search param is id but we want the more readable, `code`
   // one day, id will just be code
   const [selectedApp, setSelectedApp] = useState(
-    searchParams.get("id") || userApps[0].code
+    searchParams.get("id") || searchParams.get("app") || userApps[0].code
   );
   const name = userApps.find((a) => a.code === selectedApp)?.name;
   useEffect(() => {

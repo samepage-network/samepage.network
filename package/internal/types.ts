@@ -475,12 +475,11 @@ export const zAuthHeaders = z.object({
   token: z.string(),
 });
 
-// look into trpc.io
-// export type RequestSignature = <T extends RequestBody>(
-//   args: T
-// ) => T["method"] extends "create-notebook"
-//   ? Promise<{ notebookUuid: string }>
-//   : Promise<{}>;
+export const zOauthResponse = z.object({
+  accessToken: z.string(),
+  workspace: z.string(),
+  suggestExtension: z.boolean().optional(),
+});
 
 export type SamePageAPI = {
   addNotebookListener: AddNotebookListener;

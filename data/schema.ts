@@ -262,11 +262,23 @@ export const migrations = mysqlTable("_migrations", {
   checksum: varchar("checksum", { length: 64 }).notNull(),
 });
 
-export const accessTokens = mysqlTable("access_tokens", {
-  uuid: primaryUuid(),
-  notebookUuid: varchar("notebook_uuid", { length: 36 }).notNull().default(""),
-  value: varchar("value", { length: 256 }).notNull().default(""),
-});
+export const accessTokens = mysqlTable(
+  "access_tokens",
+  {
+    uuid: primaryUuid(),
+    notebookUuid: varchar("notebook_uuid", { length: 36 })
+      .notNull()
+      .default(""),
+    value: varchar("value", { length: 256 }).notNull().default(""),
+    userId: varchar("user_id", { length: 128 }).notNull().default(""),
+  },
+  (accessTokens) => ({
+    notebookUserIndex: uniqueIndex("UC_notebook_uuid_user_id").on(
+      accessTokens.notebookUuid,
+      accessTokens.userId
+    ),
+  })
+);
 
 export const apps = mysqlTable(
   "apps",
@@ -293,7 +305,7 @@ export const oauthClients = mysqlTable("oauth_clients", {
 export const authorizationCodes = mysqlTable("authorization_codes", {
   code: varchar("code", { length: 256 }).primaryKey().default(""),
   clientId: varchar("client_id", { length: 36 }).notNull().default(""),
-  userId: varchar("user_id", { length: 36 }).notNull().default(""),
+  userId: varchar("user_id", { length: 128 }).notNull().default(""),
   redirectUri: varchar("redirect_uri", { length: 256 }).notNull().default(""),
   expiresAt: datetime("expires_at")
     .notNull()

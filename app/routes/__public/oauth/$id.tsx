@@ -2,7 +2,6 @@ import React from "react";
 import { DataFunctionArgs, redirect } from "@remix-run/node";
 import getUserId from "~/data/getUserId.server";
 import { useLoaderData } from "@remix-run/react";
-import { appsByCode, appsById } from "package/internal/apps";
 import axios from "axios";
 import parseRemixContext from "~/data/parseRemixContext.server";
 import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
@@ -17,6 +16,7 @@ import {
 import { eq } from "drizzle-orm/expressions";
 import { sql } from "drizzle-orm/sql";
 import randomString from "~/data/randomString.server";
+import { zOauthResponse } from "package/internal/types";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
@@ -26,10 +26,19 @@ const OauthConnectionPage = (): React.ReactElement => {
     <div className="text-red-800">{data.error}</div>
   ) : data.success ? (
     <div>
-      <div>Success!</div>
-      <div>
-        You can close this window now and use SamePage within your newly
-        connected notebook:
+      <h1 className="text-3xl font-bold mb-2">Success!</h1>
+      {data.data.suggestExtension && !window.samepage && (
+        <div className="mb-2">
+          We recommend installing the SamePage Chrome extension to use with{" "}
+          {data.data.appName}. You can install it to your browser by{" "}
+          <a href="https://chrome.google.com/webstore/category/extensions">
+            clicking here!
+          </a>
+        </div>
+      )}
+      <div className="mb-2">
+        You can close this window and use SamePage within your newly connected
+        notebook:
       </div>
       <div>
         <span className="text-xl font-bold">{data.data.appName}</span>{" "}
@@ -59,10 +68,15 @@ const loadData = async ({
 }) => {
   const { id = "" } = params;
   const { code, state, error } = searchParams;
-  const appName = appsByCode[id]?.name;
-  if (!appName) {
+  const cxn = await getMysql(requestId);
+  const [app] = await cxn
+    .select({ name: apps.name, id: apps.id })
+    .from(apps)
+    .where(eq(apps.code, id));
+  if (!app) {
     return { error: `App ${id} is not currently supported on SamePage` };
   }
+  const { name: appName, id: appId } = app;
   if (error) {
     return { error: `Failed to install SamePage to ${appName}: ${error}` };
   }
@@ -75,31 +89,38 @@ const loadData = async ({
         userId,
       }
     )
-    .then((r) => ({ data: r.data, success: true }))
-    .catch((e) => ({ data: e.response.data, success: false }));
+    .then((r) => ({
+      data: zOauthResponse.parse(r.data),
+      success: true as const,
+    }))
+    .catch((e) => ({ data: e.response.data, success: false as const }));
 
   if (response.success) {
-    const cxn = await getMysql(requestId);
     const [{ uuid: tokenUuid }] = await cxn
       .select({ uuid: tokens.uuid })
       .from(tokens)
       .where(eq(tokens.userId, userId));
     const notebookUuid = await getOrGenerateNotebookUuid({
       requestId,
-      app: response.data.app,
+      app: appId,
       workspace: response.data.workspace,
       tokenUuid,
     });
-    await cxn.insert(accessTokens).values({
-      uuid: sql`UUID()`,
-      notebookUuid,
-      value: response.data.accessToken,
-    });
+    await cxn
+      .insert(accessTokens)
+      .values({
+        uuid: sql`UUID()`,
+        notebookUuid,
+        value: response.data.accessToken,
+        userId,
+      })
+      .onDuplicateKeyUpdate({ set: { value: response.data.accessToken } });
     return {
       success: true,
       data: {
-        appName: appsById[response.data.app].name,
+        appName,
         workspace: response.data.workspace,
+        suggestExtension: response.data.suggestExtension,
       },
     };
   }
