@@ -430,7 +430,7 @@ const logic = async (req: Record<string, unknown>) => {
               })
               .from(messages)
               .leftJoin(notebooks, eq(notebooks.uuid, messages.source))
-              .innerJoin(apps, eq(apps.id, notebooks.app))
+              .leftJoin(apps, eq(apps.id, notebooks.app))
               .where(eq(messages.uuid, messageUuid))
               .then((args) => cxn.end().then(() => args));
           }),
@@ -446,6 +446,7 @@ const logic = async (req: Record<string, unknown>) => {
                 uuid: source.uuid || "Unknown",
                 app: source.app || 0,
                 workspace: source.workspace || "Unknown",
+                appName: source.appName || "SamePage",
               },
               operation,
             };
@@ -1224,7 +1225,7 @@ const logic = async (req: Record<string, unknown>) => {
             })
             .from(messages)
             .leftJoin(notebooks, eq(messages.source, notebooks.uuid))
-            .innerJoin(apps, eq(notebooks.app, apps.id))
+            .leftJoin(apps, eq(notebooks.app, apps.id))
             .where(
               and(eq(messages.target, notebookUuid), eq(messages.marked, 0))
             )

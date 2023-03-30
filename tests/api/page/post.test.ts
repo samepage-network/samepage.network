@@ -290,12 +290,14 @@ test("Messages from deleted notebooks should return Unknown", async () => {
       uuid: source,
       workspace: sourceWorkspace,
       app: 0,
+      appName: "SamePage",
     },
     operation: "PING",
   });
   expect(response.source).toEqual({
     uuid: "Unknown",
     app: 0,
+    appName: "SamePage",
     workspace: "Unknown",
   });
 });
@@ -538,7 +540,7 @@ test("Sharing pages produces messages to be read and marked read", async () => {
     messageUuid,
   });
   // TODO - edit this test and implementation to rid of the redundancy
-  const source = { app: 0, uuid: notebookUuid, workspace };
+  const source = { app: 0, uuid: notebookUuid, workspace, appName: "SamePage" };
   r3.data = JSON.parse(r3.data);
   expect(r3).toEqual({
     operation: "SHARE_PAGE",
@@ -1592,7 +1594,7 @@ test("Invalid method results in parse error", async () => {
     e: `Failed to parse request. Errors:
 - Path \`\` had the following union errors:
   - Invalid discriminator value. Expected 'create-notebook' | 'add-notebook' | 'connect-device' | 'login-device' | 'ping' (invalid_union_discriminator)
-  - Invalid discriminator value. Expected 'usage' | 'load-message' | 'init-shared-page' | 'join-shared-page' | 'revert-page-join' | 'update-shared-page' | 'force-push-page' | 'get-shared-page' | 'invite-notebook-to-page' | 'remove-page-invite' | 'list-page-notebooks' | 'list-recent-notebooks' | 'list-shared-pages' | 'disconnect-shared-page' | 'query' | 'query-response' | 'notebook-request' | 'notebook-response' | 'link-different-page' | 'save-page-version' | 'get-ipfs-cid' | 'get-unmarked-messages' | 'mark-message-read' (invalid_union_discriminator)
+  - Invalid discriminator value. Expected 'usage' | 'load-message' | 'init-shared-page' | 'join-shared-page' | 'revert-page-join' | 'update-shared-page' | 'force-push-page' | 'get-shared-page' | 'invite-notebook-to-page' | 'remove-page-invite' | 'list-page-notebooks' | 'list-recent-notebooks' | 'list-shared-pages' | 'disconnect-shared-page' | 'query' | 'query-response' | 'notebook-request' | 'notebook-response' | 'accept-request' | 'reject-request' | 'link-different-page' | 'save-page-version' | 'get-ipfs-cid' | 'get-unmarked-messages' | 'mark-message-read' (invalid_union_discriminator)
 - Expected \`notebookUuid\` to be of type \`string\` but received type \`undefined\`
 - Expected \`token\` to be of type \`string\` but received type \`undefined\``,
   });

@@ -7,7 +7,8 @@ const test = ({
   debug,
   project,
   file,
-}: { debug?: boolean; project?: string; file?: string } = {}) => {
+  g,
+}: { debug?: boolean; project?: string; file?: string; g?: string } = {}) => {
   process.env.DEBUG = debug ? "true" : process.env.DEBUG;
   const args = [
     "c8",
@@ -34,7 +35,8 @@ const test = ({
     "--config=package/testing/playwright.config.ts",
   ]
     .concat(project ? [`--project=${project}`] : [])
-    .concat(file ? [file] : []);
+    .concat(file ? [file] : [])
+    .concat(g ? [`-g ${g}`] : []);
   const options = {
     stdio: "inherit" as const,
     env: process.env,
