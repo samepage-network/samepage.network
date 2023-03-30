@@ -333,7 +333,7 @@ const setupWsFeatures = ({
                   source: r.source,
                   uuid: msg.uuid,
                 });
-                if (!MESSAGES[r.operation].buttons.length)
+                if (!MESSAGES[r.operation]?.buttons?.length)
                   return apiClient({
                     messageUuid: msg.uuid,
                     method: "mark-message-read",

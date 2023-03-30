@@ -537,7 +537,9 @@ const logic = async (req: Record<string, unknown>) => {
         const [{ cid }] = invitedByResults;
         if (!cid)
           throw new InternalServorError(
-            `Could not find cid for page ${page_uuid} invited by ${invited_by}`
+            `Could not find cid for page ${page_uuid} invited by ${invited_by}:\n${JSON.stringify(
+              invitedByResults
+            )}`
           );
         const { body: state } = await downloadSharedPage({
           cid,
