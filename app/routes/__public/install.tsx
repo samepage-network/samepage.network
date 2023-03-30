@@ -1,17 +1,12 @@
-import APPS from "package/internal/apps";
 import { useState, useEffect } from "react";
-import { useSearchParams, Link } from "@remix-run/react";
+import { useSearchParams, Link, useLoaderData } from "@remix-run/react";
+import type { LoaderFunction } from "@remix-run/node";
 import OverlayImg from "~/components/OverlayImg";
 import ExternalLink from "~/components/ExternalLink";
+import listApps from "~/data/listApps.server";
+import parseRemixContext from "~/data/parseRemixContext.server";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
-
-const userApps = APPS.slice(1)
-  .filter((a) => !a.development)
-  .map(({ name }) => ({
-    id: name.toLowerCase(),
-    name,
-  }));
 
 type InstructionSteps = {
   title: string;
@@ -20,11 +15,11 @@ type InstructionSteps = {
 }[];
 
 const Instruction = ({
-  id,
-  steps,
+  code,
+  steps = [],
 }: {
-  id: string;
-  steps: InstructionSteps;
+  code: string;
+  steps?: InstructionSteps;
 }) => {
   return (
     <div className="flex justify-between items-start gap-8 h-full">
@@ -36,7 +31,7 @@ const Instruction = ({
           <div className="flex-grow flex flex-col justify-center items-center">
             {s.children === "image" ? (
               <OverlayImg
-                src={`/images/install/${id}-live-${i + 1}.png`}
+                src={`/images/install/${code}-live-${i + 1}.png`}
                 {...(s.props || {})}
               />
             ) : s.children === "link" ? (
@@ -120,14 +115,30 @@ const INSTRUCTIONS: Record<string, { steps: InstructionSteps }> = {
       },
     ],
   },
+  github: {
+    steps: [
+      {
+        title: `Click here`,
+        children: "link",
+        props: {
+          href: ``,
+        }
+      }
+    ],
+  }
 };
 
 const InstallPage = () => {
+  const { userApps } = useLoaderData<{
+    userApps: Awaited<ReturnType<typeof listApps>>;
+  }>();
   const [searchParams, setSearchParams] = useSearchParams();
+  // yes this is confusing. the search param is id but we want the more readable, `code`
+  // one day, id will just be code
   const [selectedApp, setSelectedApp] = useState(
-    searchParams.get("id") || userApps[0].id
+    searchParams.get("id") || userApps[0].code
   );
-  const name = userApps.find((a) => a.id === selectedApp)?.name;
+  const name = userApps.find((a) => a.code === selectedApp)?.name;
   useEffect(() => {
     if (searchParams.has("refresh")) {
       searchParams.delete("refresh");
@@ -138,13 +149,13 @@ const InstallPage = () => {
   return (
     <div className="flex flex-col items-center max-w-4xl w-full mb-16">
       <div className="rounded-full border-sky-600 border mb-12 inline-flex items-center justify-center">
-        {userApps.map(({ id, name }) => {
-          const selected = selectedApp === id;
+        {userApps.map(({ code, name, id }) => {
+          const selected = selectedApp === code;
           return (
             <div
               onClick={() => {
-                setSelectedApp(id);
-                setSearchParams({ id });
+                setSelectedApp(code);
+                setSearchParams({ id: code });
               }}
               key={id}
               className={`cursor-pointer py-2 px-4 first:rounded-l-full last:rounded-r-full ${
@@ -156,31 +167,57 @@ const InstallPage = () => {
           );
         })}
       </div>
-      <h1 className="font-bold text-3xl mb-8">Install SamePage in {name}</h1>
-      <img src={`/images/${selectedApp}.png`} width={300} height={300} />
-      <div className="rounded-md shadow-xl mb-8 flex flex-col p-10 w-full">
-        <Instruction id={selectedApp} {...INSTRUCTIONS[selectedApp]} />
-      </div>
-      <div className="italic text-sm mb-2">
-        *Note: SamePage extensions are currently under{" "}
-        <b className="font-bold">heavy</b> development and these extensions will
-        update frequently. Do not use with sensitive data.
-      </div>
-      <div className="italic text-sm mb-2 w-full">
-        A more in depth guide on how to install SamePage is available{" "}
-        <Link
-          to={`/docs/applications/${selectedApp}`}
-          className={`text-sky-500 underline hover:no-underline active:text-sky-600 active:no-underline`}
-        >
-          in our docs.
-        </Link>
-      </div>
+      {name ? (
+        <>
+          <h1 className="font-bold text-3xl mb-8">
+            Install SamePage in {name}
+          </h1>
+          <img
+            src={`/images/apps/${selectedApp}.png`}
+            width={300}
+            height={300}
+          />
+          <div className="rounded-md shadow-xl mb-8 flex flex-col p-10 w-full">
+            <Instruction code={selectedApp} {...INSTRUCTIONS[selectedApp]} />
+          </div>
+          <div className="italic text-sm mb-2">
+            *Note: SamePage extensions are currently under{" "}
+            <b className="font-bold">heavy</b> development and these extensions
+            will update frequently. Do not use with sensitive data.
+          </div>
+          <div className="italic text-sm mb-2 w-full">
+            A more in depth guide on how to install SamePage is available{" "}
+            <Link
+              to={`/docs/applications/${selectedApp}`}
+              className={`text-sky-500 underline hover:no-underline active:text-sky-600 active:no-underline`}
+            >
+              in our docs.
+            </Link>
+          </div>
+        </>
+      ) : (
+        <>
+          <h1 className="font-bold text-3xl mb-8">
+            Invalid app {name}. Please select from the list above
+          </h1>
+        </>
+      )}
     </div>
   );
 };
 
 export const handle = {
   mainClassName: "bg-gradient-to-b from-sky-50 to-inherit -mt-16 pt-32",
+};
+
+export const loader: LoaderFunction = async ({ context }) => {
+  const requestId = parseRemixContext(context).lambdaContext.awsRequestId;
+  const apps = await listApps({ requestId });
+  return {
+    userApps: apps.filter(
+      (a) => a.id && (a.live || process.env.NODE_ENV !== "production")
+    ),
+  };
 };
 
 export const headers = () => {

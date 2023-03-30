@@ -25,7 +25,6 @@ import SharedPageStatus, {
 import createHTMLObserver from "../utils/createHTMLObserver";
 import { onAppEvent } from "../internal/registerAppEventListener";
 import getActorId from "../internal/getActorId";
-import { appsById } from "../internal/apps";
 import parseActorId from "../internal/parseActorId";
 import binaryToBase64 from "../internal/binaryToBase64";
 import base64ToBinary from "../internal/base64ToBinary";
@@ -308,7 +307,8 @@ const setupSharePageWithNotebook = ({
                 notebookPageId: title,
               })
                 .then(async (res) => {
-                  if (!res.found) return Promise.reject(new UserOnlyError(res.reason));
+                  if (!res.found)
+                    return Promise.reject(new UserOnlyError(res.reason));
                   const saveDoc = (doc: Schema) =>
                     saveAndApply(title, doc)
                       .then(() => {
@@ -390,25 +390,21 @@ const setupSharePageWithNotebook = ({
             dispatchAppEvent({
               type: "log",
               id: "share-page-accepted",
-              content: `Successfully shared ${title} with ${
-                appsById[source.app].name
-              } / ${source.workspace}!`,
+              content: `Successfully shared ${title} with ${source.appName} / ${source.workspace}!`,
               intent: "success",
             });
           else if (rejected)
             dispatchAppEvent({
               type: "log",
               id: "share-page-rejected",
-              content: `Notebook ${appsById[source.app].name} / ${
-                source.workspace
-              } rejected ${title}`,
+              content: `Notebook ${source.appName} / ${source.workspace} rejected ${title}`,
               intent: "info",
             });
           else
             dispatchAppEvent({
               type: "log",
               id: "share-page-removed",
-              content: `Notebook ${appsById[source.app].name} / ${
+              content: `Notebook ${source.appName} / ${
                 source.workspace
               } invite was removed from ${title}`,
               intent: "success",
