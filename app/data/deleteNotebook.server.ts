@@ -1,4 +1,5 @@
 import {
+  accessTokens,
   messages,
   notebooks,
   onlineClients,
@@ -27,6 +28,7 @@ const deleteNotebook = async ({
       .delete(messages)
       .where(or(eq(messages.source, uuid), eq(messages.target, uuid)));
     await cxn.delete(onlineClients).where(eq(onlineClients.notebookUuid, uuid));
+    await cxn.delete(accessTokens).where(eq(accessTokens.notebookUuid, uuid));
     await cxn.delete(notebooks).where(eq(notebooks.uuid, uuid));
     await cxn.end();
     return { success: true };

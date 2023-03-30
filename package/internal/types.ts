@@ -475,10 +475,16 @@ export const zAuthHeaders = z.object({
   token: z.string(),
 });
 
+export const zOauthRequest = z.object({
+  code: z.string(),
+  state: z.string().optional(),
+});
+
 export const zOauthResponse = z.object({
   accessToken: z.string(),
   workspace: z.string(),
   suggestExtension: z.boolean().optional(),
+  redirectUrl: z.string().optional(),
 });
 
 export type SamePageAPI = {

@@ -118,14 +118,18 @@ const INSTRUCTIONS: Record<string, { steps: InstructionSteps }> = {
   github: {
     steps: [
       {
-        title: `Connect your account`,
+        title: `Install the SamePage GitHub App`,
         children: "link",
         props: {
-          href: ``,
-        }
-      }
+          href: `https://github.com/apps/samepage-network`,
+        },
+      },
+      {
+        title: "Allow access to your repositories",
+        children: "image",
+      },
     ],
-  }
+  },
 };
 
 const InstallPage = () => {
