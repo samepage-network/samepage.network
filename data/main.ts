@@ -125,17 +125,21 @@ const setupInfrastructure = async (): Promise<void> => {
         cachePolicyId: cachePolicy.id,
       });
 
+      const backgroundExtensionPaths = new Set(["message"]);
       const extensionPaths = Object.entries(
         opts.backendFunctionsByRepo
-      ).flatMap(([repo, paths]) =>
-        paths.map(
-          (p) =>
-            `extensions/${repo.replace(/-samepage$/, "")}/${p.replace(
-              /\.ts$/,
-              ""
-            )}/post`
-        )
-      );
+      ).flatMap(([repo, paths]) => {
+        const lambdas = paths.map((p) => p.replace(/\.ts$/, ""));
+        const app = repo.replace(/-samepage$/, "");
+        return lambdas
+          .filter((p) => !backgroundExtensionPaths.has(p))
+          .map((p) => `extensions/${app}/${p}/post`)
+          .concat(
+            lambdas
+              .filter((p) => backgroundExtensionPaths.has(p))
+              .map((p) => `extensions-${app}-${p}`)
+          );
+      });
       const ignorePaths = ["ws", "car", "clerk", "extensions"];
       const apiPaths = readDir("api").map((f) =>
         f.replace(/\.ts$/, "").replace(/^api\//, "")
@@ -448,6 +452,7 @@ const setupInfrastructure = async (): Promise<void> => {
             )
           ),
         },
+        dependsOn: Object.values(gatewayMethods),
         lifecycle: {
           createBeforeDestroy: true,
         },

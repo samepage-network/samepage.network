@@ -1,9 +1,11 @@
-import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
+import { APIGatewayProxyHandler } from "aws-lambda";
 import fs from "fs";
 import nodeCompile from "package/scripts/internal/nodeCompile";
 import dotenv from "dotenv";
 
-const logic = async ({ id, file, ...body }: { id: string; file: string }) => {
+export const handler: APIGatewayProxyHandler = async (event, context) => {
+  const { id = "", file = "" } = event.pathParameters || {};
+  event.pathParameters = {};
   const root = `${process.cwd()}/../${id}-samepage`;
   const outdir = `${root}/out`;
   Object.keys(require.cache)
@@ -23,24 +25,7 @@ const logic = async ({ id, file, ...body }: { id: string; file: string }) => {
     ),
   });
   const rand = Math.random();
-  const result = await import(`${outdir}/${file}.js?bust=${rand}`).then(
-    (module) => {
-      return module.handler(
-        {
-          body: JSON.stringify(body),
-          headers: {},
-          requestContext: {},
-        },
-        {}
-      );
-    }
-  );
-  return result.body && result.statusCode < 400
-    ? JSON.parse(result.body)
-    : Promise.reject(new Error(result.body));
+  return import(`${outdir}/${file}.js?bust=${rand}`).then((module) => {
+    return module.handler(event, context);
+  });
 };
-
-export const handler = createAPIGatewayProxyHandler({
-  logic,
-  allowedOrigins: [/.*/],
-});
