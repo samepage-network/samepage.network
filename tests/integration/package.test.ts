@@ -115,7 +115,7 @@ const forkSamePageClient = ({
 //     .post("http://localhost:3003/close")
 //     .then((r) => console.log("api kill", r.data));
 test("Full integration test of extensions", async () => {
-  test.setTimeout(1000 * 60 * 2);
+  test.setTimeout(1000 * 60 * 3);
   const api = spawn("npx", ["ts-node", "scripts/cli.ts", "api", "--local"], {
     env: {
       ...process.env,

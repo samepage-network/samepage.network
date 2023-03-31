@@ -452,7 +452,7 @@ const setupInfrastructure = async (): Promise<void> => {
             )
           ),
         },
-        dependsOn: Object.values(gatewayMethods),
+        dependsOn: [...Object.values(gatewayMethods), ...gatewayIntegrations],
         lifecycle: {
           createBeforeDestroy: true,
         },
