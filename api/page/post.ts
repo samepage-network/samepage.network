@@ -1039,6 +1039,17 @@ const logic = async (req: Record<string, unknown>) => {
                     eq(notebookRequests.notebookUuid, notebookUuid)
                   )
                 );
+              const hasAccess = await cxn
+                .select({
+                  uuid: tokenNotebookLinks.uuid,
+                })
+                .from(tokenNotebookLinks)
+                .where(
+                  and(
+                    eq(tokenNotebookLinks.notebookUuid, target),
+                    eq(tokenNotebookLinks.tokenUuid, tokenUuid)
+                  )
+                );
               const messageRequest = (id: string) =>
                 messageNotebook({
                   source: notebookUuid,
@@ -1047,7 +1058,7 @@ const logic = async (req: Record<string, unknown>) => {
                   data: {
                     request,
                     id,
-                    label,
+                    title: label,
                   },
                   requestId,
                 });
@@ -1059,19 +1070,22 @@ const logic = async (req: Record<string, unknown>) => {
                   hash,
                   uuid,
                   label,
+                  status: hasAccess.length ? "accepted" : "pending",
                 });
-                await messageNotebook({
-                  source: notebookUuid,
-                  target,
-                  operation: "REQUEST_DATA",
-                  data: {
-                    request: JSON.stringify(request, null, 2),
-                    uuid,
-                    title: label,
-                  },
-                  requestId,
-                  metadata: ["title", "request"],
-                });
+                await (hasAccess.length
+                  ? messageRequest(target)
+                  : messageNotebook({
+                      source: notebookUuid,
+                      target,
+                      operation: "REQUEST_DATA",
+                      data: {
+                        request: JSON.stringify(request, null, 2),
+                        uuid,
+                        title: label,
+                      },
+                      requestId,
+                      metadata: ["title", "request"],
+                    }));
                 return [target, null];
               } else if (requestRecord.status === "rejected") {
                 return [target, "rejected"];

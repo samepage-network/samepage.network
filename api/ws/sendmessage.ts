@@ -39,28 +39,19 @@ const dataHandler = async (
   const clientId = event.requestContext?.connectionId || "";
   debug("received operation", operation, "from client", clientId);
   if (operation === "AUTHENTICATION") {
-    const propArgs = props as
-      | { app: AppId; workspace: string }
-      | { notebookUuid: string; token: string };
+    const propArgs = props as { notebookUuid: string; token: string };
     const cxn = await getMysql(requestId);
-    "notebookUuid" in propArgs
-      ? await authenticateNotebook({ ...propArgs, requestId })
-      : await Promise.resolve();
-    const notebookUuid =
-      "notebookUuid" in propArgs
-        ? propArgs["notebookUuid"]
-        : await getNotebookUuids({
-            app: propArgs.app,
-            workspace: propArgs.workspace,
-            requestId,
-          }).then((n) => n[0]);
+    const { notebookUuid } = await authenticateNotebook({
+      ...propArgs,
+      requestId,
+    });
 
     // one downside of inserting here instead of onconnect is the clock drift on created date
     // a client could theoretically connect without authenticate and would get free usage
     await cxn.insert(onlineClients).values({
       id: clientId,
       createdDate: new Date(),
-      notebookUuid: notebookUuid,
+      notebookUuid,
     });
     await postToConnection({
       ConnectionId: clientId,
