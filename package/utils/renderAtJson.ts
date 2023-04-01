@@ -1,4 +1,3 @@
-import { appsById } from "../internal/apps";
 import { app } from "../internal/registry";
 import type { Annotation, InitialSchema } from "../internal/types";
 
@@ -42,10 +41,7 @@ const renderAtJson = ({
               // @ts-ignore
               attributes: c.annotation.attributes || {},
               content: annotatedContent,
-              appAttributes:
-                c.annotation.appAttributes?.[
-                  appsById[app].name.toLowerCase()
-                ] || {},
+              appAttributes: c.annotation.appAttributes?.[app] || {},
               index: c.index,
             })
           : { prefix: "", suffix: "" };

@@ -14,7 +14,7 @@ import apiClient from "../internal/apiClient";
 import { OverlayProps } from "../internal/types";
 import React, { Fragment, useCallback } from "react";
 import { app, appRoot, workspace } from "../internal/registry";
-import { appsById } from "../internal/apps";
+import { appsByCode } from "../internal/apps";
 
 const PAGES = ["WELCOME", "SETUP", "CONNECT", "START", "COMPLETE"] as const;
 type Page = typeof PAGES[number];
@@ -306,8 +306,8 @@ const Onboarding = ({
                 </p>
                 <p className="text-gray-700 flex-grow">
                   Use your existing SamePage account to generate a new Notebook
-                  Universal Id for this {appsById[app].name}{" "}
-                  {appsById[app].workspaceLabel}.
+                  Universal Id for this {appsByCode[app].name}{" "}
+                  {appsByCode[app].workspaceLabel}.
                 </p>
                 <Button
                   text={"Add Another Notebook"}
@@ -324,7 +324,7 @@ const Onboarding = ({
                   your Notebook.{" "}
                   <Tooltip
                     popoverClassName="w-96"
-                    content={`A 'Notebook' is a SamePage concept represented by a workspace in a given app. For example, this ${appsById[app].name} ${appsById[app].workspaceLabel} is an example of a Notebook.`}
+                    content={`A 'Notebook' is a SamePage concept represented by a workspace in a given app. For example, this ${appsByCode[app].name} ${appsByCode[app].workspaceLabel} is an example of a Notebook.`}
                   >
                     <Icon icon={"help"} size={IconSize.STANDARD * 0.75} />
                   </Tooltip>

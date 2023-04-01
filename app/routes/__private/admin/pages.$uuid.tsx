@@ -16,7 +16,6 @@ import TextInput from "~/components/TextInput";
 import Select from "~/components/Select";
 import inviteNotebookToPage from "~/data/inviteNotebookToPage.server";
 import getNotebookUuids from "~/data/getNotebookUuids.server";
-import { zNotebook } from "package/internal/types";
 import BaseInput from "~/components/BaseInput";
 import { z } from "zod";
 import listApps from "~/data/listApps.server";
@@ -24,7 +23,7 @@ import listApps from "~/data/listApps.server";
 const SinglePagePage = () => {
   const { notebooks, pages, apps } = useLoaderData<
     Awaited<ReturnType<typeof getSharedPageByUuid>> & {
-      apps: { id: number; label: string }[];
+      apps: { id: string; label: string }[];
     }
   >();
   const [chosenNotebook, setChosenNotebook] = useState(0);
@@ -150,7 +149,7 @@ export const loader: LoaderFunction = (args) => {
     );
     return {
       ...data,
-      apps: apps.map((a) => ({ ...a, label: a.name })),
+      apps: apps.map((a) => ({ id: a.code, label: a.name })),
     };
   });
 };
@@ -167,10 +166,13 @@ export const action: ActionFunction = async (args) => {
           );
     },
     POST: async ({ context: { requestId }, data, params }) => {
-      const { app, workspace, notebookPageId, notebookUuid } = zNotebook
-        .merge(
-          z.object({ notebookUuid: z.string(), notebookPageId: z.string() })
-        )
+      const { app, workspace, notebookPageId, notebookUuid } = z
+        .object({
+          notebookUuid: z.string(),
+          notebookPageId: z.string(),
+          app: z.string(),
+          workspace: z.string(),
+        })
         .parse(
           Object.fromEntries(Object.entries(data).map(([k, [v]]) => [k, v]))
         );

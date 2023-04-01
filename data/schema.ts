@@ -138,8 +138,8 @@ export const notebookRequests = mysqlTable(
   {
     uuid: primaryUuid(),
     hash: varchar("hash", { length: 256 }).notNull().default(""),
-    notebookUuid: uuid("notebook_uuid"),
-    target: uuid("target"),
+    notebookUuid: uuid("notebook_uuid").notNull(),
+    target: uuid("target").notNull(),
     label: varchar("label", { length: 256 }).notNull().default(""),
     status: mysqlEnum("status", ["pending", "accepted", "rejected"])
       .notNull()

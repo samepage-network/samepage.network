@@ -8,9 +8,8 @@ import { Operation } from "./messages";
 
 export type App = (typeof APPS)[number];
 export type AppId = App["id"];
-export type Apps = Record<AppId, Omit<App, "id">>;
 
-export const zNotebook = z.object({
+const zNotebook = z.object({
   workspace: z.string(),
   app: z.union([
     z.literal(APPS[0].id),
@@ -343,20 +342,20 @@ export type SendNotebookRequest = (
 ) => Promise<unknown>;
 
 export const zUnauthenticatedBody = z.discriminatedUnion("method", [
-  z
-    .object({
-      method: z.literal("create-notebook"),
-      email: z.string(),
-      password: z.string(),
-    })
-    .merge(zNotebook),
-  z
-    .object({
-      method: z.literal("add-notebook"),
-      email: z.string(),
-      password: z.string(),
-    })
-    .merge(zNotebook),
+  z.object({
+    method: z.literal("create-notebook"),
+    email: z.string(),
+    password: z.string(),
+    app: z.string().or(z.number()),
+    workspace: z.string(),
+  }),
+  z.object({
+    method: z.literal("add-notebook"),
+    email: z.string(),
+    password: z.string(),
+    app: z.string().or(z.number()),
+    workspace: z.string(),
+  }),
   z.object({
     method: z.literal("connect-device"),
     email: z.string(),

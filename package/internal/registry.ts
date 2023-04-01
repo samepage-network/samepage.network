@@ -1,7 +1,7 @@
 import type { default as defaultSettings } from "../utils/defaultSettings";
 import React from "react";
 import { v4 } from "uuid";
-import type { AddCommand, RemoveCommand, AppId, RenderOverlay } from "./types";
+import type { AddCommand, RemoveCommand, RenderOverlay } from "./types";
 import defaultGetSetting from "../utils/defaultGetSetting";
 import defaultSetSetting from "../utils/defaultSetSetting";
 
@@ -66,7 +66,7 @@ export let removeCommand = defaultRemoveCommand;
 export let renderOverlay = defaultRenderOverlay;
 export let appRoot: HTMLElement | undefined =
   typeof document === "undefined" ? undefined : document.body;
-export let app: AppId = 0;
+export let app: string = "samepage";
 export let workspace = "Main";
 export let getSetting = defaultGetSetting;
 export let setSetting = defaultSetSetting;
@@ -81,7 +81,7 @@ const setupRegistry = ({
   getSetting: _getSetting,
   setSetting: _setSetting,
 }: {
-  app?: AppId;
+  app?: string;
   workspace?: string;
   addCommand?: AddCommand;
   removeCommand?: RemoveCommand;
@@ -90,7 +90,7 @@ const setupRegistry = ({
   getSetting?: (s: typeof defaultSettings[number]["id"]) => string;
   setSetting?: (s: typeof defaultSettings[number]["id"], v: string) => void;
 }) => {
-  if (typeof _app !== "undefined") app = _app;
+  if (_app) app = _app;
   if (_workspace) workspace = _workspace;
   if (_addCommand) addCommand = _addCommand;
   if (_removeCommand) removeCommand = _removeCommand;

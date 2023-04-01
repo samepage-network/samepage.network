@@ -71,12 +71,9 @@ const APPS: App[] = [
   },
 ].map((a) => ({ ...a, code: a.name.toLowerCase() }));
 
-export const appsById = Object.fromEntries(APPS.map(({ id, ...a }) => [id, a]));
-export const appIdByName = Object.fromEntries(
-  APPS.map(({ id, name }) => [name, id] as const)
-);
+export const appsById = Object.fromEntries(APPS.map(({ id, ...a }) => [id, a])) as Record<number, App>;
 export const appsByCode = Object.fromEntries(
-  APPS.map((a) => [a.name.toLowerCase(), a] as const)
+  APPS.map(({ code, ...a }) => [code, a])
 );
 
 export default APPS;

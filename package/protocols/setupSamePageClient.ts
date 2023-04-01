@@ -13,7 +13,6 @@ import type {
   JSONData,
   SamePageAPI,
 } from "../internal/types";
-import { appIdByName } from "../internal/apps";
 import setupRegistry from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
 import setupWsFeatures from "../internal/setupWsFeatures";
@@ -152,7 +151,7 @@ const setupSamePageClient = ({
     renderOverlay,
     getSetting,
     setSetting,
-    app: app ? appIdByName[app] : undefined,
+    app: app ? app.toLowerCase() : undefined,
     workspace,
     appRoot,
   });
