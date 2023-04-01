@@ -341,6 +341,13 @@ export type SendNotebookRequest = (
   }
 ) => Promise<unknown>;
 
+export type PostToAppBackend = <
+  T extends Record<string, unknown> = Record<string, never>
+>(
+  path: string,
+  data: Record<string, unknown>
+) => Promise<T>;
+
 export const zUnauthenticatedBody = z.discriminatedUnion("method", [
   z.object({
     method: z.literal("create-notebook"),
@@ -490,9 +497,12 @@ export type SamePageAPI = {
   addNotebookListener: AddNotebookListener;
   removeNotebookListener: RemoveNotebookListener;
   sendToNotebook: SendToNotebook;
-  sendNotebookRequest: SendNotebookRequest;
-  listNotebooks: ListNotebooks;
+
   addNotebookRequestListener: AddNotebookRequestListener;
+  sendNotebookRequest: SendNotebookRequest;
+
+  listNotebooks: ListNotebooks;
+  postToAppBackend: PostToAppBackend;
 };
 
 declare global {
