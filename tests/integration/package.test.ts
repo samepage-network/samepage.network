@@ -10,7 +10,7 @@ import deleteNotebook from "~/data/deleteNotebook.server";
 import { JSDOM } from "jsdom";
 import getRandomNotebookPageId from "../utils/getRandomNotebookPageId";
 import getRandomAccount from "../utils/getRandomAccount";
-import debug from "debug";
+import debug from "package/utils/debug";
 
 let cleanup: () => Promise<unknown>;
 const accounts: { email: string; password: string }[] = [];
@@ -71,14 +71,14 @@ const forkSamePageClient = ({
     const clientCallbacks: {
       [k in ResponseSchema as k["type"]]: (data: k) => void;
     } = {
-      log: ({ data }) => log(`Client ${workspace}: ${data}`),
+      log: ({ data }) => log(`${data}`),
       error: ({ data }) => {
         expectedToClose = true;
         console.error(`Client ${workspace}: ERROR ${data}`);
         throw new Error(`Client ${workspace} threw an unexpected error`);
       },
       ready: ({ uuid }) => {
-        log(`Client ${workspace} has uuid ${uuid} on process ${client.pid}`);
+        log(`has uuid ${uuid} on process ${client.pid}`);
         return resolve({ ...clientApi, uuid });
       },
       response: (m) => {
@@ -98,13 +98,13 @@ const forkSamePageClient = ({
       clientCallbacks[type]?.(data);
     });
     client.on("exit", (e) => {
-      console.log(`Client ${workspace}: exited (${e})`);
+      log(`exited (${e})`);
       if (!expectedToClose) {
         throw new Error(`Client ${workspace} closed before we expected it to.`);
       }
     });
     client.on("close", (e) => {
-      console.log(`Client ${workspace}: closed (${e})`);
+      log(`closed (${e})`);
       resolveDisconnect();
     });
   });
@@ -120,7 +120,6 @@ test("Full integration test of extensions", async () => {
     env: {
       ...process.env,
       NODE_ENV: "development",
-      DEBUG: undefined,
       // Uncomment below for testing without WIFI
       // CLERK_API_URL: "http://localhost:3003/clerk",
       // CLERK_DATA_FILE: `data/clerk/${v4()}.json`,
@@ -132,13 +131,12 @@ test("Full integration test of extensions", async () => {
   const log = debug("API");
   api.stdout.on("data", (s) => {
     spawnCallbacks.filter((c) => c.test.test(s)).forEach((c) => c.callback());
-    log(s);
+    log(s.toString());
   });
   const apiReady = new Promise<void>((resolve) =>
     spawnCallbacks.push({ test: /API server listening/, callback: resolve })
   );
   api.stderr.on("data", (s) => {
-    if (/Warning: got packets out of order/.test(s)) return;
     console.error(`API Error: ${s as string}`);
   });
 
@@ -588,6 +586,9 @@ test("Full integration test of extensions", async () => {
       type: "route",
       routes: [{ key: "method", value: "get", response: { hello } }],
     });
+    const requestDataNotificationPromise = client2.send({
+      type: "waitForNotification",
+    });
     const request1 = await client1
       .send({
         type: "request",
@@ -596,6 +597,12 @@ test("Full integration test of extensions", async () => {
       })
       .then((r) => r as { cache: unknown; id: string });
     expect(request1.cache).toEqual({});
+    const requestDataNotification = await requestDataNotificationPromise;
+    await client2.send({
+      type: "accept-request",
+      data: (requestDataNotification as Notification).data,
+      notificationUuid: (notification as Notification).uuid,
+    });
     const response1 = await client1.send({
       type: "response",
       requestId: request1.id,

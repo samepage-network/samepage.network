@@ -14,7 +14,7 @@ import WebSocket, { Server as WebSocketServer } from "ws";
 import readDir from "../../package/scripts/internal/readDir";
 import appPath from "../../package/scripts/internal/appPath";
 import { getOpts } from "../../package/scripts/internal/nodeCompile";
-import debugMod from "debug";
+import debugMod from "../../package/utils/debug";
 import fs from "fs";
 import crypto from "crypto";
 

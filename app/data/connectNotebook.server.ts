@@ -1,9 +1,8 @@
 import { ConflictError } from "~/data/errors.server";
 import getMysql from "~/data/mysql.server";
-import type { Notebook } from "package/internal/types";
 import getOrGenerateNotebookUuid from "./getOrGenerateNotebookUuid.server";
 import getQuota from "./getQuota.server";
-import { notebooks, tokenNotebookLinks } from "data/schema";
+import { apps, notebooks, tokenNotebookLinks } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
 
 const connectNotebook = async ({
@@ -14,8 +13,18 @@ const connectNotebook = async ({
 }: {
   requestId: string;
   tokenUuid: string;
-} & Notebook) => {
+  app: string | number;
+  workspace: string;
+}) => {
   const cxn = await getMysql(requestId);
+  const appId =
+    typeof app === "number"
+      ? app
+      : await cxn
+          .select({ id: apps.id })
+          .from(apps)
+          .where(eq(apps.code, app))
+          .then((r) => r[0].id);
   const tokenLinks = await cxn
     .select({
       uuid: tokenNotebookLinks.uuid,
@@ -27,7 +36,7 @@ const connectNotebook = async ({
     .leftJoin(notebooks, eq(notebooks.uuid, tokenNotebookLinks.notebookUuid))
     .where(eq(tokenNotebookLinks.tokenUuid, tokenUuid));
   const existingTokenLink = tokenLinks.find(
-    (tl) => tl.app === app && tl.workspace === workspace
+    (tl) => tl.app === appId && tl.workspace === workspace
   );
   if (existingTokenLink) {
     return { notebookUuid: existingTokenLink.notebook_uuid };

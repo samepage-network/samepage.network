@@ -35,6 +35,11 @@ const processMessageSchema = z.discriminatedUnion("type", [
     notificationUuid: z.string(),
   }),
   z.object({
+    type: z.literal("accept-request"),
+    data: z.record(z.string()),
+    notificationUuid: z.string(),
+  }),
+  z.object({
     type: z.literal("setCurrentNotebookPageId"),
     notebookPageId: z.string(),
   }),
@@ -223,7 +228,7 @@ const createTestSamePageClient = async ({
       addCommand: ({ label, callback }) => (commands[label] = callback),
       removeCommand: ({ label }) => delete commands[label],
       workspace,
-      app: "SamePage",
+      app: "samepage",
     });
   const {
     unload: unloadSharePage,
@@ -296,6 +301,13 @@ const createTestSamePageClient = async ({
             data: {
               title: message.notebookPageId,
             },
+            messageUuid: message.notificationUuid,
+          }).then(() => sendResponse({ success: true }));
+        } else if (message.type === "accept-request") {
+          callNotificationAction({
+            operation: "REQUEST_DATA",
+            label: "accept",
+            data: message.data,
             messageUuid: message.notificationUuid,
           }).then(() => sendResponse({ success: true }));
         } else if (message.type === "read") {
@@ -463,6 +475,10 @@ const createTestSamePageClient = async ({
           sendResponse(data);
         } else if (message.type === "route") {
           addNotebookRequestListener(({ request, sendResponse }) => {
+            onMessage({
+              type: "log",
+              data: `Was requested ${JSON.stringify(request)}`,
+            });
             const route = message.routes.find(
               (rte) => request[rte.key] === rte.value
             );
@@ -478,6 +494,10 @@ const createTestSamePageClient = async ({
               request: message.request,
               targets: [message.target],
               onResponse: (data) => {
+                onMessage({
+                  type: "log",
+                  data: `Got response ${id}, is cached: ${cached}`,
+                });
                 if (cached) {
                   responsesToSend[id] = data;
                 } else {
@@ -489,14 +509,26 @@ const createTestSamePageClient = async ({
           });
           sendResponse({ cache: response[message.target] || {}, id });
         } else if (message.type === "response") {
-          const data = await new Promise<Record<string, unknown>>((resolve) => {
-            const interval = setInterval(() => {
-              if (responsesToSend[message.requestId]) {
+          const data = await new Promise<Record<string, unknown>>(
+            (resolve, reject) => {
+              const interval = setInterval(() => {
+                if (responsesToSend[message.requestId]) {
+                  clearInterval(interval);
+                  resolve(responsesToSend[message.requestId]);
+                }
+              }, 100);
+              setTimeout(() => {
                 clearInterval(interval);
-                resolve(responsesToSend[message.requestId]);
-              }
-            }, 100);
-          });
+                reject(
+                  new Error(
+                    `Timed out waiting for response.\nCurrent responses: ${JSON.stringify(
+                      responsesToSend
+                    )}\nLooking for: ${message.requestId}`
+                  )
+                );
+              }, 10000);
+            }
+          );
           sendResponse(data);
         } else {
           onMessage({

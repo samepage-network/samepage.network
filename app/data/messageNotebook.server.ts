@@ -14,6 +14,9 @@ import {
 } from "data/schema";
 import { eq, desc } from "drizzle-orm/expressions";
 import { Lambda } from "@aws-sdk/client-lambda";
+import debug from "package/utils/debug";
+
+const log = debug("message-notebook");
 
 const messageNotebook = ({
   source,
@@ -68,6 +71,7 @@ const messageNotebook = ({
             .then(() => false)
             .catch(() => false);
         });
+      log(source, "messaged", target, "as online", online, "with", operation);
     } else {
       const [endpoint] = await cxn
         .select({ accessToken: accessTokens.value, path: apps.code })

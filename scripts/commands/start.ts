@@ -5,9 +5,9 @@ import { homedir } from "os";
 import path from "path";
 import fs from "fs";
 import { spawn } from "child_process";
-import debugMod from "debug";
+import debug from "../../package/utils/debug";
 
-const debug = debugMod("ngrok");
+const log = debug("ngrok");
 
 const start = async ({}: {} = {}) => {
   const configPath = path.join(homedir(), ".ngrok2", "ngrok.yml");
@@ -27,7 +27,7 @@ const start = async ({}: {} = {}) => {
   fs.writeFileSync(configPath, yaml.stringify(config));
   setTimeout(() => {
     const proc = spawn("ngrok", ["start", "--all", "--log=stdout"]);
-    proc.stdout.on("data", (data) => debug(data));
+    proc.stdout.on("data", (data) => log(data));
     proc.stdout.on("error", (data) => console.error(data));
   }, 5000);
   return Promise.all([api({ local: true }), dev({ local: true })]).then(

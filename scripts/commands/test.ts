@@ -9,7 +9,7 @@ const test = ({
   file,
   g,
 }: { debug?: boolean; project?: string; file?: string; g?: string } = {}) => {
-  process.env.DEBUG = debug ? "true" : process.env.DEBUG;
+  process.env.DEBUG = debug ? "*,-pw:*,-babel,-babel:*,-express:*,-follow-redirects,-jwks" : process.env.DEBUG;
   const args = [
     "c8",
     "--reporter=lcov",
@@ -41,9 +41,7 @@ const test = ({
     stdio: "inherit" as const,
     env: process.env,
   };
-  const proc = debug
-    ? spawn("npx", ["--inspect"].concat(args), options)
-    : spawn("npx", args, options);
+  const proc = spawn("npx", args, options);
   return new Promise<number>((resolve, reject) => {
     proc.on("exit", (c) => {
       resolve(c === null ? 1 : c);

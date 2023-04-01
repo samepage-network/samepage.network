@@ -16,7 +16,7 @@ import authenticateNotebook from "~/data/authenticateNotebook.server";
 import { Operation } from "package/internal/messages";
 import { ongoingMessages, onlineClients } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
-import debugMod from "debug";
+import debugMod from "package/utils/debug";
 
 export type WSEvent = Pick<APIGatewayProxyEvent, "body"> & {
   requestContext: Pick<APIGatewayProxyEvent["requestContext"], "connectionId">;

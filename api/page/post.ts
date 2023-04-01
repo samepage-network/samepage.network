@@ -53,7 +53,9 @@ import {
   tokens,
 } from "data/schema";
 import { z } from "zod";
+import debug from "package/utils/debug";
 
+const log = debug("page");
 const zhandlerBody = zUnauthenticatedBody.or(
   zAuthenticatedBody.and(zAuthHeaders)
 );
@@ -170,6 +172,7 @@ const logic = async (req: Record<string, unknown>) => {
     );
   const { requestId, ...args } = result.data;
   const cxn = await getMysql(requestId);
+  log("received method", args.method);
   try {
     if (args.method === "create-notebook") {
       const { app, workspace, email, password } = args;
