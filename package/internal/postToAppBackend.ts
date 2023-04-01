@@ -1,5 +1,5 @@
 import { apiPost } from "./apiClient";
-import { app } from "./registry";
+import { app, getSetting } from "./registry";
 import { PostToAppBackend } from "./types";
 
 const postToAppBackend: PostToAppBackend = <
@@ -7,6 +7,13 @@ const postToAppBackend: PostToAppBackend = <
 >(
   path: string,
   data: Record<string, unknown>
-) => apiPost<T>(`extensions/${app}/${path}`, data);
+) =>
+  apiPost<T>({
+    path: `extensions/${app}/${path}`,
+    data,
+    authorization: `Basic ${Buffer.from(
+      `${getSetting("uuid")}:${getSetting("token")}`
+    ).toString("base64")}`,
+  });
 
 export default postToAppBackend;
