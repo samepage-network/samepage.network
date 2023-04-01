@@ -6,7 +6,7 @@ import getPackageName from "./internal/getPackageName";
 import axios from "axios";
 import mimeTypes from "mime-types";
 import path from "path";
-import { Lambda, GetFunctionResponse } from "@aws-sdk/client-lambda";
+import { Lambda } from "@aws-sdk/client-lambda";
 import archiver from "archiver";
 import crypto from "crypto";
 import esbuild from "esbuild";
@@ -116,32 +116,6 @@ const publish = async ({
     const options = {
       date: new Date("01-01-1970"),
     };
-    const getFunction = ({
-      FunctionName,
-      trial = 0,
-    }: {
-      FunctionName: string;
-      trial?: number;
-    }): Promise<GetFunctionResponse> =>
-      lambda
-        .getFunction({
-          FunctionName,
-        })
-        .catch((e) => {
-          if (trial < 100) {
-            console.warn(
-              `Function ${FunctionName} not found on trial ${trial} due to ${e}. Trying again...`
-            );
-            return new Promise((resolve) =>
-              setTimeout(
-                () => resolve(getFunction({ FunctionName, trial: trial + 1 })),
-                10000
-              )
-            );
-          } else {
-            throw e;
-          }
-        });
     const id = destPath.replace(/-samepage$/, "");
     await Promise.all(
       backendFunctions.map((f) => {
@@ -149,7 +123,7 @@ const publish = async ({
         console.log(`Zipping ${f}...`);
 
         zip.file(`${backendOutdir}/${f}.js`, {
-          name: `extensions-${id}-${f}_post.js`,
+          name: `extensions-${id}-${f.replace("/", "_")}.js`,
           ...options,
         });
         const shasum = crypto.createHash("sha256");
@@ -163,12 +137,24 @@ const publish = async ({
             .on("end", () => {
               console.log(`Zip of ${f} complete (${data.length}).`);
               const sha256 = shasum.digest("base64");
-              const FunctionName = `samepage-network_extensions-${id}-${f}_post`;
-              getFunction({
-                FunctionName,
-              })
+              const FunctionName = `samepage-network_extensions-${id}-${f.replace(
+                "/",
+                "_"
+              )}`;
+              lambda
+                .getFunction({
+                  FunctionName,
+                })
+                .catch((e) => {
+                  console.warn(
+                    `Function ${FunctionName} not found due to ${e}.`
+                  );
+                  return false as const;
+                })
                 .then((l) => {
-                  if (sha256 === l.Configuration?.CodeSha256) {
+                  if (!l) {
+                    return `Skipping...`;
+                  } else if (sha256 === l.Configuration?.CodeSha256) {
                     return `No need to upload ${FunctionName}, shas match.`;
                   } else {
                     return lambda

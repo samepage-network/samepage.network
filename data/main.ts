@@ -125,18 +125,17 @@ const setupInfrastructure = async (): Promise<void> => {
         cachePolicyId: cachePolicy.id,
       });
 
-      const backgroundExtensionPaths = new Set(["message"]);
       const extensionPaths = Object.entries(
         opts.backendFunctionsByRepo
       ).flatMap(([repo, paths]) => {
         const lambdas = paths.map((p) => p.replace(/\.ts$/, ""));
         const app = repo.replace(/-samepage$/, "");
         return lambdas
-          .filter((p) => !backgroundExtensionPaths.has(p))
-          .map((p) => `extensions/${app}/${p}/post`)
+          .filter((p) => p.includes("/"))
+          .map((p) => `extensions/${app}/${p}`)
           .concat(
             lambdas
-              .filter((p) => backgroundExtensionPaths.has(p))
+              .filter((p) => !p.includes("/"))
               .map((p) => `extensions-${app}-${p}`)
           );
       });
@@ -666,26 +665,52 @@ const setupInfrastructure = async (): Promise<void> => {
   const backendFunctionsByRepo = await repos
     .reduce(
       (p, c) =>
-        p.then((prev) =>
-          octokit.repos
+        p.then(async (prev) => {
+          const paths = [];
+          const apiSha = await octokit.repos
+            .getContent({
+              owner: "samepage-network",
+              repo: c.name,
+              path: ".",
+            })
+            .then((r) =>
+              Array.isArray(r.data)
+                ? r.data.find((f) => f.name === "api" && f.type === "dir")?.sha
+                : null
+            );
+          if (apiSha) {
+            const apiPaths = await octokit.git
+              .getTree({
+                owner: "samepage-network",
+                repo: c.name,
+                tree_sha: apiSha,
+                recursive: "true",
+              })
+              .then((r) =>
+                r.data.tree
+                  .map((t) => t.path)
+                  .filter((t): t is string => !!t && /\.ts$/.test(t))
+              );
+            paths.push(...apiPaths);
+          }
+          await octokit.repos
             .getContent({
               repo: c.name,
               owner: "samepage-network",
               path: "src/functions",
             })
-            .then((r) =>
-              Array.isArray(r.data) && r.data.length
-                ? [
-                    ...prev,
-                    [c.name, r.data.map((d) => d.name)] as [string, string[]],
-                  ]
-                : prev
-            )
-            .catch((e) => {
-              if (e.status === 404) return prev;
-              else return Promise.reject(e);
+            .then((r) => {
+              if (Array.isArray(r.data) && r.data.length) {
+                paths.push(...r.data.map((d) => d.name));
+              }
             })
-        ),
+            .catch((e) => {
+              if (e.status !== 404) throw e;
+            });
+          return paths.length
+            ? [...prev, [c.name, paths] as [string, string[]]]
+            : prev;
+        }),
       Promise.resolve<[string, string[]][]>([])
     )
     .then((entries) => Object.fromEntries(entries));

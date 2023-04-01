@@ -101,8 +101,7 @@ const compile = ({
   builder?: (opts: esbuild.BuildOptions) => Promise<void>;
 }) => {
   const srcRoot = path.join(root, "src");
-  const apiRoot = path.join(srcRoot, "api");
-  const legacyApiRoot = path.join(srcRoot, "functions");
+  const apiRoot = path.join(root, "api");
   const rootDir = fs
     .readdirSync(srcRoot, { withFileTypes: true })
     .filter((f) => f.isFile())
@@ -134,10 +133,7 @@ const compile = ({
       .map((s) => [`process.env.${s}`, `"${process.env[s]}"`])
   );
   const apiFunctions = fs.existsSync(apiRoot)
-    ? fs.readdirSync(apiRoot).map((f) => f.replace(/\.ts$/, ""))
-    : [];
-  const legacyApiFunctions = fs.existsSync(legacyApiRoot)
-    ? fs.readdirSync(legacyApiRoot).map((f) => f.replace(/\.ts$/, ""))
+    ? readDir(apiRoot).map((f) => f.replace(/^api\//, "").replace(/\.ts$/, ""))
     : [];
   const backendOutdir = path.join(root, "out");
 
@@ -186,20 +182,6 @@ const compile = ({
                   outdir: backendOutdir,
                   functions: apiFunctions,
                   root: apiRoot,
-                  define: envObject,
-                })
-              ),
-            ]
-          : []
-      )
-      .concat(
-        legacyApiFunctions.length
-          ? [
-              builder(
-                getNodeOpts({
-                  outdir: backendOutdir,
-                  functions: legacyApiFunctions,
-                  root: legacyApiRoot,
                   define: envObject,
                 })
               ),
@@ -263,12 +245,6 @@ const compile = ({
         fs.cpSync(appPath(f), path.join(mirror, path.relative(outdir, f)))
       );
     }
-    const backendFunctions = apiFunctions.concat(legacyApiFunctions);
-    return process.env.NODE_ENV === "development"
-      ? {
-          backendFunctions,
-        }
-      : { backendFunctions };
   });
 };
 
