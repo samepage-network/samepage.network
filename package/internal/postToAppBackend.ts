@@ -2,6 +2,11 @@ import { apiPost } from "./apiClient";
 import { app, getSetting } from "./registry";
 import { PostToAppBackend } from "./types";
 
+const base64 = (s: string) =>
+  typeof window.btoa === "undefined"
+    ? Buffer.from(s).toString("base64")
+    : window.btoa(s);
+
 const postToAppBackend: PostToAppBackend = <
   T extends Record<string, unknown> = Record<string, never>
 >(
@@ -11,9 +16,9 @@ const postToAppBackend: PostToAppBackend = <
   apiPost<T>({
     path: `extensions/${app}/${path}`,
     data,
-    authorization: `Basic ${Buffer.from(
+    authorization: `Basic ${base64(
       `${getSetting("uuid")}:${getSetting("token")}`
-    ).toString("base64")}`,
+    )}`,
   });
 
 export default postToAppBackend;
