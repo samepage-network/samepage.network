@@ -1,7 +1,7 @@
 import APPS from "./apps";
 import type Automerge from "automerge";
 import type React from "react";
-import { z } from "zod";
+import { z, ZodType } from "zod";
 import type { CID } from "multiformats";
 import type { default as defaultSettings } from "../utils/defaultSettings";
 import { Operation } from "./messages";
@@ -492,6 +492,12 @@ export const zOauthResponse = z.object({
   suggestExtension: z.boolean().optional(),
   redirectUrl: z.string().optional(),
 });
+
+export type BackendExtensionRequest<T extends ZodType<any, any, any>> =
+  z.infer<T> & {
+    requestId: string;
+    authorization?: string;
+  };
 
 export type SamePageAPI = {
   addNotebookListener: AddNotebookListener;
