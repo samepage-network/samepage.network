@@ -470,6 +470,10 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     method: z.literal("mark-message-read"),
     messageUuid: z.string(),
   }),
+  z.object({
+    method: z.literal("save-access-token"),
+    accessToken: z.string(),
+  }),
 ]);
 
 export const zBaseHeaders = z.object({

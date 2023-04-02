@@ -15,11 +15,6 @@ const logic = ({
     .then((module) => {
       return module.handler(Payload, { awsRequestId: requestId });
     })
-    .then((response) => {
-      return {
-        Payload: JSON.stringify(response),
-      };
-    })
     .catch((e) => {
       // TODO: One issue is that we are not being caught in the `FunctionError` param
       // of invoke, and instead are triggering invoke().catch() 

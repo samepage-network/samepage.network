@@ -41,6 +41,7 @@ import { encode } from "@ipld/dag-cbor";
 import clerk, { users } from "@clerk/clerk-sdk-node";
 import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
 import {
+  accessTokens,
   apps,
   clientSessions,
   messages,
@@ -1278,6 +1279,26 @@ const logic = async (req: Record<string, unknown>) => {
           .update(messages)
           .set({ marked: 1 })
           .where(eq(messages.uuid, messageUuid));
+        await cxn.end();
+        return { success: true };
+      }
+      case "save-access-token": {
+        const { accessToken } = args;
+        // console.log("accessToken", accessToken);
+        const userId = await cxn
+          .select({ id: tokens.userId })
+          .from(tokens)
+          .where(eq(tokens.uuid, tokenUuid))
+          .then((r) => r[0]?.id);
+        await cxn
+          .insert(accessTokens)
+          .values({
+            uuid: v4(),
+            notebookUuid,
+            value: accessToken,
+            userId,
+          })
+          .onDuplicateKeyUpdate({ set: { value: accessToken } });
         await cxn.end();
         return { success: true };
       }
