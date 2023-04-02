@@ -1218,16 +1218,15 @@ const logic = async (req: Record<string, unknown>) => {
         await cxn.end();
         return { success: true };
       }
-      // TODO: Currently unused
       case "get-ipfs-cid": {
         const { notebookPageId } = args;
-        const { cid } = await getSharedPage({
+        const { cid, linkUuid } = await getSharedPage({
           notebookUuid,
           notebookPageId,
           requestId,
         });
         await cxn.end();
-        return { cid };
+        return { cid, uuid: linkUuid };
       }
       case "get-shared-page": {
         const { notebookPageId } = args;

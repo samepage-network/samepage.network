@@ -3,7 +3,7 @@ import { NotFoundError } from "~/data/errors.server";
 import getMysql from "~/data/mysql.server";
 import { eq, and } from "drizzle-orm/expressions";
 
-type SharedPage = { uuid: string; cid: string };
+type SharedPage = { uuid: string; cid: string; linkUuid: string };
 type SharedPageInput = {
   notebookPageId: string;
   requestId: string;
@@ -22,7 +22,11 @@ const getSharedPage = <T extends SharedPageInput & { safe?: true }>({
 }: T): GetSharedPage<T> =>
   getMysql(requestId).then((cxn) =>
     cxn
-      .select({ uuid: pages.uuid, cid: pageNotebookLinks.cid })
+      .select({
+        uuid: pages.uuid,
+        cid: pageNotebookLinks.cid,
+        linkUuid: pageNotebookLinks.uuid,
+      })
       .from(pageNotebookLinks)
       .innerJoin(pages, eq(pages.uuid, pageNotebookLinks.pageUuid))
       .where(

@@ -257,16 +257,54 @@ const SharedPageStatus = ({
   notebookPageId,
   portalContainer,
   defaultOpenInviteDialog,
+  onCopy = (s) => window.navigator.clipboard.writeText(s),
 }: OverlayProps<SharedPageStatusProps>) => {
   const [loading, setLoading] = React.useState(false);
   return (
     <span className="samepage-shared-page-status flex flex-col mb-8 shadow-md rounded-md bg-gray-50 px-2 py-4 gap-2">
       <span className="flex gap-4 items-center text-lg">
-        <img
-          src={"https://samepage.network/images/logo.png"}
-          className={"h-8 w-8"}
-          alt={"SamePage"}
-        />
+        <Tooltip
+          content={"Create Public Link"}
+          portalContainer={portalContainer}
+        >
+          <AnchorButton
+            aria-label="copy"
+            disabled={loading}
+            icon={
+              <img
+                src={"https://samepage.network/images/logo.png"}
+                className={"h-8 w-8"}
+                alt={"SamePage"}
+              />
+            }
+            minimal
+            onClick={() => {
+              setLoading(true);
+              return apiClient<{ uuid: string }>({
+                method: "get-ipfs-cid",
+                notebookPageId,
+              })
+                .then(({ uuid }) => {
+                  onCopy(`${process.env.ORIGIN}/pages/${uuid}`);
+                  dispatchAppEvent({
+                    type: "log",
+                    content: `Copied!`,
+                    id: "copy-page-link",
+                    intent: "success",
+                  });
+                })
+                .catch((e) => {
+                  dispatchAppEvent({
+                    type: "log",
+                    content: `Failed to get public link for page ${notebookPageId}: ${e.message}`,
+                    id: "copy-page-failed",
+                    intent: "error",
+                  });
+                })
+                .finally(() => setLoading(false));
+            }}
+          />
+        </Tooltip>
         <TooltipButtonOverlay
           defaultIsOpen={defaultOpenInviteDialog}
           tooltipContent={"Invite Notebook"}
