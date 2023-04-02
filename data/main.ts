@@ -701,7 +701,7 @@ const setupInfrastructure = async (): Promise<void> => {
             })
             .then((r) => {
               if (Array.isArray(r.data) && r.data.length) {
-                paths.push(...r.data.map((d) => d.name));
+                paths.push(...r.data.map((d) => `${d.name}/post`));
               }
             })
             .catch((e) => {
