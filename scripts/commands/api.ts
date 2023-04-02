@@ -81,6 +81,7 @@ const out = "build";
 
 const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
   process.env.NODE_ENV = process.env.NODE_ENV || "development";
+  process.env.AWS_ENDPOINT = process.env.AWS_ENDPOINT || "http://localhost:3003/mocks/aws";
 
   const entryRegex = new RegExp(
     `^${path}[\\\\/]((ws[/\\\\][a-z0-9-]+)|(:?[a-z0-9-]+[/\\\\])*(get|post|put|delete)|[a-z0-9-]+)\\.[tj]s$`

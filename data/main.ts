@@ -139,7 +139,7 @@ const setupInfrastructure = async (): Promise<void> => {
               .map((p) => `extensions-${app}-${p}`)
           );
       });
-      const ignorePaths = ["ws", "car", "clerk", "extensions"];
+      const ignorePaths = ["ws", "car", "clerk", "extensions", "mocks"];
       const apiPaths = readDir("api").map((f) =>
         f.replace(/\.ts$/, "").replace(/^api\//, "")
       );

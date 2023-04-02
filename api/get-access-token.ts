@@ -1,5 +1,5 @@
 import type { Handler } from "aws-lambda";
-import { accessTokens, tokenNotebookLinks } from "data/schema";
+import { accessTokens, notebooks, tokenNotebookLinks } from "data/schema";
 import { and, eq } from "drizzle-orm/expressions";
 import { z } from "zod";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
@@ -27,12 +27,14 @@ export const handler: Handler = async (event, context) => {
   const [accessTokenRecord] = await cxn
     .select({
       value: accessTokens.value,
+      workspace: notebooks.workspace,
     })
     .from(accessTokens)
     .innerJoin(
       tokenNotebookLinks,
       eq(tokenNotebookLinks.notebookUuid, accessTokens.notebookUuid)
     )
+    .innerJoin(notebooks, eq(tokenNotebookLinks.notebookUuid, notebooks.uuid))
     .where(
       and(
         eq(accessTokens.notebookUuid, notebookUuid),
@@ -43,5 +45,8 @@ export const handler: Handler = async (event, context) => {
     throw new Error("No access token found");
   }
   await cxn.end();
-  return { accessToken: accessTokenRecord.value };
+  return {
+    accessToken: accessTokenRecord.value,
+    workspace: accessTokenRecord.workspace,
+  };
 };
