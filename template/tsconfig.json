@@ -14,9 +14,13 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react",
-    "baseUrl": "."
+    "baseUrl": ".",
+    "paths": {
+      "api/*": ["./api/*"],
+      "src/*": ["./src/*"]
+    }
   },
-  "include": ["./src"],
+  "include": ["api", "src", "tests"],
   "ts-node": {
     "compilerOptions": {
       "esModuleInterop": true,
