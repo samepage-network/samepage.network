@@ -35,7 +35,6 @@ import messageToNotification from "package/internal/messageToNotification";
 import inviteNotebookToPage from "~/data/inviteNotebookToPage.server";
 import createNotebook from "~/data/createNotebook.server";
 import QUOTAS from "~/data/quotas.server";
-import connectNotebook from "~/data/connectNotebook.server";
 import getQuota from "~/data/getQuota.server";
 import { encode } from "@ipld/dag-cbor";
 import clerk, { users } from "@clerk/clerk-sdk-node";
@@ -55,6 +54,7 @@ import {
 } from "data/schema";
 import { z } from "zod";
 import debug from "package/utils/debug";
+import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
 
 const log = debug("page");
 const zhandlerBody = zUnauthenticatedBody.or(
@@ -234,14 +234,14 @@ const logic = async (req: Record<string, unknown>) => {
           `Could not find token to use for this user. Please contact support@samepage.network for help.`
         );
       }
-      const response = await connectNotebook({
+      const notebookUuid = await getOrGenerateNotebookUuid({
         requestId,
         tokenUuid: tokenRecord.uuid,
         app,
         workspace,
       });
       await cxn.end();
-      return { notebookUuid: response.notebookUuid, token: tokenRecord.value };
+      return { notebookUuid, token: tokenRecord.value };
     } else if (args.method === "connect-device") {
       const { email, password } = args;
       const userResponse = await users.getUserList({ emailAddress: [email] });

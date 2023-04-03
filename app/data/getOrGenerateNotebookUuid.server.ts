@@ -1,8 +1,10 @@
 import getMysql from "~/data/mysql.server";
 import { v4 } from "uuid";
 import { apps, notebooks, tokenNotebookLinks } from "data/schema";
-import { eq, and } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm/expressions";
 import { sql } from "drizzle-orm";
+import { ConflictError } from "./errors.server";
+import getQuota from "./getQuota.server";
 
 const getOrGenerateNotebookUuid = async ({
   requestId,
@@ -16,6 +18,11 @@ const getOrGenerateNotebookUuid = async ({
   tokenUuid: string;
 }) => {
   const cxn = await getMysql(requestId);
+  const notebookQuota = await getQuota({
+    requestId,
+    field: "Notebooks",
+    tokenUuid,
+  });
   const appId =
     typeof app === "number"
       ? app
@@ -24,21 +31,28 @@ const getOrGenerateNotebookUuid = async ({
           .from(apps)
           .where(eq(apps.code, app))
           .then((r) => r[0].id);
-  const [potentialNotebookUuid] = await cxn
-    .select({ uuid: notebooks.uuid })
-    .from(notebooks)
-    .leftJoin(
-      tokenNotebookLinks,
-      eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
-    )
-    .where(
-      and(
-        eq(notebooks.workspace, workspace),
-        eq(notebooks.app, appId),
-        eq(tokenNotebookLinks.tokenUuid, tokenUuid)
-      )
+  const tokenLinks = await cxn
+    .select({
+      uuid: tokenNotebookLinks.uuid,
+      notebook_uuid: tokenNotebookLinks.notebookUuid,
+      app: notebooks.app,
+      workspace: notebooks.workspace,
+    })
+    .from(tokenNotebookLinks)
+    .leftJoin(notebooks, eq(notebooks.uuid, tokenNotebookLinks.notebookUuid))
+    .where(eq(tokenNotebookLinks.tokenUuid, tokenUuid));
+  const existingTokenLink = tokenLinks.find(
+    (tl) => tl.app === appId && tl.workspace === workspace
+  );
+  if (existingTokenLink) {
+    return existingTokenLink.notebook_uuid;
+  }
+  if (tokenLinks.length >= notebookQuota) {
+    throw new ConflictError(
+      `Maximum number of notebooks allowed to be connected to this token with this plan is ${notebookQuota}.`
     );
-  if (potentialNotebookUuid) return potentialNotebookUuid.uuid;
+  }
+
   const notebookUuid = v4();
   await cxn
     .insert(notebooks)

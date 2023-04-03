@@ -4,6 +4,7 @@ import getMysql from "~/data/mysql.server";
 import getOrGenerateNotebookUuid from "./getOrGenerateNotebookUuid.server";
 import { tokens } from "data/schema";
 
+// TODO - I think we are needlessy creating a new token here!! Should probably remove
 const createNotebook = async ({
   requestId,
   app,

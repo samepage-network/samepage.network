@@ -1,8 +1,8 @@
 import { tokens } from "data/schema";
 import { ConflictError } from "~/data/errors.server";
 import getMysql from "~/data/mysql.server";
-import connectNotebook from "./connectNotebook.server";
 import { eq } from "drizzle-orm/expressions";
+import getOrGenerateNotebookUuid from "./getOrGenerateNotebookUuid.server";
 
 const createUserNotebook = async ({
   requestId,
@@ -23,7 +23,7 @@ const createUserNotebook = async ({
     throw new ConflictError(
       `Missing a preexisting notebook. Make sure you install SamePage onto one of your existing tools for thought before creating a test one here.`
     );
-  const { notebookUuid } = await connectNotebook({
+  const notebookUuid = await getOrGenerateNotebookUuid({
     requestId,
     tokenUuid,
     app: 0,
