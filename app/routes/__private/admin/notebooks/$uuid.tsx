@@ -17,7 +17,12 @@ const SingleNotebookPage = () => {
       </div>
       <div>
         <b>Email: </b>
-        <span>{data.notebook.email}</span>
+        <Link
+          to={`/admin/users/${data.notebook.userId}`}
+          className={"text-sky-400"}
+        >
+          {data.notebook.email}
+        </Link>
       </div>
       <div>
         <b>App: </b>

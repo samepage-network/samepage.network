@@ -15,6 +15,7 @@ import {
   eq,
   isNotNull,
   gt,
+  or,
 } from "drizzle-orm/mysql-core/expressions";
 
 const listNotebooks = async (
@@ -47,7 +48,10 @@ const listNotebooks = async (
     // TODO - sql injection
     .where(
       search
-        ? like(notebooks.workspace, sql`CONCAT('%', ${search}, '%')`)
+        ? or(
+            like(notebooks.workspace, sql`CONCAT('%', ${search}, '%')`),
+            like(apps.code, sql`CONCAT('%', ${search.toLowerCase()}, '%')`)
+          )
         : undefined
     )
     .groupBy(notebooks.uuid)

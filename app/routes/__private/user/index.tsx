@@ -6,6 +6,7 @@ import remixAppLoader from "~/data/remixAppLoader.server";
 import Stripe from "stripe";
 import ExternalLink from "~/components/ExternalLink";
 import getStripePlans from "~/data/getStripePlans.server";
+import getStripePlan from "~/data/getStripePlan.server";
 
 const UPGRADES: Record<string, string> = {
   Hobby: "Professional",
@@ -69,27 +70,13 @@ export const loader: LoaderFunction = (args) => {
     const isAdmin = user.emailAddresses.some((e) =>
       e.emailAddress?.endsWith("@samepage.network")
     );
-    const stripeCustomerId = user.privateMetadata.stripeCustomerId as string;
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: "2022-11-15",
     });
     const portal = await stripe.billingPortal.configurations
       .list({ active: true })
       .then((p) => p.data[0]?.login_page?.url || "");
-    const plan =
-      typeof stripeCustomerId === "string"
-        ? await stripe.subscriptions
-            .list({
-              customer: stripeCustomerId,
-            })
-            .then((s) =>
-              s.data.length
-                ? stripe.products
-                    .retrieve(s.data[0].items.data[0].price.product as string)
-                    .then((p) => p.name)
-                : "Hobby"
-            )
-        : "Hobby";
+    const plan = await getStripePlan(user);
     const nextPlanName = UPGRADES[plan];
     const plans = await getStripePlans();
     const nextPlan = nextPlanName

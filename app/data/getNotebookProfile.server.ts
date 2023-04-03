@@ -87,6 +87,7 @@ const getNotebookProfile = async ({
       uuid: notebook.uuid,
       app: notebook.app,
       email: await getPrimaryUserEmail(notebook.userId),
+      userId: notebook.userId,
     },
     outgoingMessages,
     incomingMessages,
