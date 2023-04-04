@@ -67,7 +67,7 @@ const loadData = async ({
   params: Record<string, string | undefined>;
 }) => {
   const { id = "" } = params;
-  const { code, state, error } = searchParams;
+  const { code, state, error, ...customParams } = searchParams;
   const cxn = await getMysql(requestId);
   const [app] = await cxn
     .select({ name: apps.name, id: apps.id })
@@ -81,14 +81,12 @@ const loadData = async ({
     return { error: `Failed to install SamePage to ${appName}: ${error}` };
   }
   const response = await axios
-    .post<{ app: number; workspace: string; accessToken: string }>(
-      `${process.env.API_URL}/extensions/${id}/oauth`,
-      {
-        code,
-        state,
-        userId,
-      }
-    )
+    .post(`${process.env.API_URL}/extensions/${id}/oauth`, {
+      code,
+      state,
+      userId,
+      customParams,
+    })
     .then((r) => ({
       data: zOauthResponse.parse(r.data),
       success: true as const,

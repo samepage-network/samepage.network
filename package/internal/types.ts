@@ -488,6 +488,8 @@ export const zAuthHeaders = z.object({
 export const zOauthRequest = z.object({
   code: z.string(),
   state: z.string().optional(),
+  customParams: z.record(z.string()).optional(),
+  userId: z.string(),
 });
 
 export const zOauthResponse = z.object({
