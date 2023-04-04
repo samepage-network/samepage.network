@@ -6,6 +6,8 @@ import NewCustomerEmail from "~/components/NewCustomerEmail";
 import SubscriptionUpdateEmail from "~/components/SubscriptionUpdateEmail";
 import { users } from "@clerk/clerk-sdk-node";
 import emailError from "package/backend/emailError.server";
+import randomString from "~/data/randomString.server";
+import WelcomeClientEmail from "~/components/WelcomeClientEmail";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   maxNetworkRetries: 3,
@@ -47,26 +49,56 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       });
       const oldCustomerId = clerkUser?.privateMetadata.stripeCustomerId;
       if (clerkUser && session.customer && oldCustomerId !== session.customer) {
-        await users
-          .updateUser(clerkUser.id, {
-            privateMetadata: {
-              ...clerkUser.privateMetadata,
-              stripeCustomerId: session.customer,
-            },
-          })
-          .then(() =>
-            typeof oldCustomerId === "string"
-              ? stripe.customers
-                  .del(oldCustomerId)
-                  .catch((e) =>
-                    emailError(
-                      "Failed to delete old customer upon subscription",
-                      e
-                    ).then(() => Promise.resolve())
-                  )
-              : Promise.resolve()
-          );
+        await users.updateUser(clerkUser.id, {
+          privateMetadata: {
+            ...clerkUser.privateMetadata,
+            stripeCustomerId: session.customer,
+          },
+        });
+        if (typeof oldCustomerId === "string") {
+          const subs = await stripe.subscriptions.list({
+            customer: oldCustomerId,
+          });
+          if (subs.data.length > 0) {
+            await emailError(
+              "Couldn't delete old customer due to preexisting subscriptions",
+              new Error(
+                `Old customer: https://dashboard.stripe.com/customers/${oldCustomerId}`
+              )
+            );
+          } else {
+            await stripe.customers
+              .del(oldCustomerId)
+              .catch((e) =>
+                emailError("Failed to delete old customer upon subscription", e)
+              );
+          }
+        }
       }
+      const temporaryPassword = !clerkUser
+        ? await randomString({ length: 12, encoding: "base64" }).then((pw) =>
+            users
+              .createUser({
+                emailAddress: [customerEmail],
+                password: pw,
+              })
+              .then(() => pw)
+          )
+        : "";
+      const productName = await stripe.invoices
+        .retrieve(session.invoice as string, {
+          expand: ["lines.data.price.product"],
+        })
+        .then(
+          (invoice) =>
+            (invoice.lines.data[0].price?.product as Stripe.Product).name
+        );
+      if (productName === "Client")
+        await sendEmail({
+          to: customerEmail,
+          subject: "Welcome to SamePage!",
+          body: WelcomeClientEmail({ temporaryPassword }),
+        });
       await sendEmail({
         to: "support@samepage.network",
         subject: "New SamePage Customer",

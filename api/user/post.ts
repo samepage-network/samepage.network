@@ -2,7 +2,6 @@ import { users } from "@clerk/clerk-sdk-node";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { Webhook } from "svix";
 import emailError from "package/backend/emailError.server";
-import Stripe from "stripe";
 import sendEmail from "package/backend/sendEmail.server";
 import WelcomeEmail from "~/components/WelcomeEmail";
 import NewUserEmail from "~/components/NewUserEmail";
@@ -13,11 +12,7 @@ import randomString from "~/data/randomString.server";
 import { tokens } from "data/schema";
 import { sql } from "drizzle-orm/sql";
 import { eq } from "drizzle-orm/expressions";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2022-11-15",
-  maxNetworkRetries: 3,
-});
+import stripe from "~/data/stripe.server";
 
 const wh = new Webhook(process.env.SVIX_SECRET);
 

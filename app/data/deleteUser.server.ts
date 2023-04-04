@@ -4,6 +4,8 @@ import { eq } from "drizzle-orm/expressions";
 import deleteNotebook from "./deleteNotebook.server";
 import { users } from "@clerk/clerk-sdk-node";
 import { MySql2Database } from "drizzle-orm/mysql2";
+import stripe from "./stripe.server";
+import getPrimaryUserEmail from "./getPrimaryUserEmail.server";
 
 const deleteUser = async ({
   id,
@@ -32,6 +34,13 @@ const deleteUser = async ({
       )
       .reduce((p, f) => p.then(f), Promise.resolve({ success: true }));
     await cxn.delete(tokens).where(eq(tokens.userId, id));
+    const email = await getPrimaryUserEmail(id);
+    const customers = await stripe.customers.list({ email });
+    await customers.data
+      .map((c) => async () => {
+        await stripe.customers.del(c.id);
+      })
+      .reduce((p, c) => p.then(c), Promise.resolve());
     await users.deleteUser(id);
     if (typeof requestId === "string") await cxn.end();
     return { success: true };
