@@ -1,9 +1,10 @@
 import QUOTAS from "./quotas.server";
 import getMysql from "~/data/mysql.server";
 import { users } from "@clerk/clerk-sdk-node";
-import Stripe from "stripe";
 import { quotas, tokens } from "data/schema";
 import { eq, and, isNull } from "drizzle-orm/expressions";
+import { getPrimaryEmailFromUser } from "./getPrimaryUserEmail.server";
+import stripe from "./stripe.server";
 
 type BackendContext = {
   quotas: { [p: string]: { [k in (typeof QUOTAS)[number]]?: number } };
@@ -28,26 +29,17 @@ const getQuota = async ({
     .select({ user_id: tokens.userId })
     .from(tokens)
     .where(eq(tokens.uuid, tokenUuid))
-    .then(([r]) => r?.user_id);
-  const stripeId = userId
-    ? await users
-        .getUser(userId)
-        .then((u) => {
-          const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-            apiVersion: "2022-11-15",
-          });
-          const customer = u.privateMetadata.stripeCustomerId as string;
-          return customer
-            ? stripe.subscriptions
-                .list({
-                  customer,
-                })
-                .then((subs) => subs.data[0].items.data[0].price.id)
-            : "";
+    .then(([r]) => r.user_id);
+  const user = await users.getUser(userId);
+  if (getPrimaryEmailFromUser(user)?.endsWith("@samepage.network"))
+    return Number.MAX_VALUE;
+  const customer = user.privateMetadata.stripeCustomerId as string;
+  const stripeId = customer
+    ? await stripe.subscriptions
+        .list({
+          customer,
         })
-        .catch(() => {
-          return "";
-        })
+        .then((subs) => subs.data[0].items.data[0].price.id)
     : "";
   const context = getBackendContext(requestId);
   const quotasInThisPlan = context.quotas[stripeId];
