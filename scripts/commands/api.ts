@@ -250,7 +250,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
                 new Date(),
                 executionTimeStarted
               );
-              debug(`Executed ${method} ${functionName} in ${executionTime}ms`);
+              debug(`Executed ${method} ${req.path} in ${executionTime}ms`);
               return result;
             })
             .then((result) => {

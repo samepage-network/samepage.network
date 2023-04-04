@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import toVersion from "./toVersion";
 import readDir from "./readDir";
 import { getOpts as getNodeOpts } from "./nodeCompile";
+import getDotEnvObject from "./getDotEnvObject";
 dotenv.config();
 
 // TODO - Move this to a central location
@@ -87,7 +88,6 @@ const compile = ({
   css,
   format,
   mirror,
-  env,
   analyze,
   opts = {},
   finish: onFinishFile = "",
@@ -127,11 +127,7 @@ const compile = ({
     typeof external === "string" ? [external] : external || []
   ).map((e) => e.split("="));
   const outdir = path.join(root, "dist");
-  const envObject = Object.fromEntries(
-    (typeof env === "string" ? [env] : env || [])
-      .filter((s) => !!process.env[s])
-      .map((s) => [`process.env.${s}`, `"${process.env[s]}"`])
-  );
+  const envObject = getDotEnvObject();
   const apiFunctions = fs.existsSync(apiRoot)
     ? readDir(apiRoot).map((f) => f.replace(/^api\//, "").replace(/\.ts$/, ""))
     : [];
@@ -173,21 +169,20 @@ const compile = ({
         metafile: analyze,
         ...opts,
       }),
-    ]
-      .concat(
-        apiFunctions.length
-          ? [
-              builder(
-                getNodeOpts({
-                  outdir: backendOutdir,
-                  functions: apiFunctions,
-                  root: apiRoot,
-                  define: envObject,
-                })
-              ),
-            ]
-          : []
-      )
+    ].concat(
+      apiFunctions.length
+        ? [
+            builder(
+              getNodeOpts({
+                outdir: backendOutdir,
+                functions: apiFunctions,
+                root: apiRoot,
+                define: envObject,
+              })
+            ),
+          ]
+        : []
+    )
   ).then(async () => {
     DEFAULT_FILES_INCLUDED.concat(
       typeof include === "string" ? [include] : include || []
