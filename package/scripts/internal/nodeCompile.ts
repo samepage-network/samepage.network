@@ -2,6 +2,7 @@ import esbuild, { BuildOptions } from "esbuild";
 import path from "path";
 import fs from "fs";
 import getDotEnvObject from "./getDotEnvObject";
+import esbuildPlugins from "./esbuildPlugins";
 
 type Args = {
   outdir?: string;
@@ -50,6 +51,7 @@ export const getOpts = ({
         );
       },
     },
+    ...esbuildPlugins,
   ],
   ...opts,
 });

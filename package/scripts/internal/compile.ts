@@ -8,6 +8,7 @@ import toVersion from "./toVersion";
 import readDir from "./readDir";
 import { getOpts as getNodeOpts } from "./nodeCompile";
 import getDotEnvObject from "./getDotEnvObject";
+import esbuildPlugins from "./esbuildPlugins";
 dotenv.config();
 
 // TODO - Move this to a central location
@@ -177,8 +178,12 @@ const compile = ({
           importAsGlobals(
             Object.fromEntries(externalModules.filter((e) => e.length === 2))
           ),
+          ...esbuildPlugins,
         ],
         metafile: analyze,
+        loader: {
+          ".yaml": "text",
+        },
         ...opts,
       }),
     ].concat(
