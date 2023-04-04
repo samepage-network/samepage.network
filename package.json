@@ -1,6 +1,6 @@
 {
   "name": "samepage",
-  "version": "0.55.4",
+  "version": "0.55.5",
   "description": "Collaboration across applications.",
   "repository": {
     "type": "git",
@@ -142,7 +142,7 @@
       "patch-package": "^6.5.0",
       "react": ">=17",
       "react-dom": ">=17",
-      "ts-node":"^10.9.1",
+      "ts-node": "^10.9.1",
       "ws": "^7.5.9",
       "zod": "^3.19.1"
     },
@@ -177,7 +177,7 @@
           "debug": "^4.3.4",
           "dotenv": "10.0.0",
           "esbuild": "0.17.14",
-          "ts-node":"^10.9.1"
+          "ts-node": "^10.9.1"
         },
         "bin": {
           "samepage-scripts": "./cli.js"
@@ -195,7 +195,7 @@
           "debug": "^4.3.4",
           "dotenv": "10.0.0",
           "jsdom": "^20.0.0",
-          "ts-node":"^10.9.1"
+          "ts-node": "^10.9.1"
         }
       }
     }
