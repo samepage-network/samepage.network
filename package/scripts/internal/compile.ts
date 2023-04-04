@@ -1,6 +1,7 @@
 import esbuild from "esbuild";
 import fs from "fs";
 import path from "path";
+import { z } from "zod";
 import appPath from "./appPath";
 import dotenv from "dotenv";
 import toVersion from "./toVersion";
@@ -21,20 +22,21 @@ declare global {
   }
 }
 
-export type CliArgs = {
-  root?: string;
-  out?: string;
-  external?: string | string[];
-  include?: string | string[];
-  css?: string;
-  format?: esbuild.Format;
-  mirror?: string;
-  env?: string | string[];
-  analyze?: boolean;
-  max?: string;
-  finish?: string;
-  entry?: string | string[];
-};
+const cliArgs = z.object({
+  out: z.string().optional(),
+  root: z.string().optional(),
+  external: z.union([z.string(), z.string().array()]).optional(),
+  include: z.union([z.string(), z.string().array()]).optional(),
+  css: z.string().optional(),
+  format: z.enum(["iife", "cjs", "esm"]).optional(),
+  mirror: z.string().optional(),
+  analyze: z.boolean().optional(),
+  max: z.string().optional(),
+  finish: z.string().optional(),
+  entry: z.union([z.string(), z.string().array()]).optional(),
+});
+
+export type CliArgs = z.infer<typeof cliArgs>;
 
 // https://github.com/evanw/esbuild/issues/337#issuecomment-954633403
 const importAsGlobals = (
@@ -82,24 +84,34 @@ const importAsGlobals = (
 const DEFAULT_FILES_INCLUDED = ["package.json", "README.md"];
 
 const compile = ({
-  out,
-  external,
-  include,
-  css,
-  format,
-  mirror,
-  analyze,
-  opts = {},
-  finish: onFinishFile = "",
   root = ".",
-  entry = [],
   builder = async (opts) => {
     await esbuild.build(opts);
   },
+  ...args
 }: CliArgs & {
-  opts?: esbuild.BuildOptions;
   builder?: (opts: esbuild.BuildOptions) => Promise<void>;
 }) => {
+  const defaultPackageOpts = cliArgs.parse(
+    JSON.parse(fs.readFileSync(path.join(root, "package.json")).toString())
+      .samepage || {}
+  );
+  const {
+    out,
+    external,
+    include,
+    css,
+    format,
+    mirror,
+    analyze,
+    opts = {},
+    finish: onFinishFile = "",
+    entry = [],
+  } = {
+    ...args,
+    ...defaultPackageOpts,
+  };
+
   const srcRoot = path.join(root, "src");
   const apiRoot = path.join(root, "api");
   const rootDir = fs

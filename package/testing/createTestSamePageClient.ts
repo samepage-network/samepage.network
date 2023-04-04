@@ -25,6 +25,7 @@ import binaryToBase64 from "../internal/binaryToBase64";
 import { v4 } from "uuid";
 import changeAutomergeDoc from "../utils/changeAutomergeDoc";
 import unwrapSchema from "../utils/unwrapSchema";
+import debug from "../utils/debug";
 
 const SUPPORTED_TAGS = ["SPAN", "DIV", "A", "LI"] as const;
 const TAG_SET = new Set<string>(SUPPORTED_TAGS);
@@ -135,10 +136,6 @@ const processMessageSchema = z.discriminatedUnion("type", [
 ]);
 export const responseMessageSchema = z.discriminatedUnion("type", [
   z.object({
-    type: z.literal("log"),
-    data: z.string(),
-  }),
-  z.object({
     type: z.literal("error"),
     data: z.string(),
   }),
@@ -172,15 +169,13 @@ const createTestSamePageClient = async ({
   global.WebSocket = WebSocket;
   // @ts-ignore
   global.fetch = fetch;
+  const log = debug(`test-client-${workspace}`);
 
   const awaitLog = (id: string, target = 1) =>
     new Promise<{ content: string; intent: LogEvent["intent"] }>((resolve) => {
       let count = 0;
       const offAppEvent = onAppEvent("log", (e) => {
-        onMessage({
-          type: "log",
-          data: `while waiting for ${id} logged ${e.id}: ${JSON.stringify(e)}`,
-        });
+        log(`while waiting for ${id} logged ${e.id}: ${JSON.stringify(e)}`);
         if (e.id === id) {
           count++;
           if (count === target) {
@@ -221,6 +216,7 @@ const createTestSamePageClient = async ({
       e.respond(initOptions).then(resolve);
     });
   });
+  log("setting up client");
   const { unload, addNotebookRequestListener, sendNotebookRequest } =
     setupSamePageClient({
       getSetting: (s) => settings[s],
@@ -230,6 +226,7 @@ const createTestSamePageClient = async ({
       workspace,
       app: "samepage",
     });
+  log("setting up page sync protocol");
   const {
     unload: unloadSharePage,
     refreshContent,
@@ -243,6 +240,7 @@ const createTestSamePageClient = async ({
     calculateState: async (notebookPageId) => calculateState(notebookPageId),
     applyState: async (id, data) => applyState(id, data),
   });
+  log("setting up page deprecated query protocol");
   const { unload: unloadNotebookQuerying, query } = setupNotebookQuerying({
     onQuery: async (notebookPageId) => {
       const dom = appClientState[notebookPageId];
@@ -260,17 +258,19 @@ const createTestSamePageClient = async ({
     },
   });
 
-  console.log = (...args) => onMessage({ type: "log", data: args.join(" ") });
+  log("Check if account is finished initializing");
   await initializingPromise.catch(() =>
     onMessage({
       type: "error",
       data: `Error: 3 arguments required for --forked (workspace, email, password)\nFound: ${process.argv}`,
     })
   );
+  log("Wait for success message");
   await awaitLog("samepage-success");
   onMessage({ type: "ready", uuid: settings.uuid });
   const updatesToSend: Record<string, any> = {};
   const responsesToSend: Record<string, any> = {};
+  log("Ready for messages");
   return {
     send: async (m: unknown) => {
       try {
@@ -475,10 +475,7 @@ const createTestSamePageClient = async ({
           sendResponse(data);
         } else if (message.type === "route") {
           addNotebookRequestListener(({ request, sendResponse }) => {
-            onMessage({
-              type: "log",
-              data: `Was requested ${JSON.stringify(request)}`,
-            });
+            log(`Was requested ${JSON.stringify(request)}`);
             const route = message.routes.find(
               (rte) => request[rte.key] === rte.value
             );
@@ -494,10 +491,7 @@ const createTestSamePageClient = async ({
               request: message.request,
               targets: [message.target],
               onResponse: (data) => {
-                onMessage({
-                  type: "log",
-                  data: `Got response ${id}, is cached: ${cached}`,
-                });
+                log(`Got response ${id}, is cached: ${cached}`);
                 if (cached) {
                   responsesToSend[id] = data;
                 } else {

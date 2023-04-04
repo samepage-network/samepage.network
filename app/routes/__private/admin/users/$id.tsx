@@ -1,9 +1,12 @@
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import remixAdminLoader from "~/data/remixAdminLoader.server";
-import { LoaderFunction } from "@remix-run/node";
-import { useLoaderData, Link } from "@remix-run/react";
+import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
+import { useLoaderData, Link, Form } from "@remix-run/react";
 import getUserProfile from "~/data/getUserProfile.server";
+import deleteUser from "~/data/deleteUser.server";
+import remixAdminAction from "~/data/remixAdminAction.server";
+import Button from "~/components/Button";
 
 const SingleUserPage = () => {
   const data = useLoaderData<Awaited<ReturnType<typeof getUserProfile>>>();
@@ -41,12 +44,33 @@ const SingleUserPage = () => {
           ))}
         </ul>
       </div>
+      <Form method={"delete"}>
+        <Button>Delete</Button>
+      </Form>
     </div>
   );
 };
 
 export const loader: LoaderFunction = (args) => {
   return remixAdminLoader(args, getUserProfile);
+};
+
+export const action: ActionFunction = (args) => {
+  return remixAdminAction(args, {
+    DELETE: ({ params, context: { requestId }, searchParams }) =>
+      deleteUser({
+        id: params["id"] || "",
+        requestId,
+      }).then(() =>
+        redirect(
+          `/admin/users${
+            Object.keys(searchParams).length
+              ? `?${new URLSearchParams(searchParams).toString()}`
+              : ""
+          }`
+        )
+      ),
+  });
 };
 
 export default SingleUserPage;

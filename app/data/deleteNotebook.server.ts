@@ -8,16 +8,18 @@ import {
 } from "data/schema";
 import getMysql from "~/data/mysql.server";
 import { eq, or } from "drizzle-orm/expressions";
+import { MySql2Database } from "drizzle-orm/mysql2";
 
 const deleteNotebook = async ({
   uuid,
   requestId,
 }: {
   uuid: string;
-  requestId: string;
+  requestId: string | MySql2Database;
 }) => {
   try {
-    const cxn = await getMysql(requestId);
+    const cxn =
+      typeof requestId === "string" ? await getMysql(requestId) : requestId;
     await cxn
       .delete(tokenNotebookLinks)
       .where(eq(tokenNotebookLinks.notebookUuid, uuid));
@@ -30,7 +32,7 @@ const deleteNotebook = async ({
     await cxn.delete(onlineClients).where(eq(onlineClients.notebookUuid, uuid));
     await cxn.delete(accessTokens).where(eq(accessTokens.notebookUuid, uuid));
     await cxn.delete(notebooks).where(eq(notebooks.uuid, uuid));
-    await cxn.end();
+    if (typeof requestId === "string") await cxn.end();
     return { success: true };
   } catch (e) {
     throw new Error(`Failed to delete notebook ${uuid}`, {

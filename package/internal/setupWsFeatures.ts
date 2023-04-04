@@ -31,6 +31,8 @@ import {
 } from "./setupMessageHandlers";
 import MESSAGES, { Operation } from "./messages";
 import NotificationContainer from "../components/NotificationContainer";
+import debug from "../utils/debug";
+const log = debug("ws");
 
 const USAGE_LABEL = "View SamePage Usage";
 
@@ -207,6 +209,7 @@ const onSuccessOnboarding = ({
   notebookUuid: string;
   token: string;
 }) => {
+  log("successfully onboarded");
   setSetting("uuid", notebookUuid);
   setSetting("token", token);
   removeCommand({ label: "Onboard to SamePage" });
@@ -226,14 +229,16 @@ const onboard = () =>
       })
     : dispatchAppEvent({
         type: "prompt-account-info",
-        respond: ({ email, password, create }) =>
-          apiClient<{ notebookUuid: string; token: string }>({
+        respond: ({ email, password, create }) => {
+          log("creating notebook", create);
+          return apiClient<{ notebookUuid: string; token: string }>({
             method: create ? "create-notebook" : "add-notebook",
             email,
             password,
             app,
             workspace,
-          }).then(onSuccessOnboarding),
+          }).then(onSuccessOnboarding);
+        },
       });
 
 const setupWsFeatures = ({
@@ -241,6 +246,7 @@ const setupWsFeatures = ({
 }: {
   notificationContainerPath?: string;
 }) => {
+  log("setting up websocket features");
   const unloads: Record<string, () => void> = {};
   const notebookUuid = getSetting("uuid");
   if (!notebookUuid) {

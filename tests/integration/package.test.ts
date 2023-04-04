@@ -6,11 +6,12 @@ import type {
   ResponseSchema,
 } from "../../package/testing/createTestSamePageClient";
 import { Notification } from "../../package/internal/types";
-import deleteNotebook from "~/data/deleteNotebook.server";
 import { JSDOM } from "jsdom";
 import getRandomNotebookPageId from "../utils/getRandomNotebookPageId";
 import getRandomAccount from "../utils/getRandomAccount";
 import debug from "package/utils/debug";
+import deleteUser from "~/data/deleteUser.server";
+import { users } from "@clerk/clerk-sdk-node";
 
 let cleanup: () => Promise<unknown>;
 const accounts: { email: string; password: string }[] = [];
@@ -39,7 +40,7 @@ const forkSamePageClient = ({
       password,
       "--create",
     ]),
-    { execPath: "./node_modules/.bin/ts-node", stdio: "inherit" }
+    { execPath: "./node_modules/.bin/ts-node", silent: true }
   );
   const pendingRequests: Record<
     string,
@@ -65,13 +66,13 @@ const forkSamePageClient = ({
         .then(() => client.exitCode),
     prepare: () => (expectedToClose = true),
     uuid: "",
+    email,
   };
 
   return new Promise<typeof clientApi>((resolve) => {
     const clientCallbacks: {
       [k in ResponseSchema as k["type"]]: (data: k) => void;
     } = {
-      log: ({ data }) => log(`${data}`),
       error: ({ data }) => {
         expectedToClose = true;
         console.error(`Client ${workspace}: ERROR ${data}`);
@@ -107,6 +108,8 @@ const forkSamePageClient = ({
       log(`closed (${e})`);
       resolveDisconnect();
     });
+    client.stdout?.on("data", (s) => log(s.toString()));
+    client.stderr?.on("data", (s) => log(s.toString()));
   });
 };
 
@@ -161,11 +164,15 @@ test("Full integration test of extensions", async () => {
       ]));
   cleanup = async () => {
     expect(await client1.kill()).toEqual(0);
-    await deleteNotebook({ uuid: client1.uuid, requestId: v4() });
+    const [user1] = await users.getUserList({ emailAddress: [client1.email] });
+    await deleteUser({ id: user1.id, requestId: v4() });
+
     expect(await client2.kill()).toEqual(0);
-    await deleteNotebook({ uuid: client2.uuid, requestId: v4() });
+    const [user2] = await users.getUserList({ emailAddress: [client2.email] });
+    await deleteUser({ id: user2.id, requestId: v4() });
+
     api.kill();
-    log("Test: cleaned up!");
+    log("cleaned up!");
   };
 
   await test.step("Navigate to Demo Page", () =>
