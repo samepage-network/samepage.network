@@ -1551,7 +1551,7 @@ test("Reaching the notebook limit should throw on create", async () => {
   const requestId = v4();
   globalContext[requestId] = { quotas: { [""]: { Notebooks: 1 } } };
 
-  const { email, password } = await getRandomAccount();
+  const { email, password } = await getRandomAccount(false);
   const user = await users.createUser({
     emailAddress: [email],
     password,

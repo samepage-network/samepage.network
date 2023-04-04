@@ -5,10 +5,10 @@ import mime from "mime-types";
 
 const test = ({
   debug,
-  project,
+  proj: project,
   file,
   g,
-}: { debug?: boolean; project?: string; file?: string; g?: string } = {}) => {
+}: { debug?: boolean; proj?: string; file?: string; g?: string } = {}) => {
   process.env.DEBUG = debug ? "*,-pw:*,-babel,-babel:*,-express:*,-follow-redirects,-jwks" : process.env.DEBUG;
   const args = [
     "c8",

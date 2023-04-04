@@ -30,10 +30,10 @@ const getQuota = async ({
     .from(tokens)
     .where(eq(tokens.uuid, tokenUuid))
     .then(([r]) => r.user_id);
-  const user = await users.getUser(userId);
-  if (getPrimaryEmailFromUser(user)?.endsWith("@samepage.network"))
+  const user = await users.getUser(userId).catch(() => null);
+  if (user && getPrimaryEmailFromUser(user)?.endsWith("@samepage.network"))
     return Number.MAX_VALUE;
-  const customer = user.privateMetadata.stripeCustomerId as string;
+  const customer = user?.privateMetadata?.stripeCustomerId as string;
   const stripeId = customer
     ? await stripe.subscriptions
         .list({

@@ -93,10 +93,12 @@ const compile = ({
 }: CliArgs & {
   builder?: (opts: esbuild.BuildOptions) => Promise<void>;
 }) => {
-  const defaultPackageOpts = cliArgs.parse(
-    JSON.parse(fs.readFileSync(path.join(root, "package.json")).toString())
-      .samepage || {}
-  );
+  const packageJson = path.join(root, "package.json");
+  const defaultPackageOpts = fs.existsSync(packageJson)
+    ? cliArgs.parse(
+        JSON.parse(fs.readFileSync(packageJson).toString()).samepage || {}
+      )
+    : {};
   const {
     out,
     external,

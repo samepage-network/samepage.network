@@ -1,9 +1,9 @@
 import randomString from "~/data/randomString.server";
 
-const getRandomEmail = async () =>
+const getRandomEmail = async (isAdmin = true) =>
   `${await randomString({
     length: 4,
     encoding: "hex",
-  })}@samepage.network`;
+  })}@${isAdmin ? "samepage.network" : "example.com"}`;
 
 export default getRandomEmail;
