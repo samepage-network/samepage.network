@@ -39,7 +39,9 @@ const getQuota = async ({
         .list({
           customer,
         })
-        .then((subs) => subs.data[0].items.data[0].price.id)
+        .then((subs) =>
+          subs.data.length ? subs.data[0].items.data[0].price.id : ""
+        )
     : "";
   const context = getBackendContext(requestId);
   const quotasInThisPlan = context.quotas[stripeId];
