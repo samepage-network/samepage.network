@@ -123,7 +123,6 @@ const setupInfrastructure = async (): Promise<void> => {
         domain: projectName,
         secret: secret.value,
         cachePolicyId: cachePolicy.id,
-        
       });
 
       const httpMethods = new Set([
@@ -169,10 +168,6 @@ const setupInfrastructure = async (): Promise<void> => {
       const methods = Object.fromEntries(
         resourceLambdas.map((p) => [p, pathParts[p].slice(-1)[0]])
       );
-      const sizes: Record<string, number> = {
-        "page/post": 5120,
-        "upload-to-ipfs": 5120,
-      };
 
       const callerIdentity = new DataAwsCallerIdentity(this, "tf_caller", {});
       // lambda resource requires either filename or s3... wow
@@ -310,7 +305,7 @@ const setupInfrastructure = async (): Promise<void> => {
               runtime: "nodejs18.x",
               publish: false,
               timeout: 10,
-              memorySize: sizes[lambdaPath] || 128,
+              memorySize: 5120,
             }
           ),
         ])
