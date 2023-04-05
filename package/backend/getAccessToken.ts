@@ -13,7 +13,7 @@ const lambda = new Lambda({ endpoint: process.env.AWS_ENDPOINT });
 const getAccessToken = (authorization: string) => {
   return lambda
     .invoke({
-      FunctionName: "samepage-network_get-access-token",
+      FunctionName: "samepage-network_access",
       Payload: Buffer.from(JSON.stringify({ authorization })),
     })
     .then((res) => {

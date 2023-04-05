@@ -1,23 +1,15 @@
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
 
-const logic = ({
-  name,
-  requestId,
-  ...Payload
-}: {
-  name: string;
-  requestId: string;
-  Payload: string;
-}) => {
-  const fileName = name.replace(/^samepage-network_/, "");
-  const rand = Math.random();
-  return import(`${process.cwd()}/build/${fileName}.js?bust=${rand}`)
-    .then((module) => {
-      return module.handler(Payload, { awsRequestId: requestId });
-    })
+const logic = ({ name, ...Payload }: { name: string }) => {
+  const fileName = name.replace(/^samepage-network_/, "").replace(/-/g, "/");
+  return fetch(`${process.env.API_URL}/${fileName}`, {
+    method: "POST",
+    body: JSON.stringify(Payload),
+  })
+    .then((r) => r.json())
     .catch((e) => {
       // TODO: One issue is that we are not being caught in the `FunctionError` param
-      // of invoke, and instead are triggering invoke().catch() 
+      // of invoke, and instead are triggering invoke().catch()
       return Promise.reject(
         new Error(JSON.stringify({ message: e.message, stack: e.stack }))
       );

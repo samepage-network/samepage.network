@@ -1,5 +1,3 @@
-// DEPRECATED IN FAVOR OF api/access.ts
-
 import type { Handler } from "aws-lambda";
 import {
   accessTokens,

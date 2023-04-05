@@ -11,6 +11,8 @@ import {
   messages,
   notebooks,
   onlineClients,
+  tokenNotebookLinks,
+  tokens,
 } from "data/schema";
 import { eq, desc } from "drizzle-orm/expressions";
 import { Lambda } from "@aws-sdk/client-lambda";
@@ -74,16 +76,27 @@ const messageNotebook = ({
       log(source, "messaged", target, "as online", online, "with", operation);
     } else {
       const [endpoint] = await cxn
-        .select({ accessToken: accessTokens.value, path: apps.code })
+        .select({
+          accessToken: accessTokens.value,
+          path: apps.code,
+          token: tokens.value,
+        })
         .from(accessTokens)
         .innerJoin(notebooks, eq(accessTokens.notebookUuid, notebooks.uuid))
         .innerJoin(apps, eq(notebooks.app, apps.id))
+        .innerJoin(
+          tokenNotebookLinks,
+          eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
+        )
+        .innerJoin(tokens, eq(tokenNotebookLinks.tokenUuid, tokens.uuid))
         .where(eq(accessTokens.notebookUuid, target))
         .limit(1);
       if (endpoint) {
-        const { path, accessToken } = endpoint;
-        Data["accessToken"] = accessToken;
-        const lambda = new Lambda({});
+        const { path, accessToken, token } = endpoint;
+        Data["credentials"] = { accessToken, notebookUuid: target, token };
+        const lambda = new Lambda({
+          endpoint: process.env.AWS_ENDPOINT,
+        });
         online = await lambda
           .invoke({
             FunctionName: `samepage-network_extensions-${path}-message`,

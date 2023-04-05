@@ -16,6 +16,9 @@ const SingleNotebookPage = () => {
         <code>{data.notebook.uuid}</code>
       </div>
       <div>
+        <code>{data.notebook.token}</code>
+      </div>
+      <div>
         <b>Email: </b>
         <Link
           to={`/admin/users/${data.notebook.userId}`}

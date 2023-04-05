@@ -125,6 +125,15 @@ const setupInfrastructure = async (): Promise<void> => {
         cachePolicyId: cachePolicy.id,
       });
 
+      const httpMethods = new Set([
+        "get",
+        "post",
+        "put",
+        "delete",
+        "patch",
+        "options",
+        "head",
+      ]);
       const extensionPaths = Object.entries(
         opts.backendFunctionsByRepo
       ).flatMap(([repo, paths]) => {
@@ -150,8 +159,8 @@ const setupInfrastructure = async (): Promise<void> => {
       const pathParts = Object.fromEntries(
         allLambdas.map((p) => [p, p.split("/")])
       );
-      const resourceLambdas = allLambdas.filter(
-        (p) => pathParts[p]?.length > 1
+      const resourceLambdas = allLambdas.filter((p) =>
+        httpMethods.has(pathParts[p].slice(-1)[0])
       );
       const resources = Object.fromEntries(
         resourceLambdas.map((p) => [p, pathParts[p].slice(0, -1).join("/")])
@@ -281,9 +290,9 @@ const setupInfrastructure = async (): Promise<void> => {
       const functionNames = Object.fromEntries(
         allLambdas.map((p) => [
           p,
-          pathParts[p].length === 1
-            ? pathParts[p][0]
-            : `${resources[p].replace(/\//g, "-")}_${methods[p]}`,
+          resources[p]
+            ? `${resources[p].replace(/\//g, "-")}_${methods[p]}`
+            : p.replace(/\//g, "-"),
         ])
       );
       const lambdaFunctions = Object.fromEntries(

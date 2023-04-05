@@ -24,6 +24,7 @@ const getNotebookProfile = async ({
       app: apps.name,
       workspace: notebooks.workspace,
       uuid: notebooks.uuid,
+      token: tokens.value,
       createdDate: tokens.createdDate,
       userId: tokens.userId,
     })
@@ -88,6 +89,7 @@ const getNotebookProfile = async ({
       app: notebook.app,
       email: await getPrimaryUserEmail(notebook.userId),
       userId: notebook.userId,
+      token: notebook.token,
     },
     outgoingMessages,
     incomingMessages,

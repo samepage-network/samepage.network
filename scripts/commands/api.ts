@@ -81,10 +81,11 @@ const out = "build";
 
 const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
   process.env.NODE_ENV = process.env.NODE_ENV || "development";
-  process.env.AWS_ENDPOINT = process.env.AWS_ENDPOINT || "http://localhost:3003/mocks/aws";
+  process.env.AWS_ENDPOINT =
+    process.env.AWS_ENDPOINT || "http://localhost:3003/mocks/aws";
 
   const entryRegex = new RegExp(
-    `^${path}[\\\\/]((ws[/\\\\][a-z0-9-]+)|(:?[a-z0-9-]+[/\\\\])*(get|post|put|delete)|[a-z0-9-]+)\\.[tj]s$`
+    `^${path}[\\\\/]((ws[/\\\\][a-z0-9-]+)|(:?[a-z0-9-]+[/\\\\])*(get|post|put|delete|[a-z]+)|[a-z0-9-]+)\\.[tj]s$`
   );
   const wsRegex = new RegExp(`^${path}[\\\\/]ws[/\\\\][a-z0-9-]+\\.[tj]s$`);
   debug(
@@ -138,7 +139,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
       if (METHOD_SET.has(method)) {
         // Mock API Gateway
         app[method](route, (req, res) => {
-          const handler = loadHandler<APIGatewayProxyHandler>()
+          const handler = loadHandler<APIGatewayProxyHandler>();
 
           if (typeof handler !== "function") {
             return res
@@ -300,7 +301,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
       } else {
         // Mock Lambda
         app.post(route, (req, res) => {
-          const handler = loadHandler<APIGatewayProxyHandler>()
+          const handler = loadHandler<APIGatewayProxyHandler>();
           if (typeof handler !== "function") {
             return res
               .header("Content-Type", "application/json")
@@ -310,7 +311,10 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
                 errorType: "HANDLER_NOT_FOUND",
               });
           }
-          const event = req.body;
+          const event = JSON.parse(req.body);
+          event.pathParameters = Object.keys(req.params).length
+            ? req.params
+            : null;
           debug(`Received Request async ${route}`);
           const executionTimeStarted = new Date();
           const context = generateContext({
@@ -318,10 +322,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
             executionTimeStarted,
           });
           new Promise((resolve) =>
-            setTimeout(
-              () => resolve(handler(JSON.parse(event), context, () => ({}))),
-              1
-            )
+            setTimeout(() => resolve(handler(event, context, () => ({}))), 1)
           )
             .then(() => {
               const executionTime = differenceInMilliseconds(
@@ -369,7 +370,17 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
       })
     )
     .then((b) => b.watch())
-    .then(() => Promise.all(entries.map(rebuildCallback)));
+    .then(() =>
+      Promise.all(
+        entries
+          .sort((a, b) => {
+            const dynamicA = a.split(":").length - 1;
+            const dynamicB = b.split(":").length - 1;
+            return dynamicA - dynamicB || a.localeCompare(b);
+          })
+          .map(rebuildCallback)
+      )
+    );
   const port = 3003;
   const wsEntries = entries
     .filter((f) => wsRegex.test(f))
