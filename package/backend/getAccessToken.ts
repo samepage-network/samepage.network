@@ -4,6 +4,8 @@ import { z } from "zod";
 const zResponse = z.object({
   accessToken: z.string(),
   workspace: z.string(),
+  uuid: z.string(),
+  token: z.string(),
 });
 
 const lambda = new Lambda({ endpoint: process.env.AWS_ENDPOINT });
