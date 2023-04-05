@@ -499,7 +499,7 @@ export const zOauthResponse = z.object({
   redirectUrl: z.string().optional(),
 });
 
-export type BackendExtensionRequest<T extends ZodType<any, any, any>> =
+export type BackendRequest<T extends ZodType<any, any, any>> =
   z.infer<T> & {
     requestId: string;
     authorization?: string;

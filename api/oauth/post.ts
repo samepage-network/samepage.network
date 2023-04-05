@@ -1,24 +1,22 @@
 import { authorizationCodes, oauthClients, tokens } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
-import { zBaseHeaders } from "package/internal/types";
+import type { BackendRequest } from "package/internal/types";
 import { z } from "zod";
 import { ConflictError, UnauthorizedError } from "~/data/errors.server";
 import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
 import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
 import getMysql from "~/data/mysql.server";
 
-const bodySchema = z
-  .object({
-    grant_type: z.literal("authorization_code"),
-    client_id: z.string(),
-    client_secret: z.string(),
-    code: z.string(),
-    redirect_uri: z.string(),
-  })
-  .and(zBaseHeaders);
+const bodySchema = z.object({
+  grant_type: z.literal("authorization_code"),
+  client_id: z.string(),
+  client_secret: z.string(),
+  code: z.string(),
+  redirect_uri: z.string(),
+});
 
-const logic = async (args: z.infer<typeof bodySchema>) => {
+const logic = async (args: BackendRequest<typeof bodySchema>) => {
   const cxn = await getMysql(args.requestId);
   const [client] = await cxn
     .select({ secret: oauthClients.secret, appId: oauthClients.appId })
