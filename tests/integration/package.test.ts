@@ -9,7 +9,7 @@ import { Notification } from "../../package/internal/types";
 import { JSDOM } from "jsdom";
 import getRandomNotebookPageId from "../utils/getRandomNotebookPageId";
 import getRandomAccount from "../utils/getRandomAccount";
-import debug from "package/utils/debug";
+import debug from "package/utils/debugger";
 import deleteUser from "~/data/deleteUser.server";
 import { users } from "@clerk/clerk-sdk-node";
 

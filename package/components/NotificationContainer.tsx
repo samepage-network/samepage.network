@@ -4,7 +4,7 @@ import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { onAppEvent } from "../internal/registerAppEventListener";
 import { ConnectionStatus, Notification } from "../internal/types";
 import Markdown from "markdown-to-jsx";
-import { callNotificationAction } from "../internal/messages";
+import { callNotificationAction } from "../internal/notificationActions";
 import apiClient from "../internal/apiClient";
 import sendExtensionError from "../internal/sendExtensionError";
 import { getSetting } from "../internal/registry";

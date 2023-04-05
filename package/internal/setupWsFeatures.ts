@@ -31,7 +31,7 @@ import {
 } from "./setupMessageHandlers";
 import MESSAGES, { Operation } from "./messages";
 import NotificationContainer from "../components/NotificationContainer";
-import debug from "../utils/debug";
+import debug from "../utils/debugger";
 const log = debug("ws");
 
 const USAGE_LABEL = "View SamePage Usage";

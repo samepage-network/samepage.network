@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 import { spawn } from "child_process";
 import path from "path";
 import fs from "fs";
-import debug from "package/utils/debug";
+import debug from "package/utils/debugger";
 // import getRandomAccount from "../utils/getRandomAccount";
 
 const covPath = "./coverage/tmp";

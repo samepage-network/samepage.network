@@ -9,7 +9,7 @@ import { sql as drizzleSql } from "drizzle-orm/sql";
 import type { MySql2Database } from "drizzle-orm/mysql2/driver";
 import { migrations } from "../../data/schema";
 import appPath from "../../package/scripts/internal/appPath";
-import debugMod from "../../package/utils/debug";
+import debugMod from "../../package/utils/debugger";
 
 type MigrationProps = {
   connection: MySql2Database;

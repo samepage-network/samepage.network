@@ -5,7 +5,7 @@ import { homedir } from "os";
 import path from "path";
 import fs from "fs";
 import { spawn } from "child_process";
-import debug from "../../package/utils/debug";
+import debug from "../../package/utils/debugger";
 
 const log = debug("ngrok");
 

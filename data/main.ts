@@ -123,6 +123,7 @@ const setupInfrastructure = async (): Promise<void> => {
         domain: projectName,
         secret: secret.value,
         cachePolicyId: cachePolicy.id,
+        
       });
 
       const httpMethods = new Set([

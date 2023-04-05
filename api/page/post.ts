@@ -53,7 +53,7 @@ import {
   tokens,
 } from "data/schema";
 import { z } from "zod";
-import debug from "package/utils/debug";
+import debug from "package/utils/debugger";
 import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
 
 const log = debug("page");

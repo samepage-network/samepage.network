@@ -18,14 +18,14 @@ import { JSDOM } from "jsdom";
 import apiClient from "../internal/apiClient";
 import Automerge from "automerge";
 import base64ToBinary from "../internal/base64ToBinary";
-import { callNotificationAction } from "../internal/messages";
+import { callNotificationAction } from "../internal/notificationActions";
 import fromAtJson from "./fromAtJson";
 import { load, set } from "../utils/localAutomergeDb";
 import binaryToBase64 from "../internal/binaryToBase64";
 import { v4 } from "uuid";
 import changeAutomergeDoc from "../utils/changeAutomergeDoc";
 import unwrapSchema from "../utils/unwrapSchema";
-import debug from "../utils/debug";
+import debug from "../utils/debugger";
 
 const SUPPORTED_TAGS = ["SPAN", "DIV", "A", "LI"] as const;
 const TAG_SET = new Set<string>(SUPPORTED_TAGS);

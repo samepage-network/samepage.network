@@ -16,7 +16,7 @@ import {
 } from "data/schema";
 import { eq, desc } from "drizzle-orm/expressions";
 import { Lambda } from "@aws-sdk/client-lambda";
-import debug from "package/utils/debug";
+import debug from "package/utils/debugger";
 
 const log = debug("message-notebook");
 

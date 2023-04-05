@@ -30,7 +30,6 @@ import binaryToBase64 from "../internal/binaryToBase64";
 import base64ToBinary from "../internal/base64ToBinary";
 import { clear, has, deleteId, load, set } from "../utils/localAutomergeDb";
 import messageToNotification from "../internal/messageToNotification";
-import { registerNotificationActions } from "../internal/messages";
 import changeAutomergeDoc from "../utils/changeAutomergeDoc";
 import unwrapSchema from "../utils/unwrapSchema";
 import wrapSchema from "../utils/wrapSchema";
@@ -38,6 +37,7 @@ import mergeDocs from "../utils/mergeDocs";
 import parseZodError from "../utils/parseZodError";
 import sendExtensionError from "../internal/sendExtensionError";
 import UserOnlyError from "../internal/UserOnlyError";
+import { registerNotificationActions } from "../internal/notificationActions";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";

@@ -6,10 +6,10 @@ import NotificationContainer from "../../../package/components/NotificationConta
 import React from "react";
 import dispatchAppEvent from "../../../package/internal/dispatchAppEvent";
 import { v4 } from "uuid";
-import { registerNotificationActions } from "../../../package/internal/messages";
 import setupRegistry from "../../../package/internal/registry";
 import { Response } from "@remix-run/node";
 import defaultGetSetting from "../../../package/utils/defaultGetSetting";
+import { registerNotificationActions } from "../../../package/internal/notificationActions";
 
 test.afterEach(cleanup);
 

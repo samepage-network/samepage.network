@@ -2,7 +2,6 @@ import { encode } from "@ipld/dag-cbor";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { addNotebookListener } from "../internal/setupMessageHandlers";
 import apiClient from "../internal/apiClient";
-import { registerNotificationActions } from "../internal/messages";
 import messageToNotification from "../internal/messageToNotification";
 import {
   AddNotebookRequestListener,
@@ -10,6 +9,7 @@ import {
   NotebookResponse,
   SendNotebookRequest,
 } from "../internal/types";
+import { registerNotificationActions } from "../internal/notificationActions";
 
 const notebookRequestHandlers: ((
   request: JSONData
