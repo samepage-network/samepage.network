@@ -6,11 +6,9 @@ import getPackageName from "./internal/getPackageName";
 import axios from "axios";
 import mimeTypes from "mime-types";
 import path from "path";
-import { Lambda } from "@aws-sdk/client-lambda";
-import archiver from "archiver";
-import crypto from "crypto";
 import esbuild from "esbuild";
 import appPath from "./internal/appPath";
+import updateLambdaFunctions from "./internal/updateLambdaFunctions";
 
 const publish = async ({
   root = ".",
@@ -107,80 +105,11 @@ const publish = async ({
     );
   }
 
-  const backendOutdir = path.join(root, "out");
-  const backendFunctions = fs.existsSync(backendOutdir)
-    ? fs.readdirSync(backendOutdir)
-    : [];
-  if (backendFunctions.length) {
-    const lambda = new Lambda({});
-    const options = {
-      date: new Date("01-01-1970"),
-    };
-    const id = destPath.replace(/-samepage$/, "");
-    await Promise.all(
-      backendFunctions.map((f) => {
-        const zip = archiver("zip", { gzip: true, zlib: { level: 9 } });
-        console.log(`Zipping ${f}...`);
-
-        zip.file(`${backendOutdir}/${f}.js`, {
-          name: `extensions-${id}-${f.replace("/", "_")}.js`,
-          ...options,
-        });
-        const shasum = crypto.createHash("sha256");
-        const data: Uint8Array[] = [];
-        return new Promise((resolve, reject) =>
-          zip
-            .on("data", (d) => {
-              data.push(d);
-              shasum.update(d);
-            })
-            .on("end", () => {
-              console.log(`Zip of ${f} complete (${data.length}).`);
-              const sha256 = shasum.digest("base64");
-              const FunctionName = `samepage-network_extensions-${id}-${f.replace(
-                "/",
-                "_"
-              )}`;
-              lambda
-                .getFunction({
-                  FunctionName,
-                })
-                .catch((e) => {
-                  console.warn(
-                    `Function ${FunctionName} not found due to ${e}.`
-                  );
-                  return false as const;
-                })
-                .then((l) => {
-                  if (!l) {
-                    return `Skipping...`;
-                  } else if (sha256 === l.Configuration?.CodeSha256) {
-                    return `No need to upload ${FunctionName}, shas match.`;
-                  } else {
-                    return lambda
-                      .updateFunctionCode({
-                        FunctionName,
-                        Publish: true,
-                        ZipFile: Buffer.concat(data),
-                      })
-                      .then(
-                        (upd) =>
-                          `Succesfully uploaded ${FunctionName} at ${upd.LastModified}`
-                      );
-                  }
-                })
-                .then(console.log)
-                .then(resolve)
-                .catch((e) => {
-                  console.error(`deploy of ${f} failed:`);
-                  reject(e);
-                });
-            })
-            .finalize()
-        );
-      })
-    );
-  }
+  await updateLambdaFunctions({
+    out: "out",
+    root,
+    prefix: `extensions-${destPath.replace(/-samepage$/, "")}-`,
+  });
 
   if (review && fs.existsSync(path.join(root, review))) {
     await import(appPath(`${root}/${review.replace(/\.[jt]s$/, "")}`)).then(
