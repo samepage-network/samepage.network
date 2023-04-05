@@ -20,6 +20,7 @@ export const handler = createRequestHandler({
     /^\/images\/.*/,
     /^\/svgs\/.*/,
     /^\/videos\/.*/,
+    /^\/.well-known\/.*/
   ],
   onError: (e) => console.log("Send email to me", e),
 });
