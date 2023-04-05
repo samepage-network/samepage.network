@@ -18,7 +18,6 @@ const updateLambdaFunctions = async ({
   prefix?: string;
 }) => {
   const backendOutdir = path.join(root, out);
-  console.log(backendOutdir);
   const backendFunctions = fs.existsSync(backendOutdir)
     ? readDir(backendOutdir)
     : [];
@@ -44,7 +43,7 @@ const updateLambdaFunctions = async ({
             .replace(/\.js$/, "")
             .replace(new RegExp(`^${backendOutdir}/`), "")
             .replace(/[\\/]/g, "_");
-          zip.file(appPath(f), { name: `${functionName}.js`, ...options });
+          zip.file(appPath(f), { name: `${prefix}${functionName}.js`, ...options });
           const shasum = crypto.createHash("sha256");
           const data: Uint8Array[] = [];
           return new Promise((resolve, reject) =>
