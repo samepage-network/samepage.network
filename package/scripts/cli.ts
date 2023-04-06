@@ -46,6 +46,7 @@ const run = async (command: string, args: string[]): Promise<number> => {
   switch (command) {
     case "build":
       return build(opts);
+    case "start":
     case "dev":
       return dev(opts);
     case "test":

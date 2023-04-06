@@ -265,13 +265,74 @@ export type AppEvent =
   | PromptAccountInfoEvent
   | NotificationEvent;
 
-export type MessageSource = {
-  uuid: string;
-  workspace: string;
-  app: number;
-  appName: string;
-};
-type MessageHandler = (data: json, source: MessageSource, uuid: string) => void;
+const zWebsocketMessageSource = z.object({
+  uuid: z.string(),
+  app: z.number(),
+  workspace: z.string(),
+  appName: z.string(),
+});
+
+export type MessageSource = z.infer<typeof zWebsocketMessageSource>;
+
+const zWebsocketMessage = z.discriminatedUnion("operation", [
+  z.object({ operation: z.literal("ERROR"), message: z.string() }),
+  z.object({
+    operation: z.literal("AUTHENTICATION"),
+    reason: z.string().optional(),
+    success: z.boolean(),
+  }),
+  z.object({ operation: z.literal("PONG") }),
+
+  z.object({ operation: z.literal("SHARE_PAGE"), title: z.string() }),
+  z.object({
+    operation: z.literal("SHARE_PAGE_RESPONSE"),
+    success: z.boolean(),
+    title: z.string(),
+    rejected: z.boolean(),
+  }),
+  z.object({
+    operation: z.literal("SHARE_PAGE_UPDATE"),
+    changes: z.string().array(),
+    notebookPageId: z.string(),
+    dependencies: z.record(z.object({ seq: z.number(), hash: z.string() })),
+  }),
+  z.object({
+    operation: z.literal("SHARE_PAGE_FORCE"),
+    state: z.string(),
+    notebookPageId: z.string(),
+  }),
+  z.object({
+    operation: z.literal("REQUEST_PAGE_UPDATE"),
+    notebookPageId: z.string(),
+    seq: z.number(),
+  }),
+
+  z.object({
+    operation: z.literal("REQUEST_DATA"),
+    request: z.record(z.any()),
+    uuid: z.string(),
+    source: z.string(),
+  }),
+  z.object({ operation: z.literal("REQUEST"), request: z.record(z.any()) }),
+  z.object({
+    operation: z.literal("RESPONSE"),
+    request: z.record(z.any()),
+    response: z.record(z.any()),
+  }),
+]);
+export type WebsocketMessage = z.infer<typeof zWebsocketMessage>;
+
+export const zBackendWebSocketMessage = z
+  .object({
+    credentials: z.object({
+      notebookUuid: z.string(),
+      token: z.string(),
+      accessToken: z.string(),
+    }),
+    source: zWebsocketMessageSource,
+  })
+  .and(zWebsocketMessage);
+type MessageHandler = (data: WebsocketMessage, source: MessageSource, uuid: string) => void;
 export type MessageHandlers = {
   [operation: string]: MessageHandler[];
 };
@@ -499,11 +560,10 @@ export const zOauthResponse = z.object({
   redirectUrl: z.string().optional(),
 });
 
-export type BackendRequest<T extends ZodType<any, any, any>> =
-  z.infer<T> & {
-    requestId: string;
-    authorization?: string;
-  };
+export type BackendRequest<T extends ZodType<any, any, any>> = z.infer<T> & {
+  requestId: string;
+  authorization?: string;
+};
 
 export type SamePageAPI = {
   addNotebookListener: AddNotebookListener;
