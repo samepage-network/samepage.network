@@ -1,4 +1,4 @@
-import { InitialSchema } from "package/internal/types";
+import type { InitialSchema } from "../internal/types";
 
 const firstBlockDoc = (doc: InitialSchema): InitialSchema => {
   const firstBlock = doc.annotations.find((a) => a.type === "block");
