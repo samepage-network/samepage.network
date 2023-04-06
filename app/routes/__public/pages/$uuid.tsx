@@ -3,10 +3,7 @@ import type { DataFunctionArgs } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
 import Automerge from "automerge";
-import {
-  referenceAnnotation,
-  Schema,
-} from "package/internal/types";
+import { referenceAnnotation, Schema } from "package/internal/types";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import unwrapSchema from "package/utils/unwrapSchema";
@@ -21,15 +18,8 @@ import { z } from "zod";
 const PageUuidPage = () => {
   const data = useLoaderData<Awaited<ReturnType<typeof loader>>>();
   return (
-    <div className="flex flex-col gap-2 h-full justify-between">
-      <div className="flex-grow border border-opacity-50 border-gray-300 flex justify-between gap-1">
-        <div>
-          <AtJsonRendered
-            content={data.content}
-            annotations={data.annotations}
-          />
-        </div>
-      </div>
+    <div className="flex flex-col gap-2 h-full justify-between w-full p-16">
+      <AtJsonRendered content={data.content} annotations={data.annotations} />
     </div>
   );
 };

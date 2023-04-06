@@ -174,8 +174,8 @@ const compile = ({
           "process.env.VERSION": `"${toVersion()}"`,
           "process.env.ORIGIN":
             process.env.NODE_ENV === "production"
-              ? "https://samepage.network"
-              : "http://localhost:3000",
+              ? '"https://samepage.network"'
+              : '"http://localhost:3000"',
           ...envObject,
         },
         format,

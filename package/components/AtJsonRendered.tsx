@@ -10,7 +10,7 @@ const AnnotationRendered = ({
   annotation,
   content,
   classNames = {},
-  references = {},
+  references: _ = {},
 }: {
   annotation: AnnotationTree[number];
   content: string;
@@ -106,11 +106,10 @@ const AnnotationRendered = ({
             : `${annotation.attributes.notebookUuid}:${annotation.attributes.notebookPageId}`
         }
       >
-        {children.length === 1 &&
-        children[0] === NULL_TOKEN &&
-        references[annotation.attributes.notebookUuid]?.[
-          annotation.attributes.notebookPageId
-        ] ? (
+        {children.length === 1 && children[0] === NULL_TOKEN ? (
+          // && references[annotation.attributes.notebookUuid]?.[
+          //   annotation.attributes.notebookPageId
+          // ]
           // import firstBlockDoc from "../utils/firstBlockDoc";
           // <AtJsonRendered
           //   {...firstBlockDoc(
@@ -121,7 +120,7 @@ const AnnotationRendered = ({
           //   classNames={classNames}
           //   references={references}
           // />
-          <span className="text-sky-500">
+          <span className="text-sky-500 underline">
             {annotation.attributes.notebookPageId}
           </span>
         ) : (
