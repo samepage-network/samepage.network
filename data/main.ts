@@ -64,6 +64,7 @@ const setupInfrastructure = async (): Promise<void> => {
       const allVariables = [
         "database_url",
         "clerk_api_key",
+        "clerk_secret_key",
         "convertkit_api_key",
         "staging_clerk_api_key",
         "web3_storage_api_key",
@@ -622,7 +623,7 @@ const setupInfrastructure = async (): Promise<void> => {
         secretName: "CLOUDFRONT_DISTRIBUTION_ID",
         plaintextValue: staticSite.cloudfrontDistributionIdOutput,
       });
-      allVariables.forEach((v) => {
+      allVariables.map((v) => {
         const tf_secret = new TerraformVariable(this, v, {
           type: "string",
         });
@@ -636,6 +637,13 @@ const setupInfrastructure = async (): Promise<void> => {
       const samePageTestPassword = new TerraformVariable(
         this,
         "samepage_test_password",
+        {
+          type: "string",
+        }
+      );
+      const clerkPublishableKey = new TerraformVariable(
+        this,
+        "clerk_publishable_key",
         {
           type: "string",
         }
@@ -654,6 +662,11 @@ const setupInfrastructure = async (): Promise<void> => {
         visibility: "all",
         secretName: "SAMEPAGE_TEST_PASSWORD",
         plaintextValue: samePageTestPassword.value,
+      });
+      new ActionsOrganizationSecret(this, `clerk_publishable_key_secret`, {
+        visibility: "all",
+        secretName: "CLERK_PUBLISHABLE_KEY",
+        plaintextValue: clerkPublishableKey.value,
       });
 
       // TODO migrate google verification route53 record
