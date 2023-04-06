@@ -106,7 +106,7 @@ const externalLinkAnnotation = annotationBase.merge(
     }),
   })
 );
-const referenceAnnotation = annotationBase.merge(
+export const referenceAnnotation = annotationBase.merge(
   z.object({
     type: z.literal("reference"),
     attributes: z.object({

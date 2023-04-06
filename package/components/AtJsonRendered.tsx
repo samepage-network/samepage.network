@@ -1,6 +1,8 @@
 import React from "react";
 import type { Annotation, InitialSchema } from "../internal/types";
 import { getSetting } from "../internal/registry";
+import { NULL_TOKEN } from "package/utils/atJsonParser";
+import firstBlockDoc from "package/utils/firstBlockDoc";
 
 type AnnotationTree = (Annotation & { children: AnnotationTree })[];
 type ClassNames = { blockLi?: string };
@@ -9,10 +11,12 @@ const AnnotationRendered = ({
   annotation,
   content,
   classNames = {},
+  references = {},
 }: {
   annotation: AnnotationTree[number];
   content: string;
   classNames?: ClassNames;
+  references?: Record<string, Record<string, InitialSchema>>;
 }): React.ReactElement => {
   const children = annotation.children
     .reduce(
@@ -103,7 +107,23 @@ const AnnotationRendered = ({
             : `${annotation.attributes.notebookUuid}:${annotation.attributes.notebookPageId}`
         }
       >
-        {children}
+        {children.length === 1 &&
+        children[0] === NULL_TOKEN &&
+        references[annotation.attributes.notebookUuid]?.[
+          annotation.attributes.notebookPageId
+        ] ? (
+          <AtJsonRendered
+            {...firstBlockDoc(
+              references[annotation.attributes.notebookUuid][
+                annotation.attributes.notebookPageId
+              ]
+            )}
+            classNames={classNames}
+            references={references}
+          />
+        ) : (
+          children
+        )}
       </span>
     ) : (
       <>{children}</>
@@ -115,7 +135,11 @@ const AtJsonRendered = ({
   content,
   annotations,
   classNames,
-}: (InitialSchema) & { classNames?: ClassNames }) => {
+  references,
+}: InitialSchema & {
+  classNames?: ClassNames;
+  references?: Record<string, Record<string, InitialSchema>>;
+}) => {
   const selectedSnapshotTree = React.useMemo(() => {
     const tree: AnnotationTree = [];
     annotations.forEach((anno) => {
@@ -141,6 +165,7 @@ const AtJsonRendered = ({
           content={content.toString() || ""}
           classNames={classNames}
           key={key}
+          references={references}
         />
       ))}
     </>
