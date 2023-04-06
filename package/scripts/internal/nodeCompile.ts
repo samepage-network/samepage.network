@@ -10,6 +10,7 @@ type Args = {
   root?: string;
   define?: Record<string, string>;
   opts?: esbuild.BuildOptions;
+  external?: string[];
 };
 
 export const getOpts = ({
@@ -18,11 +19,12 @@ export const getOpts = ({
   root = "api",
   define = getDotEnvObject(),
   opts = {},
+  external = [],
 }: Args): BuildOptions => ({
   bundle: true,
   outdir,
   platform: "node",
-  external: ["aws-sdk", "canvas", "@aws-sdk/*", "esbuild"],
+  external: ["aws-sdk", "canvas", "@aws-sdk/*", "esbuild"].concat(external),
   define,
   entryPoints: Object.fromEntries(
     functions.map((f) => [f, path.join(root, `${f}.ts`)])

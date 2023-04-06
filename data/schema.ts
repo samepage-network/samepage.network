@@ -192,6 +192,7 @@ export const clientSessions = mysqlTable(
   },
   (sessions) => ({
     notebookIndex: index("IX_notebook_uuid").on(sessions.notebookUuid),
+    endDateIndex: index("IX_end_date").on(sessions.endDate),
   })
 );
 
@@ -212,6 +213,7 @@ export const messages = mysqlTable(
     targetMarkedIndex: index("IX_target_marked").on(msgs.target, msgs.marked),
     targetIndex: index("IX_target").on(msgs.target),
     sourceIndex: index("IX_source").on(msgs.source),
+    createdDateIndex: index("IX_created_date").on(msgs.createdDate),
   })
 );
 

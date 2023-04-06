@@ -198,6 +198,9 @@ const compile = ({
                 functions: apiFunctions,
                 root: apiRoot,
                 define: envObject,
+                external: externalModules
+                  .filter((e) => e.length === 1)
+                  .map((e) => e[0]),
               })
             ),
           ]
