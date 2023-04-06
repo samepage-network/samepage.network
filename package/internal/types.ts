@@ -525,6 +525,10 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     notebookPageId: z.string(),
   }),
   z.object({
+    method: z.literal("create-public-link"),
+    notebookPageId: z.string(),
+  }),
+  z.object({
     method: z.literal("get-unmarked-messages"),
   }),
   z.object({

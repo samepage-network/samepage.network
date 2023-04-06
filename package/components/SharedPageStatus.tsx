@@ -281,7 +281,7 @@ const SharedPageStatus = ({
             onClick={() => {
               setLoading(true);
               return apiClient<{ uuid: string }>({
-                method: "get-ipfs-cid",
+                method: "create-public-link",
                 notebookPageId,
               })
                 .then(({ uuid }) => {

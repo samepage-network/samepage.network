@@ -36,7 +36,10 @@ export const loader: LoaderFunction = async ({ params, context }) => {
   const requestId = parseRemixContext(context).lambdaContext.awsRequestId;
   const cxn = await getMysql(requestId);
   const cid = await cxn
-    .select({ cid: pageNotebookLinks.cid })
+    .select({
+      cid: pageNotebookLinks.cid,
+      isPublic: pageNotebookLinks.isPublic,
+    })
     .from(pageNotebookLinks)
     .where(eq(pageNotebookLinks.uuid, uuid))
     .then((rows) => rows[0]?.cid);

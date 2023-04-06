@@ -1228,6 +1228,20 @@ const logic = async (req: Record<string, unknown>) => {
         await cxn.end();
         return { cid, uuid: linkUuid };
       }
+      case "create-public-link": {
+        const { notebookPageId } = args;
+        const { linkUuid } = await getSharedPage({
+          notebookUuid,
+          notebookPageId,
+          requestId,
+        });
+        await cxn
+          .update(pageNotebookLinks)
+          .set({ isPublic: true })
+          .where(eq(pageNotebookLinks.uuid, linkUuid));
+        await cxn.end();
+        return { uuid: linkUuid };
+      }
       case "get-shared-page": {
         const { notebookPageId } = args;
         const { cid } = await getSharedPage({
