@@ -11,10 +11,12 @@ import appPath from "./internal/appPath";
 import updateLambdaFunctions from "./internal/updateLambdaFunctions";
 
 const publish = async ({
+  api,
   root = ".",
   review,
   version,
 }: {
+  api?: string;
   root?: string;
   review?: string;
   version?: string;
@@ -106,6 +108,7 @@ const publish = async ({
   }
 
   await updateLambdaFunctions({
+    api,
     out: "out",
     root,
     prefix: `extensions-${destPath.replace(/-samepage$/, "")}-`,
@@ -209,7 +212,12 @@ const analyzeMetafile = async (metafile: esbuild.Metafile, root = ".") => {
 };
 
 const build = (
-  args: CliArgs & { dry?: boolean; review?: string; domain?: string } = {}
+  args: CliArgs & {
+    dry?: boolean;
+    review?: string;
+    domain?: string;
+    api?: string;
+  } = {}
 ) => {
   process.env.NODE_ENV = process.env.NODE_ENV || "production";
   const version = toVersion();
@@ -218,7 +226,7 @@ const build = (
     : "";
   fs.writeFileSync(
     ".env",
-    `${envExisting.replace(/VERSION=[\d-]+\n/gs, "")}VERSION=${version}\n`
+    `${envExisting.replace(/VERSION=[\d.-]+\n/gs, "")}VERSION=${version}\n`
   );
   return compile({
     ...args,
@@ -240,6 +248,7 @@ const build = (
             review: args.review,
             version,
             root: args.root,
+            api: args.api,
           })
     )
     .then(() => {

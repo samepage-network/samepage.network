@@ -1,11 +1,11 @@
 import esbuild from "esbuild";
 
-const esbuildPlugins: esbuild.Plugin[] = [
+const esbuildPlugins = (source:string): esbuild.Plugin[] => [
   {
     name: "log",
     setup: (build) => {
       build.onEnd((result) => {
-        console.log(`build completed with ${result.errors.length} errors`);
+        console.log(`${source} completed with ${result.errors.length} errors`);
       });
     },
   },

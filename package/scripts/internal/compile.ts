@@ -181,7 +181,7 @@ const compile = ({
           importAsGlobals(
             Object.fromEntries(externalModules.filter((e) => e.length === 2))
           ),
-          ...esbuildPlugins,
+          ...esbuildPlugins("src"),
         ],
         metafile: analyze,
         loader: {

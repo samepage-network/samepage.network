@@ -53,7 +53,7 @@ export const getOpts = ({
         );
       },
     },
-    ...esbuildPlugins,
+    ...esbuildPlugins("api"),
   ],
   ...opts,
 });

@@ -9,10 +9,12 @@ import appPath from "./appPath";
 const ignorePaths = ["mocks"];
 
 const updateLambdaFunctions = async ({
+  api = "samepage-network",
   out,
   root = ".",
   prefix = "",
 }: {
+  api?: string;
   out: string; // TODO - make this consistent
   root?: string;
   prefix?: string;
@@ -55,7 +57,7 @@ const updateLambdaFunctions = async ({
               .on("end", () => {
                 console.log(`Zip of ${functionName} complete (${data.length}).`);
                 const sha256 = shasum.digest("base64");
-                const FunctionName = `samepage-network_${prefix}${functionName}`;
+                const FunctionName = `${api}_${prefix}${functionName}`;
                 lambda
                   .getFunction({
                     FunctionName,
