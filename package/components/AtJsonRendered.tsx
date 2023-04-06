@@ -2,7 +2,6 @@ import React from "react";
 import type { Annotation, InitialSchema } from "../internal/types";
 import { getSetting } from "../internal/registry";
 import { NULL_TOKEN } from "../utils/atJsonParser";
-import firstBlockDoc from "../utils/firstBlockDoc";
 
 type AnnotationTree = (Annotation & { children: AnnotationTree })[];
 type ClassNames = { blockLi?: string };
@@ -112,15 +111,19 @@ const AnnotationRendered = ({
         references[annotation.attributes.notebookUuid]?.[
           annotation.attributes.notebookPageId
         ] ? (
-          <AtJsonRendered
-            {...firstBlockDoc(
-              references[annotation.attributes.notebookUuid][
-                annotation.attributes.notebookPageId
-              ]
-            )}
-            classNames={classNames}
-            references={references}
-          />
+          // import firstBlockDoc from "../utils/firstBlockDoc";
+          // <AtJsonRendered
+          //   {...firstBlockDoc(
+          //     references[annotation.attributes.notebookUuid][
+          //       annotation.attributes.notebookPageId
+          //     ]
+          //   )}
+          //   classNames={classNames}
+          //   references={references}
+          // />
+          <span className="text-sky-500">
+            {annotation.attributes.notebookPageId}
+          </span>
         ) : (
           children
         )}
