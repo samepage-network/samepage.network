@@ -117,6 +117,7 @@ export const pageNotebookLinks = mysqlTable(
       .notNull()
       .default(""),
     cid: varchar("cid", { length: 128 }).notNull().default(""),
+    isPublic: boolean("is_public").notNull().default(false),
   },
   (links) => ({
     pageUuidIndex: index("IX_page_uuid").on(links.pageUuid),
