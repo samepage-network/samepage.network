@@ -319,6 +319,18 @@ const zWebsocketMessage = z.discriminatedUnion("operation", [
     request: z.record(z.any()),
     response: z.record(z.any()),
   }),
+
+  // @deperecated
+  z.object({
+    operation: z.literal("QUERY"),
+    request: z.string(),
+  }),
+  z.object({
+    operation: z.literal("QUERY_RESPONSE"),
+    found: z.boolean(),
+    data: zInitialSchema,
+    request: z.string(),
+  }),
 ]);
 export type WebsocketMessage = z.infer<typeof zWebsocketMessage>;
 
@@ -332,7 +344,11 @@ export const zBackendWebSocketMessage = z
     source: zWebsocketMessageSource,
   })
   .and(zWebsocketMessage);
-type MessageHandler = (data: WebsocketMessage, source: MessageSource, uuid: string) => void;
+type MessageHandler = (
+  data: WebsocketMessage,
+  source: MessageSource,
+  uuid: string
+) => void;
 export type MessageHandlers = {
   [operation: string]: MessageHandler[];
 };

@@ -2,7 +2,7 @@ import type { LoaderFunction } from "@remix-run/node";
 import getUserId from "~/data/getUserId.server";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, Outlet, useMatches, useLoaderData } from "@remix-run/react";
 import MenuAlt1Icon from "@heroicons/react/solid/MenuAlt1Icon";
 import XIcon from "@heroicons/react/outline/XIcon";
@@ -25,13 +25,6 @@ const PublicPage: React.FC = () => {
       ?.mainClassName || "";
   const [menuOpen, setMenuOpen] = useState(false);
   const authed = useLoaderData<boolean>();
-  useEffect(() => {
-    // document.addEventListener("click", (e) => {
-    //   if ((e.target as HTMLElement).classList.contains("nav-menu")) {
-    //     setMenuOpen(false);
-    //   }
-    // });
-  }, []);
   const MenuIcon = menuOpen ? XIcon : MenuAlt1Icon;
   return (
     <div className={`flex flex-col min-h-full`}>
