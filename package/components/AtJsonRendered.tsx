@@ -1,8 +1,8 @@
 import React from "react";
 import type { Annotation, InitialSchema } from "../internal/types";
 import { getSetting } from "../internal/registry";
-import { NULL_TOKEN } from "package/utils/atJsonParser";
-import firstBlockDoc from "package/utils/firstBlockDoc";
+import { NULL_TOKEN } from "../utils/atJsonParser";
+import firstBlockDoc from "../utils/firstBlockDoc";
 
 type AnnotationTree = (Annotation & { children: AnnotationTree })[];
 type ClassNames = { blockLi?: string };
