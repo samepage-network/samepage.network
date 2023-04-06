@@ -20,10 +20,13 @@ jobs:
         run: npm install
       - name: package
         run: npx ts-node scripts/cli.ts package
-      # TODO - move all below to npx ts-node scripts/cli.  
+      # TODO - move all below to npx ts-node scripts/cli.ts publish.  
       - name: publish
         run: npm publish --access public
         working-directory: dist/internal
+      - name: publish
+        run: npm publish --access public
+        working-directory: dist/backend
       - name: publish
         run: npm publish --access public
         working-directory: dist/external

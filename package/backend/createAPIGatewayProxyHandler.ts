@@ -12,6 +12,7 @@ const createAPIGatewayProxyHandler =
           logic: Logic<T, U>;
           allowedOrigins?: (string | RegExp)[];
           bodySchema?: ZodSchema;
+          includeHeaders?: string[];
         }
   ): APIGatewayProxyHandler =>
   (event, context) => {
@@ -19,6 +20,10 @@ const createAPIGatewayProxyHandler =
       typeof args === "function" ? [] : args.allowedOrigins || []
     ).map((s) => (typeof s === "string" ? new RegExp(s) : s));
     const bodySchema = typeof args === "function" ? undefined : args.bodySchema;
+    const includeHeaders =
+      typeof args === "function"
+        ? new Set<string>()
+        : new Set(args.includeHeaders || []);
     const requestOrigin = event.headers.origin || event.headers.Origin || "";
     const cors = allowedOrigins.some((r) => r.test(requestOrigin))
       ? requestOrigin
@@ -42,6 +47,9 @@ const createAPIGatewayProxyHandler =
           ...event.pathParameters,
           ...(event.queryStringParameters || {}),
           ...JSON.parse(event.body || "{}"),
+          ...Object.fromEntries(
+            Object.entries(event.headers).filter(([h]) => includeHeaders.has(h))
+          ),
         };
         const body = bodySchema ? bodySchema.parse(rawObject) : rawObject;
         resolve(
