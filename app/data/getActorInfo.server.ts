@@ -10,7 +10,7 @@ const getActorInfo = async ({
   requestId: string;
   actorId: string;
 }): Promise<ActorInfo> => {
-  if (/[a-f0-9]{2}/.test(actorId)) {
+  if (/[a-f0-9]{32}/.test(actorId)) {
     const cxn = await getMysql(requestId);
     const [record] = await cxn
       .select({

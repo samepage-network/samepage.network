@@ -5,10 +5,17 @@ const actorCache: Record<string, ActorInfo> = {};
 
 const parseActorId = async (s: string): Promise<ActorInfo> => {
   if (actorCache[s]) return actorCache[s];
-  return apiClient<ActorInfo>({ method: "get-actor", actorId: s }).then((r) => {
-    actorCache[s] = r;
-    return r;
-  });
+  return apiClient<ActorInfo>({ method: "get-actor", actorId: s })
+    .then((r) => {
+      actorCache[s] = r;
+      return r;
+    })
+    .catch(() => ({
+      appName: "Unknown",
+      workspace: "Not Found",
+      email: "",
+      notebookUuid: "",
+    }));
 };
 
 export const parseAndFormatActorId = async (s: string) => {
