@@ -2,8 +2,8 @@ import apiClient from "../internal/apiClient";
 import { Schema } from "../internal/types";
 import Automerge from "automerge";
 import base64ToBinary from "../internal/base64ToBinary";
-import getActorId from "../internal/getActorId";
 import wrapSchema from "./wrapSchema";
+import { actorId } from "../internal/registry";
 
 const notebookPageIds: Record<string, Automerge.FreezeObject<Schema> | null> =
   {};
@@ -25,7 +25,7 @@ export const load = async (
       const remoteDoc = Automerge.load<Schema>(
         base64ToBinary(state) as Automerge.BinaryDocument,
         {
-          actorId: getActorId(),
+          actorId: actorId.replace(/-/g, ""),
         }
       );
       return (notebookPageIds[id] = remoteDoc);

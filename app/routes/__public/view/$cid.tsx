@@ -1,30 +1,22 @@
 import AtJsonRendered from "package/components/AtJsonRendered";
-import type { LoaderFunction } from "@remix-run/node";
+import type { DataFunctionArgs } from "@remix-run/node";
 import { useLoaderData, Link } from "@remix-run/react";
 import downloadIpfsFile from "~/data/downloadIpfsFile.server";
 import Automerge from "automerge";
-import { Schema, InitialSchema, Memo } from "package/internal/types";
+import { Schema, Memo } from "package/internal/types";
 import Button from "~/components/Button";
 import binaryToBase64 from "package/internal/binaryToBase64";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
-import { useMemo } from "react";
 import base64ToBinary from "package/internal/base64ToBinary";
-import { parseAndFormatActorId } from "package/internal/parseActorId";
 import { decode } from "@ipld/dag-cbor";
 import unwrapSchema from "package/utils/unwrapSchema";
+import parseRemixContext from "~/data/parseRemixContext.server";
+import getActorInfo from "~/data/getActorInfo.server";
+import getMysql from "~/data/mysql.server";
 
 const ViewCidPage = () => {
-  const data = useLoaderData<
-    InitialSchema & { parent: string | null; raw: string }
-  >();
-  const history = useMemo(
-    () =>
-      Automerge.getHistory(
-        Automerge.load(base64ToBinary(data.raw) as Automerge.BinaryDocument)
-      ),
-    [data.raw]
-  );
+  const data = useLoaderData<Awaited<ReturnType<typeof loader>>>();
   return (
     <div className="flex flex-col gap-2 h-full justify-between">
       <div className="flex-grow border border-opacity-50 border-gray-300 flex justify-between gap-1">
@@ -35,7 +27,7 @@ const ViewCidPage = () => {
           />
         </div>
         <div className="flex flex-col-reverse">
-          {history.map((l, index) => (
+          {data.history.map((l, index) => (
             <div
               key={index}
               className={"border-t border-t-gray-800 p-4 relative"}
@@ -47,7 +39,7 @@ const ViewCidPage = () => {
               </div>
               <div>
                 <span className={"font-bold"}>Actor: </span>
-                <span>{parseAndFormatActorId(l.change.actor)}</span>
+                <span>{data.actorMap[l.change.actor]}</span>
               </div>
               <div>
                 <span className={"font-bold"}>Date: </span>
@@ -82,17 +74,41 @@ const ViewCidPage = () => {
   );
 };
 
-export const loader: LoaderFunction = ({ params }) => {
+export const loader = ({ params, context }: DataFunctionArgs) => {
   const cid = params["cid"];
   if (!cid) {
-    return { content: "", annotations: [], parent: null };
+    return {
+      content: "",
+      annotations: [],
+      parent: null,
+      history: [],
+      actorMap: {} as Record<string, string>,
+      raw: "",
+    };
   }
-  return downloadIpfsFile({ cid }).then((bytes) => {
+  const requestId = parseRemixContext(context).lambdaContext.awsRequestId;
+  return downloadIpfsFile({ cid }).then(async (bytes) => {
     const memo = decode<Memo>(bytes);
     const doc = Automerge.load<Schema>(memo.body);
+    const raw = binaryToBase64(memo.body);
+    const history = Automerge.getHistory(
+      Automerge.load(base64ToBinary(raw) as Automerge.BinaryDocument)
+    );
+    const actorIds = new Set(history.map((l) => l.change.actor));
+    const actorMap = await Promise.all(
+      Array.from(actorIds).map((actorId) =>
+        getActorInfo({ actorId, requestId }).then(
+          (info) => [actorId, `${info.appName} / ${info.workspace}`] as const
+        )
+      )
+    ).then((info) => Object.fromEntries(info));
+    await getMysql(requestId).then((c) => c.end());
+
     return {
       parent: memo.parent?.toString() || null,
-      raw: binaryToBase64(memo.body),
+      raw,
+      history,
+      actorMap,
       ...unwrapSchema(doc),
     };
   });

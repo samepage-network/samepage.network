@@ -168,6 +168,7 @@ test("build command compiles template", async () => {
     "is-regex",
     "lower-case",
     "markdown-to-jsx",
+    "moo",
     "ms",
     "multiformats",
     "no-case",

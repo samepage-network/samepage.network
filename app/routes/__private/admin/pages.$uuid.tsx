@@ -9,7 +9,6 @@ import disconnectNotebookFromPage from "~/data/disconnectNotebookFromPage.server
 import getSharedPageByUuid from "~/data/getSharedPageByUuid.server";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
-import { parseAndFormatActorId } from "package/internal/parseActorId";
 import { useState } from "react";
 import AtJsonRendered from "package/components/AtJsonRendered";
 import TextInput from "~/components/TextInput";
@@ -21,7 +20,7 @@ import { z } from "zod";
 import listApps from "~/data/listApps.server";
 
 const SinglePagePage = () => {
-  const { notebooks, pages, apps } = useLoaderData<
+  const { notebooks, pages, apps, actors } = useLoaderData<
     Awaited<ReturnType<typeof getSharedPageByUuid>> & {
       apps: { id: string; label: string }[];
     }
@@ -48,7 +47,10 @@ const SinglePagePage = () => {
               </div>
               <div>
                 <span className={"font-bold"}>Actor: </span>
-                <span>{parseAndFormatActorId(l.change.actor)}</span>
+                <span>
+                  {actors[l.change.actor].appName}/
+                  {actors[l.change.actor].workspace}
+                </span>
               </div>
               <div>
                 <span className={"font-bold"}>Date: </span>

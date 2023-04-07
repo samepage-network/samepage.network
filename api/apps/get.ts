@@ -12,5 +12,5 @@ const logic = async ({ requestId }: { requestId: string }) => ({
 
 export const handler = createAPIGatewayProxyHandler({
   logic,
-  allowedOrigins: ["https://roamresearch.com", "https://logseq.com"],
+  allowedOrigins: [/.*/],
 });

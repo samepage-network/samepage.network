@@ -3,7 +3,6 @@ import postError from "~/data/postError.server";
 import { v4 } from "uuid";
 import getMysql from "~/data/mysql.server";
 import { downloadFileContent } from "~/data/downloadFile.server";
-import type { AppId } from "package/internal/types";
 import postToConnection from "~/data/postToConnection.server";
 import messageNotebook from "~/data/messageNotebook.server";
 import type {
@@ -41,7 +40,7 @@ const dataHandler = async (
   if (operation === "AUTHENTICATION") {
     const propArgs = props as { notebookUuid: string; token: string };
     const cxn = await getMysql(requestId);
-    const { notebookUuid } = await authenticateNotebook({
+    const { notebookUuid, actorId } = await authenticateNotebook({
       ...propArgs,
       requestId,
     });
@@ -58,6 +57,7 @@ const dataHandler = async (
       Data: {
         operation: "AUTHENTICATION",
         success: true,
+        actorId,
       },
     });
     await cxn.end();
@@ -69,7 +69,7 @@ const dataHandler = async (
   } else if (operation === "PROXY") {
     const { proxyOperation, ...data } = props as {
       proxyOperation: Operation;
-    } & ({ workspace: string; app: AppId } | { notebookUuid: string }) &
+    } & ({ workspace: string; app: number } | { notebookUuid: string }) &
       Record<string, string>;
     const cxn = await getMysql(requestId);
     const [source] = await cxn

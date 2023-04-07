@@ -6,6 +6,7 @@ import {
   renderOverlay,
   appRoot,
   getSetting,
+  actorId,
 } from "../internal/registry";
 import sendToNotebook from "../internal/sendToNotebook";
 import { InitialSchema, Schema, zInitialSchema } from "../internal/types";
@@ -24,7 +25,6 @@ import SharedPageStatus, {
 } from "../components/SharedPageStatus";
 import createHTMLObserver from "../utils/createHTMLObserver";
 import { onAppEvent } from "../internal/registerAppEventListener";
-import getActorId from "../internal/getActorId";
 import parseActorId from "../internal/parseActorId";
 import binaryToBase64 from "../internal/binaryToBase64";
 import base64ToBinary from "../internal/base64ToBinary";
@@ -247,7 +247,7 @@ const setupSharePageWithNotebook = ({
 
   const loadAutomergeFromBase64 = (state: string) =>
     Automerge.load<Schema>(base64ToBinary(state) as Automerge.BinaryDocument, {
-      actorId: getActorId(),
+      actorId: actorId.replace(/-/g, ""),
     });
 
   let offConnect: (() => void) | undefined;
@@ -404,9 +404,7 @@ const setupSharePageWithNotebook = ({
             dispatchAppEvent({
               type: "log",
               id: "share-page-removed",
-              content: `Notebook ${source.appName} / ${
-                source.workspace
-              } invite was removed from ${title}`,
+              content: `Notebook ${source.appName} / ${source.workspace} invite was removed from ${title}`,
               intent: "success",
             });
         },
@@ -497,14 +495,16 @@ const setupSharePageWithNotebook = ({
                       );
                     } else {
                       actorsToRequest.forEach(([actor]) => {
-                        sendToNotebook({
-                          target: parseActorId(actor),
-                          operation: "REQUEST_PAGE_UPDATE",
-                          data: {
-                            notebookPageId,
-                            seq: patch.clock[actor],
-                          },
-                        });
+                        parseActorId(actor).then(({ notebookUuid: target }) =>
+                          sendToNotebook({
+                            target,
+                            operation: "REQUEST_PAGE_UPDATE",
+                            data: {
+                              notebookPageId,
+                              seq: patch.clock[actor],
+                            },
+                          })
+                        );
                       });
                     }
                   }
@@ -576,7 +576,7 @@ const setupSharePageWithNotebook = ({
                 ])
               );
               sendToNotebook({
-                target: source,
+                target: source.uuid,
                 operation: "SHARE_PAGE_UPDATE",
                 data: {
                   notebookPageId,
@@ -640,7 +640,7 @@ const setupSharePageWithNotebook = ({
               notebookPageId
                 ? calculateState(notebookPageId).then((docInit) => {
                     const doc = Automerge.from<Schema>(wrapSchema(docInit), {
-                      actorId: getActorId(),
+                      actorId: actorId.replace(/-/g, ""),
                     });
                     set(notebookPageId, doc);
                     const state = Automerge.save(doc);

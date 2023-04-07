@@ -1,10 +1,15 @@
 import React from "react";
 import { Classes, Dialog } from "@blueprintjs/core";
-import type { Notebook, OverlayProps } from "../internal/types";
-import { appsById } from "../internal/apps";
+import type { OverlayProps } from "../internal/types";
 
 export type UsageChartProps = {
-  notebooks: ({ uuid: string; pages: number } & Notebook)[];
+  notebooks: {
+    uuid: string;
+    pages: number;
+    app: number;
+    workspace: string;
+    appName: string;
+  }[];
   quotas: Record<string, number>;
   portalContainer?: HTMLElement;
 };
@@ -34,9 +39,7 @@ const UsageChart = ({
           <div className="font-bold">Pages</div>
           {stats.notebooks.map((notebook) => (
             <React.Fragment key={notebook.uuid}>
-              <div className="font-semibold">
-                {appsById[notebook.app]?.name || "Unknown"}
-              </div>
+              <div className="font-semibold">{notebook.appName}</div>
               <div className="font-normal">{notebook.workspace}</div>
               <div className="font-normal">{notebook.pages}</div>
             </React.Fragment>

@@ -77,6 +77,18 @@ test("Shared Page Status View History", async () => {
     notebookPageId,
   });
 
+  global.fetch = (_) =>
+    Promise.resolve(
+      new Response(
+        JSON.stringify({
+          appName: "SamePage",
+          workspace,
+          email: "",
+          notebookUuid: "",
+        }),
+        { status: 200 }
+      )
+    );
   set(notebookPageId, mockSchema("hello"));
   const button = screen.getByRole("button", { name: "history" });
   await user.click(button);

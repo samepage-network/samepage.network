@@ -70,6 +70,7 @@ export let app: string = "samepage";
 export let workspace = "Main";
 export let getSetting = defaultGetSetting;
 export let setSetting = defaultSetSetting;
+export let actorId: string = Array(32).fill("0").join("");
 
 const setupRegistry = ({
   app: _app,
@@ -80,6 +81,7 @@ const setupRegistry = ({
   appRoot: _appRoot,
   getSetting: _getSetting,
   setSetting: _setSetting,
+  actorId: _actorId,
 }: {
   app?: string;
   workspace?: string;
@@ -89,6 +91,7 @@ const setupRegistry = ({
   appRoot?: HTMLElement;
   getSetting?: (s: typeof defaultSettings[number]["id"]) => string;
   setSetting?: (s: typeof defaultSettings[number]["id"], v: string) => void;
+  actorId?: string;
 }) => {
   if (_app) app = _app;
   if (_workspace) workspace = _workspace;
@@ -98,6 +101,7 @@ const setupRegistry = ({
   if (_getSetting) getSetting = _getSetting;
   if (_setSetting) setSetting = _setSetting;
   if (_appRoot) appRoot = _appRoot;
+  if (_actorId) actorId = _actorId;
 };
 
 export default setupRegistry;
