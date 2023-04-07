@@ -6,16 +6,18 @@ import {
   tokens,
 } from "data/schema";
 import { and, eq } from "drizzle-orm/expressions";
-import { z } from "zod";
+import {
+  GetAccessTokenResponse,
+  zGetAccessTokenPayload,
+} from "package/backend/types";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
 import getMysql from "~/data/mysql.server";
 
-const zParams = z.object({
-  authorization: z.string(),
-});
-
-export const handler: Handler = async (event, context) => {
-  const { authorization } = zParams.parse(event);
+export const handler: Handler<unknown, GetAccessTokenResponse> = async (
+  event,
+  context
+) => {
+  const { authorization } = zGetAccessTokenPayload.parse(event);
   const requestId = context.awsRequestId;
   const cxn = await getMysql(requestId);
   const [uuid, token] = Buffer.from(

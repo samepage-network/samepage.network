@@ -50,7 +50,7 @@ const packageCmd = async ({}: {}) => {
   ["LICENSE", "package/README.md"].forEach((f) =>
     fs.cpSync(f, path.join(`dist`, path.basename(f)))
   );
-  fs.mkdirSync("dist/patches");
+  if (!fs.existsSync("dist/patches")) fs.mkdirSync("dist/patches");
   const rootPackageJson = JSON.parse(
     fs.readFileSync("package.json").toString()
   );
