@@ -21,6 +21,7 @@ const authenticateNotebook = async (args: {
       .select({
         notebookUuid: notebooks.uuid,
         tokenUuid: tokenNotebookLinks.tokenUuid,
+        actorId: tokenNotebookLinks.uuid,
       })
       .from(tokens)
       .innerJoin(
@@ -37,7 +38,10 @@ const authenticateNotebook = async (args: {
     return tokenLinks[0];
   }
   const tokenLinks = await cxn
-    .select({ token_uuid: tokenNotebookLinks.tokenUuid })
+    .select({
+      tokenUuid: tokenNotebookLinks.tokenUuid,
+      actorId: tokenNotebookLinks.uuid,
+    })
     .from(tokenNotebookLinks)
     .where(eq(tokenNotebookLinks.notebookUuid, notebookUuid));
   if (!tokenLinks.length) {
@@ -49,19 +53,21 @@ const authenticateNotebook = async (args: {
   }
   const authenticated = await tokenLinks
     .map((t) => () => {
-      const { token_uuid } = t;
-      return token_uuid
+      const { tokenUuid } = t;
+      return tokenUuid
         ? cxn
             .select({ value: tokens.value })
             .from(tokens)
-            .where(eq(tokens.uuid, token_uuid))
+            .where(eq(tokens.uuid, tokenUuid))
             .then(([tokenRecord]) => {
               const storedValue = tokenRecord?.value;
               if (!storedValue) return undefined;
               // should I just query by stored value?
               if (token !== storedValue)
                 throw new UnauthorizedError(`Unauthorized notebook and token`);
-              return token === storedValue ? token_uuid : undefined;
+              return token === storedValue
+                ? { tokenUuid, actorId: t.actorId }
+                : undefined;
             })
         : Promise.reject(
             new UnauthorizedError(`Unauthorized notebook and token`)
@@ -69,11 +75,13 @@ const authenticateNotebook = async (args: {
     })
     .reduce(
       (p, c) => p.then((f) => f || c()),
-      Promise.resolve<string | undefined>(undefined)
+      Promise.resolve<{ tokenUuid: string; actorId: string } | undefined>(
+        undefined
+      )
     );
   if (!authenticated)
     throw new UnauthorizedError(`Unauthorized notebook and token`);
-  return { tokenUuid: authenticated, notebookUuid };
+  return { notebookUuid, ...authenticated };
 };
 
 export default authenticateNotebook;

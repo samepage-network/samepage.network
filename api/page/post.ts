@@ -55,6 +55,7 @@ import {
 import { z } from "zod";
 import debug from "package/utils/debugger";
 import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
+import getActorInfo from "~/data/getActorInfo.server";
 
 const log = debug("page");
 const zhandlerBody = zUnauthenticatedBody.or(
@@ -373,6 +374,7 @@ const logic = async (req: Record<string, unknown>) => {
                       .select({
                         uuid: notebooks.uuid,
                         app: notebooks.app,
+                        appName: apps.name,
                         workspace: notebooks.workspace,
                         pages: sql<number>`COUNT(${pageNotebookLinks.uuid})`,
                       })
@@ -385,6 +387,7 @@ const logic = async (req: Record<string, unknown>) => {
                         tokenNotebookLinks,
                         eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
                       )
+                      .innerJoin(apps, eq(apps.id, notebooks.app))
                       .where(
                         and(
                           eq(pageNotebookLinks.open, 0),
@@ -416,6 +419,10 @@ const logic = async (req: Record<string, unknown>) => {
             };
           })
           .catch(catchError("Failed to retrieve usage"));
+      }
+      case "get-actor": {
+        const { actorId } = args;
+        return getActorInfo({ requestId, actorId });
       }
       case "load-message": {
         const { messageUuid } = args;

@@ -1,4 +1,3 @@
-import APPS from "./apps";
 import type Automerge from "automerge";
 import type React from "react";
 import { z, ZodType } from "zod";
@@ -6,18 +5,11 @@ import type { CID } from "multiformats";
 import type { default as defaultSettings } from "../utils/defaultSettings";
 import { Operation } from "./messages";
 
-export type App = (typeof APPS)[number];
-export type AppId = App["id"];
-
+// TODO - remove
 const zNotebook = z.object({
   workspace: z.string(),
-  app: z.union([
-    z.literal(APPS[0].id),
-    z.literal(APPS[1].id),
-    ...APPS.slice(2).map((a) => z.literal(a.id)),
-  ]),
+  app: z.number(),
 });
-export type Notebook = z.infer<typeof zNotebook>;
 
 const annotationBase = z.object({
   start: z.number(),
@@ -223,13 +215,6 @@ export type LogEvent = {
   intent: "info" | "warning" | "error" | "success" | "debug";
 };
 
-type SharePageEvent = {
-  type: "share-page";
-  source: Notebook;
-  notebookPageId: string;
-  pageUuid: string;
-};
-
 type ConnectionEvent = {
   type: "connection";
   status: ConnectionStatus;
@@ -260,7 +245,6 @@ type NotificationEvent = {
 
 export type AppEvent =
   | LogEvent
-  | SharePageEvent
   | ConnectionEvent
   | PromptAccountInfoEvent
   | NotificationEvent;
@@ -280,7 +264,14 @@ const zWebsocketMessage = z.discriminatedUnion("operation", [
     operation: z.literal("AUTHENTICATION"),
     reason: z.string().optional(),
     success: z.boolean(),
+    actorId: z.string().optional(),
   }),
+  // this is more realistic for AUTHENTICATION
+  // .and(
+  //   z
+  //     .object({ success: z.literal(true), actorId: z.string() })
+  //     .or(z.object({ success: z.literal(false), reason: z.string() }))
+  // )
   z.object({ operation: z.literal("PONG") }),
 
   z.object({ operation: z.literal("SHARE_PAGE"), title: z.string() }),
@@ -368,7 +359,7 @@ export type AddNotebookListener = (args: {
 }) => () => void;
 export type RemoveNotebookListener = (args: { operation: string }) => void;
 export type SendToNotebook = (args: {
-  target: Notebook | string;
+  target: string;
   operation: Operation | string;
   data?: { [k: string]: json };
 }) => void;
@@ -408,6 +399,13 @@ const zNotebookResponse = z.object({
 });
 
 export type NotebookResponse = z.infer<typeof zNotebookResponse>["response"];
+
+export type ActorInfo = {
+  notebookUuid: string;
+  appName: string;
+  workspace: string;
+  email: string;
+};
 
 export type SendNotebookRequest = (
   args: Omit<z.infer<typeof zNotebookRequest>, "method"> & {
@@ -455,6 +453,7 @@ export const zUnauthenticatedBody = z.discriminatedUnion("method", [
 
 export const zAuthenticatedBody = z.discriminatedUnion("method", [
   z.object({ method: z.literal("usage") }),
+  z.object({ method: z.literal("get-actor"), actorId: z.string() }),
   z.object({ method: z.literal("load-message"), messageUuid: z.string() }),
   z.object({
     method: z.literal("init-shared-page"),

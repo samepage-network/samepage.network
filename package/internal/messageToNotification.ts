@@ -1,4 +1,3 @@
-import { appsById } from "./apps";
 import MESSAGES, { Operation } from "./messages";
 import { Notification } from "./types";
 
@@ -23,11 +22,7 @@ const messageToNotification = ({
     operation,
     title: MESSAGES[operation]?.title || "Unknown",
     description: (MESSAGES[operation]?.description || "Unknown")
-      .replace(
-        /{app}/g,
-        source.appName ||
-          (source.app === null ? "Unknown" : appsById[source.app].name)
-      )
+      .replace(/{app}/g, source.appName || "")
       .replace(
         /{workspace}/g,
         source.workspace === null ? "Unknown" : source.workspace

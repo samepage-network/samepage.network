@@ -8,11 +8,11 @@ import type {
   Notification,
   MessageSource,
 } from "./types";
-import apiClient from "./apiClient";
+import apiClient, { apiGet } from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
 import getNodeEnv from "./getNodeEnv";
 import { onAppEvent } from "./registerAppEventListener";
-import {
+import setupRegistry, {
   addCommand,
   app,
   appRoot,
@@ -218,15 +218,23 @@ const onSuccessOnboarding = ({
 
 const onboard = () =>
   typeof window !== "undefined"
-    ? renderOverlay({
-        Overlay: Onboarding,
-        props: {
-          onSuccess: onSuccessOnboarding,
-          onCancel: () => {
-            addCommand({ label: "Onboard to SamePage", callback: onboard });
-          },
-        },
-      })
+    ? apiGet<{ appName: string; workspaceLabel: string }>(`app?code=${app}`)
+        .catch(() => ({ appName: "SamePage", workspaceLabel: "Workspace" }))
+        .then((info) =>
+          renderOverlay({
+            Overlay: Onboarding,
+            props: {
+              onSuccess: onSuccessOnboarding,
+              onCancel: () => {
+                addCommand({
+                  label: "Onboard to SamePage",
+                  callback: onboard,
+                });
+              },
+              ...info,
+            },
+          })
+        )
     : dispatchAppEvent({
         type: "prompt-account-info",
         respond: ({ email, password, create }) => {
@@ -283,12 +291,18 @@ const setupWsFeatures = ({
 
   addNotebookListener({
     operation: "AUTHENTICATION",
-    handler: async (props) => {
-      const { success, reason } = props as {
-        success: boolean;
-        reason?: string;
-      };
-      if (success) {
+    handler: async (_props) => {
+      const props = _props as
+        | {
+            success: false;
+            reason: string;
+          }
+        | {
+            success: true;
+            actorId: string;
+          };
+      if (props.success) {
+        setupRegistry({ actorId: props.actorId });
         samePageBackend.status = "CONNECTED";
         dispatchAppEvent({
           type: "connection",
@@ -380,7 +394,7 @@ const setupWsFeatures = ({
         dispatchAppEvent({
           type: "log",
           id: "samepage-failure",
-          content: `Failed to connect to SamePage Network: ${reason}`,
+          content: `Failed to connect to SamePage Network: ${props.reason}`,
           intent: "error",
         });
       }

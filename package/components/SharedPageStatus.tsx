@@ -61,9 +61,11 @@ const COLORS = [
 const HistoryContentEntry = ({
   item,
   setSelectedChange,
+  actorMap,
 }: {
   item: SamePageHistory[number];
   setSelectedChange: (c: Automerge.State<Schema>) => void;
+  actorMap: Record<string, string>;
 }) => {
   const colors = React.useRef<Record<string, string>>({});
   const [collapsed, setCollapsed] = React.useState(true);
@@ -104,7 +106,7 @@ const HistoryContentEntry = ({
               className="h-3 w-3 rounded-full mr-1 inline-block"
               style={{ background: getColor(actor) }}
             />
-            <span>{parseAndFormatActorId(actor)}</span>
+            <span>{actorMap[actor]}</span>
           </div>
         ))}
         <div className="pl-6 italic text-xs">
@@ -132,7 +134,7 @@ const HistoryContentEntry = ({
                   className="h-3 w-3 rounded-full inline-block"
                   style={{ background: getColor(i.change.actor) }}
                 />
-                <span>{parseAndFormatActorId(i.change.actor)}</span>
+                <span>{actorMap[i.change.actor]}</span>
               </div>
               <div className="pl-6 italic text-xs">
                 <span>{i.change.message}</span>
@@ -155,25 +157,33 @@ const HistoryContent = ({
   portalContainer?: HTMLElement;
 }) => {
   const [history, setHistory] = React.useState<SamePageHistory>([]);
+  const [actorMap, setActorMap] = React.useState<Record<string, string>>({});
   const [selectedChange, setSelectedChange] =
     React.useState<Automerge.State<Schema>>();
   React.useEffect(() => {
-    getHistory().then((_history) => {
+    getHistory().then(async (_history) => {
       const output: SamePageHistory = [];
-      _history.reverse().forEach((h) => {
-        if (
-          !output.length ||
-          output.slice(-1)[0].date - h.change.time > THRESHOLD_IN_MS
-        ) {
-          output.push({ states: [h], date: h.change.time });
-        } else {
-          const entry = output.slice(-1)[0];
-          entry.states.push(h);
-        }
-      });
+      const actorMap: Record<string, string> = {};
+      await Promise.all(
+        _history.reverse().map(async (h) => {
+          if (
+            !output.length ||
+            output.slice(-1)[0].date - h.change.time > THRESHOLD_IN_MS
+          ) {
+            output.push({ states: [h], date: h.change.time });
+          } else {
+            const entry = output.slice(-1)[0];
+            entry.states.push(h);
+          }
+          actorMap[h.change.actor] = await parseAndFormatActorId(
+            h.change.actor
+          );
+        })
+      );
       setHistory(output);
+      setActorMap(actorMap);
     });
-  }, [getHistory, setHistory]);
+  }, [getHistory, setHistory, setActorMap]);
   return (
     <div className="flex flex-col text-gray-800 w-full overflow-auto justify-end">
       {history.map((l, index) => (
@@ -181,6 +191,7 @@ const HistoryContent = ({
           key={index}
           item={l}
           setSelectedChange={setSelectedChange}
+          actorMap={actorMap}
         />
       ))}
       <Dialog

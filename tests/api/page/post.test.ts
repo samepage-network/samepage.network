@@ -1584,7 +1584,7 @@ test("Invalid method results in parse error", async () => {
     e: `Failed to parse request. Errors:
 - Path \`\` had the following union errors:
   - Invalid discriminator value. Expected 'create-notebook' | 'add-notebook' | 'connect-device' | 'login-device' | 'ping' (invalid_union_discriminator)
-  - Invalid discriminator value. Expected 'usage' | 'load-message' | 'init-shared-page' | 'join-shared-page' | 'revert-page-join' | 'update-shared-page' | 'force-push-page' | 'get-shared-page' | 'invite-notebook-to-page' | 'remove-page-invite' | 'list-page-notebooks' | 'list-recent-notebooks' | 'list-shared-pages' | 'disconnect-shared-page' | 'query' | 'query-response' | 'notebook-request' | 'notebook-response' | 'accept-request' | 'reject-request' | 'link-different-page' | 'save-page-version' | 'get-ipfs-cid' | 'create-public-link' | 'get-unmarked-messages' | 'mark-message-read' | 'save-access-token' (invalid_union_discriminator)
+  - Invalid discriminator value. Expected 'usage' | 'get-actor' | 'load-message' | 'init-shared-page' | 'join-shared-page' | 'revert-page-join' | 'update-shared-page' | 'force-push-page' | 'get-shared-page' | 'invite-notebook-to-page' | 'remove-page-invite' | 'list-page-notebooks' | 'list-recent-notebooks' | 'list-shared-pages' | 'disconnect-shared-page' | 'query' | 'query-response' | 'notebook-request' | 'notebook-response' | 'accept-request' | 'reject-request' | 'link-different-page' | 'save-page-version' | 'get-ipfs-cid' | 'create-public-link' | 'get-unmarked-messages' | 'mark-message-read' | 'save-access-token' (invalid_union_discriminator)
 - Expected \`notebookUuid\` to be of type \`string\` but received type \`undefined\`
 - Expected \`token\` to be of type \`string\` but received type \`undefined\``,
   });
