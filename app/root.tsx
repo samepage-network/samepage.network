@@ -16,6 +16,7 @@ import {
   ScrollRestoration,
   useLoaderData,
   useTransition,
+  useMatches,
 } from "@remix-run/react";
 import Loading from "~/components/Loading";
 import parseRemixContext from "~/data/parseRemixContext.server";
@@ -39,16 +40,22 @@ const loaderCallback = (context: AppLoadContext) => {
   };
 };
 
+// TODO - how to get handles accessible in loaders? patch a PR for it
 export const loader = (args: LoaderArgs) => {
+  // const {skipClerk} = args.handle;
+  const url = new URL(args.request.url);
+  const skipClerk = /^\/embeds/.test(url.pathname);
   const context = args.context || {};
-  return rootAuthLoader(
-    {
-      ...args,
-      context,
-    },
-    () => loaderCallback(context),
-    { loadUser: true }
-  );
+  return skipClerk
+    ? loaderCallback(context)
+    : rootAuthLoader(
+        {
+          ...args,
+          context,
+        },
+        () => loaderCallback(context),
+        { loadUser: true }
+      );
 };
 export const meta: MetaFunction = () => {
   return {
@@ -127,4 +134,8 @@ const App = () => {
   );
 };
 
-export default () => ClerkApp(App, {})();
+export default () => {
+  const matches = useMatches();
+  const skipClerk = matches.some((match) => match.handle?.skipClerk);
+  return skipClerk ? App() : ClerkApp(App, {})();
+};

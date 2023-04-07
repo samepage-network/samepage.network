@@ -331,6 +331,7 @@ export const zBackendWebSocketMessage = z
       notebookUuid: z.string(),
       token: z.string(),
       accessToken: z.string(),
+      email: z.string(),
     }),
     source: zWebsocketMessageSource,
   })

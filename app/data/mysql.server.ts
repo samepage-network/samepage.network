@@ -28,15 +28,18 @@ const createConnection = (id = v4()) => {
     });
 };
 
-const getMysql = async (_cxn?: mysql.Connection | string) => {
+const getMysql = async (
+  _cxn?: mysql.Connection | string,
+  opts: { logger?: boolean } = {}
+) => {
   const cxn =
     typeof _cxn === "undefined"
       ? await createConnection()
       : typeof _cxn === "string"
       ? connectionMap[_cxn] || (await createConnection(_cxn))
       : _cxn;
-  return drizzle(cxn, { 
-    // logger: !!process.env.DEBUG 
+  return drizzle(cxn, {
+    logger: opts.logger,
   });
 };
 

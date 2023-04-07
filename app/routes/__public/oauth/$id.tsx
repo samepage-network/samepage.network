@@ -27,7 +27,9 @@ const OauthConnectionPage = (): React.ReactElement => {
   ) : data.success ? (
     <div>
       <h1 className="text-3xl font-bold mb-2">Success!</h1>
-      {data.data.suggestExtension && !window.samepage && (
+      {data.data.suggestExtension &&
+      // check if chrome extension is installed, and if not, then show this message
+      (
         <div className="mb-2">
           We recommend installing the SamePage Chrome extension to use with{" "}
           {data.data.appName}. You can install it to your browser by{" "}

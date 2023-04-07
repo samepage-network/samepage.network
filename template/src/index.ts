@@ -17,7 +17,7 @@ const setupUserSettings = () => {
 const setupClient = () => {
   const { unload } = setupSamePageClient({
     // Notebook properties
-    // app: "{{app}}",
+    // app: "{{code}}",
     // workspace: "TODO",
     // Interact with settings
     // getSetting: (s) => localStorage.getItem(s),

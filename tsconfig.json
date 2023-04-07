@@ -26,8 +26,10 @@
     "noEmit": true,
     "paths": {
       "~/*": ["./app/*"],
+      "app/*": ["./app/*"],
       "data/*": ["./data/*"],
-      "package/*": ["./package/*"]
+      "package/*": ["./package/*"],
+      "samepage/*": ["./package/*"]
     }
   },
   "include": ["remix.env.d.ts", "**/*.ts", "**/*.tsx"],

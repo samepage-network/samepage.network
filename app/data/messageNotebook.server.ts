@@ -17,6 +17,7 @@ import {
 import { eq, desc } from "drizzle-orm/expressions";
 import { Lambda } from "@aws-sdk/client-lambda";
 import debug from "package/utils/debugger";
+import getPrimaryUserEmail from "./getPrimaryUserEmail.server";
 
 const log = debug("message-notebook");
 
@@ -80,6 +81,7 @@ const messageNotebook = ({
           accessToken: accessTokens.value,
           path: apps.code,
           token: tokens.value,
+          userId: tokens.userId,
         })
         .from(accessTokens)
         .innerJoin(notebooks, eq(accessTokens.notebookUuid, notebooks.uuid))
@@ -93,7 +95,12 @@ const messageNotebook = ({
         .limit(1);
       if (endpoint) {
         const { path, accessToken, token } = endpoint;
-        Data["credentials"] = { accessToken, notebookUuid: target, token };
+        Data["credentials"] = {
+          accessToken,
+          notebookUuid: target,
+          token,
+          email: await getPrimaryUserEmail(endpoint.userId),
+        };
         const lambda = new Lambda({
           endpoint: process.env.AWS_ENDPOINT,
         });

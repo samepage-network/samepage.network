@@ -4,6 +4,9 @@ import { execSync } from "child_process";
 import { Octokit } from "@octokit/rest";
 import readDir from "../../package/scripts/internal/readDir";
 import dotenv from "dotenv";
+import getMysql from "~/data/mysql.server";
+import { sql } from "drizzle-orm";
+import { apps } from "data/schema";
 dotenv.config();
 
 const octokit = new Octokit({
@@ -11,15 +14,15 @@ const octokit = new Octokit({
 });
 
 const init = async ({
-  id = "help",
-  app = `${id.charAt(0).toUpperCase()}${id.slice(1)}`,
+  code = "help",
+  app = `${code.charAt(0).toUpperCase()}${code.slice(1)}`,
   workspace = "workspace",
 }: {
-  id?: string;
+  code?: string;
   app?: string;
   workspace?: string;
 } = {}) => {
-  if (id === "help") {
+  if (code === "help") {
     console.log(
       "Usage: ts-node scripts/cli.ts init --id <id> --app <app> --workspace <workspace>"
     );
@@ -29,16 +32,26 @@ const init = async ({
     );
     process.exit(0);
   }
+  const cxn = await getMysql(code, { logger: true });
+  const id = await cxn
+    .select({ id: sql<number>`MAX(${apps.id}) + 1` })
+    .from(apps)
+    .then((r) => r[0].id);
+  await cxn
+    .insert(apps)
+    .values({ id, name: app, code, workspaceLabel: workspace, live: false });
+  await cxn.end();
+
   const files = readDir("template");
-  const root = `../${id}-samepage`;
+  const root = `../${code}-samepage`;
   const latest = JSON.parse(fs.readFileSync("package.json").toString()).version;
   fs.mkdirSync(root);
   files.forEach((f) => {
     const content = fs
       .readFileSync(f)
       .toString()
-      .replace(/{{id}}/g, id)
-      .replace(/{{app}}/g, app)
+      .replace(/{{(id|code)}}/g, code)
+      .replace(/{{(app|name)}}/g, app)
       .replace(/{{workspace}}/g, workspace)
       .replace(/{{latest}}/g, latest);
     const dest = f.replace(/^template/, root);
@@ -58,7 +71,7 @@ const init = async ({
 
   const repo = await octokit.repos.createInOrg({
     org: "samepage-network",
-    name: `${id}-samepage`,
+    name: `${code}-samepage`,
     visibility: "public",
   });
   console.log("Created repo at", repo.data.html_url);

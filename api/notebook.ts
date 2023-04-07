@@ -6,7 +6,7 @@ import {
   GetNotebookCredentialsResponse,
   zGetNotebookCredentialsPayload,
 } from "package/backend/types";
-import { UnauthorizedError } from "~/data/errors.server";
+import { NotFoundError, UnauthorizedError } from "~/data/errors.server";
 import getMysql from "~/data/mysql.server";
 
 export const handler: Handler<unknown, GetNotebookCredentialsResponse> = async (
@@ -45,7 +45,7 @@ export const handler: Handler<unknown, GetNotebookCredentialsResponse> = async (
   await cxn.end();
 
   if (!notebook) {
-    throw new Error(
+    throw new NotFoundError(
       `No ${app} notebook found with workspace name ${workspace} under account ${email}`
     );
   }
