@@ -207,7 +207,7 @@
         "description": "Utilities that help with testing SamePage-compatible extensions",
         "peerDependencies": {
           "@playwright/test": "1.29.0",
-          "@testing-library/react": "^13.4.0",
+          "@testing-library/react": ">11.2.7",
           "@testing-library/user-event": "^14.4.3",
           "@types/jsdom": "^20.0.0",
           "c8": "^7.12.0",
