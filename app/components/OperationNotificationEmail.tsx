@@ -53,7 +53,9 @@ const OperationNotificationEmail = ({
           <a
             href={`https://samepage.${
               process.env.NODE_ENV === "production" ? "network" : "ngrok.io"
-            }/notifications/${operation}?action=${action}&uuid=${messageUuid}`}
+            }/notifications/${operation
+              .toLowerCase()
+              .replace(/_/g, "-")}?action=${action}&uuid=${messageUuid}`}
           >
             <button
               key={action}
