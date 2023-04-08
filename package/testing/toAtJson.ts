@@ -77,7 +77,6 @@ const toAtJson = (node: ChildNode): InitialSchema => {
           ],
         };
       } else {
-        console.warn(`UNKNOWN SPAN CLASS`, span.className);
         return {
           content: span.innerText || "",
           annotations: [],
@@ -139,7 +138,6 @@ const toAtJson = (node: ChildNode): InitialSchema => {
     } else if (el.tagName === "BODY") {
       return childSchema;
     } else {
-      console.warn(`UNKNOWN TAG NAME`, el.tagName);
       return {
         content: el.innerHTML || "",
         annotations: [],
@@ -151,7 +149,6 @@ const toAtJson = (node: ChildNode): InitialSchema => {
       annotations: [],
     };
   } else {
-    console.warn(`UNKNOWN NODE TYPE`, node.nodeType);
     return {
       content: node.nodeValue || "",
       annotations: [],

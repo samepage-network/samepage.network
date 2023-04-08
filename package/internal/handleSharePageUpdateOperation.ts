@@ -21,7 +21,8 @@ const handleSharePageUpdateOperation = async (
   }: z.infer<typeof zSharePageUpdateWebsocketMessage>,
   applyState: ApplyState
 ) => {
-  if (!has(notebookPageId)) return;
+  const isShared = await has(notebookPageId);
+  if (!isShared) return;
 
   const executeUpdate = () =>
     load(notebookPageId)

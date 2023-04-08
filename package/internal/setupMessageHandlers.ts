@@ -29,20 +29,20 @@ export const handleMessage = ({
   uuid: string;
   source?: MessageSource;
 }) => {
-  const { operation, source = _source, ...props } = JSON.parse(content);
-  const handlers = messageHandlers[operation];
+  const { source = _source, ...props } = JSON.parse(content);
+  const handlers = messageHandlers[props.operation];
   if (!handlers?.length) {
     dispatchAppEvent({
       type: "log",
-      id: `network-error-${operation}`,
+      id: `network-error-${props.operation}`,
       content: `Unknown network operation: ${
-        operation || "No operation specified"
+        props.operation || "No operation specified"
       }`,
       intent: "error",
     });
     sendExtensionError({
       type: "Unknown network operation",
-      data: { operation, source, uuid, props },
+      data: { source, uuid, props },
     });
     return;
   }
@@ -61,7 +61,7 @@ export const handleMessage = ({
   //   });
   //   return;
   // }
-  messageHandlers[operation].forEach((handler) => {
+  messageHandlers[props.operation].forEach((handler) => {
     try {
       handler(props, source, uuid);
     } catch (e) {

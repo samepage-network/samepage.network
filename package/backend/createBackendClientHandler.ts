@@ -14,6 +14,8 @@ import {
 import sendEmail from "./sendEmail.server";
 import handleRequestDataOperation from "../internal/handleRequestDataOperation";
 import handleRequestOperation from "../internal/handleRequestOperation";
+import sendExtensionError from "../internal/sendExtensionError";
+import setupRegistry from "../internal/registry";
 
 const createBackendClientHandler =
   ({
@@ -25,10 +27,17 @@ const createBackendClientHandler =
     notebookRequestHandler: NotebookRequestHandler;
     notebookResponseHandler: NotebookResponseHandler;
   }) =>
-  async (args: unknown) => {
+  async (args: Record<string, unknown>) => {
     try {
       const { source, uuid, credentials, ...data } =
         zBackendWebSocketMessage.parse(args);
+      setupRegistry({
+        getSetting(s) {
+          if (s === "uuid") return credentials.notebookUuid;
+          if (s === "token") return credentials.token;
+          return "";
+        },
+      });
       onAppEvent("log", (e) => {
         if (
           e.intent === "info" ||
@@ -78,6 +87,11 @@ const createBackendClientHandler =
       }
       return { success: true };
     } catch (e) {
+      sendExtensionError({
+        type: "Error in createBackendClientHandler",
+        data: args,
+        error: e as Error,
+      });
       return { success: false };
     }
   };

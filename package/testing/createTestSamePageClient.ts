@@ -284,7 +284,8 @@ const createTestSamePageClient = async ({
           sendResponse();
         } else if (message.type === "setAppClientState") {
           appClientState[message.notebookPageId] = new JSDOM(message.data);
-          if (isShared(message.notebookPageId)) {
+          const shared = await isShared(message.notebookPageId);
+          if (shared) {
             await refreshContent({
               notebookPageId: message.notebookPageId,
             }).then(() => sendResponse({ success: true }));

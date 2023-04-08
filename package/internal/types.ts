@@ -287,7 +287,9 @@ export const zSharePageUpdateWebsocketMessage = z.object({
   operation: z.literal("SHARE_PAGE_UPDATE"),
   changes: z.string().array(),
   notebookPageId: z.string(),
-  dependencies: z.record(z.object({ seq: z.number(), hash: z.string() })),
+  dependencies: z
+    .record(z.object({ seq: z.number(), hash: z.string() }))
+    .optional(),
 });
 
 export const zSharePageForceWebsocketMessage = z.object({

@@ -19,10 +19,7 @@ import {
   zSharePageWebsocketMessage,
 } from "../internal/types";
 import Automerge from "automerge";
-import {
-  addNotebookListener,
-  removeNotebookListener,
-} from "../internal/setupMessageHandlers";
+import { addNotebookListener } from "../internal/setupMessageHandlers";
 import { v4 } from "uuid";
 import ViewSharedPages, {
   ViewSharedPagesProps,
@@ -92,7 +89,7 @@ const setupSharePageWithNotebook = ({
 } = {}) => {
   const { viewSharedPageProps, sharedPageStatusProps } = overlayProps;
 
-  const componentUnmounts: Record<string, () => void> = {};
+  const unloadCallbacks: Record<string, () => void> = {};
   const renderSharedPageStatus = ({
     notebookPageId,
     created = false,
@@ -113,8 +110,8 @@ const setupSharePageWithNotebook = ({
       },
       path,
     });
-    componentUnmounts[`samepage-shared-${notebookPageId}`] = () => {
-      delete componentUnmounts[`samepage-shared-${notebookPageId}`];
+    unloadCallbacks[`samepage-shared-${notebookPageId}`] = () => {
+      delete unloadCallbacks[`samepage-shared-${notebookPageId}`];
       unmount?.();
     };
   };
@@ -188,7 +185,7 @@ const setupSharePageWithNotebook = ({
           },
           onunload: (notebookPageId) => {
             if (notebookPageId) {
-              componentUnmounts[`samepage-shared-${notebookPageId}`]?.();
+              unloadCallbacks[`samepage-shared-${notebookPageId}`]?.();
             }
           },
         };
@@ -205,8 +202,8 @@ const setupSharePageWithNotebook = ({
                   .getNotebookPageId?.(el)
                   .then((s) => s && observerProps.onunload(s)),
             });
-        componentUnmounts["shared-page-observer"] = () => {
-          delete componentUnmounts["shared-page-observer"];
+        unloadCallbacks["shared-page-observer"] = () => {
+          delete unloadCallbacks["shared-page-observer"];
           sharedPageObserver.disconnect();
         };
       }
@@ -285,7 +282,7 @@ const setupSharePageWithNotebook = ({
         },
       });
 
-      addNotebookListener({
+      unloadCallbacks["SHARE_PAGE"] = addNotebookListener({
         operation: "SHARE_PAGE",
         handler: (e, source, uuid) =>
           handleSharePageOperation(
@@ -295,7 +292,7 @@ const setupSharePageWithNotebook = ({
           ),
       });
 
-      addNotebookListener({
+      unloadCallbacks["SHARE_PAGE_RESPONSE"] = addNotebookListener({
         operation: "SHARE_PAGE_RESPONSE",
         handler: (data, source) =>
           handleSharePageResponseOperation(
@@ -304,7 +301,7 @@ const setupSharePageWithNotebook = ({
           ),
       });
 
-      addNotebookListener({
+      unloadCallbacks["SHARE_PAGE_UPDATE"] = addNotebookListener({
         operation: "SHARE_PAGE_UPDATE",
         handler: async (data) =>
           handleSharePageUpdateOperation(
@@ -313,7 +310,7 @@ const setupSharePageWithNotebook = ({
           ),
       });
 
-      addNotebookListener({
+      unloadCallbacks["SHARE_PAGE_FORCE"] = addNotebookListener({
         operation: "SHARE_PAGE_FORCE",
         handler: (data) =>
           handleSharePageForceOperation(
@@ -322,7 +319,7 @@ const setupSharePageWithNotebook = ({
           ),
       });
 
-      addNotebookListener({
+      unloadCallbacks["REQUEST_PAGE_UPDATE"] = addNotebookListener({
         operation: "REQUEST_PAGE_UPDATE",
         handler: (data, source) =>
           handleRequestPageUpdateOperation(
@@ -441,12 +438,7 @@ const setupSharePageWithNotebook = ({
   const unload = () => {
     clear();
     offConnect?.();
-    Object.values(componentUnmounts).forEach((u) => u());
-    removeNotebookListener({ operation: "SHARE_PAGE_RESPONSE" });
-    removeNotebookListener({ operation: "SHARE_PAGE_UPDATE" });
-    removeNotebookListener({ operation: "SHARE_PAGE" });
-    removeNotebookListener({ operation: "SHARE_PAGE_FORCE" });
-    removeNotebookListener({ operation: "REQUEST_PAGE_UPDATE" });
+    Object.values(unloadCallbacks).forEach((u) => u());
     removeCommand({
       label: COMMAND_PALETTE_LABEL,
     });
