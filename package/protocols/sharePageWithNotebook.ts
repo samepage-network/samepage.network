@@ -1,19 +1,26 @@
-import apiClient, { apiPost } from "../internal/apiClient";
+import apiClient from "../internal/apiClient";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import {
   addCommand,
   removeCommand,
   renderOverlay,
   appRoot,
-  getSetting,
   actorId,
 } from "../internal/registry";
-import sendToNotebook from "../internal/sendToNotebook";
-import { InitialSchema, Schema, zInitialSchema } from "../internal/types";
+import {
+  ApplyState,
+  InitialSchema,
+  Schema,
+  zInitialSchema,
+  zRequestPageUpdateWebsocketMessage,
+  zSharePageForceWebsocketMessage,
+  zSharePageResponseWebsocketMessage,
+  zSharePageUpdateWebsocketMessage,
+  zSharePageWebsocketMessage,
+} from "../internal/types";
 import Automerge from "automerge";
 import {
   addNotebookListener,
-  HandlerError,
   removeNotebookListener,
 } from "../internal/setupMessageHandlers";
 import { v4 } from "uuid";
@@ -25,19 +32,22 @@ import SharedPageStatus, {
 } from "../components/SharedPageStatus";
 import createHTMLObserver from "../utils/createHTMLObserver";
 import { onAppEvent } from "../internal/registerAppEventListener";
-import parseActorId from "../internal/parseActorId";
 import binaryToBase64 from "../internal/binaryToBase64";
-import base64ToBinary from "../internal/base64ToBinary";
 import { clear, has, deleteId, load, set } from "../utils/localAutomergeDb";
-import messageToNotification from "../internal/messageToNotification";
 import changeAutomergeDoc from "../utils/changeAutomergeDoc";
-import unwrapSchema from "../utils/unwrapSchema";
 import wrapSchema from "../utils/wrapSchema";
 import mergeDocs from "../utils/mergeDocs";
 import parseZodError from "../utils/parseZodError";
 import sendExtensionError from "../internal/sendExtensionError";
 import UserOnlyError from "../internal/UserOnlyError";
 import { registerNotificationActions } from "../internal/notificationActions";
+import handleSharePageOperation from "../internal/handleSharePageOperation";
+import handleSharePageResponseOperation from "../internal/handleSharePageResponseOperation";
+import handleSharePageUpdateOperation from "../internal/handleSharePageUpdateOperation";
+import saveAndApply from "../internal/saveAndApply";
+import handleSharePageForceOperation from "../internal/handleSharePageForceOperation";
+import loadAutomergeFromBase64 from "../internal/loadAutomergeFromBase64";
+import handleRequestPageUpdateOperation from "../internal/handleRequestPageUpdateOperation";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
@@ -76,10 +86,7 @@ const setupSharePageWithNotebook = ({
   openPage?: (notebookPageId: string) => Promise<unknown>;
   deletePage?: (notebookPageId: string) => Promise<unknown>;
   doesPageExist?: (notebookPageId: string) => Promise<boolean>;
-  applyState?: (
-    notebookPageId: string,
-    state: InitialSchema
-  ) => Promise<unknown>;
+  applyState?: ApplyState;
   calculateState?: (notebookPageId: string) => Promise<InitialSchema>;
   onConnect?: () => () => void;
 } = {}) => {
@@ -163,106 +170,21 @@ const setupSharePageWithNotebook = ({
         })
       );
 
-  const saveAndApply = (
-    notebookPageId: string,
-    doc: Automerge.FreezeObject<Schema>
-  ) => {
-    const docToApply = unwrapSchema(doc);
-    return zInitialSchema
-      .safeParseAsync(docToApply)
-      .then((parseResult) => {
-        if (parseResult.success) {
-          return applyState(notebookPageId, parseResult.data);
-        } else {
-          // let's not throw yet - let's see how many emails this generates first - can revisit this in a few months
-          // This is the previous behavior
-          sendExtensionError({
-            type: `State received from other notebook was corrupted`,
-            data: {
-              error: parseResult.error,
-              message: parseZodError(parseResult.error),
-              input: docToApply,
-            },
-          });
-          return applyState(notebookPageId, docToApply);
-        }
-      })
-      .then(async () => {
-        if (!Automerge.isFrozen(doc)) {
-          // I think it's safe to say that if another change comes in, freezing this doc, it's outdated and not worth saving?
-          // this could have bad implications on history though - TODO
-          // - not that bad, because currently our document stores full history.
-          await apiClient({
-            method: "save-page-version",
-            notebookPageId,
-            state: binaryToBase64(Automerge.save(doc)),
-          }).catch((e) => {
-            dispatchAppEvent({
-              type: "log",
-              id: "update-version-failure",
-              content: `Failed to broadcast new version: ${e.message}`,
-              intent: "warning",
-            });
-          });
-        }
-        dispatchAppEvent({
-          type: "log",
-          id: "update-success",
-          content: `Applied update`,
-          intent: "debug",
-        });
-      })
-      .catch((e) => {
-        apiPost({
-          path: "errors",
-          data: {
-            method: "extension-error",
-            type: "Failed to Apply Change",
-            notebookUuid: getSetting("uuid"),
-            data:
-              e instanceof HandlerError
-                ? e.data
-                : e instanceof Error
-                ? { message: e.message }
-                : typeof e !== "object"
-                ? { message: e }
-                : e === null
-                ? {}
-                : e,
-            message: e instanceof Error ? e.message : "Unknown data thrown",
-            stack: e instanceof Error ? e.stack : "Unknown stacktrace",
-            version: process.env.VERSION,
-          },
-        });
-        dispatchAppEvent({
-          type: "log",
-          id: "update-failure",
-          content: `Failed to apply new change: ${e.message.slice(0, 50)}${
-            e.message.length > 50 ? "..." : ""
-          }`,
-          intent: "warning",
-        });
-      });
-  };
-
-  const loadAutomergeFromBase64 = (state: string) =>
-    Automerge.load<Schema>(base64ToBinary(state) as Automerge.BinaryDocument, {
-      actorId: actorId.replace(/-/g, ""),
-    });
-
   let offConnect: (() => void) | undefined;
   const offAppEvent = onAppEvent("connection", (e) => {
     if (e.status === "CONNECTED") {
       if (sharedPageStatusProps) {
         const observerProps: Parameters<SharedPageObserver>[0] = {
           onload: (notebookPageId) => {
-            if (has(notebookPageId)) {
-              sharedPageStatusProps
-                .getPaths(notebookPageId)
-                .forEach((path) =>
-                  renderSharedPageStatus({ path, notebookPageId })
-                );
-            }
+            has(notebookPageId).then(
+              (exists) =>
+                exists &&
+                sharedPageStatusProps
+                  .getPaths(notebookPageId)
+                  .forEach((path) =>
+                    renderSharedPageStatus({ path, notebookPageId })
+                  )
+            );
           },
           onunload: (notebookPageId) => {
             if (notebookPageId) {
@@ -310,7 +232,7 @@ const setupSharePageWithNotebook = ({
                   if (!res.found)
                     return Promise.reject(new UserOnlyError(res.reason));
                   const saveDoc = (doc: Schema) =>
-                    saveAndApply(title, doc)
+                    saveAndApply({ notebookPageId: title, doc, applyState })
                       .then(() => {
                         initPage({
                           notebookPageId: title,
@@ -365,228 +287,48 @@ const setupSharePageWithNotebook = ({
 
       addNotebookListener({
         operation: "SHARE_PAGE",
-        handler: (e, source, uuid) => {
-          dispatchAppEvent({
-            type: "notification",
-            notification: messageToNotification({
-              uuid,
-              source,
-              data: e as Record<string, string>,
-              operation: "SHARE_PAGE",
-            }),
-          });
-        },
+        handler: (e, source, uuid) =>
+          handleSharePageOperation(
+            zSharePageWebsocketMessage.parse(e),
+            source,
+            uuid
+          ),
       });
 
       addNotebookListener({
         operation: "SHARE_PAGE_RESPONSE",
-        handler: (data, source) => {
-          const { success, title, rejected } = data as {
-            success: boolean;
-            title: string;
-            rejected: boolean;
-          };
-          if (success)
-            dispatchAppEvent({
-              type: "log",
-              id: "share-page-accepted",
-              content: `Successfully shared ${title} with ${source.appName} / ${source.workspace}!`,
-              intent: "success",
-            });
-          else if (rejected)
-            dispatchAppEvent({
-              type: "log",
-              id: "share-page-rejected",
-              content: `Notebook ${source.appName} / ${source.workspace} rejected ${title}`,
-              intent: "info",
-            });
-          else
-            dispatchAppEvent({
-              type: "log",
-              id: "share-page-removed",
-              content: `Notebook ${source.appName} / ${source.workspace} invite was removed from ${title}`,
-              intent: "success",
-            });
-        },
+        handler: (data, source) =>
+          handleSharePageResponseOperation(
+            zSharePageResponseWebsocketMessage.parse(data),
+            source
+          ),
       });
 
-      const pendingUpdates: Record<string, (() => Promise<unknown>)[]> = {};
       addNotebookListener({
         operation: "SHARE_PAGE_UPDATE",
-        handler: async (data) => {
-          const {
-            changes,
-            notebookPageId,
-            dependencies = {},
-          } = data as {
-            changes: string[];
-            notebookPageId: string;
-            dependencies: { [a: string]: { seq: number; hash: string } };
-          };
-          if (!has(notebookPageId)) return;
-
-          const executeUpdate = () =>
-            load(notebookPageId)
-              .then((oldDoc) => {
-                const binaryChanges = changes.map(
-                  (c) => base64ToBinary(c) as Automerge.BinaryChange
-                );
-                const [newDoc, patch] = Automerge.applyChanges(
-                  oldDoc,
-                  binaryChanges
-                );
-                set(notebookPageId, newDoc);
-                if (patch.pendingChanges) {
-                  const storedChanges = Automerge.getAllChanges(newDoc).map(
-                    (c) => Automerge.decodeChange(c)
-                  );
-                  const existingDependencies = Object.fromEntries(
-                    storedChanges.map((c) => [`${c.actor}~${c.seq}`, c.hash])
-                  );
-                  const me = Automerge.getActorId(newDoc);
-                  if (
-                    Object.entries(dependencies).some(
-                      ([actor, { seq, hash }]) =>
-                        actor !== me &&
-                        existingDependencies[`${actor}~${seq}`] &&
-                        existingDependencies[`${actor}~${seq}`] !== hash
-                    )
-                  ) {
-                    dispatchAppEvent({
-                      type: "log",
-                      id: "share-page-corrupted",
-                      content: `It looks like your version of the shared page ${notebookPageId} is corrupted and will cease to apply updates from other notebooks in the future. To resolve this issue, ask one of the other connected notebooks to manually sync the page.`,
-                      intent: "error",
-                    });
-                  } else {
-                    const storedHashes = new Set(
-                      storedChanges.map((c) => c.hash || "")
-                    );
-                    const actorsToRequest = Object.entries(patch.clock).filter(
-                      ([actor, seq]) => {
-                        if (me === actor) {
-                          return false;
-                        }
-                        const dependentHashFromActor =
-                          existingDependencies[`${actor}~${seq}`];
-                        return !(
-                          dependentHashFromActor &&
-                          storedHashes.has(dependentHashFromActor)
-                        );
-                      }
-                    );
-                    if (
-                      !actorsToRequest.length &&
-                      !Automerge.isFrozen(newDoc)
-                    ) {
-                      const missingDependencies = binaryChanges
-                        .map((c) => Automerge.decodeChange(c))
-                        .flatMap((c) => c.deps)
-                        .filter((c) => !storedHashes.has(c));
-                      throw new HandlerError(
-                        "No actors to request and still waiting for changes",
-                        {
-                          missingDependencies,
-                          binaryDocument: binaryToBase64(
-                            Automerge.save(newDoc)
-                          ),
-                          notebookPageId,
-                        }
-                      );
-                    } else {
-                      actorsToRequest.forEach(([actor]) => {
-                        parseActorId(actor).then(({ notebookUuid: target }) =>
-                          sendToNotebook({
-                            target,
-                            operation: "REQUEST_PAGE_UPDATE",
-                            data: {
-                              notebookPageId,
-                              seq: patch.clock[actor],
-                            },
-                          })
-                        );
-                      });
-                    }
-                  }
-                }
-                if (Object.keys(patch.diffs.props).length) {
-                  saveAndApply(notebookPageId, newDoc);
-                }
-              })
-              .finally(() => {
-                if (pendingUpdates[notebookPageId].length === 0) {
-                  delete pendingUpdates[notebookPageId];
-                  return Promise.resolve();
-                } else {
-                  return pendingUpdates[notebookPageId].shift()?.();
-                }
-              });
-          if (!pendingUpdates[notebookPageId]) {
-            pendingUpdates[notebookPageId] = [];
-            return executeUpdate();
-          } else {
-            pendingUpdates[notebookPageId].push(executeUpdate);
-          }
-        },
+        handler: async (data) =>
+          handleSharePageUpdateOperation(
+            zSharePageUpdateWebsocketMessage.parse(data),
+            applyState
+          ),
       });
 
       addNotebookListener({
         operation: "SHARE_PAGE_FORCE",
-        handler: (data) => {
-          const { state, notebookPageId } = data as {
-            state: string;
-            notebookPageId: string;
-          };
-          const newDoc = loadAutomergeFromBase64(state);
-          set(notebookPageId, newDoc);
-          saveAndApply(notebookPageId, newDoc);
-        },
+        handler: (data) =>
+          handleSharePageForceOperation(
+            zSharePageForceWebsocketMessage.parse(data),
+            applyState
+          ),
       });
 
       addNotebookListener({
         operation: "REQUEST_PAGE_UPDATE",
-        handler: (data, source) => {
-          const { seq, notebookPageId } = data as {
-            seq: number;
-            notebookPageId: string;
-          };
-          load(notebookPageId).then((doc) => {
-            const me = Automerge.getActorId(doc);
-            const allChangesDecoded = Automerge.getAllChanges(doc).map((c) => ({
-              encoded: c,
-              decoded: Automerge.decodeChange(c),
-            }));
-            const clockByHash = Object.fromEntries(
-              allChangesDecoded.map(
-                (c) =>
-                  [
-                    c.decoded.hash || "",
-                    { actor: c.decoded.actor, seq: c.decoded.seq },
-                  ] as const
-              )
-            );
-            const missingChanges = allChangesDecoded.filter(
-              ({ decoded }) => decoded.actor === me && decoded.seq > seq
-            );
-            if (missingChanges.length) {
-              const dependencies = Object.fromEntries(
-                missingChanges[0].decoded.deps.map((h) => [
-                  clockByHash[h].actor,
-                  { seq: clockByHash[h].seq, hash: h },
-                ])
-              );
-              sendToNotebook({
-                target: source.uuid,
-                operation: "SHARE_PAGE_UPDATE",
-                data: {
-                  notebookPageId,
-                  changes: missingChanges.map((c) => binaryToBase64(c.encoded)),
-                  dependencies,
-                },
-              });
-            }
-          });
-        },
+        handler: (data, source) =>
+          handleRequestPageUpdateOperation(
+            zRequestPageUpdateWebsocketMessage.parse(data),
+            source
+          ),
       });
 
       if (viewSharedPageProps)
@@ -690,33 +432,6 @@ const setupSharePageWithNotebook = ({
         },
       });
 
-      apiClient<{ notebookPageIds: string[] }>({
-        method: "list-shared-pages",
-      })
-        .then(({ notebookPageIds }) => {
-          notebookPageIds.map((id) => {
-            set(id);
-            initPage({
-              notebookPageId: id,
-            });
-          });
-
-          dispatchAppEvent({
-            type: "log",
-            id: "list-pages-success",
-            content: `Ready to share pages!`,
-            intent: "debug",
-          });
-        })
-        .catch((e) =>
-          dispatchAppEvent({
-            type: "log",
-            id: "list-pages-failure",
-            content: `Failed to retrieve shared pages data: ${e.message}.`,
-            intent: "error",
-          })
-        );
-
       offConnect = onConnect?.();
     } else if (e.status === "DISCONNECTED") {
       unload();
@@ -730,6 +445,7 @@ const setupSharePageWithNotebook = ({
     removeNotebookListener({ operation: "SHARE_PAGE_RESPONSE" });
     removeNotebookListener({ operation: "SHARE_PAGE_UPDATE" });
     removeNotebookListener({ operation: "SHARE_PAGE" });
+    removeNotebookListener({ operation: "SHARE_PAGE_FORCE" });
     removeNotebookListener({ operation: "REQUEST_PAGE_UPDATE" });
     removeCommand({
       label: COMMAND_PALETTE_LABEL,

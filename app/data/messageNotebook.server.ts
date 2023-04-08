@@ -101,6 +101,7 @@ const messageNotebook = ({
           token,
           email: await getPrimaryUserEmail(endpoint.userId),
         };
+        Data["uuid"] = messageUuid;
         const lambda = new Lambda({
           endpoint: process.env.AWS_ENDPOINT,
         });

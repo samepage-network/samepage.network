@@ -2,11 +2,12 @@ import { Spinner, SpinnerSize } from "@blueprintjs/core";
 import React from "react";
 import Onboarding from "../components/Onboarding";
 import UsageChart, { UsageChartProps } from "../components/UsageChart";
-import type {
+import {
   ConnectionStatus,
   SendToBackend,
   Notification,
   MessageSource,
+  zErrorWebsocketMessage,
 } from "./types";
 import apiClient, { apiGet } from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
@@ -32,6 +33,7 @@ import {
 import MESSAGES, { Operation } from "./messages";
 import NotificationContainer from "../components/NotificationContainer";
 import debug from "../utils/debugger";
+import handleErrorOperation from "./handleErrorOperation";
 const log = debug("ws");
 
 const USAGE_LABEL = "View SamePage Usage";
@@ -272,13 +274,7 @@ const setupWsFeatures = ({
   addNotebookListener({
     operation: "ERROR",
     handler: (args) => {
-      const { message } = args as { message: string };
-      dispatchAppEvent({
-        type: "log",
-        id: "websocket-error",
-        content: message,
-        intent: "error",
-      });
+      handleErrorOperation(zErrorWebsocketMessage.parse(args));
       if (samePageBackend.status === "PENDING") {
         if (samePageBackend.channel)
           samePageBackend.channel.close(

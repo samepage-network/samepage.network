@@ -708,6 +708,28 @@ const logic = async (req: Record<string, unknown>) => {
           success: true,
         };
       }
+      case "request-page-update": {
+        const { target, notebookPageId, seq } = args;
+        await messageNotebook({
+          source: notebookUuid,
+          operation: "REQUEST_PAGE_UPDATE",
+          target,
+          data: { notebookPageId, seq },
+          requestId,
+        });
+        return { success: true };
+      }
+      case "page-update-response": {
+        const { target, notebookPageId, dependencies, changes } = args;
+        await messageNotebook({
+          source: notebookUuid,
+          operation: "SHARE_PAGE_UPDATE",
+          target,
+          data: { notebookPageId, dependencies, changes },
+          requestId,
+        });
+        return { success: true };
+      }
       case "invite-notebook-to-page": {
         const { notebookPageId, targetEmail, targetUuid } = args;
         const targetNotebookUuid =
@@ -1259,6 +1281,17 @@ const logic = async (req: Record<string, unknown>) => {
         const { body: state } = await downloadSharedPage({ cid });
         await cxn.end();
         return { state: Buffer.from(state).toString("base64") };
+      }
+      case "is-page-shared": {
+        const { notebookPageId } = args;
+        const record = await getSharedPage({
+          notebookUuid,
+          requestId,
+          notebookPageId,
+          safe: true,
+        });
+        await cxn.end();
+        return { exists: !!record };
       }
       case "get-unmarked-messages": {
         return {

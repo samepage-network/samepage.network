@@ -1,23 +1,22 @@
 import { encode } from "@ipld/dag-cbor";
-import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { addNotebookListener } from "../internal/setupMessageHandlers";
 import apiClient from "../internal/apiClient";
-import messageToNotification from "../internal/messageToNotification";
 import {
   AddNotebookRequestListener,
   JSONData,
+  NotebookRequestHandler,
   NotebookResponse,
+  NotebookResponseHandler,
   SendNotebookRequest,
+  zRequestDataWebsocketMessage,
+  zRequestWebsocketMessage,
 } from "../internal/types";
 import { registerNotificationActions } from "../internal/notificationActions";
+import handleRequestDataOperation from "../internal/handleRequestDataOperation";
+import handleRequestOperation from "../internal/handleRequestOperation";
 
-const notebookRequestHandlers: ((
-  request: JSONData
-) => Promise<JSONData | undefined>)[] = [];
-const notebookResponseHandlers: Record<
-  string,
-  (args: Record<string, JSONData>) => void
-> = {};
+const notebookRequestHandlers: NotebookRequestHandler[] = [];
+const notebookResponseHandlers: Record<string, NotebookResponseHandler> = {};
 const hashRequest = async (request: JSONData) =>
   typeof window !== "undefined"
     ? Array.from(
@@ -66,7 +65,8 @@ const sendNotebookRequest: SendNotebookRequest = ({
     // and the eventual response to use the same onResponse method...
     // Question to answer - is it always only ever at most two responses per request?
     onResponse(r as Record<string, NotebookResponse>);
-    notebookResponseHandlers[await hashRequest(request)] = onResponse;
+    notebookResponseHandlers[await hashRequest(request)] = async (args) =>
+      onResponse(args);
   });
 
 const addNotebookRequestListener: AddNotebookRequestListener = (listener) => {
@@ -102,24 +102,21 @@ const setupCrossAppRequests = () => {
   });
   const removeRequestDataListener = addNotebookListener({
     operation: "REQUEST_DATA",
-    handler: (e, source, uuid) => {
-      dispatchAppEvent({
-        type: "notification",
-        notification: messageToNotification({
-          uuid,
-          source,
-          data: e as Record<string, string>,
-          operation: "REQUEST_DATA",
-        }),
-      });
-    },
+    handler: (e, source, uuid) =>
+      handleRequestDataOperation(
+        zRequestDataWebsocketMessage.parse(e),
+        source,
+        uuid
+      ),
   });
   const removeRequestListener = addNotebookListener({
     operation: "REQUEST",
-    handler: async (e, source) => {
-      const { request } = e as { request: JSONData };
-      await handleRequest({ request, target: source.uuid });
-    },
+    handler: async (e, source) =>
+      handleRequestOperation(
+        zRequestWebsocketMessage.parse(e),
+        source,
+        notebookRequestHandlers
+      ),
   });
   const removeResponseListener = addNotebookListener({
     operation: "RESPONSE",

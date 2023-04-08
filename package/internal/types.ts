@@ -205,6 +205,16 @@ export type RenderOverlay = <T extends Record<string, unknown>>(args: {
 type SettingId = (typeof defaultSettings)[number]["id"];
 export type GetSetting = (s: SettingId) => string;
 export type SetSetting = (s: SettingId, v: string) => void;
+export type ApplyState = (
+  notebookPageId: string,
+  state: InitialSchema
+) => Promise<unknown>;
+export type NotebookRequestHandler = (
+  request: JSONData
+) => Promise<JSONData | undefined>;
+export type NotebookResponseHandler = (
+  args: Record<string, JSONData>
+) => Promise<unknown>;
 
 export type ConnectionStatus = "DISCONNECTED" | "PENDING" | "CONNECTED";
 
@@ -258,8 +268,56 @@ const zWebsocketMessageSource = z.object({
 
 export type MessageSource = z.infer<typeof zWebsocketMessageSource>;
 
+export const zErrorWebsocketMessage = z.object({
+  operation: z.literal("ERROR"),
+  message: z.string(),
+});
+
+export const zSharePageWebsocketMessage = z.object({
+  operation: z.literal("SHARE_PAGE"),
+  title: z.string(),
+});
+export const zSharePageResponseWebsocketMessage = z.object({
+  operation: z.literal("SHARE_PAGE_RESPONSE"),
+  success: z.boolean(),
+  title: z.string(),
+  rejected: z.boolean(),
+});
+export const zSharePageUpdateWebsocketMessage = z.object({
+  operation: z.literal("SHARE_PAGE_UPDATE"),
+  changes: z.string().array(),
+  notebookPageId: z.string(),
+  dependencies: z.record(z.object({ seq: z.number(), hash: z.string() })),
+});
+
+export const zSharePageForceWebsocketMessage = z.object({
+  operation: z.literal("SHARE_PAGE_FORCE"),
+  state: z.string(),
+  notebookPageId: z.string(),
+});
+
+export const zRequestPageUpdateWebsocketMessage = z.object({
+  operation: z.literal("REQUEST_PAGE_UPDATE"),
+  notebookPageId: z.string(),
+  seq: z.number(),
+});
+
+export const zRequestDataWebsocketMessage = z.object({
+  operation: z.literal("REQUEST_DATA"),
+  request: z.string(),
+});
+export const zRequestWebsocketMessage = z.object({
+  operation: z.literal("REQUEST"),
+  request: z.record(z.any()),
+});
+export const zResponseWebsocketMessage = z.object({
+  operation: z.literal("RESPONSE"),
+  request: z.record(z.any()),
+  response: z.record(z.any()),
+});
+
 const zWebsocketMessage = z.discriminatedUnion("operation", [
-  z.object({ operation: z.literal("ERROR"), message: z.string() }),
+  zErrorWebsocketMessage,
   z.object({
     operation: z.literal("AUTHENTICATION"),
     reason: z.string().optional(),
@@ -274,42 +332,15 @@ const zWebsocketMessage = z.discriminatedUnion("operation", [
   // )
   z.object({ operation: z.literal("PONG") }),
 
-  z.object({ operation: z.literal("SHARE_PAGE"), title: z.string() }),
-  z.object({
-    operation: z.literal("SHARE_PAGE_RESPONSE"),
-    success: z.boolean(),
-    title: z.string(),
-    rejected: z.boolean(),
-  }),
-  z.object({
-    operation: z.literal("SHARE_PAGE_UPDATE"),
-    changes: z.string().array(),
-    notebookPageId: z.string(),
-    dependencies: z.record(z.object({ seq: z.number(), hash: z.string() })),
-  }),
-  z.object({
-    operation: z.literal("SHARE_PAGE_FORCE"),
-    state: z.string(),
-    notebookPageId: z.string(),
-  }),
-  z.object({
-    operation: z.literal("REQUEST_PAGE_UPDATE"),
-    notebookPageId: z.string(),
-    seq: z.number(),
-  }),
+  zSharePageWebsocketMessage,
+  zSharePageResponseWebsocketMessage,
+  zSharePageUpdateWebsocketMessage,
+  zSharePageForceWebsocketMessage,
+  zRequestPageUpdateWebsocketMessage,
 
-  z.object({
-    operation: z.literal("REQUEST_DATA"),
-    request: z.record(z.any()),
-    uuid: z.string(),
-    source: z.string(),
-  }),
-  z.object({ operation: z.literal("REQUEST"), request: z.record(z.any()) }),
-  z.object({
-    operation: z.literal("RESPONSE"),
-    request: z.record(z.any()),
-    response: z.record(z.any()),
-  }),
+  zRequestDataWebsocketMessage,
+  zRequestWebsocketMessage,
+  zResponseWebsocketMessage,
 
   // @deperecated
   z.object({
@@ -334,6 +365,7 @@ export const zBackendWebSocketMessage = z
       email: z.string(),
     }),
     source: zWebsocketMessageSource,
+    uuid: z.string(),
   })
   .and(zWebsocketMessage);
 type MessageHandler = (
@@ -481,7 +513,29 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     state: z.string().optional(),
   }),
   z.object({
+    method: z.literal("request-page-update"),
+    notebookPageId: z.string(),
+    seq: z.number().optional(),
+    target: z.string(),
+  }),
+  z.object({
+    method: z.literal("page-update-response"),
+    notebookPageId: z.string(),
+    changes: z.string().array(),
+    dependencies: z.record(
+      z.object({
+        hash: z.string(),
+        seq: z.number(),
+      })
+    ),
+    target: z.string(),
+  }),
+  z.object({
     method: z.literal("get-shared-page"),
+    notebookPageId: z.string(),
+  }),
+  z.object({
+    method: z.literal("is-page-shared"),
     notebookPageId: z.string(),
   }),
   z.object({

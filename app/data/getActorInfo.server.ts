@@ -20,7 +20,15 @@ const getActorInfo = async ({
         email: tokens.userId,
       })
       .from(tokenNotebookLinks)
-      .where(eq(tokenNotebookLinks.uuid, actorId));
+      .where(
+        eq(
+          tokenNotebookLinks.uuid,
+          `${actorId.slice(0, 8)}-${actorId.slice(8, 12)}-${actorId.slice(
+            12,
+            16
+          )}-${actorId.slice(16, 20)}-${actorId.slice(20)}`
+        )
+      );
     if (record) {
       return record;
     }

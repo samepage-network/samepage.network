@@ -37,8 +37,13 @@ export const clear = () => Object.keys(notebookPageIds).forEach(deleteId);
 
 export const deleteId = (id: string) => delete notebookPageIds[id];
 
-export const has = (id?: string | null): id is string =>
-  !!id && typeof notebookPageIds[id] !== "undefined";
+export const has = async (id?: string | null) =>
+  !!id &&
+  (typeof notebookPageIds[id] !== "undefined" ||
+    (await apiClient<{ exists: boolean }>({
+      method: "is-page-shared",
+      notebookPageId: id,
+    }).then((r) => r.exists)));
 
 export const set = (
   id: string,
