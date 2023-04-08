@@ -70,7 +70,7 @@ const sendNotebookRequest: SendNotebookRequest = ({
   });
 
 const addNotebookRequestListener: AddNotebookRequestListener = (listener) => {
-  const handler: (typeof notebookRequestHandlers)[number] = (request) =>
+  const handler: NotebookRequestHandler = (request) =>
     new Promise((resolve) => listener({ request, sendResponse: resolve }));
   notebookRequestHandlers.push(handler);
   return () => {

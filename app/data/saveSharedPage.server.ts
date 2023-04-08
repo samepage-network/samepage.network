@@ -30,7 +30,7 @@ const saveSharedPage = async ({
   });
 
   return invokeAsync({
-    path: "upload-to-ipfs",
+    path: "backup",
     data: {
       uuid,
       type: "pages",

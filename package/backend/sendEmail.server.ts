@@ -4,7 +4,9 @@ import ReactDOMServer from "react-dom/server";
 import fs from "fs";
 import { v4 } from "uuid";
 
-const ses = new SES({});
+const ses = new SES({
+  // endpoint: process.env.AWS_ENDPOINT, TODO
+});
 export const supportEmail = "support@samepage.network";
 
 const sendEmail = ({

@@ -16,6 +16,7 @@ import handleRequestDataOperation from "../internal/handleRequestDataOperation";
 import handleRequestOperation from "../internal/handleRequestOperation";
 import sendExtensionError from "../internal/sendExtensionError";
 import setupRegistry from "../internal/registry";
+import OperationNotificationEmail from "~/components/OperationNotificationEmail";
 
 const createBackendClientHandler =
   ({
@@ -55,7 +56,12 @@ const createBackendClientHandler =
         await sendEmail({
           subject: e.notification.title,
           // TODO - present choice of actions.
-          body: e.notification.description,
+          body:  OperationNotificationEmail({
+            description: e.notification.description,
+            actions: e.notification.buttons,
+            operation: e.notification.operation,
+            messageUuid: e.notification.uuid,
+          }),
           to,
         });
       });

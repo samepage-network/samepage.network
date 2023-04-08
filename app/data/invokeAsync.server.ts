@@ -3,7 +3,10 @@ import axios from "axios";
 import { v4 } from "uuid";
 import { handler as uploadToIpfs } from "../../api/upload-to-ipfs";
 
-const lambda = new Lambda({ region: process.env.AWS_REGION });
+const lambda = new Lambda({
+  region: process.env.AWS_REGION,
+  // endpoint: process.env.AWS_ENDPOINT, TODO
+});
 
 const invokeAsync =
   process.env.NODE_ENV === "production"
@@ -32,7 +35,9 @@ const invokeAsync =
         // TODO: we might actually want this done in a child process
         return path === "upload-to-ipfs"
           ? // @ts-ignore
-            uploadToIpfs({...data, dry: true}, { awsRequestId: v4() }).then(() => true)
+            uploadToIpfs({ ...data, dry: true }, { awsRequestId: v4() }).then(
+              () => true
+            )
           : Promise.reject(new Error(`Unknown path: ${path}`));
         // const requestId = v4();
         // const dataPath = `/tmp/${requestId}.json`;
