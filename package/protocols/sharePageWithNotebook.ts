@@ -210,7 +210,7 @@ const setupSharePageWithNotebook = ({
         actions: {
           accept: acceptSharePageOperation({
             doesPageExist,
-            createPage,
+            createPage: (s) => createPage(s).then(() => s),
             openPage,
             deletePage,
             applyState,

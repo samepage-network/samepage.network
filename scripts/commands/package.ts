@@ -78,6 +78,11 @@ const packageCmd = async ({}: {}) => {
       ),
       bin: local.bin,
     };
+    const dirname = path.dirname(file);
+    if (!fs.existsSync(dirname))
+      throw new Error(
+        `No such directory: ${dirname}. This is probably because a module outside of /package was imported into package incorrectly`
+      );
     fs.writeFileSync(file, JSON.stringify(newPackageJson, null, 4));
     return newPackageJson;
   };

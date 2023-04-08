@@ -2,6 +2,7 @@ import { Lambda } from "@aws-sdk/client-lambda";
 import axios from "axios";
 import { v4 } from "uuid";
 import { handler as uploadToIpfs } from "../../api/upload-to-ipfs";
+import { handler as backup } from "../../api/backup";
 
 const lambda = new Lambda({
   region: process.env.AWS_REGION,
@@ -36,6 +37,11 @@ const invokeAsync =
         return path === "upload-to-ipfs"
           ? // @ts-ignore
             uploadToIpfs({ ...data, dry: true }, { awsRequestId: v4() }).then(
+              () => true
+            )
+          : path === "backup"
+          ? // @ts-ignore
+            backup({ ...data, dry: true }, { awsRequestId: v4() }).then(
               () => true
             )
           : Promise.reject(new Error(`Unknown path: ${path}`));

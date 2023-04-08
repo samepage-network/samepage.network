@@ -20,7 +20,7 @@ const acceptSharePageOperation =
     initPage,
   }: {
     doesPageExist: (s: string) => Promise<boolean>;
-    createPage: (s: string) => Promise<unknown>;
+    createPage: (s: string) => Promise<string>;
     applyState: ApplyState;
     calculateState: (s: string) => Promise<InitialSchema>;
     initPage: (s: { notebookPageId: string }) => void;
@@ -30,7 +30,7 @@ const acceptSharePageOperation =
   ({ title }: Record<string, string>) =>
     doesPageExist(title).then(async (preexisted) => {
       // Custom destination can be handled withing the extension's `createPage` function
-      if (!preexisted) await createPage(title);
+      const notebookPageId = preexisted ? title : await createPage(title);
       return apiClient<
         | { found: false; reason: string }
         | {
@@ -44,7 +44,7 @@ const acceptSharePageOperation =
         .then(async (res) => {
           if (!res.found) return Promise.reject(new UserOnlyError(res.reason));
           const saveDoc = (doc: Schema) =>
-            saveAndApply({ notebookPageId: title, doc, applyState })
+            saveAndApply({ notebookPageId, doc, applyState })
               .then(() => {
                 initPage({
                   notebookPageId: title,
@@ -65,7 +65,7 @@ const acceptSharePageOperation =
             await apiClient({
               method: "update-shared-page",
               changes: Automerge.getChanges(doc, mergedDoc).map(binaryToBase64),
-              notebookPageId: title,
+              notebookPageId,
               state: binaryToBase64(Automerge.save(mergedDoc)),
             });
             await saveDoc(mergedDoc);

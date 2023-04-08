@@ -279,9 +279,9 @@ export const zSharePageWebsocketMessage = z.object({
 });
 export const zSharePageResponseWebsocketMessage = z.object({
   operation: z.literal("SHARE_PAGE_RESPONSE"),
-  success: z.boolean(),
+  success: z.boolean().optional(),
   title: z.string(),
-  rejected: z.boolean(),
+  rejected: z.boolean().optional(),
 });
 export const zSharePageUpdateWebsocketMessage = z.object({
   operation: z.literal("SHARE_PAGE_UPDATE"),

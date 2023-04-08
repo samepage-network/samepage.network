@@ -40,9 +40,10 @@ export const loader = async ({ request, context }: LoaderArgs) => {
     throw new BadRequestResponse(`Unsupported action: ${action}`);
   }
   const cxn = await getMysql(requestId);
-  const [{ notebookUuid }] = await cxn
+  const [{ notebookUuid, metadata }] = await cxn
     .select({
       notebookUuid: messages.target,
+      metadata: messages.metadata,
     })
     .from(messages)
     .where(eq(messages.uuid, messageUuid));
@@ -79,8 +80,8 @@ export const loader = async ({ request, context }: LoaderArgs) => {
     initPage: async () => {},
     deletePage: async () => {},
     createPage: (notebookPageId) =>
-      apiPost({
-        path: `/extensions/notion/backend`,
+      apiPost<{ data: string }>({
+        path: `extensions/notion/backend`,
         data: {
           type: "CREATE_PAGE",
           data: {
@@ -89,11 +90,11 @@ export const loader = async ({ request, context }: LoaderArgs) => {
           },
         },
         authorization: `Bearer ${accessToken}`,
-      }),
+      }).then((r) => r.data),
     openPage: async () => {},
     calculateState: (notebookPageId) =>
       apiPost({
-        path: `/extensions/notion/backend`,
+        path: `extensions/notion/backend`,
         data: {
           type: "CALCULATE_STATE",
           data: {
@@ -105,7 +106,7 @@ export const loader = async ({ request, context }: LoaderArgs) => {
       }),
     applyState: (notebookPageId, state) =>
       apiPost({
-        path: `/extensions/notion/backend`,
+        path: `extensions/notion/backend`,
         data: {
           type: "APPLY_STATE",
           data: {
@@ -115,7 +116,8 @@ export const loader = async ({ request, context }: LoaderArgs) => {
         },
         authorization: `Bearer ${accessToken}`,
       }),
-  });
+    // @ts-ignore
+  })(metadata);
   return { success: true };
 };
 
