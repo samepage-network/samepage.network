@@ -1,4 +1,4 @@
-import EmailLayout from "./EmailLayout";
+import EmailLayout from "../../package/components/EmailLayout";
 import React from "react";
 
 const NewCustomerEmail = ({ email }: { email: string }): React.ReactElement => (

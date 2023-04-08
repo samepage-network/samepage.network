@@ -1,4 +1,4 @@
-import EmailLayout from "./EmailLayout";
+import EmailLayout from "../../package/components/EmailLayout";
 import React from "react";
 
 const WelcomeClientEmail = ({
@@ -12,9 +12,9 @@ const WelcomeClientEmail = ({
     </div>
     <div>
       You will soon receive a separate general Welcome Email. To get started on
-      working together, create a backlog of tasks on your preferred tool of choice and
-      share it with <code>vargas@samepage.network</code> so that we could get
-      started on saving you time on your business.{" "}
+      working together, create a backlog of tasks on your preferred tool of
+      choice and share it with <code>vargas@samepage.network</code> so that we
+      could get started on saving you time on your business.{" "}
       {temporaryPassword && (
         <span>
           If that application currently supports a SamePage plugin, we created a

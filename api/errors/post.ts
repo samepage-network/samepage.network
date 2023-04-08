@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm/expressions";
 import ExtensionErrorEmail from "~/components/ExtensionErrorEmail";
 import { v4 } from "uuid";
 import uploadFile from "~/data/uploadFile.server";
-import EmailLayout from "~/components/EmailLayout";
+import EmailLayout from "package/components/EmailLayout";
 import parseZodError from "package/utils/parseZodError";
 import axios from "axios";
 import { apps, notebooks } from "data/schema";
