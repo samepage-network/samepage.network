@@ -33,18 +33,15 @@ import binaryToBase64 from "../internal/binaryToBase64";
 import { clear, has, deleteId, load, set } from "../utils/localAutomergeDb";
 import changeAutomergeDoc from "../utils/changeAutomergeDoc";
 import wrapSchema from "../utils/wrapSchema";
-import mergeDocs from "../utils/mergeDocs";
 import parseZodError from "../utils/parseZodError";
 import sendExtensionError from "../internal/sendExtensionError";
-import UserOnlyError from "../internal/UserOnlyError";
 import { registerNotificationActions } from "../internal/notificationActions";
 import handleSharePageOperation from "../internal/handleSharePageOperation";
 import handleSharePageResponseOperation from "../internal/handleSharePageResponseOperation";
 import handleSharePageUpdateOperation from "../internal/handleSharePageUpdateOperation";
-import saveAndApply from "../internal/saveAndApply";
 import handleSharePageForceOperation from "../internal/handleSharePageForceOperation";
-import loadAutomergeFromBase64 from "../internal/loadAutomergeFromBase64";
 import handleRequestPageUpdateOperation from "../internal/handleRequestPageUpdateOperation";
+import acceptSharePageOperation from "../internal/acceptSharePageOperation";
 
 const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
@@ -211,69 +208,15 @@ const setupSharePageWithNotebook = ({
       registerNotificationActions({
         operation: "SHARE_PAGE",
         actions: {
-          accept: ({ title }) =>
-            doesPageExist(title).then(async (preexisted) => {
-              // Custom destination can be handled withing the extension's `createPage` function
-              if (!preexisted) await createPage(title);
-              return apiClient<
-                | { found: false; reason: string }
-                | {
-                    state: string;
-                    found: true;
-                  }
-              >({
-                method: "join-shared-page",
-                notebookPageId: title,
-              })
-                .then(async (res) => {
-                  if (!res.found)
-                    return Promise.reject(new UserOnlyError(res.reason));
-                  const saveDoc = (doc: Schema) =>
-                    saveAndApply({ notebookPageId: title, doc, applyState })
-                      .then(() => {
-                        initPage({
-                          notebookPageId: title,
-                        });
-                      })
-                      .catch((e) => {
-                        deleteId(title);
-                        apiClient({
-                          method: "disconnect-shared-page",
-                          notebookPageId: title,
-                        }).then(() => Promise.reject(e));
-                      });
-                  const doc = loadAutomergeFromBase64(res.state);
-                  set(title, doc);
-                  if (preexisted) {
-                    const preExistingDoc = await calculateState(title);
-                    const mergedDoc = mergeDocs(doc, preExistingDoc);
-                    await apiClient({
-                      method: "update-shared-page",
-                      changes: Automerge.getChanges(doc, mergedDoc).map(
-                        binaryToBase64
-                      ),
-                      notebookPageId: title,
-                      state: binaryToBase64(Automerge.save(mergedDoc)),
-                    });
-                    await saveDoc(mergedDoc);
-                  } else await saveDoc(doc);
-                  dispatchAppEvent({
-                    type: "log",
-                    id: "join-page-success",
-                    content: `Successfully connected to shared page ${title}!`,
-                    intent: "success",
-                  });
-                  return openPage(title);
-                })
-                .catch((e) => {
-                  if (!preexisted) deletePage(title);
-                  apiClient({
-                    method: "revert-page-join",
-                    notebookPageId: title,
-                  });
-                  return Promise.reject(e);
-                });
-            }),
+          accept: acceptSharePageOperation({
+            doesPageExist,
+            createPage,
+            openPage,
+            deletePage,
+            applyState,
+            calculateState,
+            initPage,
+          }),
           reject: async ({ title }) =>
             apiClient({
               method: "remove-page-invite",

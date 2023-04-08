@@ -16,7 +16,7 @@ import handleRequestDataOperation from "../internal/handleRequestDataOperation";
 import handleRequestOperation from "../internal/handleRequestOperation";
 import sendExtensionError from "../internal/sendExtensionError";
 import setupRegistry from "../internal/registry";
-import OperationNotificationEmail from "~/components/OperationNotificationEmail";
+import OperationNotificationEmail from "../../app/components/OperationNotificationEmail";
 
 const createBackendClientHandler =
   ({
