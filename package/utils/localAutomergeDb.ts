@@ -2,7 +2,6 @@ import apiClient from "../internal/apiClient";
 import { Schema } from "../internal/types";
 import Automerge from "automerge";
 import base64ToBinary from "../internal/base64ToBinary";
-import wrapSchema from "./wrapSchema";
 import { actorId } from "../internal/registry";
 
 const notebookPageIds: Record<string, Automerge.FreezeObject<Schema> | null> =
@@ -13,12 +12,9 @@ export const get = (id: string) => notebookPageIds[id];
 export const load = async (
   id: string
 ): Promise<Automerge.FreezeObject<Schema>> => {
-  if (typeof notebookPageIds[id] === "undefined") {
-    return Automerge.from(wrapSchema({ content: "", annotations: [] }));
-  }
-  const doc = notebookPageIds[id];
-  if (doc === null)
-    return apiClient<{ state: string }>({
+  return (
+    notebookPageIds[id] ||
+    apiClient<{ state: string }>({
       method: "get-shared-page",
       notebookPageId: id,
     }).then(({ state }) => {
@@ -29,8 +25,8 @@ export const load = async (
         }
       );
       return (notebookPageIds[id] = remoteDoc);
-    });
-  return doc;
+    })
+  );
 };
 
 export const clear = () => Object.keys(notebookPageIds).forEach(deleteId);

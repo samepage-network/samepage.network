@@ -58,6 +58,7 @@ const handleSharePageUpdateOperation = async (
             const storedHashes = new Set(
               storedChanges.map((c) => c.hash || "")
             );
+
             const actorsToRequest = Object.entries(patch.clock).filter(
               ([actor, seq]) => {
                 if (me === actor) {

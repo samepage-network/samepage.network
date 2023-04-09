@@ -1083,14 +1083,14 @@ const logic = async (req: Record<string, unknown>) => {
                     eq(tokenNotebookLinks.tokenUuid, tokenUuid)
                   )
                 );
-              const messageRequest = (id: string) =>
+              const messageRequest = (uuid: string) =>
                 messageNotebook({
                   source: notebookUuid,
                   target,
                   operation: "REQUEST",
                   data: {
                     request,
-                    id,
+                    uuid,
                     title: label,
                   },
                   requestId,
