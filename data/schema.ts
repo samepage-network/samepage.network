@@ -134,6 +134,25 @@ export const pageNotebookLinks = mysqlTable(
   })
 );
 
+export const pageProperties = mysqlTable(
+  "page_properties",
+  {
+    uuid: primaryUuid(),
+    linkUuid: varchar("link_uuid", { length: 36 }).notNull().default(""),
+    key: varchar("key", { length: 128 }).notNull().default(""),
+    value: json("value")
+      .notNull()
+      .default(JSON.stringify({ content: "", annotations: [] })),
+  },
+  (props) => ({
+    linkUuidIndex: index("IX_link_uuid").on(props.linkUuid),
+    linkUuidKeyIndex: uniqueIndex("UC_link_uuid_key").on(
+      props.linkUuid,
+      props.key
+    ),
+  })
+);
+
 export const notebookRequests = mysqlTable(
   "notebook_requests",
   {

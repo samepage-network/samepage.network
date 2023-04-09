@@ -18,7 +18,7 @@ const DefaultErrorBoundary: ErrorBoundaryComponent = ({
           : error.stack || JSON.stringify(error)}
       </pre>
       <p>
-        If you believe this is a mistake, please send
+        If you believe this is a mistake, please send{" "}
         <a
           href={logUrl}
           target={"_blank"}

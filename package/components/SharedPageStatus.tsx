@@ -9,7 +9,7 @@ import {
   IconSize,
   Tooltip,
 } from "@blueprintjs/core";
-import React from "react";
+import React, { useEffect } from "react";
 import SharePageDialog from "./SharePageDialog";
 import { OverlayProps, Schema } from "../internal/types";
 import Automerge from "automerge";
@@ -271,6 +271,10 @@ const SharedPageStatus = ({
   onCopy = (s) => window.navigator.clipboard.writeText(s),
 }: OverlayProps<SharedPageStatusProps>) => {
   const [loading, setLoading] = React.useState(false);
+  const [isPublic, setIsPublic] = React.useState(false);
+  useEffect(() => {
+    // todo - get is public by notebookPageId
+  }, [setIsPublic]);
   return (
     <span className="samepage-shared-page-status flex flex-col mb-8 shadow-md rounded-md bg-gray-50 px-2 py-4 gap-2">
       <span className="flex gap-4 items-center text-lg">
@@ -303,6 +307,7 @@ const SharedPageStatus = ({
                     id: "copy-page-link",
                     intent: "success",
                   });
+                  setIsPublic(true);
                 })
                 .catch((e) => {
                   dispatchAppEvent({
@@ -425,6 +430,11 @@ const SharedPageStatus = ({
           />
         </Tooltip>
       </span>
+      {isPublic && (
+        <span className="italic opacity-50 text-xs">
+          Note - this page is publically available
+        </span>
+      )}
     </span>
   );
 };
