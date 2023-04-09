@@ -4,7 +4,7 @@ import { execSync } from "child_process";
 import { Octokit } from "@octokit/rest";
 import readDir from "../../package/scripts/internal/readDir";
 import dotenv from "dotenv";
-import getMysql from "~/data/mysql.server";
+import getMysql from "../../app/data/mysql.server";
 import { sql } from "drizzle-orm";
 import { apps } from "data/schema";
 dotenv.config();
@@ -24,11 +24,11 @@ const init = async ({
 } = {}) => {
   if (code === "help") {
     console.log(
-      "Usage: ts-node scripts/cli.ts init --id <id> --app <app> --workspace <workspace>"
+      "Usage: ts-node scripts/cli.ts init --code <code> --app <app> --workspace <workspace>"
     );
     console.log("");
     console.log(
-      "Example: ts-node scripts/cli.ts init samepage SamePage workspace"
+      "Example: ts-node scripts/cli.ts init --code samepage --app SamePage --workspace workspace"
     );
     process.exit(0);
   }
