@@ -44,28 +44,7 @@ const toAtJson = (node: ChildNode): InitialSchema => {
       };
     } else if (el.tagName === "SPAN") {
       const span = el as HTMLSpanElement;
-      if (el.classList.contains("samepage-reference")) {
-        const parts = span.title.split(":");
-        const notebookUuid = parts.length === 1 ? getSetting("uuid") : parts[0];
-        const notebookPageId = parts.length === 1 ? parts[0] : parts[1];
-        const content =
-          childSchema.content.replace(/^\(\(/, "").replace(/\)\)$/, "") ||
-          String.fromCharCode(0);
-        return {
-          content,
-          annotations: [
-            {
-              start: 0,
-              end: content.length,
-              type: "reference",
-              attributes: {
-                notebookPageId,
-                notebookUuid,
-              },
-            },
-          ],
-        };
-      } else if (el.classList.contains("samepage-highlighting")) {
+      if (el.classList.contains("samepage-highlighting")) {
         return {
           content: childSchema.content,
           annotations: [
@@ -122,19 +101,42 @@ const toAtJson = (node: ChildNode): InitialSchema => {
       };
     } else if (el.tagName === "A") {
       const a = el as HTMLAnchorElement;
-      return {
-        content: childSchema.content,
-        annotations: [
-          {
-            start: 0,
-            end: childSchema.content.length,
-            type: "link",
-            attributes: {
-              href: a.href,
+      if (el.classList.contains("samepage-reference")) {
+        const parts = a.title.split(":");
+        const notebookUuid = parts.length === 1 ? getSetting("uuid") : parts[0];
+        const notebookPageId = parts.length === 1 ? parts[0] : parts[1];
+        const content =
+          childSchema.content.replace(/^\(\(/, "").replace(/\)\)$/, "") ||
+          String.fromCharCode(0);
+        return {
+          content,
+          annotations: [
+            {
+              start: 0,
+              end: content.length,
+              type: "reference",
+              attributes: {
+                notebookPageId,
+                notebookUuid,
+              },
             },
-          },
-        ],
-      };
+          ],
+        };
+      } else {
+        return {
+          content: childSchema.content,
+          annotations: [
+            {
+              start: 0,
+              end: childSchema.content.length,
+              type: "link",
+              attributes: {
+                href: a.href,
+              },
+            },
+          ],
+        };
+      }
     } else if (el.tagName === "BODY") {
       return childSchema;
     } else {

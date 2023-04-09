@@ -174,6 +174,12 @@ export const zInitialSchema = z.object({
   content: z.string(),
   annotations: annotationSchema.array(),
 });
+export const zSafeInitialSchema = z
+  .object({
+    content: z.string().default(""),
+    annotations: annotationSchema.array().default([]),
+  })
+  .default({ content: "", annotations: [] });
 export type InitialSchema = z.infer<typeof zInitialSchema>;
 
 export type json =

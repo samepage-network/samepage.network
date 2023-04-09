@@ -1,6 +1,9 @@
 import type { WSHandler } from "./sendmessage";
+import debug from "package/utils/debugger";
 // import emailError from "~/data/emailError.server";
 // import getMysqlConnection from "~/data/mysql.server";
+
+const log = debug("onconnect");
 
 export const handler: WSHandler = (event) => {
   const id = event.requestContext?.connectionId || "";
@@ -19,7 +22,7 @@ export const handler: WSHandler = (event) => {
   //     cxn.destroy();
   return Promise.resolve()
     .then(() => {
-      console.log("connected new client", id);
+      log("connected new client", id);
       return { statusCode: 200, body: "Connected" };
     })
     .catch(

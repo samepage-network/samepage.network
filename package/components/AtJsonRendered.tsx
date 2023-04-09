@@ -5,19 +5,24 @@ import { NULL_TOKEN } from "../utils/atJsonParser";
 
 type AnnotationTree = (Annotation & { children: AnnotationTree })[];
 type ClassNames = { blockLi?: string };
+export type References = Record<
+  string,
+  Record<string, { data: InitialSchema; href: string }>
+>;
 
-const AnnotationRendered = ({
+// TODO - just use context for content, classNames, references
+const getAnnotationChildren = ({
   annotation,
   content,
-  classNames = {},
-  references: _ = {},
+  classNames,
+  references,
 }: {
-  annotation: AnnotationTree[number];
+  annotation: { start: number; end: number; children: AnnotationTree };
   content: string;
   classNames?: ClassNames;
-  references?: Record<string, Record<string, InitialSchema>>;
-}): React.ReactElement => {
-  const children = annotation.children
+  references?: References;
+}) =>
+  annotation.children
     .reduce(
       (p, c, index) => {
         const splitIndex = p.findIndex(
@@ -37,6 +42,8 @@ const AnnotationRendered = ({
                   annotation={c}
                   content={content}
                   key={index}
+                  classNames={classNames}
+                  references={references}
                 />
               ),
               start: c.start,
@@ -60,6 +67,24 @@ const AnnotationRendered = ({
       ] as { el: React.ReactNode; start: number; end: number }[]
     )
     .map((c) => c.el);
+
+const AnnotationRendered = ({
+  annotation,
+  content,
+  classNames = {},
+  references = {},
+}: {
+  annotation: AnnotationTree[number];
+  content: string;
+  classNames?: ClassNames;
+  references?: References;
+}): React.ReactElement => {
+  const children = getAnnotationChildren({
+    annotation,
+    content,
+    references,
+  });
+
   if (annotation.type === "block") {
     const trimChildren = children.map((c, i) =>
       i === children.length - 1 ? (c as string).slice(0, -1) : c
@@ -86,6 +111,34 @@ const AnnotationRendered = ({
         {trimChildren}
       </div>
     );
+  } else if (annotation.type === "reference") {
+    const { notebookPageId, notebookUuid } = annotation.attributes;
+    const {
+      href = "",
+      data: { content = notebookPageId, annotations = [] },
+    } = references[notebookUuid]?.[notebookPageId] || {};
+    return (
+      <a
+        className="cursor underline samepage-reference text-sky-500"
+        title={
+          notebookUuid === getSetting("uuid")
+            ? notebookPageId
+            : `${notebookUuid}:${notebookPageId}`
+        }
+        href={href}
+      >
+        {children.length === 1 && children[0] === NULL_TOKEN ? (
+          <AtJsonRendered
+            content={content}
+            annotations={annotations}
+            classNames={classNames}
+            references={references}
+          />
+        ) : (
+          children
+        )}
+      </a>
+    );
   } else {
     return annotation.type === "highlighting" ? (
       <span className="bg-yellow-300 samepage-highlighting">{children}</span>
@@ -97,36 +150,6 @@ const AnnotationRendered = ({
       <a href={annotation.attributes.href}>{children}</a>
     ) : annotation.type === "image" ? (
       <img src={annotation.attributes.src} width={"100%"} />
-    ) : annotation.type === "reference" ? (
-      <span
-        className="cursor underline samepage-reference"
-        title={
-          annotation.attributes.notebookUuid === getSetting("uuid")
-            ? annotation.attributes.notebookPageId
-            : `${annotation.attributes.notebookUuid}:${annotation.attributes.notebookPageId}`
-        }
-      >
-        {children.length === 1 && children[0] === NULL_TOKEN ? (
-          // && references[annotation.attributes.notebookUuid]?.[
-          //   annotation.attributes.notebookPageId
-          // ]
-          // import firstBlockDoc from "../utils/firstBlockDoc";
-          // <AtJsonRendered
-          //   {...firstBlockDoc(
-          //     references[annotation.attributes.notebookUuid][
-          //       annotation.attributes.notebookPageId
-          //     ]
-          //   )}
-          //   classNames={classNames}
-          //   references={references}
-          // />
-          <span className="text-sky-500 underline">
-            {annotation.attributes.notebookPageId}
-          </span>
-        ) : (
-          children
-        )}
-      </span>
     ) : (
       <>{children}</>
     );
@@ -140,10 +163,10 @@ const AtJsonRendered = ({
   references,
 }: InitialSchema & {
   classNames?: ClassNames;
-  references?: Record<string, Record<string, InitialSchema>>;
+  references?: References;
 }) => {
-  const selectedSnapshotTree = React.useMemo(() => {
-    const tree: AnnotationTree = [];
+  const children = React.useMemo<AnnotationTree>(() => {
+    const children: AnnotationTree = [];
     annotations.forEach((anno) => {
       const insert = (annotations: AnnotationTree, a: Annotation) => {
         const parent = annotations.find(
@@ -155,21 +178,22 @@ const AtJsonRendered = ({
           annotations.push({ ...a, children: [] });
         }
       };
-      insert(tree, anno);
+      insert(children, anno);
     });
-    return tree;
+    return children;
   }, [annotations]);
   return (
     <>
-      {selectedSnapshotTree.map((annotation, key) => (
-        <AnnotationRendered
-          annotation={annotation}
-          content={content.toString() || ""}
-          classNames={classNames}
-          key={key}
-          references={references}
-        />
-      ))}
+      {getAnnotationChildren({
+        annotation: {
+          children,
+          start: 0,
+          end: content.length,
+        },
+        content: content.toString() || "",
+        classNames,
+        references,
+      })}
     </>
   );
 };
