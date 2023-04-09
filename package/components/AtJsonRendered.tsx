@@ -113,7 +113,10 @@ const AnnotationRendered = ({
     );
   } else if (annotation.type === "reference") {
     const { notebookPageId, notebookUuid } = annotation.attributes;
-    const refInfo = references[notebookUuid]?.[notebookPageId];
+    const {
+      href = "",
+      data: { content = notebookPageId, annotations = [] },
+    } = references[notebookUuid]?.[notebookPageId] || {};
     return (
       <a
         className="cursor underline samepage-reference text-sky-500"
@@ -122,11 +125,12 @@ const AnnotationRendered = ({
             ? notebookPageId
             : `${notebookUuid}:${notebookPageId}`
         }
-        href={refInfo.href}
+        href={href}
       >
-        {children.length === 1 && children[0] === NULL_TOKEN && refInfo ? (
+        {children.length === 1 && children[0] === NULL_TOKEN ? (
           <AtJsonRendered
-            {...refInfo.data}
+            content={content}
+            annotations={annotations}
             classNames={classNames}
             references={references}
           />
