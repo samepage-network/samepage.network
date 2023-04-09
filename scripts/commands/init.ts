@@ -6,7 +6,7 @@ import readDir from "../../package/scripts/internal/readDir";
 import dotenv from "dotenv";
 import getMysql from "../../app/data/mysql.server";
 import { sql } from "drizzle-orm";
-import { apps } from "data/schema";
+import { apps } from "../../data/schema";
 dotenv.config();
 
 const octokit = new Octokit({
