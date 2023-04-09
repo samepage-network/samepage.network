@@ -307,13 +307,13 @@ export const zRequestPageUpdateWebsocketMessage = z.object({
 export const zRequestDataWebsocketMessage = z.object({
   operation: z.literal("REQUEST_DATA"),
   request: z.string(),
-  uuid: z.string(),
+  requestUuid: z.string(),
   title: z.string(),
 });
 export const zRequestWebsocketMessage = z.object({
   operation: z.literal("REQUEST"),
   request: z.record(z.any()),
-  uuid: z.string(),
+  requestUuid: z.string(),
   title: z.string(),
 });
 export const zResponseWebsocketMessage = z.object({

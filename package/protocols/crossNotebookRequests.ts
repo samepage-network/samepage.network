@@ -83,20 +83,20 @@ const setupCrossAppRequests = () => {
   registerNotificationActions({
     operation: "REQUEST_DATA",
     actions: {
-      accept: async ({ uuid, request, source }) => {
+      accept: async ({ requestUuid, request, source }) => {
         await handleRequest({
           request: JSON.parse(request),
           target: source,
         });
         await apiClient({
           method: "accept-request",
-          requestUuid: uuid,
+          requestUuid,
         });
       },
-      reject: async ({ uuid }) =>
+      reject: async ({ requestUuid }) =>
         apiClient({
           method: "reject-request",
-          requestUuid: uuid,
+          requestUuid,
         }),
     },
   });
