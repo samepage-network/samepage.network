@@ -60,7 +60,7 @@ const setupSharePageWithNotebook = ({
   createPage = () => Promise.resolve(),
   openPage = () => Promise.resolve(),
   deletePage = () => Promise.resolve(),
-  doesPageExist = () => Promise.resolve(false),
+  getNotebookPageIdByTitle = (title: string) => Promise.resolve(title),
   applyState = () => Promise.resolve(),
   calculateState = () => Promise.resolve({ annotations: [], content: "" }),
   onConnect,
@@ -79,7 +79,7 @@ const setupSharePageWithNotebook = ({
   createPage?: (notebookPageId: string) => Promise<unknown>;
   openPage?: (notebookPageId: string) => Promise<unknown>;
   deletePage?: (notebookPageId: string) => Promise<unknown>;
-  doesPageExist?: (notebookPageId: string) => Promise<boolean>;
+  getNotebookPageIdByTitle?: (notebookPageId: string) => Promise<string>;
   applyState?: ApplyState;
   calculateState?: (notebookPageId: string) => Promise<InitialSchema>;
   onConnect?: () => () => void;
@@ -209,7 +209,7 @@ const setupSharePageWithNotebook = ({
         operation: "SHARE_PAGE",
         actions: {
           accept: acceptSharePageOperation({
-            doesPageExist,
+            getNotebookPageIdByTitle,
             createPage: (s) => createPage(s).then(() => s),
             openPage,
             deletePage,

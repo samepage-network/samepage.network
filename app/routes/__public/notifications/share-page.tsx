@@ -9,11 +9,13 @@ import { and, eq } from "drizzle-orm/expressions";
 import acceptSharePageOperation from "package/internal/acceptSharePageOperation";
 import { apiPost } from "package/internal/apiClient";
 import setupRegistry from "package/internal/registry";
+import { useEffect } from "react";
 import getUserId from "~/data/getUserId.server";
 import getMysql from "~/data/mysql.server";
 import parseRemixContext from "~/data/parseRemixContext.server";
 import {
   BadRequestResponse,
+  InternalServerResponse,
   UnauthorizedResponse,
 } from "~/data/responses.server";
 
@@ -21,6 +23,7 @@ export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const SharePageOperationPage = () => {
+  useEffect(() => {}, []);
   return <div>Success!</div>;
 };
 
@@ -36,6 +39,7 @@ export const loader = async ({ request, context }: LoaderArgs) => {
   const searchParams = Object.fromEntries(new URL(request.url).searchParams);
   const messageUuid = searchParams.uuid;
   const action = searchParams.action;
+  const path = searchParams.path;
   if (action !== "accept") {
     throw new BadRequestResponse(`Unsupported action: ${action}`);
   }
@@ -68,6 +72,11 @@ export const loader = async ({ request, context }: LoaderArgs) => {
       )
     );
   await cxn.end();
+  if (!metadata) {
+    throw new InternalServerResponse(
+      `No metadata found for message ${messageUuid}`
+    );
+  }
   setupRegistry({
     getSetting: (s) => {
       if (s === "uuid") return notebookUuid;
@@ -76,7 +85,7 @@ export const loader = async ({ request, context }: LoaderArgs) => {
     },
   });
   await acceptSharePageOperation({
-    doesPageExist: async () => false,
+    getNotebookPageIdByTitle: async () => "",
     initPage: async () => {},
     deletePage: async () => {},
     createPage: (notebookPageId) =>
@@ -86,7 +95,7 @@ export const loader = async ({ request, context }: LoaderArgs) => {
           type: "CREATE_PAGE",
           data: {
             notebookPageId,
-            path: `Getting-Started-73dc4bf6a0e74a07adc25798a2f5b468`,
+            path,
           },
         },
         authorization: `Bearer ${accessToken}`,
@@ -116,7 +125,6 @@ export const loader = async ({ request, context }: LoaderArgs) => {
         },
         authorization: `Bearer ${accessToken}`,
       }),
-    // @ts-ignore
   })(metadata);
   return { success: true };
 };

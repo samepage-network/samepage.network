@@ -12,7 +12,11 @@ const downloadFile = ({
   Key = "",
 }: Partial<Pick<GetObjectCommandInput, "Key">>) => {
   if (process.env.NODE_ENV === "production") {
-    const s3 = new S3({ region: "us-east-1" });
+    const s3 = new S3({
+      region: "us-east-1",
+      // TODO
+      // endpoint: process.env.AWS_ENDPOINT,
+    });
     const Bucket = "samepage.network";
     return s3.listObjectsV2({ Bucket, Prefix: Key }).then((r) => {
       if (r.KeyCount === 0) return getDefault();
