@@ -115,7 +115,7 @@ const AnnotationRendered = ({
     const { notebookPageId, notebookUuid } = annotation.attributes;
     const {
       href = "",
-      data: { content = notebookPageId, annotations = [] },
+      data: { content = notebookPageId, annotations = [] } = {},
     } = references[notebookUuid]?.[notebookPageId] || {};
     return (
       <a
