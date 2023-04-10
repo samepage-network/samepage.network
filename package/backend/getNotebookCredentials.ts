@@ -1,4 +1,5 @@
-import { Lambda } from "@aws-sdk/client-lambda";
+import { InvokeCommandOutput, Lambda } from "@aws-sdk/client-lambda";
+import { ServerError } from "~/data/errors.server";
 import {
   GetNotebookCredentialsPayload,
   zGetNotebookCredentialsResponse,
@@ -15,9 +16,19 @@ const getNotebookCredentials = (payload: GetNotebookCredentialsPayload) => {
     .then((res) => {
       const payload = Buffer.from(res.Payload ?? []).toString() || "{}";
       if (res.FunctionError) {
-        throw new Error(payload);
+        throw new ServerError(payload, res.$metadata.httpStatusCode || 500);
       }
       return zGetNotebookCredentialsResponse.parse(JSON.parse(payload));
+    })
+    .catch((err) => {
+      console.log(err);
+      const res = err as InvokeCommandOutput;
+      return Promise.reject(
+        new ServerError(
+          res.FunctionError || "Server Error",
+          res.$metadata.httpStatusCode || 500
+        )
+      );
     });
 };
 

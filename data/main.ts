@@ -80,7 +80,6 @@ const setupInfrastructure = async (): Promise<void> => {
         "convertkit_api_key",
         "staging_clerk_api_key",
         "web3_storage_api_key",
-        "roadmap_roam_token",
         "stripe_webhook_secret",
         "svix_secret",
         "algolia_app_id",
@@ -1133,9 +1132,14 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         plaintextValue: clerkPublishableKey.value,
       });
 
-      
+      new Route53Record(this, `github_txt_record`, {
+        name: "_github-challenge-samepage-network-org.samepage.network.",
+        type: "TXT",
+        zoneId,
+        records: ["4b935591d3"],
+      });
+
       // TODO migrate google verification route53 record
-      // - github txt new Route53Record()
       // - standard TXT record
       // - google._domainkey TXT record
       // - _dmarc TXT record

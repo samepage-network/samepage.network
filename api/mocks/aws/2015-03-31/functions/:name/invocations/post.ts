@@ -1,19 +1,27 @@
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
+import { ServerError } from "~/data/errors.server";
 
 const logic = ({ name, ...Payload }: { name: string }) => {
   const fileName = name.replace(/^samepage-network_/, "").replace(/-/g, "/");
   return fetch(`${process.env.API_URL}/${fileName}`, {
     method: "POST",
     body: JSON.stringify(Payload),
-  })
-    .then((r) => r.json())
-    .catch((e) => {
-      // TODO: One issue is that we are not being caught in the `FunctionError` param
-      // of invoke, and instead are triggering invoke().catch()
-      return Promise.reject(
-        new Error(JSON.stringify({ message: e.message, stack: e.stack }))
+    headers: {
+      "x-amz-invocation-type": "RequestResponse",
+    },
+  }).then(async (r) => {
+    if (!r.ok) {
+      throw new ServerError(
+        JSON.stringify({
+          FunctionError: r.statusText,
+          Payload: await r.text(),
+          code: "InvalidRuntimeException",
+        }),
+        r.status
       );
-    });
+    }
+    return r.json();
+  });
 };
 
 export default createAPIGatewayProxyHandler(logic);

@@ -1,9 +1,5 @@
 import express from "express";
-import type {
-  APIGatewayProxyHandler,
-  APIGatewayProxyResult,
-  Handler,
-} from "aws-lambda";
+import type { APIGatewayProxyHandler, Context, Handler } from "aws-lambda";
 import addSeconds from "date-fns/addSeconds";
 import differenceInMilliseconds from "date-fns/differenceInMilliseconds";
 import format from "date-fns/format";
@@ -28,7 +24,7 @@ const generateContext = ({
 }: {
   functionName: string;
   executionTimeStarted: Date;
-}) => {
+}): Context => {
   const executionTimeout = addSeconds(executionTimeStarted, 10);
   return {
     awsRequestId: v4(),
@@ -246,7 +242,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
 
           const result = handler(event, context, () => ({}));
           return Promise.resolve(result || undefined)
-            .then((result: APIGatewayProxyResult | void) => {
+            .then((result) => {
               const executionTime = differenceInMilliseconds(
                 new Date(),
                 executionTimeStarted
@@ -301,7 +297,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
       } else {
         // Mock Lambda
         app.post(route, (req, res) => {
-          const handler = loadHandler<APIGatewayProxyHandler>();
+          const handler = loadHandler<Handler>();
           if (typeof handler !== "function") {
             return res
               .header("Content-Type", "application/json")
@@ -311,6 +307,8 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
                 errorType: "HANDLER_NOT_FOUND",
               });
           }
+          const invocationType =
+            req.headers["x-amz-invocation-type"] || "Event";
           const event = JSON.parse(req.body);
           event.pathParameters = Object.keys(req.params).length
             ? req.params
@@ -321,21 +319,53 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
             functionName,
             executionTimeStarted,
           });
-          new Promise((resolve) =>
-            setTimeout(() => resolve(handler(event, context, () => ({}))), 1)
-          )
-            .then(() => {
-              const executionTime = differenceInMilliseconds(
-                new Date(),
-                executionTimeStarted
-              );
-              debug(`Executed async ${functionName} in ${executionTime}ms`);
-            })
-            .catch((error: Error) => {
-              const message = error.message || error.toString();
-              console.error(message, "\n", error);
-            });
-          return res.status(202).json({});
+          if (invocationType === "Event") {
+            new Promise((resolve) =>
+              setTimeout(() => resolve(handler(event, context, () => ({}))), 1)
+            )
+              .then(() => {
+                const executionTime = differenceInMilliseconds(
+                  new Date(),
+                  executionTimeStarted
+                );
+                debug(`Executed async ${functionName} in ${executionTime}ms`);
+              })
+              .catch((error: Error) => {
+                const message = error.message || error.toString();
+                console.error(message, "\n", error);
+              });
+            return res.status(202).json({});
+          } else {
+            const result = handler(event, context, () => ({}));
+            return Promise.resolve(result || undefined)
+              .then((result) => {
+                const executionTime = differenceInMilliseconds(
+                  new Date(),
+                  executionTimeStarted
+                );
+                debug(`Executed ${method} ${req.path} in ${executionTime}ms`);
+                res.status(200);
+                return inlineTryCatch(
+                  () => res.json(JSON.parse(result.body)),
+                  () => res.send(result.body)
+                );
+              })
+              .catch((error: Error & { code?: number }) => {
+                const message = error.message || error.toString();
+                console.error(message, "\n", error);
+                return res
+                  .header("x-amzn-errortype", "InvalidRuntimeException")
+                  .header("Content-Type", "application/json")
+                  .status(error.code || 502)
+                  .json({
+                    errorMessage: message,
+                    errorType: error.constructor.name,
+                    stackTrace: (error.stack || "")
+                      .split("\n")
+                      .map((l) => l.trim()),
+                  });
+              });
+          }
         });
       }
       debug(
