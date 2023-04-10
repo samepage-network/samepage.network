@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import makeRandomTmpDir from "../../utils/makeRandomTmpDir";
 import fs from "fs";
 import dev from "../../../package/scripts/dev";
+import path from "path";
 
 test("Mirror'd files should update on edit", async () => {
   const oldLog = console.log;
@@ -32,8 +33,11 @@ test("Mirror'd files should update on edit", async () => {
       }
     }, 10)
   );
+  const commentPath = path
+    .relative(process.cwd(), index)
+    .replace("/tmp", "/private/tmp");
   const firstExpectedOut = `(() => {
-  // ../../../../private${root}/src/index.ts
+  // ${commentPath}
   var foo = "hello";
   console.log(foo);
 })();
@@ -47,7 +51,7 @@ test("Mirror'd files should update on edit", async () => {
   );
 
   const secondExpectedOut = `(() => {
-  // ../../../../private${root}/src/index.ts
+  // ${commentPath}
   var foo = "bye";
   console.log(foo);
 })();

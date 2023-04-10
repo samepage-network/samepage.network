@@ -69,7 +69,7 @@ test("App Attributes should slide with annotation", async () => {
           end: 2,
           type: "bold",
           appAttributes: {
-            roam: {
+            samepage: {
               kind: "__",
             },
           },
@@ -89,7 +89,7 @@ test("App Attributes should slide with annotation", async () => {
           end: 8,
           type: "bold",
           appAttributes: {
-            roam: {
+            samepage: {
               kind: "__",
             },
           },

@@ -647,5 +647,4 @@ test("Full integration test of extensions", async () => {
 
 test.afterAll(async () => {
   await cleanup?.();
-  // TODO delete accounts
 });

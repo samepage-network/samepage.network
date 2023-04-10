@@ -1368,10 +1368,5 @@ const logic = async (req: Record<string, unknown>) => {
 
 export const handler = createAPIGatewayProxyHandler({
   logic,
-  allowedOrigins: [
-    "https://roamresearch.com",
-    "https://logseq.com",
-    "app://obsidian.md",
-    /^https:\/\/([\w]+\.)?notion\.so/,
-  ],
+  allowedOrigins: [/.+/],
 });

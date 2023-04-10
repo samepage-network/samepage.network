@@ -121,9 +121,7 @@ export const MarkdownComponent = ({ children }: { children: string }) => (
             <a
               href={props.href}
               className={"text-sky-500 underline hover:no-underline"}
-              download={
-                props.href.endsWith(".zip") ? "roam-samepage.zip" : false
-              }
+              download={false}
             >
               {props.children}
             </a>

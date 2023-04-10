@@ -86,7 +86,6 @@
     "@cdktf/provider-github": "^4.0.0",
     "@dvargas92495/aws-clerk": "^0.1.0",
     "@dvargas92495/aws-email": "^2.1.0",
-    "@dvargas92495/aws-static-site": "^3.6.7",
     "@dvargas92495/aws-websocket": "^1.2.3",
     "@octokit/rest": "^19.0.7",
     "@tailwindcss/forms": "0.5.0",

@@ -2,7 +2,13 @@ import child_process from "child_process";
 import compareSqlSchemas from "../../data/compareSqlSchemas";
 import fs from "fs";
 
-const plan = async ({ sql }: { sql?: boolean }): Promise<number> => {
+const plan = async ({
+  sql,
+  tf,
+}: {
+  sql?: boolean;
+  tf?: boolean;
+}): Promise<number> => {
   if (sql) {
     await compareSqlSchemas();
   } else {
@@ -13,6 +19,12 @@ const plan = async ({ sql }: { sql?: boolean }): Promise<number> => {
     // TODO - make this a non speculative plan
     child_process.execSync(`npx cdktf plan`, {
       stdio: "inherit",
+      env: tf
+        ? {
+            ...process.env,
+            TF_ONLY: "true",
+          }
+        : { ...process.env },
     });
   }
   return 0;
