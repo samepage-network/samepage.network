@@ -1137,6 +1137,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         type: "TXT",
         zoneId,
         records: ["4b935591d3"],
+        ttl: 300,
       });
 
       // TODO migrate google verification route53 record
