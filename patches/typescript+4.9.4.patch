@@ -1,0 +1,18 @@
+diff --git a/node_modules/typescript/lib/tsc.js b/node_modules/typescript/lib/tsc.js
+index 80afaea..dd93afe 100644
+--- a/node_modules/typescript/lib/tsc.js
++++ b/node_modules/typescript/lib/tsc.js
+@@ -33176,9 +33176,11 @@ var ts;
+         },
+         {
+             name: "paths",
+-            type: "object",
++            type: {
++                get: (s) => JSON.parse(s)
++            },
+             affectsModuleResolution: true,
+-            isTSConfigOnly: true,
++            isTSConfigOnly: false,
+             category: ts.Diagnostics.Modules,
+             description: ts.Diagnostics.Specify_a_set_of_entries_that_re_map_imports_to_additional_lookup_locations,
+             transpileOptionValue: undefined

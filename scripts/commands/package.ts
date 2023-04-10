@@ -1,6 +1,7 @@
 import fs from "fs";
 import cp from "child_process";
 import path from "path";
+// import readDir from "package/scripts/internal/readDir";
 
 const packageCmd = async ({}: {}) => {
   fs.appendFileSync(
@@ -11,7 +12,7 @@ const packageCmd = async ({}: {}) => {
   const tsconfig = JSON.parse(fs.readFileSync("tsconfig.json").toString());
   const cliArgs = Object.entries(tsconfig.compilerOptions)
     .map(([arg, value]) => {
-      if (arg === "noEmit" || arg === "paths" || arg === "baseUrl") {
+      if (arg === "noEmit") {
         return "";
       } else if (arg === "jsx") {
         // Don't know how to handle this as react-jsx in Roam yet
@@ -22,6 +23,9 @@ const packageCmd = async ({}: {}) => {
         return `--${arg} ${value}`;
       } else if (Array.isArray(value)) {
         return `--${arg} ${value.join(",")}`;
+      } else if (arg === "paths") {
+        // We hacked patches/typescript+4.9.4.patch to make this work
+        return `--${arg} '${JSON.stringify(value)}'`;
       } else {
         return "";
       }
@@ -30,9 +34,27 @@ const packageCmd = async ({}: {}) => {
     .join(" ");
 
   // https://github.com/microsoft/TypeScript/issues/27379
-  cp.execSync(`npx tsc package/**/*.ts package/**/*.tsx ${cliArgs}`, {
+  cp.execSync(`npx tsc package/**/*.ts package/**/*.tsx ${cliArgs} && tsc-alias`, {
     stdio: "inherit",
   });
+
+  // woof
+  // const paths = tsconfig.compilerOptions.paths;
+  // readDir("dist").forEach((f) => {
+  //   const slashes = f.split("/").length;
+  //   fs.writeFileSync(
+  //     f,
+  //     fs
+  //       .readFileSync(f)
+  //       .toString()
+  //       .replace(
+  //         'require("package/',
+  //         `require("${Array(slashes - 2)
+  //           .fill("../")
+  //           .join("")}`
+  //       )
+  //   );
+  // });
 
   fs.writeFileSync(
     "dist/samepage.css",

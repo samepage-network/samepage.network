@@ -13,7 +13,7 @@ import {
 import apiClient from "../internal/apiClient";
 import { OverlayProps } from "../internal/types";
 import React, { Fragment, useCallback } from "react";
-import { app, appRoot, workspace } from "../internal/registry";
+import { app, appRoot, workspace } from "package/internal/registry";
 
 const PAGES = ["WELCOME", "SETUP", "CONNECT", "START", "COMPLETE"] as const;
 type Page = (typeof PAGES)[number];
