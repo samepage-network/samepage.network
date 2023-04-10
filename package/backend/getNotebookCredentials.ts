@@ -1,5 +1,5 @@
 import { InvokeCommandOutput, Lambda } from "@aws-sdk/client-lambda";
-import { ServerError } from "~/data/errors.server";
+import ServerError from "package/utils/ServerError";
 import {
   GetNotebookCredentialsPayload,
   zGetNotebookCredentialsResponse,

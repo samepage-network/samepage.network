@@ -1,5 +1,5 @@
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
-import { ServerError } from "~/data/errors.server";
+import ServerError from "package/utils/ServerError";
 
 const logic = ({ name, ...Payload }: { name: string }) => {
   const fileName = name.replace(/^samepage-network_/, "").replace(/-/g, "/");

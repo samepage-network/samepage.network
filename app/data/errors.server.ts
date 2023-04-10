@@ -1,10 +1,4 @@
-export class ServerError extends Error {
-  readonly code;
-  constructor(arg: string, code: number) {
-    super(arg);
-    this.code = code;
-  }
-}
+import ServerError from "package/utils/ServerError";
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status#client_error_responses
 
