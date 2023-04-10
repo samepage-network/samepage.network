@@ -186,6 +186,90 @@ const compile = ({
             Object.fromEntries(externalModules.filter((e) => e.length === 2))
           ),
           ...esbuildPlugins("src"),
+          {
+            name: "onFinish",
+            setup(build) {
+              build.onEnd(() => {
+                DEFAULT_FILES_INCLUDED.concat(
+                  typeof include === "string" ? [include] : include || []
+                )
+                  .map((f) => path.join(root, f))
+                  .filter((f) => fs.existsSync(f))
+                  .forEach((f) => {
+                    fs.cpSync(f, path.join(outdir, path.basename(f)));
+                  });
+                if (css) {
+                  const outCssFilename = path.join(
+                    outdir,
+                    `${css.replace(/.css$/, "")}.css`
+                  );
+                  const inputCssFiles = fs
+                    .readdirSync(outdir)
+                    .filter((f) => /.css$/.test(f));
+
+                  if (inputCssFiles.length === 0) {
+                    console.warn(`No css files in the ${outdir} directory`);
+                  } else if (inputCssFiles.length === 1) {
+                    fs.renameSync(
+                      path.join(outdir, inputCssFiles[0]),
+                      outCssFilename
+                    );
+                  } else {
+                    const baseOutput = path.basename(outCssFilename);
+                    if (!inputCssFiles.includes(baseOutput))
+                      fs.writeFileSync(outCssFilename, "");
+                    inputCssFiles.sort().forEach((f) => {
+                      if (baseOutput !== f) {
+                        const cssFileContent = fs
+                          .readFileSync(path.join(outdir, f))
+                          .toString();
+                        fs.rmSync(path.join(outdir, f));
+                        fs.appendFileSync(outCssFilename, cssFileContent);
+                        fs.appendFileSync(outCssFilename, "\n");
+                      }
+                    });
+                    // hoist all imports to the top
+                    const outlines = fs
+                      .readFileSync(outCssFilename)
+                      .toString()
+                      .split("\n");
+                    const imports = outlines.filter((l) =>
+                      l.startsWith("@import")
+                    );
+                    const rest = outlines.filter(
+                      (l) => !l.startsWith("@import")
+                    );
+                    fs.writeFileSync(
+                      outCssFilename,
+                      imports.concat(rest).join("\n")
+                    );
+                  }
+                }
+                if (
+                  onFinishFile &&
+                  fs.existsSync(path.join(root, onFinishFile))
+                ) {
+                  const customOnFinish = require(path.resolve(
+                    path.join(root, onFinishFile)
+                  ));
+                  if (typeof customOnFinish === "function") {
+                    customOnFinish();
+                  }
+                }
+                if (mirror) {
+                  const mirrorPath = path.resolve(root, mirror);
+                  if (!fs.existsSync(mirrorPath))
+                    fs.mkdirSync(mirrorPath, { recursive: true });
+                  readDir(outdir).forEach((f) => {
+                    fs.cpSync(
+                      appPath(f),
+                      path.join(mirrorPath, path.relative(outdir, f))
+                    );
+                  });
+                }
+              });
+            },
+          },
         ],
         metafile: analyze,
         loader: {
@@ -210,64 +294,7 @@ const compile = ({
           ]
         : []
     )
-  ).then(async () => {
-    DEFAULT_FILES_INCLUDED.concat(
-      typeof include === "string" ? [include] : include || []
-    )
-      .map((f) => path.join(root, f))
-      .filter((f) => fs.existsSync(f))
-      .forEach((f) => {
-        fs.cpSync(f, path.join(outdir, path.basename(f)));
-      });
-    if (css) {
-      const outCssFilename = path.join(
-        outdir,
-        `${css.replace(/.css$/, "")}.css`
-      );
-      const inputCssFiles = fs
-        .readdirSync(outdir)
-        .filter((f) => /.css$/.test(f));
-
-      if (inputCssFiles.length === 0) {
-        console.warn(`No css files in the ${outdir} directory`);
-      } else if (inputCssFiles.length === 1) {
-        fs.renameSync(path.join(outdir, inputCssFiles[0]), outCssFilename);
-      } else {
-        const baseOutput = path.basename(outCssFilename);
-        if (!inputCssFiles.includes(baseOutput))
-          fs.writeFileSync(outCssFilename, "");
-        inputCssFiles.sort().forEach((f) => {
-          if (baseOutput !== f) {
-            const cssFileContent = fs
-              .readFileSync(path.join(outdir, f))
-              .toString();
-            fs.rmSync(path.join(outdir, f));
-            fs.appendFileSync(outCssFilename, cssFileContent);
-            fs.appendFileSync(outCssFilename, "\n");
-          }
-        });
-        // hoist all imports to the top
-        const outlines = fs.readFileSync(outCssFilename).toString().split("\n");
-        const imports = outlines.filter((l) => l.startsWith("@import"));
-        const rest = outlines.filter((l) => !l.startsWith("@import"));
-        fs.writeFileSync(outCssFilename, imports.concat(rest).join("\n"));
-      }
-    }
-    if (onFinishFile && fs.existsSync(path.join(root, onFinishFile))) {
-      const customOnFinish = require(path.resolve(
-        path.join(root, onFinishFile)
-      ));
-      if (typeof customOnFinish === "function") {
-        customOnFinish();
-      }
-    }
-    if (mirror) {
-      if (!fs.existsSync(mirror)) fs.mkdirSync(mirror, { recursive: true });
-      readDir(outdir).forEach((f) =>
-        fs.cpSync(appPath(f), path.join(mirror, path.relative(outdir, f)))
-      );
-    }
-  });
+  );
 };
 
 export default compile;

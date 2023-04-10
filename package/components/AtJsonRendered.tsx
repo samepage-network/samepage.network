@@ -117,9 +117,12 @@ const AnnotationRendered = ({
       href = "",
       data: { content = notebookPageId, annotations = [] } = {},
     } = references[notebookUuid]?.[notebookPageId] || {};
+    const isAliased = children.length !== 1 || children[0] !== NULL_TOKEN;
     return (
       <a
-        className="cursor underline samepage-reference text-sky-500"
+        className={`cursor underline samepage-reference ${
+          isAliased && "samepage-alias"
+        } text-sky-500`}
         title={
           notebookUuid === getSetting("uuid")
             ? notebookPageId

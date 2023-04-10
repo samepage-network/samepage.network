@@ -1,6 +1,6 @@
 import { getSetting } from "../internal/registry";
 import type { Annotation, InitialSchema } from "../internal/types";
-import { combineAtJsons } from "../utils/atJsonParser";
+import { combineAtJsons, NULL_TOKEN } from "../utils/atJsonParser";
 
 const toAtJson = (node: ChildNode): InitialSchema => {
   if (node.nodeType === node.TEXT_NODE) {
@@ -105,9 +105,9 @@ const toAtJson = (node: ChildNode): InitialSchema => {
         const parts = a.title.split(":");
         const notebookUuid = parts.length === 1 ? getSetting("uuid") : parts[0];
         const notebookPageId = parts.length === 1 ? parts[0] : parts[1];
-        const content =
-          childSchema.content.replace(/^\(\(/, "").replace(/\)\)$/, "") ||
-          String.fromCharCode(0);
+        const content = el.classList.contains("samepage-alias")
+          ? childSchema.content.replace(/^\(\(/, "").replace(/\)\)$/, "")
+          : NULL_TOKEN;
         return {
           content,
           annotations: [

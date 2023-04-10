@@ -1,6 +1,6 @@
 import esbuild from "esbuild";
 
-const esbuildPlugins = (source:string): esbuild.Plugin[] => [
+const esbuildPlugins = (source: string): esbuild.Plugin[] => [
   {
     name: "log",
     setup: (build) => {

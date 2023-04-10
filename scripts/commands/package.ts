@@ -3,13 +3,14 @@ import cp from "child_process";
 import path from "path";
 // import readDir from "package/scripts/internal/readDir";
 
-const packageCmd = async ({}: {}) => {
+const packageCmd = async ({ out = "dist" }: { out?: string } = {}) => {
   fs.appendFileSync(
     `${process.env.HOME}/.npmrc`,
     `//registry.npmjs.org/:_authToken=${process.env.NODE_AUTH_TOKEN}`
   );
 
   const tsconfig = JSON.parse(fs.readFileSync("tsconfig.json").toString());
+  tsconfig.compilerOptions.outDir = out;
   const cliArgs = Object.entries(tsconfig.compilerOptions)
     .map(([arg, value]) => {
       if (arg === "noEmit") {
@@ -34,30 +35,15 @@ const packageCmd = async ({}: {}) => {
     .join(" ");
 
   // https://github.com/microsoft/TypeScript/issues/27379
-  cp.execSync(`npx tsc package/**/*.ts package/**/*.tsx ${cliArgs} && tsc-alias`, {
-    stdio: "inherit",
-  });
-
-  // woof
-  // const paths = tsconfig.compilerOptions.paths;
-  // readDir("dist").forEach((f) => {
-  //   const slashes = f.split("/").length;
-  //   fs.writeFileSync(
-  //     f,
-  //     fs
-  //       .readFileSync(f)
-  //       .toString()
-  //       .replace(
-  //         'require("package/',
-  //         `require("${Array(slashes - 2)
-  //           .fill("../")
-  //           .join("")}`
-  //       )
-  //   );
-  // });
+  cp.execSync(
+    `npx tsc package/**/*.ts package/**/*.tsx ${cliArgs} && tsc-alias --outDir ${out}`,
+    {
+      stdio: "inherit",
+    }
+  );
 
   fs.writeFileSync(
-    "dist/samepage.css",
+    path.join(out, "samepage.css"),
     `@import url("https://unpkg.com/normalize.css@^8.0.1");
 @import url("https://unpkg.com/@blueprintjs/core@^4.8.0/lib/css/blueprint.css");
 
@@ -67,12 +53,16 @@ const packageCmd = async ({}: {}) => {
     `npx tailwindcss -c package/tailwind.config.js -o /tmp/samepage.css`,
     { stdio: "inherit" }
   );
-  fs.appendFileSync("dist/samepage.css", fs.readFileSync("/tmp/samepage.css"));
+  fs.appendFileSync(
+    path.join(out, "samepage.css"),
+    fs.readFileSync("/tmp/samepage.css")
+  );
 
   ["LICENSE", "package/README.md"].forEach((f) =>
-    fs.cpSync(f, path.join(`dist`, path.basename(f)))
+    fs.cpSync(f, path.join(out, path.basename(f)))
   );
-  if (!fs.existsSync("dist/patches")) fs.mkdirSync("dist/patches");
+  if (!fs.existsSync(path.join(out, "patches")))
+    fs.mkdirSync(path.join(out, "patches"));
   const rootPackageJson = JSON.parse(
     fs.readFileSync("package.json").toString()
   );
@@ -108,11 +98,14 @@ const packageCmd = async ({}: {}) => {
     fs.writeFileSync(file, JSON.stringify(newPackageJson, null, 4));
     return newPackageJson;
   };
-  const root = generatePackageJson(packageField, "dist/package.json");
+  const root = generatePackageJson(
+    packageField,
+    path.join(out, "package.json")
+  );
   fs.readdirSync("patches").forEach((f) => {
     const pkg = /(.*?)\+\d+\./.exec(f)?.[1];
     if (pkg && root.peerDependencies[pkg.replace(/\+/g, "/")]) {
-      fs.cpSync(path.join("patches", f), path.join(`dist`, "patches", f));
+      fs.cpSync(path.join("patches", f), path.join(out, "patches", f));
     }
   });
 
@@ -121,7 +114,7 @@ const packageCmd = async ({}: {}) => {
     Record<string, unknown>
   >;
   Object.entries(scoped).forEach(([dir, config]) => {
-    generatePackageJson(config, `dist/${dir}/package.json`);
+    generatePackageJson(config, path.join(out, dir, "package.json"));
   });
   return 0;
 };

@@ -5,6 +5,7 @@ import fs from "fs";
 import axios from "axios";
 import { v4 } from "uuid";
 import { execSync } from "child_process";
+import packageCmd from "../../../scripts/commands/package";
 
 test.beforeAll(() => {
   const oldLog = console.log;
@@ -131,7 +132,8 @@ test("build command compiles template", async () => {
   const root = await makeRandomTmpDir();
   fs.mkdirSync(`${root}/src`);
   fs.cpSync("template/src/index.ts", `${root}/src/index.ts`);
-  fs.cpSync("package", `${root}/node_modules/samepage`, { recursive: true });
+  fs.mkdirSync(`${root}/node_modules`);
+  packageCmd({ out: `${root}/node_modules/samepage` });
   [
     "@babel",
     "@blueprintjs",
