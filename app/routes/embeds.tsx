@@ -1,6 +1,6 @@
 import { ActionFunction } from "@remix-run/node";
 import { Form } from "@remix-run/react";
-import { accessTokens, pageNotebookLinks } from "data/schema";
+import { accessTokens, apps, notebooks, pageNotebookLinks } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
 import { apiPost } from "package/internal/apiClient";
 import React from "react";
@@ -43,17 +43,20 @@ export const action: ActionFunction = async ({ request }) => {
     })
     .from(pageNotebookLinks)
     .where(eq(pageNotebookLinks.uuid, workflow));
-  const [{ authorization }] = await cxn
+  const [{ authorization, app }] = await cxn
     .select({
       authorization: accessTokens.value,
+      app: apps.code,
     })
     .from(accessTokens)
+    .innerJoin(notebooks, eq(accessTokens.notebookUuid, notebooks.uuid))
+    .innerJoin(apps, eq(apps.id, notebooks.app))
     .where(
       eq(accessTokens.notebookUuid, "a6681698-14d7-43e2-8466-0314213c384c")
     );
   const { body } = await downloadSharedPage({ cid: record.cid });
   const { data: notebookPageId } = await apiPost({
-    path: "extensions/notion/backend",
+    path: `extensions/${app}/backend`,
     data: {
       type: "CREATE_PAGE",
       data: {
@@ -66,7 +69,7 @@ export const action: ActionFunction = async ({ request }) => {
   const state = unwrapSchema(Automerge.load(body));
   state.content = state.content.replace("<%DATE:today%>", "April 07, 2023");
   await apiPost({
-    path: "extensions/notion/backend",
+    path: `extensions/${app}/backend`,
     data: {
       type: "APPLY_STATE",
       data: {

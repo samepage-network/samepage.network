@@ -318,7 +318,7 @@ const setupInfrastructure = async (): Promise<void> => {
         functionName: `${safeProjectName}_viewer-request`,
         role: edgeLambdaRole.arn,
         handler: "viewer-request.handler",
-        runtime: "nodejs16.x",
+        runtime: "nodejs18.x",
         publish: true,
         filename: "viewer-request.zip",
       });
@@ -327,7 +327,7 @@ const setupInfrastructure = async (): Promise<void> => {
         functionName: `${safeProjectName}_origin-request`,
         role: edgeLambdaRole.arn,
         handler: "origin-request.handler",
-        runtime: "nodejs16.x",
+        runtime: "nodejs8.x",
         publish: true,
         filename: "origin-request.zip",
         timeout: 20,

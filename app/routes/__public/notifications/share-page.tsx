@@ -1,7 +1,9 @@
 import { LoaderArgs } from "@remix-run/node";
 import {
   accessTokens,
+  apps,
   messages,
+  notebooks,
   tokenNotebookLinks,
   tokens,
 } from "data/schema";
@@ -51,10 +53,11 @@ export const loader = async ({ request, context }: LoaderArgs) => {
     })
     .from(messages)
     .where(eq(messages.uuid, messageUuid));
-  const [{ token, accessToken }] = await cxn
+  const [{ token, accessToken, app }] = await cxn
     .select({
       token: tokens.value,
       accessToken: accessTokens.value,
+      app: apps.code,
     })
     .from(tokens)
     .innerJoin(
@@ -65,6 +68,8 @@ export const loader = async ({ request, context }: LoaderArgs) => {
       accessTokens,
       eq(accessTokens.notebookUuid, tokenNotebookLinks.notebookUuid)
     )
+    .innerJoin(notebooks, eq(accessTokens.notebookUuid, notebooks.uuid))
+    .innerJoin(apps, eq(apps.id, notebooks.app))
     .where(
       and(
         eq(tokenNotebookLinks.notebookUuid, notebookUuid),
@@ -90,7 +95,7 @@ export const loader = async ({ request, context }: LoaderArgs) => {
     deletePage: async () => {},
     createPage: (notebookPageId) =>
       apiPost<{ data: string }>({
-        path: `extensions/notion/backend`,
+        path: `extensions/${app}/backend`,
         data: {
           type: "CREATE_PAGE",
           data: {
@@ -103,7 +108,7 @@ export const loader = async ({ request, context }: LoaderArgs) => {
     openPage: async () => {},
     calculateState: (notebookPageId) =>
       apiPost({
-        path: `extensions/notion/backend`,
+        path: `extensions/${app}/backend`,
         data: {
           type: "CALCULATE_STATE",
           data: {
@@ -115,7 +120,7 @@ export const loader = async ({ request, context }: LoaderArgs) => {
       }),
     applyState: (notebookPageId, state) =>
       apiPost({
-        path: `extensions/notion/backend`,
+        path: `extensions/${app}/backend`,
         data: {
           type: "APPLY_STATE",
           data: {

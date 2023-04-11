@@ -5,6 +5,7 @@ import OverlayImg from "~/components/OverlayImg";
 import ExternalLink from "~/components/ExternalLink";
 import listApps from "~/data/listApps.server";
 import parseRemixContext from "~/data/parseRemixContext.server";
+import { Octokit } from "@octokit/rest";
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
@@ -123,92 +124,6 @@ export const handle = {
   mainClassName: "bg-gradient-to-b from-sky-50 to-inherit -mt-16 pt-32",
 };
 
-const INSTRUCTIONS: Record<string, { steps: InstructionSteps }> = {
-  samepage: { steps: [] },
-  roam: {
-    steps: [
-      {
-        title: "Open Roam Depot",
-        children: "image",
-      },
-      {
-        title: "Search SamePage",
-        children: "image",
-      },
-      {
-        title: "Install!",
-        children: "image",
-      },
-    ],
-  },
-  logseq: {
-    steps: [
-      {
-        title: `Go to plugins dashboard`,
-        children: "image",
-      },
-      {
-        title: `Go to marketplace`,
-        children: "image",
-      },
-      {
-        title: `Search SamePage!`,
-        children: "image",
-      },
-    ],
-  },
-  obsidian: {
-    steps: [
-      {
-        title: `Go to Settings`,
-        children: "image",
-      },
-      {
-        title: `Browse Community Plugins`,
-        children: "image",
-      },
-      {
-        title: `Enable SamePage!`,
-        children: "image",
-      },
-    ],
-  },
-  notion: {
-    steps: [
-      {
-        title: `Connect your account`,
-        children: "link",
-        props: {
-          href: `https://api.notion.com/v1/oauth/authorize?client_id=1990c3a3-66ff-4a69-8d22-af684683daf5&response_type=code&owner=user&redirect_uri=https://${
-            process.env.NODE_ENV === "production"
-              ? "samepage.network"
-              : "samepage.ngrok.io"
-          }/oauth/notion`,
-        },
-      },
-      {
-        title: `Select Accessible Pages`,
-        children: "image",
-      },
-    ],
-  },
-  github: {
-    steps: [
-      {
-        title: `Install the SamePage GitHub App`,
-        children: "link",
-        props: {
-          href: `https://github.com/apps/samepage-network`,
-        },
-      },
-      {
-        title: "Allow access to your repositories",
-        children: "image",
-      },
-    ],
-  },
-};
-
 export const loader: LoaderFunction = async ({ context, request }) => {
   const requestId = parseRemixContext(context).lambdaContext.awsRequestId;
   const apps = await listApps({ requestId });
@@ -218,9 +133,26 @@ export const loader: LoaderFunction = async ({ context, request }) => {
   const searchParams = new URL(request.url).searchParams;
   const selectedApp =
     searchParams.get("id") || searchParams.get("app") || userApps[0].code;
+  const instructions = await new Octokit().repos
+    .getContent({
+      owner: "samepage-network",
+      repo: `${selectedApp}-samepage`,
+      path: "package.json",
+    })
+    .then((json) =>
+      "type" in json.data && json.data.type === "file"
+        ? json.data.content
+        : undefined
+    )
+    .then((content) =>
+      content
+        ? JSON.parse(Buffer.from(content, "base64").toString()).samepage
+            ?.install || {}
+        : {}
+    );
   return {
     userApps,
-    ...INSTRUCTIONS[selectedApp],
+    ...instructions,
   };
 };
 
