@@ -8,12 +8,12 @@ import {
 } from "./types";
 
 const handleRequestOperation = async (
-  { request }: z.infer<typeof zRequestWebsocketMessage>,
-  source: MessageSource,
+  { request }: Pick<z.infer<typeof zRequestWebsocketMessage>, "request">,
+  source: Pick<MessageSource, "uuid">,
   notebookRequestHandlers: NotebookRequestHandler[]
 ) => {
   const response = await notebookRequestHandlers.reduce(
-    (p, c) => p.then((prev) => prev || c(request)),
+    (p, c) => p.then((prev) => prev || c({ request })),
     Promise.resolve() as Promise<JSONData | undefined>
   );
   if (response) {

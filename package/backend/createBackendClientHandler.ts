@@ -56,7 +56,7 @@ const createBackendClientHandler =
         await sendEmail({
           subject: e.notification.title,
           // TODO - present choice of actions.
-          body:  OperationNotificationEmail({
+          body: OperationNotificationEmail({
             description: e.notification.description,
             actions: e.notification.buttons,
             operation: e.notification.operation,
@@ -87,9 +87,7 @@ const createBackendClientHandler =
       } else if (data.operation === "REQUEST") {
         await handleRequestOperation(data, source, [notebookRequestHandler]);
       } else if (data.operation === "RESPONSE") {
-        await notebookResponseHandler({
-          [source.uuid]: data.response,
-        });
+        await notebookResponseHandler(data.response);
       }
       return { success: true };
     } catch (e) {

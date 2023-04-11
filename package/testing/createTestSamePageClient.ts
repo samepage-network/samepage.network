@@ -8,6 +8,7 @@ import {
   Notification,
   Schema,
   LogEvent,
+  zJsonData,
 } from "../internal/types";
 import { z } from "zod";
 import WebSocket from "ws";
@@ -120,7 +121,7 @@ const processMessageSchema = z.discriminatedUnion("type", [
       .object({
         key: z.string(),
         value: z.string(),
-        response: z.any(),
+        response: zJsonData,
       })
       .array(),
   }),
@@ -128,10 +129,6 @@ const processMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("request"),
     request: z.any(),
     target: z.string(),
-  }),
-  z.object({
-    type: z.literal("response"),
-    requestId: z.string(),
   }),
 ]);
 export const responseMessageSchema = z.discriminatedUnion("type", [
@@ -236,7 +233,8 @@ const createTestSamePageClient = async ({
     createPage: async (notebookPageId) =>
       (appClientState[notebookPageId] = new JSDOM()),
     deletePage: async (notebookPageId) => delete appClientState[notebookPageId],
-    doesPageExist: async (notebookPageId) => !!appClientState[notebookPageId],
+    getNotebookPageIdByTitle: async (notebookPageId) =>
+      appClientState[notebookPageId] ? notebookPageId : undefined,
     calculateState: async (notebookPageId) => calculateState(notebookPageId),
     applyState: async (id, data) => applyState(id, data),
   });
@@ -269,7 +267,6 @@ const createTestSamePageClient = async ({
   await awaitLog("samepage-success");
   onMessage({ type: "ready", uuid: settings.uuid });
   const updatesToSend: Record<string, any> = {};
-  const responsesToSend: Record<string, any> = {};
   log("Ready for messages");
   return {
     send: async (m: unknown) => {
@@ -475,56 +472,22 @@ const createTestSamePageClient = async ({
           const data = await query(message.request);
           sendResponse(data);
         } else if (message.type === "route") {
-          addNotebookRequestListener(({ request, sendResponse }) => {
+          addNotebookRequestListener(({ request }) => {
             log(`Was requested ${JSON.stringify(request)}`);
             const route = message.routes.find(
               (rte) => request[rte.key] === rte.value
             );
-            sendResponse(route?.response);
+            return route?.response;
           });
           sendResponse();
         } else if (message.type === "request") {
           const id = v4();
-          const response = await new Promise<Record<string, any>>((resolve) => {
-            let cached = false;
-            sendNotebookRequest({
-              label: `Test ${id}`,
-              request: message.request,
-              targets: [message.target],
-              onResponse: (data) => {
-                log(`Got response ${id}, is cached: ${cached}`);
-                if (cached) {
-                  responsesToSend[id] = data;
-                } else {
-                  cached = true;
-                  resolve(data);
-                }
-              },
-            });
+          const response = await sendNotebookRequest({
+            label: `Test ${id}`,
+            request: message.request,
+            target: message.target,
           });
-          sendResponse({ cache: response[message.target] || {}, id });
-        } else if (message.type === "response") {
-          const data = await new Promise<Record<string, unknown>>(
-            (resolve, reject) => {
-              const interval = setInterval(() => {
-                if (responsesToSend[message.requestId]) {
-                  clearInterval(interval);
-                  resolve(responsesToSend[message.requestId]);
-                }
-              }, 100);
-              setTimeout(() => {
-                clearInterval(interval);
-                reject(
-                  new Error(
-                    `Timed out waiting for response.\nCurrent responses: ${JSON.stringify(
-                      responsesToSend
-                    )}\nLooking for: ${message.requestId}`
-                  )
-                );
-              }, 10000);
-            }
-          );
-          sendResponse(data);
+          sendResponse({ response, id });
         } else {
           onMessage({
             type: "error",

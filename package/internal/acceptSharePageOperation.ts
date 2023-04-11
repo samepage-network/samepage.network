@@ -19,7 +19,7 @@ const acceptSharePageOperation =
     calculateState,
     initPage,
   }: {
-    getNotebookPageIdByTitle: (s: string) => Promise<string>;
+    getNotebookPageIdByTitle: (s: string) => Promise<string | undefined>;
     createPage: (s: string) => Promise<string>;
     applyState: ApplyState;
     calculateState: (s: string) => Promise<InitialSchema>;

@@ -35,43 +35,34 @@ const handleRequest = async ({
   request: JSONData;
   target: string;
 }) => {
-  const response = await notebookRequestHandlers.reduce(
-    (p, c) => p.then((prev) => prev || c(request)),
-    Promise.resolve() as Promise<JSONData | undefined>
-  );
-  if (response) {
-    apiClient({
-      method: "notebook-response",
-      request,
-      response,
-      target,
-    });
-  }
+  handleRequestOperation({ request }, { uuid: target }, notebookRequestHandlers);
+
 };
 
 const sendNotebookRequest: SendNotebookRequest = ({
-  targets,
+  target,
   request,
-  onResponse,
   label,
 }) =>
-  apiClient({
+  apiClient<{ response: NotebookResponse; requestUuid: string }>({
     method: "notebook-request",
-    targets,
+    target,
     request,
     label,
-  }).then(async (r) => {
-    // TODO - reconsider whether or not it makes sense for both the cache hit
-    // and the eventual response to use the same onResponse method...
-    // Question to answer - is it always only ever at most two responses per request?
-    onResponse(r as Record<string, NotebookResponse>);
-    notebookResponseHandlers[await hashRequest(request)] = async (args) =>
-      onResponse(args);
-  });
+  }).then(
+    async (r) =>
+      new Promise<NotebookResponse>(async (resolve) => {
+        const timeout = setTimeout(() => {
+          resolve(r.response);
+        }, 3000);
+        notebookResponseHandlers[r.requestUuid] = async (response) => {
+          clearTimeout(timeout);
+          resolve(response);
+        };
+      })
+  );
 
-const addNotebookRequestListener: AddNotebookRequestListener = (listener) => {
-  const handler: NotebookRequestHandler = (request) =>
-    new Promise((resolve) => listener({ request, sendResponse: resolve }));
+const addNotebookRequestListener: AddNotebookRequestListener = (handler) => {
   notebookRequestHandlers.push(handler);
   return () => {
     const index = notebookRequestHandlers.indexOf(handler);

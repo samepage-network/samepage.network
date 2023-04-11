@@ -182,6 +182,15 @@ export const zSafeInitialSchema = z
   .default({ content: "", annotations: [] });
 export type InitialSchema = z.infer<typeof zInitialSchema>;
 
+// TODO - here's how ZOD recommends it. But I need to investigate toJSON(), and Uint8Array usages.
+const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
+type Literal = z.infer<typeof literalSchema>;
+type Json = Literal | { [key: string]: Json } | Json[];
+const zJson: z.ZodType<Json> = z.lazy(() =>
+  z.union([literalSchema, z.array(zJson), z.record(zJson)])
+);
+export const zJsonData = z.record(zJson);
+// TODO - @deprecated
 export type json =
   | string
   | number
@@ -191,7 +200,7 @@ export type json =
   | json[]
   | { [key: string]: json }
   | Uint8Array;
-export type JSONData = Record<string, json>;
+export type JSONData = z.infer<typeof zJsonData>;
 
 export type AddCommand = (args: {
   label: string;
@@ -215,12 +224,10 @@ export type ApplyState = (
   notebookPageId: string,
   state: InitialSchema
 ) => Promise<unknown>;
-export type NotebookRequestHandler = (
-  request: JSONData
-) => Promise<JSONData | undefined>;
-export type NotebookResponseHandler = (
-  args: Record<string, JSONData>
-) => Promise<unknown>;
+export type NotebookRequestHandler = (inner: {
+  request: JSONData;
+}) => JSONData | Promise<JSONData> | undefined;
+export type NotebookResponseHandler = (response: NotebookResponse) => Promise<unknown>;
 
 export type ConnectionStatus = "DISCONNECTED" | "PENDING" | "CONNECTED";
 
@@ -264,6 +271,27 @@ export type AppEvent =
   | ConnectionEvent
   | PromptAccountInfoEvent
   | NotificationEvent;
+
+const zNotebookRequestApi = z.object({
+  method: z.literal("notebook-request"),
+  request: zJsonData,
+  label: z.string().optional().default("Unlabelled Request"),
+  targets: z.string().array().optional(),
+  target: z.string().optional(),
+});
+export type NotebookRequest = z.infer<typeof zNotebookRequestApi>;
+const zNotebookResponse = zJsonData
+  .or(z.literal("pending"))
+  .or(z.literal("rejected"))
+  .or(z.null());
+const zNotebookResponseApi = z.object({
+  method: z.literal("notebook-response"),
+  request: zJsonData,
+  response: zNotebookResponse,
+  target: z.string(),
+});
+
+export type NotebookResponse = z.infer<typeof zNotebookResponse>;
 
 const zWebsocketMessageSource = z.object({
   uuid: z.string(),
@@ -318,14 +346,14 @@ export const zRequestDataWebsocketMessage = z.object({
 });
 export const zRequestWebsocketMessage = z.object({
   operation: z.literal("REQUEST"),
-  request: z.record(z.any()),
+  request: zJsonData,
   requestUuid: z.string(),
   title: z.string(),
 });
 export const zResponseWebsocketMessage = z.object({
   operation: z.literal("RESPONSE"),
-  request: z.record(z.any()),
-  response: z.record(z.any()),
+  request: zJsonData,
+  response: zNotebookResponse,
 });
 
 const zWebsocketMessage = z.discriminatedUnion("operation", [
@@ -424,26 +452,8 @@ export type ListNotebooks = () => Promise<{
   notebooks: { uuid: string; appName: string; workspace: string }[];
 }>;
 export type AddNotebookRequestListener = (
-  args: (inner: {
-    request: JSONData;
-    sendResponse: (response: JSONData) => void;
-  }) => void
+  args: NotebookRequestHandler
 ) => () => void;
-
-const zNotebookRequest = z.object({
-  method: z.literal("notebook-request"),
-  request: z.record(z.any()),
-  targets: z.string().array(),
-  label: z.string().optional().default("Unlabelled Request"),
-});
-const zNotebookResponse = z.object({
-  method: z.literal("notebook-response"),
-  request: z.record(z.any()),
-  response: z.record(z.any()),
-  target: z.string(),
-});
-
-export type NotebookResponse = z.infer<typeof zNotebookResponse>["response"];
 
 export type ActorInfo = {
   notebookUuid: string;
@@ -453,13 +463,8 @@ export type ActorInfo = {
 };
 
 export type SendNotebookRequest = (
-  args: Omit<z.infer<typeof zNotebookRequest>, "method"> & {
-    // the `onResponse` is an arg instead of called on promise resolution
-    // bc we want to call it multiple times. Once on initial cache hit, and
-    // again whenever the network wants to respond with updated info.
-    onResponse: (args: Record<string, NotebookResponse>) => void;
-  }
-) => Promise<unknown>;
+  args: Omit<z.infer<typeof zNotebookRequestApi>, "method">
+) => Promise<NotebookResponse>;
 
 export type PostToAppBackend = <
   T extends Record<string, unknown> = Record<string, never>
@@ -583,8 +588,8 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     request: z.string(),
     target: z.string(),
   }),
-  zNotebookRequest,
-  zNotebookResponse,
+  zNotebookRequestApi,
+  zNotebookResponseApi,
   z.object({
     method: z.literal("accept-request"),
     requestUuid: z.string(),

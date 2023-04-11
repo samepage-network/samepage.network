@@ -1052,9 +1052,11 @@ const logic = async (req: Record<string, unknown>) => {
           .catch(catchError("Failed to respond to query"));
       }
       case "notebook-request": {
-        const { request, targets, label } = args;
+        const { request, targets: _targets, target, label } = args;
+        const targets = target ? [target] : _targets || [];
         if (!targets.length) {
-          return {};
+          console.log(req, args);
+          throw new NotFoundError("No targets specified");
         }
         return Promise.all(
           targets.map(async (target) => {
@@ -1119,25 +1121,55 @@ const logic = async (req: Record<string, unknown>) => {
                       requestId,
                       metadata: ["title", "request"],
                     }));
-                return [target, null];
+                return { target, response: null, requestUuid: uuid };
               } else if (requestRecord.status === "rejected") {
-                return [target, "rejected"];
+                return {
+                  target,
+                  response: "rejected",
+                  requestUuid: requestRecord.uuid,
+                };
               } else if (requestRecord.status === "pending") {
                 await messageRequest(requestRecord.uuid);
-                return [target, "pending"];
+                return {
+                  target,
+                  response: "pending",
+                  requestUuid: requestRecord.uuid,
+                };
               } else {
                 const data = await downloadFileContent({
                   Key: `data/requests/${hash}.json`,
                 });
                 await messageRequest(requestRecord.uuid);
-                return [target, JSON.parse(data)];
+                return {
+                  target,
+                  response: JSON.parse(data),
+                  requestUuid: requestRecord.uuid,
+                };
               }
             } catch (e) {
-              return [target, { success: false, error: (e as Error).message }];
+              return {
+                target,
+                response: { success: false, error: (e as Error).message },
+                requestUuid: "",
+              };
             }
           })
         )
-          .then(Object.fromEntries)
+          .then((resps) => {
+            const responses = resps.filter((r) => !!r.requestUuid);
+            if (responses.length > 1) {
+              return Object.fromEntries(
+                responses.map(({ target, response }) => [target, response])
+              );
+            } else if (responses.length === 1) {
+              return {
+                response: responses[0].response,
+                requestUuid: responses[0].requestUuid,
+              };
+            } else {
+              throw new Error(resps[0].response.error);
+            }
+          })
           .catch(catchError("Failed to request across notebooks"));
       }
       case "notebook-response": {

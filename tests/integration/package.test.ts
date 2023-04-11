@@ -5,7 +5,7 @@ import type {
   MessageSchema,
   ResponseSchema,
 } from "../../package/testing/createTestSamePageClient";
-import { Notification } from "../../package/internal/types";
+import { JSONData, Notification } from "../../package/internal/types";
 import { JSDOM } from "jsdom";
 import getRandomNotebookPageId from "../utils/getRandomNotebookPageId";
 import getRandomAccount from "../utils/getRandomAccount";
@@ -452,7 +452,7 @@ test("Full integration test of extensions", async () => {
       .send({
         type: "insert",
         notebookPageId,
-        content: "SPAN",
+        content: "A",
         index: 1,
         path: "div",
       })
@@ -461,7 +461,7 @@ test("Full integration test of extensions", async () => {
           type: "insert",
           notebookPageId,
           content: referencedNotebookPageId,
-          path: "span",
+          path: "a",
           index: "title",
         })
       )
@@ -470,7 +470,7 @@ test("Full integration test of extensions", async () => {
           type: "insert",
           notebookPageId,
           content: `cursor underline samepage-reference`,
-          path: "span",
+          path: "a",
           index: "class",
         })
       ));
@@ -478,11 +478,12 @@ test("Full integration test of extensions", async () => {
   await test.step("Client 2 loads state with external reference", () =>
     expect
       .poll(() =>
-        client2Read().then((html) =>
-          new JSDOM(html).window.document
-            .querySelector("span")
-            ?.getAttribute("title")
-        )
+        client2Read().then((html) => {
+          console.log("html", html);
+          return new JSDOM(html).window.document
+            .querySelector("a")
+            ?.getAttribute("title");
+        })
       )
       .toEqual(`${client1.uuid}:${referencedNotebookPageId}`));
 
@@ -602,19 +603,14 @@ test("Full integration test of extensions", async () => {
         request: { method: "get" },
         target: client2.uuid,
       })
-      .then((r) => r as { cache: unknown; id: string });
-    expect(request1.cache).toEqual({});
+      .then((r) => r as { response: JSONData; id: string });
+    expect(request1.response).toEqual(null);
     const requestDataNotification = await requestDataNotificationPromise;
     await client2.send({
       type: "accept-request",
       data: (requestDataNotification as Notification).data,
       notificationUuid: (notification as Notification).uuid,
     });
-    const response1 = await client1.send({
-      type: "response",
-      requestId: request1.id,
-    });
-    expect(response1).toEqual({ [client2.uuid]: { hello } });
 
     const request2 = await client1
       .send({
@@ -622,8 +618,8 @@ test("Full integration test of extensions", async () => {
         request: { method: "get" },
         target: client2.uuid,
       })
-      .then((r) => r as { cache: unknown; id: string });
-    expect(request2.cache).toEqual({ hello });
+      .then((r) => r as { response: JSONData; id: string });
+    expect(request2.response).toEqual({ hello });
   });
 
   await test.step("Break client 1 calculate state and test email sent", async () => {

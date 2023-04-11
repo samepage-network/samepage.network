@@ -79,7 +79,7 @@ const setupSharePageWithNotebook = ({
   createPage?: (notebookPageId: string) => Promise<unknown>;
   openPage?: (notebookPageId: string) => Promise<unknown>;
   deletePage?: (notebookPageId: string) => Promise<unknown>;
-  getNotebookPageIdByTitle?: (notebookPageId: string) => Promise<string>;
+  getNotebookPageIdByTitle?: (notebookPageId: string) => Promise<string | undefined>;
   applyState?: ApplyState;
   calculateState?: (notebookPageId: string) => Promise<InitialSchema>;
   onConnect?: () => () => void;
