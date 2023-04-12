@@ -57,8 +57,8 @@ type SharedPageObserver = ({
 const setupSharePageWithNotebook = ({
   overlayProps = {},
   getCurrentNotebookPageId = () => Promise.resolve(v4()),
-  createPage = () => Promise.resolve(),
-  openPage = () => Promise.resolve(),
+  createPage = (s) => Promise.resolve(s),
+  openPage = (s) => Promise.resolve(s),
   deletePage = () => Promise.resolve(),
   getNotebookPageIdByTitle = (title: string) => Promise.resolve(title),
   applyState = () => Promise.resolve(),
@@ -76,10 +76,12 @@ const setupSharePageWithNotebook = ({
     };
   };
   getCurrentNotebookPageId?: () => Promise<string>;
-  createPage?: (notebookPageId: string) => Promise<unknown>;
-  openPage?: (notebookPageId: string) => Promise<unknown>;
+  createPage?: (title: string) => Promise<string>;
+  openPage?: (notebookPageId: string) => Promise<string>;
   deletePage?: (notebookPageId: string) => Promise<unknown>;
-  getNotebookPageIdByTitle?: (notebookPageId: string) => Promise<string | undefined>;
+  getNotebookPageIdByTitle?: (
+    notebookPageId: string
+  ) => Promise<string | undefined>;
   applyState?: ApplyState;
   calculateState?: (notebookPageId: string) => Promise<InitialSchema>;
   onConnect?: () => () => void;
@@ -417,12 +419,12 @@ const setupSharePageWithNotebook = ({
   }: {
     label?: string;
     notebookPageId: string;
-  }) => {
+  }): Promise<void> => {
     return calculateState(notebookPageId)
       .then(async (doc) => {
         const zResult = await zInitialSchema.safeParseAsync(doc);
         if (zResult.success) {
-          return updatePage({
+          await updatePage({
             notebookPageId,
             label,
             callback: async (oldDoc) => {
@@ -431,7 +433,7 @@ const setupSharePageWithNotebook = ({
           });
         } else {
           // For now, just email error and run updatePage as normal. Should result in pairs of emails being sent I think.
-          return sendExtensionError({
+          const data = await sendExtensionError({
             type: "Failed to calculate valid document",
             data: {
               notebookPageId,
@@ -439,32 +441,30 @@ const setupSharePageWithNotebook = ({
               errors: zResult.error,
               message: parseZodError(zResult.error),
             },
-          }).then((data) =>
-            dispatchAppEvent({
-              type: "log",
-              intent: "error",
-              content: `Failed to parse document. Error report ${data.messageId} has been sent to support@samepage.network`,
-              id: `calculate-parse-error`,
-            })
-          );
+          });
+          dispatchAppEvent({
+            type: "log",
+            intent: "error",
+            content: `Failed to parse document. Error report ${data.messageId} has been sent to support@samepage.network`,
+            id: `calculate-parse-error`,
+          });
         }
       })
-      .catch((e) =>
-        sendExtensionError({
+      .catch(async (e) => {
+        const data = await sendExtensionError({
           type: "Failed to calculate document",
           data: {
             notebookPageId,
           },
           error: e,
-        }).then((data) =>
-          dispatchAppEvent({
-            type: "log",
-            intent: "error",
-            content: `Failed to calculate document. Error report ${data.messageId} has been sent to support@samepage.network`,
-            id: `calculate-error`,
-          })
-        )
-      );
+        });
+        dispatchAppEvent({
+          type: "log",
+          intent: "error",
+          content: `Failed to calculate document. Error report ${data.messageId} has been sent to support@samepage.network`,
+          id: `calculate-error`,
+        });
+      });
   };
 
   return {

@@ -230,8 +230,10 @@ const createTestSamePageClient = async ({
     isShared,
   } = setupSharePageWithNotebook({
     getCurrentNotebookPageId: async () => currentNotebookPageId,
-    createPage: async (notebookPageId) =>
-      (appClientState[notebookPageId] = new JSDOM()),
+    createPage: async (notebookPageId) => {
+      appClientState[notebookPageId] = new JSDOM();
+      return notebookPageId;
+    },
     deletePage: async (notebookPageId) => delete appClientState[notebookPageId],
     getNotebookPageIdByTitle: async (notebookPageId) =>
       appClientState[notebookPageId] ? notebookPageId : undefined,

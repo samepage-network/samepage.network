@@ -24,7 +24,7 @@ const acceptSharePageOperation =
     applyState: ApplyState;
     calculateState: (s: string) => Promise<InitialSchema>;
     initPage: (s: { notebookPageId: string }) => void;
-    openPage: (s: string) => Promise<unknown>;
+    openPage: (s: string) => Promise<string>;
     deletePage: (s: string) => Promise<unknown>;
   }) =>
   async ({ title }: Record<string, string>) => {

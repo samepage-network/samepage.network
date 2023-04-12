@@ -1,4 +1,6 @@
-import { LoaderArgs } from "@remix-run/node";
+import React, { useMemo } from "react";
+import { LoaderArgs, redirect } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
 import {
   accessTokens,
   apps,
@@ -18,24 +20,55 @@ import parseRemixContext from "~/data/parseRemixContext.server";
 import {
   BadRequestResponse,
   InternalServerResponse,
-  UnauthorizedResponse,
 } from "~/data/responses.server";
 
 export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
+const REDIRECT_TIME = 10;
+
 const SharePageOperationPage = () => {
-  useEffect(() => {}, []);
-  return <div>Success!</div>;
+  const { url, app } = useLoaderData<{
+    success: true;
+    url: string;
+    app: string;
+  }>();
+  const startTime = useMemo(() => new Date().valueOf(), []);
+  const endTime = useMemo(() => startTime + 1000 * REDIRECT_TIME, [startTime]);
+  const [time, setTime] = React.useState(startTime);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date().valueOf();
+      if (now >= endTime) {
+        clearInterval(interval);
+        setTime(endTime);
+        window.location.assign(url);
+      } else {
+        setTime(now);
+      }
+    }, 100);
+    return () => clearInterval(interval);
+  }, [url, endTime]);
+  return (
+    <div className="my-32 max-w-xl">
+      <img
+        src={"/images/logo.png"}
+        className="mx-auto"
+        style={{ maxHeight: "40vh", maxWidth: "40vh" }}
+      />
+      <h1 className="text-3xl font-bold mb-2">Success!</h1>
+      <div className="mb-2">
+        You will be redirected to your shared page in {app} in{" "}
+        {Math.ceil(endTime - time)} seconds...
+      </div>
+    </div>
+  );
 };
 
 export const loader = async ({ request, context }: LoaderArgs) => {
   const userId = await getUserId(request);
   if (!userId) {
-    // TODO - login/signup redirect instead of 401
-    throw new UnauthorizedResponse(
-      `Cannot access this page without being logged in`
-    );
+    return redirect(`/login?redirect=${encodeURIComponent(request.url)})}`);
   }
   const requestId = parseRemixContext(context).lambdaContext.awsRequestId;
   const searchParams = Object.fromEntries(new URL(request.url).searchParams);
@@ -53,11 +86,12 @@ export const loader = async ({ request, context }: LoaderArgs) => {
     })
     .from(messages)
     .where(eq(messages.uuid, messageUuid));
-  const [{ token, accessToken, app }] = await cxn
+  const [{ token, accessToken, app, appName }] = await cxn
     .select({
       token: tokens.value,
       accessToken: accessTokens.value,
       app: apps.code,
+      appName: apps.name,
     })
     .from(tokens)
     .innerJoin(
@@ -89,32 +123,52 @@ export const loader = async ({ request, context }: LoaderArgs) => {
       return "";
     },
   });
-  await acceptSharePageOperation({
-    getNotebookPageIdByTitle: async () => "",
+  const url = await acceptSharePageOperation({
+    getNotebookPageIdByTitle: async (title) =>
+      apiPost<{ notebookPageId?: string }>({
+        path: `extensions/${app}/backend`,
+        data: {
+          type: "GET_PAGE",
+          title,
+        },
+        authorization: `Bearer ${accessToken}`,
+      }).then((r) => r.notebookPageId),
     initPage: async () => {},
-    deletePage: async () => {},
+    deletePage: (notebookPageId) =>
+      apiPost({
+        path: `extensions/${app}/backend`,
+        data: {
+          type: "DELETE_PAGE",
+          notebookPageId,
+          path,
+        },
+        authorization: `Bearer ${accessToken}`,
+      }),
     createPage: (notebookPageId) =>
-      apiPost<{ data: string }>({
+      apiPost<{ notebookPageId: string }>({
         path: `extensions/${app}/backend`,
         data: {
           type: "CREATE_PAGE",
-          data: {
-            notebookPageId,
-            path,
-          },
+          notebookPageId,
+          path,
         },
         authorization: `Bearer ${accessToken}`,
-      }).then((r) => r.data),
-    openPage: async () => {},
+      }).then((r) => r.notebookPageId),
+    openPage: (notebookPageId) =>
+      apiPost<{ url: string }>({
+        path: `extensions/${app}/backend`,
+        data: {
+          type: "OPEN_PAGE",
+          notebookPageId,
+        },
+      }).then((r) => r.url),
     calculateState: (notebookPageId) =>
       apiPost({
         path: `extensions/${app}/backend`,
         data: {
           type: "CALCULATE_STATE",
-          data: {
-            notebookPageId,
-            notebookUuid,
-          },
+          notebookPageId,
+          notebookUuid,
         },
         authorization: `Bearer ${accessToken}`,
       }),
@@ -123,15 +177,13 @@ export const loader = async ({ request, context }: LoaderArgs) => {
         path: `extensions/${app}/backend`,
         data: {
           type: "APPLY_STATE",
-          data: {
-            notebookPageId,
-            state,
-          },
+          notebookPageId,
+          state,
         },
         authorization: `Bearer ${accessToken}`,
       }),
   })(metadata);
-  return { success: true };
+  return { success: true, url, app: appName };
 };
 
 export default SharePageOperationPage;

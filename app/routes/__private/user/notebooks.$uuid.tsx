@@ -48,7 +48,7 @@ const SingleNotebookPage = () => {
       (args: {
         label?: string;
         notebookPageId: string;
-      }) => Promise<Record<string, unknown>>
+      }) => Promise<void>
     >();
   const applyStateRef = useRef<(id: string, state: InitialSchema) => void>();
   const calcStateRef = useRef<(id: string) => InitialSchema>();
@@ -61,7 +61,7 @@ const SingleNotebookPage = () => {
     if (data.notebook.app === "SamePage") {
       const settings = {
         uuid: data.notebook.uuid,
-        token: data.notebook.token,
+        token: data.notebook.token || "",
       };
       const { unload: unloadSamePageClient } = setupSamePageClient({
         app: "SamePage",
@@ -121,11 +121,15 @@ const SingleNotebookPage = () => {
             currentNotebookPageIdRef.current,
           createPage: async (title) => {
             submit({ title, stay: "true" }, { method: "post" });
+            return title;
           },
-          openPage: async (title) => submit({ title }, { method: "get" }),
+          openPage: async (title) => {
+            submit({ title }, { method: "get" });
+            return title;
+          },
           deletePage: async (title) => submit({ title }, { method: "delete" }),
-          doesPageExist: async (notebookPageId) =>
-            data.pages.some((p) => p.title === notebookPageId),
+          getNotebookPageIdByTitle: async (title) =>
+            data.pages.find((p) => p.title === title)?.title,
           applyState: async (notebookPageId, state) =>
             applyStateRef.current?.(notebookPageId, state),
           calculateState: async (notebookPageId) => {
