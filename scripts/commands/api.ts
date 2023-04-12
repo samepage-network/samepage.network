@@ -13,6 +13,7 @@ import { getOpts } from "../../package/scripts/internal/nodeCompile";
 import debugMod from "../../package/utils/debugger";
 import fs from "fs";
 import crypto from "crypto";
+import { qsToJson } from "../../package/backend/createAPIGatewayProxyHandler";
 
 const debug = debugMod("api");
 const METHODS = ["get", "post", "put", "delete", "options"] as const;
@@ -146,7 +147,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
                 errorType: "HANDLER_NOT_FOUND",
               });
           }
-          const { headers, body, params, url, ip } = req;
+          const { headers, body: _body, params, url, ip } = req;
           debug(`Received Request ${method} ${req.path}`);
           const searchParams = Array.from(
             new URL(url || "", "http://example.com").searchParams.entries()
@@ -158,6 +159,11 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
               typeof v === "object" ? v[0] : v,
             ])
           );
+          const body =
+            simpleHeaders["content-type"] ===
+            "application/x-www-form-urlencoded"
+              ? JSON.stringify(qsToJson(_body))
+              : _body;
           const event = {
             body,
             headers: simpleHeaders,
@@ -313,7 +319,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
           event.pathParameters = Object.keys(req.params).length
             ? req.params
             : null;
-          debug(`Received Request async ${route}`);
+          debug(`Received Request ${invocationType} ${req.path}`);
           const executionTimeStarted = new Date();
           const context = generateContext({
             functionName,
@@ -346,8 +352,8 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
                 debug(`Executed ${method} ${req.path} in ${executionTime}ms`);
                 res.status(200);
                 return inlineTryCatch(
-                  () => res.json(JSON.parse(result.body)),
-                  () => res.send(result.body)
+                  () => res.json(JSON.parse(result)),
+                  () => res.send(result)
                 );
               })
               .catch((error: Error & { code?: number }) => {

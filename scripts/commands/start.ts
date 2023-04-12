@@ -29,7 +29,7 @@ const start = async ({}: {} = {}) => {
     const proc = spawn("ngrok", ["start", "--all", "--log=stdout"]);
     proc.stdout.on("data", (data) => log(data));
     proc.stdout.on("error", (data) => console.error(data));
-  }, 5000);
+  }, 3000);
   return Promise.all([api({ local: true }), dev({ local: true })]).then(
     () => 0
   );

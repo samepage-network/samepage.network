@@ -1,8 +1,32 @@
 import type { APIGatewayProxyHandler } from "aws-lambda";
 import emailError from "./emailError.server";
 import type { ZodSchema } from "zod";
+import qs from "querystring";
+import xmljs from "xml-js";
 
 type Logic<T, U> = (e: T) => string | U | Promise<U | string>;
+
+export const qsToJson = (q: string) => {
+  const parsed = qs.parse(q) as Record<string, unknown>;
+  const flattenObj = (r: Record<string, unknown>) => {
+    Object.entries(r).forEach(([k, v]) => {
+      const keyParts = k.split(".");
+      if (keyParts.length > 1) {
+        const [first, ...rest] = keyParts;
+        const firstVal = r[first];
+        const existing = typeof firstVal === "object" ? firstVal : {};
+        r[first] = flattenObj({
+          ...existing,
+          [rest.join(".")]: v,
+        });
+        delete r[k];
+        flattenObj(r[first] as Record<string, unknown>);
+      }
+    });
+    return r;
+  };
+  return flattenObj(parsed);
+};
 
 const createAPIGatewayProxyHandler =
   <T extends Record<string, unknown>, U extends Record<string, unknown>>(
@@ -43,10 +67,15 @@ const createAPIGatewayProxyHandler =
         const authorization =
           event.headers.Authorization || event.headers.authorization;
         const logic = typeof args === "function" ? args : args.logic;
+        const eventBody = !event.body
+          ? {}
+          : event.headers["content-type"] === "application/www-form-urlencoded"
+          ? qsToJson(event.body)
+          : JSON.parse(event.body);
         const rawObject = {
           ...event.pathParameters,
           ...(event.queryStringParameters || {}),
-          ...JSON.parse(event.body || "{}"),
+          ...eventBody,
           ...Object.fromEntries(
             Object.entries(event.headers).filter(([h]) => includeHeaders.has(h))
           ),
@@ -70,9 +99,19 @@ const createAPIGatewayProxyHandler =
 
           const statusCode =
             typeof code === "number" && code >= 200 && code < 400 ? code : 200;
+          const contentType =
+            typeof headers === "object" &&
+            headers !== null &&
+            typeof (headers as Record<string, unknown>)["Content-Type"] ===
+              "string"
+              ? (headers as Record<string, string>)["Content-Type"]
+              : "application/json";
           return {
             statusCode,
-            body: JSON.stringify(res),
+            body:
+              contentType === "text/xml"
+                ? xmljs.js2xml(res, { compact: true, spaces: 2 })
+                : JSON.stringify(res),
             headers: getHeaders(headers),
           };
         } else {

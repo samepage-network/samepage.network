@@ -20,7 +20,10 @@ const logic = ({ name, ...Payload }: { name: string }) => {
         r.status
       );
     }
-    return r.json();
+    return r.json().catch((e) => {
+      console.error("Failed to parse the lambda response", e);
+      return {};
+    });
   });
 };
 
