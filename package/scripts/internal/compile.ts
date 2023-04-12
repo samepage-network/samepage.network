@@ -273,6 +273,8 @@ const compile = ({
         ],
         metafile: analyze,
         loader: {
+          ".woff": "file",
+          ".woff2": "file",
           ".yaml": "text",
         },
         ...opts,
