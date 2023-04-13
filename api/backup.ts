@@ -111,7 +111,11 @@ export const handler = async (
     };
   } catch (e) {
     console.error(e);
-    await emailError("Failed to backup latest update", e as Error);
+    await emailError(
+      "Failed to backup latest update",
+      e as Error,
+      `Download: https://samepage.network/data/${type}/${uuid}`
+    );
     return { cid: "" };
   }
 };
