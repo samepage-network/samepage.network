@@ -111,7 +111,37 @@ const AgencyPage = () => {
           </div>
         </div>
       </div>
-      <div id={"pricing"} className="bg-tertiary py-16">
+      <div className="bg-tertiary py-16 flex flex-col gap-16">
+        <h1 className="font-bold text-6xl w-full text-center mb-8 leading-tight max-w-xl m-auto">
+          Our Efficient Process
+        </h1>
+        <div className="max-w-xl m-auto text-lg">
+          <ol>
+            <li className="mb-2">
+              ✍️ <b>A task backlog</b> is set up in <b>your</b> company's
+              workspace tracking the work we'll do together.
+            </li>
+            <li className="mb-2">
+              🤝 <b>We get to work</b> on whatever task that day is set to{" "}
+              <b>Active</b>.
+            </li>
+            <li className="mb-2">
+              👀 <b>Iterative updates</b> are left by us each day within the
+              active task's context via video and text summary.
+            </li>
+            <li className="mb-2">
+              ✅ <b>You have the final say</b> by approving whatever task is
+              active when it is in a state to your liking.
+            </li>
+            <li className="mb-2">
+              🔀 <b>Contol of prioritization is yours</b> by having the freedom
+              to manage your task backlog as you see fit and dictate what the
+              next active task should be.
+            </li>
+          </ol>
+        </div>
+      </div>
+      <div id={"pricing"} className="py-16">
         <div className="bg-sky-100 rounded shadow-md flex-1 flex flex-col max-w-xl my-16 m-auto">
           <div className="border-b border-b-black border-opacity-75 py-8 px-4 text-center">
             <h1 className="font-bold text-xl">Monthly</h1>
@@ -163,8 +193,6 @@ const AgencyPage = () => {
             </a>
           </div>
         </div>
-      </div>
-      <div className="py-16">
         <div className="m-auto max-w-md text-xl">
           We're so confident on the efficiency gains your business will
           experience, that we offer a{" "}
