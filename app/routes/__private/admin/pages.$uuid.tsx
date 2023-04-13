@@ -7,7 +7,6 @@ import Switch from "~/components/Switch";
 import deleteSharedPage from "~/data/deleteSharedPage.server";
 import disconnectNotebookFromPage from "~/data/disconnectNotebookFromPage.server";
 import getSharedPageByUuid from "~/data/getSharedPageByUuid.server";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { useState } from "react";
 import AtJsonRendered from "package/components/AtJsonRendered";

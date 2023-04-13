@@ -1,4 +1,3 @@
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import remixAdminAction from "~/data/remixAdminAction.server";
 import remixAdminLoader from "~/data/remixAdminLoader.server";

@@ -17,22 +17,20 @@ import { eq } from "drizzle-orm/expressions";
 import { sql } from "drizzle-orm/sql";
 import randomString from "~/data/randomString.server";
 import { zOauthResponse } from "package/internal/types";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const OauthConnectionPage = (): React.ReactElement => {
-  const data = useLoaderData<Awaited<ReturnType<typeof loadData>>>();
+  const data = useLoaderData<typeof loadData>();
   return "error" in data ? (
     <div className="text-red-800">{data.error}</div>
   ) : data.success ? (
     <div>
       <h1 className="text-3xl font-bold mb-2">Success!</h1>
-      {data.data.suggestExtension &&
-      // check if chrome extension is installed, and if not, then show this message
-      (
+      {data.body.suggestExtension && (
+        // check if chrome extension is installed, and if not, then show this message
         <div className="mb-2">
           We recommend installing the SamePage Chrome extension to use with{" "}
-          {data.data.appName}. You can install it to your browser by{" "}
+          {data.body.appName}. You can install it to your browser by{" "}
           <a href="https://chrome.google.com/webstore/category/extensions">
             clicking here!
           </a>
@@ -43,15 +41,15 @@ const OauthConnectionPage = (): React.ReactElement => {
         notebook:
       </div>
       <div>
-        <span className="text-xl font-bold">{data.data.appName}</span>{" "}
-        <span>{data.data.workspace}</span>
+        <span className="text-xl font-bold">{data.body.appName}</span>{" "}
+        <span>{data.body.workspace}</span>
       </div>
     </div>
   ) : (
     <div>
       <div>Something went wrong. Please try again.</div>
       <div className="text-red-800 bg-red-200 border border-red-800 rounded-md">
-        Error: <code>{JSON.stringify(data.data)}</code>
+        Error: <code>{JSON.stringify(data.body)}</code>
       </div>
     </div>
   );
@@ -90,10 +88,10 @@ const loadData = async ({
       customParams,
     })
     .then((r) => ({
-      data: zOauthResponse.parse(r.data),
+      body: zOauthResponse.parse(r.data),
       success: true as const,
     }))
-    .catch((e) => ({ data: e.response.data, success: false as const }));
+    .catch((e) => ({ body: e.response.data, success: false as const }));
 
   if (response.success) {
     const [{ uuid: tokenUuid }] = await cxn
@@ -103,7 +101,7 @@ const loadData = async ({
     const notebookUuid = await getOrGenerateNotebookUuid({
       requestId,
       app: appId,
-      workspace: response.data.workspace,
+      workspace: response.body.workspace,
       tokenUuid,
     });
     await cxn
@@ -111,28 +109,25 @@ const loadData = async ({
       .values({
         uuid: sql`UUID()`,
         notebookUuid,
-        value: response.data.accessToken,
+        value: response.body.accessToken,
         userId,
       })
-      .onDuplicateKeyUpdate({ set: { value: response.data.accessToken } });
+      .onDuplicateKeyUpdate({ set: { value: response.body.accessToken } });
     return {
       success: true,
-      data: {
+      body: {
         appName,
-        workspace: response.data.workspace,
-        suggestExtension: response.data.suggestExtension,
+        workspace: response.body.workspace,
+        suggestExtension: response.body.suggestExtension,
       },
     };
   }
   return response;
 };
 
-export const loader = async ({
-  request,
-  params,
-  context,
-}: DataFunctionArgs) => {
-  const userId = await getUserId(request);
+export const loader = async (args: DataFunctionArgs) => {
+  const { request, params, context } = args;
+  const userId = await getUserId(args);
   if (!userId) {
     return redirect(`/login?redirect=${encodeURIComponent(request.url)})}`);
   }

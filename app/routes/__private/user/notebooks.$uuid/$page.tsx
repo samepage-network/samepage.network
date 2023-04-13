@@ -1,6 +1,5 @@
 import remixAppAction from "~/data/remixAppAction.server";
 import remixAppLoader from "~/data/remixAppLoader.server";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { useLoaderData, useMatches, useOutletContext } from "@remix-run/react";

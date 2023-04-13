@@ -6,7 +6,6 @@ import ExternalLink from "~/components/ExternalLink";
 import listApps from "~/data/listApps.server";
 import parseRemixContext from "~/data/parseRemixContext.server";
 import { Octokit } from "@octokit/rest";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 type InstructionSteps = {

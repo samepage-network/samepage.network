@@ -1,6 +1,5 @@
 import { Link, Outlet, useLoaderData, useMatches } from "@remix-run/react";
 import type { LoaderFunction } from "@remix-run/node";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import remixAdminLoader from "~/data/remixAdminLoader.server";
 

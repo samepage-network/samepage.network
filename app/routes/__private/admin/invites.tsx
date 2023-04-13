@@ -4,7 +4,6 @@ import Table from "~/components/Table";
 import remixAdminLoader from "~/data/remixAdminLoader.server";
 import Button from "~/components/Button";
 import TextInput from "~/components/TextInput";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const InvitesPage = () => {

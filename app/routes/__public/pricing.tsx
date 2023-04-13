@@ -2,7 +2,7 @@ import ExternalLink from "~/components/ExternalLink";
 import CheckIcon from "@heroicons/react/solid/CheckIcon";
 import ArrowRightIcon from "@heroicons/react/outline/ArrowRightIcon";
 import { Link, useLoaderData } from "@remix-run/react";
-import { LoaderFunction } from "@remix-run/node";
+import { LoaderArgs, LoaderFunction } from "@remix-run/node";
 import getUserId from "~/data/getUserId.server";
 import getStripePlans from "~/data/getStripePlans.server";
 
@@ -102,8 +102,8 @@ const PricingPage = () => {
   );
 };
 
-const loaderFunction = async (args: Parameters<LoaderFunction>[0]) => {
-  const isLoggedIn = await getUserId(args.request).then((id) => !!id);
+const loaderFunction = async (args: LoaderArgs) => {
+  const isLoggedIn = await getUserId(args).then((id) => !!id);
   const plans = await getStripePlans();
   return {
     isLoggedIn,

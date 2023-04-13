@@ -2,7 +2,6 @@ import React, { useRef, useEffect } from "react";
 import type { ActionFunction } from "@remix-run/node";
 import { useFetcher, useSearchParams } from "@remix-run/react";
 import subscribeToConvertkitAction from "~/data/subscribeToConvertkitAction.server";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import TextInput from "~/components/TextInput";
 import Button from "~/components/Button";
@@ -200,7 +199,9 @@ const Home: React.FC = () => {
             Have another tool you'd like to see supported?{" "}
             <ExternalLink
               className="text-sky-500 underline hover:no-underline cursor-pointer"
-              href={"https://github.com/samepage-network/samepage.network/issues"}
+              href={
+                "https://github.com/samepage-network/samepage.network/issues"
+              }
             >
               Let us know!
             </ExternalLink>

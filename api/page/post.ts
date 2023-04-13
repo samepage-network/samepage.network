@@ -215,13 +215,8 @@ const logic = async (req: Record<string, unknown>) => {
         );
       }
       const userId = userResponse[0].id;
-      // https://github.com/clerkinc/javascript/pull/855
-      const passwordResponse = await clerk
-        .request<{ verified: true }>({
-          method: "POST",
-          path: `/users/${userId}/verify_password`,
-          bodyParams: { userId, password },
-        })
+      const passwordResponse = await clerk.users
+        .verifyPassword({ userId, password })
         .catch(() => ({ verified: false }));
       if (!passwordResponse.verified) {
         throw new ForbiddenError(`Incorrect password for this email`);
@@ -257,13 +252,8 @@ const logic = async (req: Record<string, unknown>) => {
         );
       }
       const userId = userResponse[0].id;
-      // https://github.com/clerkinc/javascript/pull/855
-      const passwordResponse = await clerk
-        .request<{ verified: true }>({
-          method: "POST",
-          path: `/users/${userId}/verify_password`,
-          bodyParams: { userId, password },
-        })
+      const passwordResponse = await clerk.users
+        .verifyPassword({ userId, password })
         .catch(() => ({ verified: false }));
       if (!passwordResponse.verified) {
         throw new ForbiddenError(`Incorrect password for this email`);

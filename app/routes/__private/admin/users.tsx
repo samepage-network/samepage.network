@@ -5,7 +5,6 @@ import remixAdminLoader from "~/data/remixAdminLoader.server";
 import listUsers from "~/data/listUsers.server";
 import TextInput from "~/components/TextInput";
 import Button from "~/components/Button";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const UsersPage = () => {

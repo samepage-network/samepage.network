@@ -1,0 +1,24 @@
+diff --git a/node_modules/@remix-run/dev/dist/compiler/watch.js b/node_modules/@remix-run/dev/dist/compiler/watch.js
+index ed02736..1df4037 100644
+--- a/node_modules/@remix-run/dev/dist/compiler/watch.js
++++ b/node_modules/@remix-run/dev/dist/compiler/watch.js
+@@ -115,6 +115,7 @@ async function watch(config$1, {
+   let watcher = chokidar__default["default"].watch(toWatch, {
+     persistent: true,
+     ignoreInitial: true,
++    ignored: /app\/server\/build\//,
+     awaitWriteFinish: {
+       stabilityThreshold: 100,
+       pollInterval: 100
+diff --git a/node_modules/@remix-run/dev/dist/devServer/serve.js b/node_modules/@remix-run/dev/dist/devServer/serve.js
+index f51422a..724aa99 100644
+--- a/node_modules/@remix-run/dev/dist/devServer/serve.js
++++ b/node_modules/@remix-run/dev/dist/devServer/serve.js
+@@ -57,6 +57,7 @@ async function serve(config, mode, portPreference) {
+     purgeAppRequireCache(config.serverBuildPath);
+     next();
+   });
++  app.use("/node_modules", express.static('node_modules'));
+   app.use(createApp(config.serverBuildPath, mode, config.publicPath, config.assetsBuildDirectory));
+   let dispose = await liveReload.liveReload(config);
+   let server;

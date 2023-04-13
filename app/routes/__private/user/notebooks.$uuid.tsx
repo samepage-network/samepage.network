@@ -1,4 +1,3 @@
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import remixAppAction from "~/data/remixAppAction.server";
 import remixAppLoader from "~/data/remixAppLoader.server";
@@ -45,10 +44,7 @@ const SingleNotebookPage = () => {
     useLoaderData<Awaited<ReturnType<typeof getUserNotebookProfile>>>();
   const refreshContentRef =
     useRef<
-      (args: {
-        label?: string;
-        notebookPageId: string;
-      }) => Promise<void>
+      (args: { label?: string; notebookPageId: string }) => Promise<void>
     >();
   const applyStateRef = useRef<(id: string, state: InitialSchema) => void>();
   const calcStateRef = useRef<(id: string) => InitialSchema>();

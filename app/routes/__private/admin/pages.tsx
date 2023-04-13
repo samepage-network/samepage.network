@@ -4,7 +4,6 @@ import remixAdminLoader from "~/data/remixAdminLoader.server";
 import remixAdminAction from "~/data/remixAdminAction.server";
 import listPageNotebookLinks from "~/data/listAllPageNotebookLinks.server";
 import searchPageNotebookLinks from "~/data/searchPageNotebookLinks.server";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import TextInput from "~/components/TextInput";
 import StatPanels from "~/components/StatPanels";
@@ -19,7 +18,7 @@ const AdminPagesPage = () => {
     undefined | Awaited<ReturnType<typeof searchPageNotebookLinks>>
   >();
   const barChartOptions = useMemo<
-    Omit<ChartOptions<typeof pages[number]>, "data">
+    Omit<ChartOptions<(typeof pages)[number]>, "data">
   >(
     () => ({
       primaryAxis: { getValue: (data) => data.range },
@@ -28,7 +27,7 @@ const AdminPagesPage = () => {
     []
   );
   const lineChartOptions = useMemo<
-    Omit<ChartOptions<typeof timeSeries[number]>, "data">
+    Omit<ChartOptions<(typeof timeSeries)[number]>, "data">
   >(
     () => ({
       primaryAxis: { getValue: (data) => data.date },

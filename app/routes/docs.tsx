@@ -2,7 +2,6 @@ import listMarkdownFiles, {
   DirectoryNode,
   ListMarkdownFiles,
 } from "~/data/listMarkdownFiles.server";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import type { LoaderFunction, LinksFunction } from "@remix-run/node";
 import { Link, Outlet, useLoaderData, useMatches } from "@remix-run/react";

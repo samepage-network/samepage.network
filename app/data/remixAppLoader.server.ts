@@ -1,4 +1,4 @@
-import { LoaderFunction, redirect } from "@remix-run/node";
+import { LoaderArgs, LoaderFunction, redirect } from "@remix-run/node";
 import type { Params } from "react-router";
 import handleAsResponse from "./handleAsResponse.server";
 import getUserId from "./getUserId.server";
@@ -12,10 +12,11 @@ export type RemixAppLoaderCallback = (args: {
 }) => ReturnType<LoaderFunction>;
 
 const remixAppLoader = (
-  { request, params, context: remixContext }: Parameters<LoaderFunction>[0],
+  args: LoaderArgs,
   callback?: RemixAppLoaderCallback
 ) => {
-  return getUserId(request).then((userId) => {
+  const { request, params, context: remixContext } = args;
+  return getUserId(args).then((userId) => {
     if (!userId) {
       return redirect("/login");
     }

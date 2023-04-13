@@ -8,7 +8,6 @@ import {
   referenceAnnotation,
   Schema,
 } from "package/internal/types";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import unwrapSchema from "package/utils/unwrapSchema";
 import parseRemixContext from "~/data/parseRemixContext.server";

@@ -1,7 +1,6 @@
 // In the future, we want to replace this page with Baremetrics
 // Ex: https://convertkit.baremetrics.com/
 // Ex: https://cal.com/open
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import type { LoaderFunction } from "@remix-run/node";
 import { Link, Outlet, useLoaderData, useMatches } from "@remix-run/react";

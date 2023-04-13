@@ -1,4 +1,4 @@
-import { ActionFunction } from "@remix-run/node";
+import { ActionArgs, ActionFunction } from "@remix-run/node";
 import type { Params } from "react-router";
 import getUserId from "~/data/getUserId.server";
 import handleAsResponse from "~/data/handleAsResponse.server";
@@ -26,10 +26,11 @@ export type RemixAppActionCallback =
     };
 
 const remixAppAction = (
-  { request, params, context: remixContext }: Parameters<ActionFunction>[0],
+  args: ActionArgs,
   callback?: RemixAppActionCallback
 ) => {
-  const output = getUserId(request).then(async (userId) => {
+  const { request, params, context: remixContext } = args;
+  const output = getUserId(args).then(async (userId) => {
     if (!userId) {
       throw new Response("Cannot access private page while not authenticated", {
         status: 401,

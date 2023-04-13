@@ -1,4 +1,3 @@
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import ExternalLink from "~/components/ExternalLink";
 import CAREERS from "~/data/careers.server";

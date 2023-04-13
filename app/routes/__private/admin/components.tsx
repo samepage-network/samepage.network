@@ -1,6 +1,5 @@
 import { Link, Outlet, useLoaderData, useMatches } from "@remix-run/react";
 import type { LoaderFunction, LinksFunction } from "@remix-run/node";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import remixAdminLoader from "~/data/remixAdminLoader.server";
 import blueprintcss from "@blueprintjs/core/lib/css/blueprint.css";

@@ -1,7 +1,6 @@
 import React from "react";
 import getMeta from "~/components/getMeta";
 export { default as loader } from "~/data/isAdminLoader.server";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { useUser, UserButton } from "@clerk/remix";
 import { Link, useLoaderData } from "@remix-run/react";

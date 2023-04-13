@@ -1,25 +1,27 @@
 import type {
   LoaderArgs,
-  MetaFunction,
+  V2_MetaFunction,
   LinksFunction,
   AppLoadContext,
 } from "@remix-run/node";
 import styles from "./tailwind.css";
 import { rootAuthLoader } from "@clerk/remix/ssr.server";
-import { ClerkApp, ClerkCatchBoundary } from "@clerk/remix";
+import { ClerkApp } from "@clerk/remix";
 import {
   Links,
   Meta,
   Outlet,
   Scripts,
-  useCatch,
   ScrollRestoration,
   useLoaderData,
   useTransition,
   useMatches,
+  useRouteError,
+  isRouteErrorResponse,
 } from "@remix-run/react";
 import Loading from "~/components/Loading";
 import parseRemixContext from "~/data/parseRemixContext.server";
+import DefaultErrorBoundary from "./components/DefaultErrorBoundary";
 
 const loaderCallback = (context: AppLoadContext) => {
   const { lambdaContext } = parseRemixContext(context);
@@ -57,15 +59,17 @@ export const loader = (args: LoaderArgs) => {
         { loadUser: true }
       );
 };
-export const meta: MetaFunction = () => {
-  return {
-    charSet: "utf-8",
-    viewport: "width=device-width,initial-scale=1",
-    "og:type": "website",
-    "twitter:card": "summary",
-    "twitter:creator": "@dvargas92495",
-    title: "SamePage",
-  };
+export const meta: V2_MetaFunction = () => {
+  return [
+    {
+      charSet: "utf-8",
+      viewport: "width=device-width,initial-scale=1",
+      "og:type": "website",
+      "twitter:card": "summary",
+      "twitter:creator": "@dvargas92495",
+      title: "SamePage",
+    },
+  ];
 };
 
 export const links: LinksFunction = () => {
@@ -79,24 +83,23 @@ export const links: LinksFunction = () => {
     { rel: "stylesheet", href: styles },
   ];
 };
-export const CatchBoundary = ClerkCatchBoundary(() => {
-  const caught = useCatch();
-  return (
-    <html>
-      <head>
-        <title>Oops!</title>
-        <Meta />
-        <Links />
-      </head>
-      <body>
-        <h1>
-          {caught.status} {caught.statusText}
-        </h1>
-        <Scripts />
-      </body>
-    </html>
-  );
-});
+
+// https://github.com/clerkinc/javascript/issues/965
+export function ErrorBoundary() {
+  const error = useRouteError();
+  if (isRouteErrorResponse(error)) {
+    const { __clerk_ssr_interstitial_html } =
+      error?.data?.clerkState?.__internal_clerk_state || {};
+    if (__clerk_ssr_interstitial_html) {
+      return (
+        <html
+          dangerouslySetInnerHTML={{ __html: __clerk_ssr_interstitial_html }}
+        />
+      );
+    }
+  }
+  return <DefaultErrorBoundary />;
+}
 
 const PageTransition = () => {
   const transition = useTransition();

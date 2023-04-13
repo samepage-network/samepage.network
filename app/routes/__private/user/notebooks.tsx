@@ -13,7 +13,6 @@ import Button from "~/components/Button";
 import createUserNotebook from "~/data/createUserNotebook.server";
 import remixAppAction from "~/data/remixAppAction.server";
 import remixAppLoader from "~/data/remixAppLoader.server";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const NotebooksPage = () => {

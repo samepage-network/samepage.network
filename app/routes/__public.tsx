@@ -1,6 +1,5 @@
 import type { LoaderFunction } from "@remix-run/node";
 import getUserId from "~/data/getUserId.server";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import React, { useState } from "react";
 import { Link, Outlet, useMatches, useLoaderData } from "@remix-run/react";
@@ -129,8 +128,8 @@ const PublicPage: React.FC = () => {
   );
 };
 
-export const loader: LoaderFunction = ({ request }) => {
-  return getUserId(request).then((id) => !!id);
+export const loader: LoaderFunction = (args) => {
+  return getUserId(args).then((id) => !!id);
 };
 
 export const headers = () => {

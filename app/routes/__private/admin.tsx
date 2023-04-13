@@ -2,7 +2,6 @@ import { useUser, UserButton } from "@clerk/remix";
 import { LoaderFunction } from "@remix-run/node";
 import Dashboard from "~/components/Dashboard";
 import remixAdminLoader from "~/data/remixAdminLoader.server";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const UserFooter = () => {

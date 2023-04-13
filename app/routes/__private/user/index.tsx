@@ -1,5 +1,4 @@
 import { Link, useLoaderData } from "@remix-run/react";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import type { LoaderFunction } from "@remix-run/node";
 import remixAppLoader from "~/data/remixAppLoader.server";

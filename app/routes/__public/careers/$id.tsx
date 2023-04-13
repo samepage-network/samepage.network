@@ -1,4 +1,3 @@
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import CAREERS from "~/data/careers.server";
 import type { LoaderFunction } from "@remix-run/node";
@@ -9,7 +8,7 @@ import useMarkdownComponent, {
 import ExternalLink from "~/components/ExternalLink";
 
 const CareerDescriptionPage = () => {
-  const { career } = useLoaderData<{ career: typeof CAREERS[number] }>();
+  const { career } = useLoaderData<{ career: (typeof CAREERS)[number] }>();
   if (!career) {
     return <div>Posting not found</div>;
   }

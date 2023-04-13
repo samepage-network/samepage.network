@@ -4,9 +4,9 @@ import { apps, oauthClients } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
 import getMysql from "./mysql.server";
 
-const remixAuthedLoader: LoaderFunction = async ({ request }) => {
-  const authData = await getAuth(request);
-  const searchParams = new URL(request.url).searchParams;
+const remixAuthedLoader: LoaderFunction = async (args) => {
+  const authData = await getAuth(args);
+  const searchParams = new URL(args.request.url).searchParams;
   const responseType = searchParams.get("response_type") || "";
   const redirectUri = searchParams.get("redirect_uri") || "";
   if (responseType === "code" && redirectUri) {

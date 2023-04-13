@@ -22,7 +22,6 @@ import {
   InternalServerResponse,
 } from "~/data/responses.server";
 
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const REDIRECT_TIME = 10;
@@ -65,8 +64,9 @@ const SharePageOperationPage = () => {
   );
 };
 
-export const loader = async ({ request, context }: LoaderArgs) => {
-  const userId = await getUserId(request);
+export const loader = async (args: LoaderArgs) => {
+  const userId = await getUserId(args);
+  const { request, context } = args;
   if (!userId) {
     return redirect(`/login?redirect=${encodeURIComponent(request.url)})}`);
   }

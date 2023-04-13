@@ -6,7 +6,6 @@ import remixAdminLoader from "~/data/remixAdminLoader.server";
 import Select from "~/components/Select";
 import listPages from "~/data/listPages.server";
 import remixAdminAction from "~/data/remixAdminAction.server";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { getSetting } from "package/internal/registry";
 import { set } from "package/utils/localAutomergeDb";

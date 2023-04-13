@@ -6,7 +6,6 @@ import authenticateNotebook from "~/data/authenticateNotebook.server";
 import getTitleState from "~/data/getTitleState.server";
 import parseRemixContext from "~/data/parseRemixContext.server";
 import { BadRequestResponse, NotFoundResponse } from "~/data/responses.server";
-export { default as CatchBoundary } from "~/components/DefaultCatchBoundary";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { ActionFunction } from "@remix-run/node";
 import { accessTokens, apps, notebooks, pageNotebookLinks } from "data/schema";
