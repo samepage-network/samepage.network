@@ -49,10 +49,11 @@ const packageCmd = async ({ out = "dist" }: { out?: string } = {}) => {
 
 `
   );
-  fs.cpSync(
-    "package/tailwind.config.js",
-    path.join(out, "scripts/tailwind.config.js")
+  ["package/tailwind.config.js", "template/tsconfig.json"].forEach((f) =>
+    fs.cpSync(f, path.join(out, "scripts", path.basename(f)))
   );
+
+  // @deprecated TODO
   cp.execSync(
     `npx tailwindcss -c package/tailwind.config.js -o /tmp/samepage.css`,
     { stdio: "inherit" }

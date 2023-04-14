@@ -1,5 +1,8 @@
 module.exports = {
-  content: ["./package/components/**/*.tsx"],
+  content: [
+    "./node_modules/samepage/components/**/*.js",
+    "./src/components/**/*.js",
+  ],
   corePlugins: {
     preflight: false,
   }

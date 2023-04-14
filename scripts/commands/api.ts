@@ -136,6 +136,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
       if (METHOD_SET.has(method)) {
         // Mock API Gateway
         app[method](route, (req, res) => {
+          debug(`Received Request ${method} ${req.path}`);
           const handler = loadHandler<APIGatewayProxyHandler>();
 
           if (typeof handler !== "function") {
@@ -148,7 +149,6 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
               });
           }
           const { headers, body: _body, params, url, ip } = req;
-          debug(`Received Request ${method} ${req.path}`);
           const searchParams = Array.from(
             new URL(url || "", "http://example.com").searchParams.entries()
           );
@@ -303,6 +303,9 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
       } else {
         // Mock Lambda
         app.post(route, (req, res) => {
+          const invocationType =
+            req.headers["x-amz-invocation-type"] || "Event";
+          debug(`Received Request ${invocationType} ${req.path}`);
           const handler = loadHandler<Handler>();
           if (typeof handler !== "function") {
             return res
@@ -313,13 +316,10 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
                 errorType: "HANDLER_NOT_FOUND",
               });
           }
-          const invocationType =
-            req.headers["x-amz-invocation-type"] || "Event";
           const event = JSON.parse(req.body);
           event.pathParameters = Object.keys(req.params).length
             ? req.params
             : null;
-          debug(`Received Request ${invocationType} ${req.path}`);
           const executionTimeStarted = new Date();
           const context = generateContext({
             functionName,
