@@ -1,4 +1,4 @@
-import ServerError from "package/utils/ServerError";
+import ServerError from "package/backend/ServerError";
 
 // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status#client_error_responses
 
