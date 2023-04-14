@@ -7,8 +7,8 @@ import path from "path";
 test("Mirror'd files should update on edit", async () => {
   const oldLog = console.log;
   const logCounter: Record<string, number> = {
-    "src completed with 0 errors": 0,
-    "api completed with 0 errors": 0,
+    "src built with 0 errors": 0,
+    "api built with 0 errors": 0,
   };
   console.log = (...args) => {
     const s = args.map((s) => s.toString()).join(" ");
@@ -24,10 +24,10 @@ test("Mirror'd files should update on edit", async () => {
   fs.writeFileSync(index, `const foo: string = "hello";console.log(foo);`);
 
   const kill = { switch: () => {} };
-  const proc = dev({ root, kill, mirror: "." });
+  const proc = dev({ root, mirror: "." }, kill);
   const lastCount = await new Promise<number>((r) =>
     setInterval(() => {
-      const count = logCounter["src completed with 0 errors"];
+      const count = logCounter["src built with 0 errors"];
       if (count > 0) {
         r(count);
       }
@@ -63,7 +63,7 @@ test("Mirror'd files should update on edit", async () => {
   );
   await new Promise<number>((r) =>
     setInterval(() => {
-      const count = logCounter["src completed with 0 errors"];
+      const count = logCounter["src built with 0 errors"];
       if (count > lastCount) {
         r(count);
       }

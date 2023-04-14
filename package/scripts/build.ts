@@ -1,5 +1,5 @@
 import fs from "fs";
-import compile, { CliArgs } from "./internal/compile";
+import compile, { CliOpts } from "./internal/compile";
 import toVersion from "./internal/toVersion";
 import { execSync } from "child_process";
 import getPackageName from "./internal/getPackageName";
@@ -9,6 +9,7 @@ import path from "path";
 import esbuild from "esbuild";
 import appPath from "./internal/appPath";
 import updateLambdaFunctions from "./internal/updateLambdaFunctions";
+import { z } from "zod";
 
 const publish = async ({
   api,
@@ -211,14 +212,16 @@ const analyzeMetafile = async (metafile: esbuild.Metafile, root = ".") => {
   fs.writeFileSync(path.join(root, "analyze.txt"), printTree(tree).join("\n"));
 };
 
-const build = (
-  args: CliArgs & {
-    dry?: boolean;
-    review?: string;
-    domain?: string;
-    api?: string;
-  } = {}
-) => {
+const zBuildArgs = z.object({
+  root: z.string().optional(),
+  dry: z.boolean().optional(),
+  review: z.string().optional(),
+  domain: z.string().optional(),
+  api: z.string().optional(),
+});
+
+const build = (args: CliOpts = {}) => {
+  const { root, review, api } = zBuildArgs.parse(args);
   process.env.NODE_ENV = process.env.NODE_ENV || "production";
   const version = toVersion();
   const envExisting = fs.existsSync(".env")
@@ -229,7 +232,7 @@ const build = (
     `${envExisting.replace(/VERSION=[\d.-]+\n/gs, "")}VERSION=${version}\n`
   );
   return compile({
-    ...args,
+    opts: args,
     builder: (opts) =>
       esbuild
         .build({
@@ -238,17 +241,17 @@ const build = (
         })
         .then(async (r) => {
           if (!r.metafile) return;
-          return analyzeMetafile(r.metafile, args.root);
+          return analyzeMetafile(r.metafile, root);
         }),
   })
     .then(() =>
       args.dry
         ? Promise.resolve()
         : publish({
-            review: args.review,
+            review,
             version,
-            root: args.root,
-            api: args.api,
+            root,
+            api,
           })
     )
     .then(() => {

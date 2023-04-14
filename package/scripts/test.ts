@@ -1,20 +1,23 @@
 import fs from "fs";
 import { spawn } from "child_process";
 import { S3 } from "@aws-sdk/client-s3";
-import compile, { CliArgs } from "./internal/compile";
+import compile, { CliOpts } from "./internal/compile";
 import toVersion from "./internal/toVersion";
 import getPackageName from "./internal/getPackageName";
 import mime from "mime-types";
+import { z } from "zod";
 
-const test = ({
-  forward,
-  path = getPackageName(),
-  ...args
-}: CliArgs & { forward?: string | string[]; path?: string }) => {
+const zTestArgs = z.object({
+  forward: z.string().or(z.string().array()).optional(),
+  path: z.string().optional(),
+});
+
+const test = (args: CliOpts) => {
+  const { forward, path = getPackageName() } = zTestArgs.parse(args);
   process.env.NODE_ENV = process.env.NODE_ENV || "test";
   const isDebug = !!(process.env.DEBUG || process.env.PWDEBUG);
   if (isDebug) process.env.DEBUG = process.env.DEBUG || process.env.PWDEBUG;
-  return compile(args)
+  return compile({ opts: args })
     .then(() => {
       const config = fs.existsSync(
         "node_modules/@samepage/testing/playwright.config.js"

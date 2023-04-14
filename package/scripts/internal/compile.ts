@@ -24,6 +24,8 @@ declare global {
   }
 }
 
+export type CliOpts = Record<string, string | string[] | boolean>;
+
 const cliArgs = z.object({
   out: z.string().optional(),
   root: z.string().optional(),
@@ -86,32 +88,13 @@ const importAsGlobals = (
 
 const DEFAULT_FILES_INCLUDED = ["package.json", "README.md"];
 
-const mergeOpts = (args: CliArgs, rawPath: string): CliArgs => {
-  const root = args.root || ".";
-  const configPath = path.join(root, rawPath);
-  const rawConfigOpts = fs.existsSync(configPath)
-    ? JSON.parse(fs.readFileSync(configPath).toString()).samepage || {}
-    : {};
-  const parsedConfigOpts = cliArgs.safeParse(rawConfigOpts);
-  const currentConfigOpts = parsedConfigOpts.success
-    ? parsedConfigOpts.data
-    : {};
-  currentConfigOpts.root = currentConfigOpts.root || root;
-  const configOpts = currentConfigOpts.extends
-    ? mergeOpts(currentConfigOpts, currentConfigOpts.extends)
-    : currentConfigOpts;
-  return {
-    ...configOpts,
-    ...args,
-  };
-};
-
 const compile = ({
   builder = async (opts) => {
     await esbuild.build(opts);
   },
-  ...args
-}: CliArgs & {
+  opts,
+}: {
+  opts: CliOpts;
   builder?: (opts: esbuild.BuildOptions) => Promise<void>;
 }) => {
   const {
@@ -125,7 +108,7 @@ const compile = ({
     analyze,
     finish: onFinishFile = "",
     entry = [],
-  } = mergeOpts(args, "package.json");
+  } = cliArgs.parse(opts);
 
   const srcRoot = path.join(root, "src");
   const apiRoot = path.join(root, "api");

@@ -3,9 +3,31 @@ import getNodeEnv from "package/internal/getNodeEnv";
 import build from "./build";
 import dev from "./dev";
 import test from "./test";
+import path from "path";
+import fs from "fs";
+import type { CliOpts } from "./internal/compile";
+
+const mergeOpts = (
+  args: Record<string, string | string[] | boolean>,
+  rawPath: string
+): Record<string, string | string[] | boolean> => {
+  const root = typeof args.root === "string" ? args.root : ".";
+  const configPath = path.join(root, rawPath);
+  const rawConfigOpts = fs.existsSync(configPath)
+    ? JSON.parse(fs.readFileSync(configPath).toString()).samepage || {}
+    : {};
+  rawConfigOpts.root = rawConfigOpts.root || root;
+  const configOpts = rawConfigOpts.extends
+    ? mergeOpts(rawConfigOpts, rawConfigOpts.extends)
+    : rawConfigOpts;
+  return {
+    ...configOpts,
+    ...args,
+  };
+};
 
 const run = async (command: string, args: string[]): Promise<number> => {
-  const opts = args
+  const cliOpts = args
     .map(
       (a, i) =>
         [
@@ -43,7 +65,8 @@ const run = async (command: string, args: string[]): Promise<number> => {
         prev[k] = v;
       }
       return prev;
-    }, {} as Record<string, string | string[] | boolean>);
+    }, {} as CliOpts);
+  const opts = mergeOpts(cliOpts, "package.json");
   switch (command) {
     case "build":
       return build(opts);
@@ -53,7 +76,7 @@ const run = async (command: string, args: string[]): Promise<number> => {
     case "test":
       return test(opts);
     case "random":
-      console.log('getNodeEnv', getNodeEnv());
+      console.log("getNodeEnv", getNodeEnv());
       return 0;
     default:
       console.error("Command", command, "is unsupported");
