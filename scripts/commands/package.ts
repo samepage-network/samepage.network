@@ -49,6 +49,10 @@ const packageCmd = async ({ out = "dist" }: { out?: string } = {}) => {
 
 `
   );
+  fs.cpSync(
+    "package/tailwind.config.js",
+    path.join(out, "scripts/tailwind.config.js")
+  );
   cp.execSync(
     `npx tailwindcss -c package/tailwind.config.js -o /tmp/samepage.css`,
     { stdio: "inherit" }

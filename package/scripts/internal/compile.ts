@@ -36,6 +36,7 @@ const cliArgs = z.object({
   max: z.string().optional(),
   finish: z.string().optional(),
   entry: z.union([z.string(), z.string().array()]).optional(),
+  extends: z.string().optional(),
 });
 
 export type CliArgs = z.infer<typeof cliArgs>;
@@ -85,8 +86,27 @@ const importAsGlobals = (
 
 const DEFAULT_FILES_INCLUDED = ["package.json", "README.md"];
 
+const mergeOpts = (args: CliArgs, rawPath: string): CliArgs => {
+  const root = args.root || ".";
+  const configPath = path.join(root, rawPath);
+  const rawConfigOpts = fs.existsSync(configPath)
+    ? JSON.parse(fs.readFileSync(configPath).toString()).samepage || {}
+    : {};
+  const parsedConfigOpts = cliArgs.safeParse(rawConfigOpts);
+  const currentConfigOpts = parsedConfigOpts.success
+    ? parsedConfigOpts.data
+    : {};
+  currentConfigOpts.root = currentConfigOpts.root || root;
+  const configOpts = currentConfigOpts.extends
+    ? mergeOpts(currentConfigOpts, currentConfigOpts.extends)
+    : currentConfigOpts;
+  return {
+    ...configOpts,
+    ...args,
+  };
+};
+
 const compile = ({
-  root = ".",
   builder = async (opts) => {
     await esbuild.build(opts);
   },
@@ -94,13 +114,8 @@ const compile = ({
 }: CliArgs & {
   builder?: (opts: esbuild.BuildOptions) => Promise<void>;
 }) => {
-  const packageJson = path.join(root, "package.json");
-  const defaultPackageOpts = fs.existsSync(packageJson)
-    ? cliArgs.parse(
-        JSON.parse(fs.readFileSync(packageJson).toString()).samepage || {}
-      )
-    : {};
   const {
+    root = ".",
     out,
     external,
     include,
@@ -108,13 +123,9 @@ const compile = ({
     format,
     mirror,
     analyze,
-    opts = {},
     finish: onFinishFile = "",
     entry = [],
-  } = {
-    ...args,
-    ...defaultPackageOpts,
-  };
+  } = mergeOpts(args, "package.json");
 
   const srcRoot = path.join(root, "src");
   const apiRoot = path.join(root, "api");
@@ -277,7 +288,6 @@ const compile = ({
           ".woff2": "file",
           ".yaml": "text",
         },
-        ...opts,
       }),
     ].concat(
       apiFunctions.length
