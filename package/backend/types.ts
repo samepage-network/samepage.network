@@ -29,3 +29,16 @@ export const zGetNotebookCredentialsResponse = z.object({
 export type GetNotebookCredentialsResponse = z.infer<
   typeof zGetNotebookCredentialsResponse
 >;
+
+export const zOnboardNotebookPayload = z.object({
+  email: z.string(),
+  password: z.string(),
+  app: z.string(),
+  workspace: z.string(),
+});
+export type OnboardNotebookPayload = z.infer<typeof zOnboardNotebookPayload>;
+export const zOnboardNotebookResponse = z.object({
+  notebookUuid: z.string(),
+  token: z.string(),
+});
+export type OnboardNotebookResponse = z.infer<typeof zOnboardNotebookResponse>;
