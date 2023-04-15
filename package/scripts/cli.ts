@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-import getNodeEnv from "package/internal/getNodeEnv";
 import build from "./build";
 import dev from "./dev";
 import test from "./test";
@@ -75,9 +74,6 @@ const run = async (command: string, args: string[]): Promise<number> => {
       return dev(opts);
     case "test":
       return test(opts);
-    case "random":
-      console.log("getNodeEnv", getNodeEnv());
-      return 0;
     default:
       console.error("Command", command, "is unsupported");
       return 1;
