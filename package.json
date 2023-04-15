@@ -207,7 +207,7 @@
           "zod": "^3.19.1"
         },
         "bin": {
-          "samepage-scripts": "./cli.js"
+          "samepage": "./cli.js"
         }
       },
       "testing": {
