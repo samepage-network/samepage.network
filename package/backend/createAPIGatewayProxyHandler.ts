@@ -1,8 +1,11 @@
-import type { APIGatewayProxyHandler } from "aws-lambda";
+import type {
+  APIGatewayProxyHandler,
+  APIGatewayProxyEventHeaders,
+} from "aws-lambda";
 import emailError from "./emailError.server";
-import type { ZodSchema } from "zod";
 import qs from "querystring";
 import xmljs from "xml-js";
+import ServerError from "./ServerError";
 
 type Logic<T, U> = (e: T) => string | U | Promise<U | string>;
 
@@ -35,8 +38,12 @@ const createAPIGatewayProxyHandler =
       | {
           logic: Logic<T, U>;
           allowedOrigins?: (string | RegExp)[];
-          bodySchema?: ZodSchema;
+          bodySchema?: { parse: (s: string) => T };
           includeHeaders?: string[];
+          validate?: (args: {
+            body: string | null;
+            headers: APIGatewayProxyEventHeaders;
+          }) => boolean;
         }
   ): APIGatewayProxyHandler =>
   (event, context) => {
@@ -52,7 +59,8 @@ const createAPIGatewayProxyHandler =
     const cors = allowedOrigins.some((r) => r.test(requestOrigin))
       ? requestOrigin
       : process.env.ORIGIN || "*";
-    const getHeaders = (responseHeaders: unknown) => ({
+    const validate = typeof args === "function" ? undefined : args.validate;
+    const makeResponseHeaders = (responseHeaders: unknown) => ({
       "Access-Control-Allow-Origin": cors,
       ...(typeof responseHeaders === "object" && responseHeaders
         ? Object.fromEntries(
@@ -64,6 +72,10 @@ const createAPIGatewayProxyHandler =
     });
     return new Promise<U | string>((resolve, reject) => {
       try {
+        if (validate && !validate(event)) {
+          reject(new ServerError("Request Body Failed Validation", 400));
+          return;
+        }
         const authorization =
           event.headers.Authorization || event.headers.authorization;
         const logic = typeof args === "function" ? args : args.logic;
@@ -112,7 +124,7 @@ const createAPIGatewayProxyHandler =
               contentType === "text/xml"
                 ? xmljs.js2xml(res, { compact: true, spaces: 2 })
                 : JSON.stringify(res),
-            headers: getHeaders(headers),
+            headers: makeResponseHeaders(headers),
           };
         } else {
           return {
@@ -129,7 +141,7 @@ const createAPIGatewayProxyHandler =
           typeof e.code === "number" && e.code >= 400 && e.code < 600
             ? e.code
             : 500;
-        const headers = getHeaders(e.headers);
+        const headers = makeResponseHeaders(e.headers);
         const userResponse = {
           statusCode,
           body: e.message,

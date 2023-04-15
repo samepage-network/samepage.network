@@ -1022,7 +1022,6 @@ const logic = async (req: Record<string, unknown>) => {
       // @deprecated
       case "query-response": {
         const { request, data, target } = args;
-        // TODO replace with IPFS
         const hash = crypto.createHash("md5").update(request).digest("hex");
         await uploadFile({
           Body: JSON.stringify(data),

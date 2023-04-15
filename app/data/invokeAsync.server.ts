@@ -1,7 +1,6 @@
 import { Lambda } from "@aws-sdk/client-lambda";
 import axios from "axios";
 import { v4 } from "uuid";
-import { handler as uploadToIpfs } from "../../api/upload-to-ipfs";
 import { handler as backup } from "../../api/backup";
 
 const lambda = new Lambda({
@@ -34,12 +33,7 @@ const invokeAsync =
         data: T;
       }) => {
         // TODO: we might actually want this done in a child process
-        return path === "upload-to-ipfs"
-          ? // @ts-ignore
-            uploadToIpfs({ ...data, dry: true }, { awsRequestId: v4() }).then(
-              () => true
-            )
-          : path === "backup"
+        return path === "backup"
           ? // @ts-ignore
             backup({ ...data, dry: true }, { awsRequestId: v4() }).then(
               () => true
