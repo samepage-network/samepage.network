@@ -197,7 +197,7 @@
           "@aws-sdk/client-lambda": "^3.278.0",
           "@samepage/testing": "*",
           "archiver": "^5.3.1",
-          "axios": ">=0.27.2 <1",
+          "axios": ">=0.26.0 <1",
           "chokidar": ">=3.5.3",
           "debug": "^4.3.4",
           "dotenv": "^16.0.3",

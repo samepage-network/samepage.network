@@ -20,25 +20,9 @@ jobs:
         run: npm install
       - name: package
         run: npx ts-node scripts/cli.ts package
+      - name: package
+        run: npx ts-node scripts/cli.ts publish
       # TODO - move all below to npx ts-node scripts/cli.ts publish.  
-      - name: publish
-        run: npm publish --access public
-        working-directory: dist/internal
-      - name: publish
-        run: npm publish --access public
-        working-directory: dist/backend
-      - name: publish
-        run: npm publish --access public
-        working-directory: dist/external
-      - name: publish
-        run: npm publish --access public
-        working-directory: dist/testing
-      - name: publish
-        run: npm publish --access public
-        working-directory: dist/scripts
-      - name: publish
-        run: npm publish --access public
-        working-directory: dist
       - name: Set version
         run: echo "VERSION=$(cat package.json | grep version | cut -d '"' -f 4)" >> $GITHUB_ENV
       - name: Create Release

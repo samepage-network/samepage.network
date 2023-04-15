@@ -9,6 +9,7 @@ import api from "./commands/api";
 import apply from "./commands/apply";
 import plan from "./commands/plan";
 import packageCmd from "./commands/package";
+import publish from "./commands/publish";
 import start from "./commands/start";
 import test from "./commands/test";
 import dotenv from "dotenv";
@@ -83,9 +84,8 @@ const run = async (command: string, args: string[]): Promise<number> => {
     // NPM
     case "package":
       return packageCmd(opts);
-    // case "publish":
-    //   console.log("Coming soon!");
-    //   return 0;
+    case "publish":
+      return publish(opts);
     // case "watch":
     //   console.log("Coming soon!");
     //   return 0;
