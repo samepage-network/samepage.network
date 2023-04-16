@@ -36,9 +36,7 @@ const ExtensionErrorEmail = ({
     </div>
     <div>
       Context:{" "}
-      <a href={`https://samepage.network/admin/errors/${data}`}>
-        Download.
-      </a>
+      <a href={`https://samepage.network/admin/errors/${data}`}>View.</a>
     </div>
     <div>Stack:</div>
     <div>

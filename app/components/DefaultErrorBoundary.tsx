@@ -10,7 +10,7 @@ const DefaultErrorBoundary: V2_ErrorBoundaryComponent =
   (): React.ReactElement => {
     const error = useRouteError();
     const matches = useMatches();
-    const logUrl = matches[0].data.logUrl;
+    const logUrl = matches[0]?.data?.logUrl;
     return (
       <main className={"font-sans p-8 w-full"}>
         <h1 className={"text-xl font-bold mb-4"}>Error</h1>

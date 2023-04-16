@@ -1,4 +1,3 @@
-// https://samepage.network/data/errors/5120e14b-18d3-48bc-a27e-d4f0b3efc5da.json
 import type { LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import { downloadFileContent } from "~/data/downloadFile.server";

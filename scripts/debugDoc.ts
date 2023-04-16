@@ -3,6 +3,7 @@ import Automerge from "automerge";
 import randomString from "../app/data/randomString.server";
 import fs from "fs";
 import { LatestSchema } from "../package/internal/types";
+import unwrapSchema from "../package/utils/unwrapSchema";
 
 const run = async () => {
   const input = process.argv[2];
@@ -21,7 +22,8 @@ const run = async () => {
       console.log("starting", startIndex.value, "ending", endIndex.value);
     }
   });
-  fs.writeFileSync(filename, JSON.stringify(doc, null, 4));
+  const unwrapped = unwrapSchema(doc);
+  fs.writeFileSync(filename, JSON.stringify({ doc, unwrapped }, null, 2));
   console.log("Doc found in:", filename);
 };
 
