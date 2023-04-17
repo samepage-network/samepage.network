@@ -47,7 +47,10 @@ export const loader = (args: LoaderArgs) => {
   // const {skipClerk} = args.handle;
   const url = new URL(args.request.url);
   const skipClerk = /^\/embeds/.test(url.pathname);
-  const context = args.context || {};
+  const context = Object.assign(args.context || {}, {
+    CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,
+    CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
+  });
   return skipClerk
     ? loaderCallback(context)
     : rootAuthLoader(

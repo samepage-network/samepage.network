@@ -1,19 +1,17 @@
 diff --git a/node_modules/@clerk/remix/dist/ssr/rootAuthLoader.js b/node_modules/@clerk/remix/dist/ssr/rootAuthLoader.js
-index ff7dc5e..ec785ae 100644
+index ff7dc5e..815342e 100644
 --- a/node_modules/@clerk/remix/dist/ssr/rootAuthLoader.js
 +++ b/node_modules/@clerk/remix/dist/ssr/rootAuthLoader.js
-@@ -7,15 +7,19 @@ const authenticateRequest_1 = require("./authenticateRequest");
- const utils_1 = require("./utils");
- const rootAuthLoader = async (args, handlerOrOptions, options) => {
-     const handler = typeof handlerOrOptions === 'function' ? handlerOrOptions : undefined;
-+    console.log('handler', typeof handler);
-     const opts = options
-         ? options
+@@ -12,10 +12,16 @@ const rootAuthLoader = async (args, handlerOrOptions, options) => {
          : !!handlerOrOptions && typeof handlerOrOptions !== 'function'
              ? handlerOrOptions
              : {};
+-    const requestState = await (0, authenticateRequest_1.authenticateRequest)(args, opts);
 +    console.log('opts', opts);
-     const requestState = await (0, authenticateRequest_1.authenticateRequest)(args, opts);
++    const requestState = await (0, authenticateRequest_1.authenticateRequest)(args, opts).catch((e) => {
++        console.error('BAD ERROR', e);
++        throw e;
++    });
 +    console.log('isUnknown', requestState.isUnknown);
      if (requestState.isUnknown) {
          throw (0, utils_1.unknownResponse)(requestState);
@@ -22,7 +20,7 @@ index ff7dc5e..ec785ae 100644
      if (requestState.isInterstitial) {
          throw (0, utils_1.interstitialJsonResponse)(requestState, { loader: 'root' });
      }
-@@ -24,7 +28,9 @@ const rootAuthLoader = async (args, handlerOrOptions, options) => {
+@@ -24,7 +30,9 @@ const rootAuthLoader = async (args, handlerOrOptions, options) => {
          return (0, utils_1.injectRequestStateIntoResponse)(new Response(JSON.stringify({})), requestState);
      }
      const handlerResult = await handler((0, utils_1.injectAuthIntoRequest)(args, (0, backend_1.sanitizeAuthObject)(requestState.toAuth())));
@@ -32,7 +30,7 @@ index ff7dc5e..ec785ae 100644
      if ((0, utils_1.isResponse)(handlerResult)) {
          try {
              // respect and pass-through any redirects without modifying them
-@@ -40,6 +46,7 @@ const rootAuthLoader = async (args, handlerOrOptions, options) => {
+@@ -40,6 +48,7 @@ const rootAuthLoader = async (args, handlerOrOptions, options) => {
          }
      }
      // if the user returned a plain object, create an empty response and inject requestState and handlerResult
