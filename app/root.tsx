@@ -32,6 +32,7 @@ const loaderCallback = (context: AppLoadContext) => {
     ENV: {
       API_URL: process.env.API_URL,
       CLERK_FRONTEND_API: process.env.CLERK_FRONTEND_API,
+      CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,
       ORIGIN: process.env.ORIGIN,
       NODE_ENV: process.env.NODE_ENV,
       STRIPE_PUBLIC_KEY: process.env.STRIPE_PUBLIC_KEY,
@@ -47,6 +48,8 @@ export const loader = (args: LoaderArgs) => {
   // const {skipClerk} = args.handle;
   const url = new URL(args.request.url);
   const skipClerk = /^\/embeds/.test(url.pathname);
+  // clerk uses a `getEnvVariable` method to load env vars, which breaks in esbuild define.
+  // We need to manually pass them in
   const context = Object.assign(args.context || {}, {
     CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,
     CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
