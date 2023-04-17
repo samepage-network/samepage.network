@@ -41,7 +41,7 @@
     "@blueprintjs/core": "^4.17.4",
     "@blueprintjs/select": "^4.6.6",
     "@clerk/clerk-sdk-node": "^4.8.4",
-    "@clerk/remix": "^2.5.3",
+    "@clerk/remix": "2.5.3",
     "@docsearch/react": "^3.3.0",
     "@dvargas92495/codemirror": "5.65.11",
     "@dvargas92495/react-codemirror2": "7.2.9",
