@@ -3,6 +3,7 @@ import getMeta from "~/components/getMeta";
 import ExternalLink from "~/components/ExternalLink";
 import Title from "~/components/Title";
 import Subtitle from "~/components/Subtitle";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const P = ({ children }: React.PropsWithChildren) => (
   <p className="my-2">{children}</p>

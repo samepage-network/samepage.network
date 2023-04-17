@@ -1,5 +1,6 @@
 import React from "react";
 import { Outlet } from "@remix-run/react";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const OauthPage = (): React.ReactElement => {
   return (

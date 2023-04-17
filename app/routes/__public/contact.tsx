@@ -2,6 +2,7 @@ import React from "react";
 import getMeta from "~/components/getMeta";
 import ExternalLink from "~/components/ExternalLink";
 import Title from "~/components/Title";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const ContactPage: React.FunctionComponent = () => (
   <div

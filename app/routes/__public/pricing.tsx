@@ -5,6 +5,7 @@ import { Link, useLoaderData } from "@remix-run/react";
 import { LoaderArgs, LoaderFunction } from "@remix-run/node";
 import getUserId from "~/data/getUserId.server";
 import getStripePlans from "~/data/getStripePlans.server";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const Plan = ({
   title,

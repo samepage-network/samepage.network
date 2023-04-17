@@ -7,6 +7,7 @@ import CheckIcon from "@heroicons/react/outline/CheckIcon";
 import ArrowRightIcon from "@heroicons/react/outline/ArrowRightIcon";
 import ChevronLeftIcon from "@heroicons/react/solid/ChevronLeftIcon";
 import ChevronRightIcon from "@heroicons/react/solid/ChevronRightIcon";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const AgencyPage = () => {
   const data = useLoaderData<{ buyLink: string; looms: string[] }>();

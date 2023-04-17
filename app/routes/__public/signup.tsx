@@ -2,6 +2,7 @@ import getMeta from "~/components/getMeta";
 import { SignUp } from "@clerk/remix";
 import remixAuthedLoader from "~/data/remixAuthedLoader.server";
 import { useLoaderData } from "@remix-run/react";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const SignUpPage: React.FC = () => {
   const { redirectUrl } = useLoaderData<{ redirectUrl: string }>();

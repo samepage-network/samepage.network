@@ -3,6 +3,7 @@ import { SignIn } from "@clerk/remix";
 import remixAuthedLoader from "~/data/remixAuthedLoader.server";
 import getMeta from "~/components/getMeta";
 import { useLoaderData } from "@remix-run/react";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const LoginPage: React.FC = () => {
   const { redirectUrl } = useLoaderData<{ redirectUrl: string }>();
