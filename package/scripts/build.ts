@@ -63,15 +63,22 @@ const publish = async ({
         },
         opts
       )
-      .catch((r) =>
-        Promise.reject(
+      .catch((r) => {
+        const { data } = r.response;
+        if (data && data.errors && data.errors[0].code === "already_exists") {
+          return axios.get(
+            `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/releases/tags/${version}`,
+            opts
+          );
+        }
+        return Promise.reject(
           new Error(
             `Failed to read post release ${version} for repo ${
               process.env.GITHUB_REPOSITORY
-            }:\n${JSON.stringify(r.response.data || "No response data found")}`
+            }:\n${JSON.stringify(data || "No response data found")}`
           )
-        )
-      );
+        );
+      });
     const { tag_name, id } = release.data;
 
     const assets = fs.readdirSync(".");
@@ -100,9 +107,6 @@ const publish = async ({
     console.log(`Successfully created github release for version ${tag_name}`);
     process.chdir(cwd);
   } else {
-    console.log(
-      "No GitHub token set - please set one to create a Github release"
-    );
     console.warn(
       "No GitHub token set - please set one to create a Github release"
     );

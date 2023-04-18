@@ -8,9 +8,6 @@ on:
       - scripts/commands/package.ts
       - ".github/workflows/package.yaml"
 
-env:
-  NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -20,15 +17,9 @@ jobs:
         run: npm install
       - name: package
         run: npx ts-node scripts/cli.ts package
-      - name: package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: publish
         run: npx ts-node scripts/cli.ts publish
-      # TODO - move all below to npx ts-node scripts/cli.ts publish.  
-      - name: Set version
-        run: echo "VERSION=$(cat package.json | grep version | cut -d '"' -f 4)" >> $GITHUB_ENV
-      - name: Create Release
-        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.TERRAFORM_GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.VERSION }}
-          release_name: ${{ env.VERSION }}
