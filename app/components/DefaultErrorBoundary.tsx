@@ -32,7 +32,10 @@ const DefaultErrorBoundary: V2_ErrorBoundaryComponent =
         data: {
           method: "web-app-error",
           path: matches.slice(-1)[0].pathname,
-          stack: error instanceof Error ? error.stack : JSON.stringify(error),
+          stack:
+            error instanceof Error
+              ? error.stack || error.message
+              : JSON.stringify(error),
         },
       });
     }, [matches]);

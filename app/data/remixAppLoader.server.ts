@@ -18,7 +18,7 @@ const remixAppLoader = (
   const { request, params, context: remixContext } = args;
   return getUserId(args).then((userId) => {
     if (!userId) {
-      return redirect("/login");
+      return redirect(`/login?redirect=${encodeURIComponent(request.url)}`);
     }
     const searchParams = Object.fromEntries(new URL(request.url).searchParams);
     const context = {

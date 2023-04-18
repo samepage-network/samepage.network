@@ -68,8 +68,10 @@ export const loader = async (args: LoaderArgs) => {
   const userId = await getUserId(args);
   const { request, context } = args;
   if (!userId) {
-    return redirect(`/login?redirect=${encodeURIComponent(request.url)})}`);
+    console.log("no user id found, redirecting to login");
+    return redirect(`/login?redirect=${encodeURIComponent(request.url)}`);
   }
+  console.log("Process notification...");
   const requestId = parseRemixContext(context).lambdaContext.awsRequestId;
   const searchParams = Object.fromEntries(new URL(request.url).searchParams);
   const messageUuid = searchParams.uuid;
