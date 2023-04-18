@@ -30,7 +30,15 @@ const Instruction = ({ code }: { code: string }) => {
                 {...(s.props || {})}
               />
             ) : s.children === "link" ? (
-              <ExternalLink {...(s.props || {})}>Connect</ExternalLink>
+              <ExternalLink
+                href={(s.props?.href || "").replace(/samepage\.network/, () =>
+                  process.env.NODE_ENV === "production"
+                    ? "samepage.network"
+                    : "samepage.ngrok.io"
+                )}
+              >
+                Connect
+              </ExternalLink>
             ) : (
               s.children
             )}
