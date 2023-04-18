@@ -1,7 +1,6 @@
 import fs from "fs";
 import cp from "child_process";
 import path from "path";
-// import readDir from "package/scripts/internal/readDir";
 
 const packageCmd = async ({ out = "dist" }: { out?: string } = {}) => {
   fs.appendFileSync(
