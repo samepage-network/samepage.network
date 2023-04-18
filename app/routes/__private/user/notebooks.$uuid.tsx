@@ -187,6 +187,18 @@ const SingleNotebookPage = () => {
     <div className="flex gap-4 h-full items-start relative">
       <div className={"flex gap-8 flex-col h-full max-w-sm"}>
         <div className="flex-grow">
+          <div>
+            <Button
+              type="button"
+              onClick={() =>
+                window.navigator.clipboard.writeText(
+                  `${process.env.ORIGIN}/notebook/embeds?uuid=${data.notebook.uuid}&token=${data.notebook.token}`
+                )
+              }
+            >
+              Copy embed link
+            </Button>
+          </div>
           <b>Shared Pages: </b>
           <ul>
             {data.pages.map((i) => (

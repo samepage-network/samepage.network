@@ -14,8 +14,8 @@ const logic = async (
         code: args.code,
         redirect_uri:
           process.env.NODE_ENV === "production"
-            ? "https://samepage.network/oauth/github"
-            : "https://samepage.ngrok.io/oauth/github",
+            ? "https://samepage.network/oauth/{code}"
+            : "https://samepage.ngrok.io/oauth/{code}",
         client_id: process.env.OAUTH_CLIENT_ID,
         client_secret: process.env.OAUTH_CLIENT_SECRET,
       },

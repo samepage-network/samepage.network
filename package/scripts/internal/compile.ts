@@ -18,6 +18,7 @@ declare global {
       API_URL: string;
       GITHUB_TOKEN: string;
       NODE_ENV: "development" | "production" | "test";
+      ORIGIN: string;
       STRIPE_SECRET_KEY: string;
       SVIX_SECRET: string;
     }
