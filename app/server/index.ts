@@ -1,10 +1,12 @@
 import getGithubDownloadUrl from "~/data/getGithubDownloadUrl.server";
+// TODO - inline this
 import { createRequestHandler } from "remix-lambda-at-edge";
 
 export const handler = createRequestHandler({
   getBuild: () => require("./build"),
   originPaths: [
     "favicon.ico",
+    /^\/assets\/.*/,
     /^\/build\/.*/,
     {
       test: /^\/extensions\/[a-z0-9]+\.zip$/,
