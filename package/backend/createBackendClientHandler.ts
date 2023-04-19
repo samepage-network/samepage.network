@@ -50,12 +50,9 @@ const createBackendClientHandler =
         if (e.intent === "error") console.error(e.type, "-", e.content);
       });
       onAppEvent("notification", async (e) => {
-        // Do we send it to the SamePage email or the App email?
-        // For now, these are almost always the same...
         const to = credentials.email;
         await sendEmail({
           subject: e.notification.title,
-          // TODO - present choice of actions.
           body: OperationNotificationEmail({
             description: e.notification.description,
             actions: e.notification.buttons,

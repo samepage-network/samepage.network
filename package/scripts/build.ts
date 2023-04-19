@@ -227,6 +227,7 @@ const zBuildArgs = z.object({
 const build = (args: CliOpts = {}) => {
   const { root, review, api } = zBuildArgs.parse(args);
   process.env.NODE_ENV = process.env.NODE_ENV || "production";
+  process.env.ORIGIN = process.env.ORIGIN || "https://samepage.network";
   const version = toVersion();
   const envExisting = fs.existsSync(".env")
     ? fs.readFileSync(".env").toString()

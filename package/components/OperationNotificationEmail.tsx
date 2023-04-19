@@ -52,9 +52,7 @@ const OperationNotificationEmail = ({
         {actions.map((action) => (
           <a
             key={action}
-            href={`https://samepage.${
-              process.env.NODE_ENV === "production" ? "network" : "ngrok.io"
-            }/notifications/${operation
+            href={`${process.env.ORIGIN}/notifications/${operation
               .toLowerCase()
               .replace(/_/g, "-")}?action=${action}&uuid=${messageUuid}`}
           >
