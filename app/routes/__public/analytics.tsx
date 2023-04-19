@@ -58,6 +58,7 @@ export const loader: LoaderFunction = () => {
       { name: "Active Users", path: "active" },
       { name: "Notebooks Connected", path: "notebooks" },
       { name: "MRR", path: "mrr" },
+      { name: "Team", path: "team" },
     ],
   };
 };
