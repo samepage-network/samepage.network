@@ -22,6 +22,7 @@ import {
 import Loading from "~/components/Loading";
 import parseRemixContext from "~/data/parseRemixContext.server";
 import DefaultErrorBoundary from "./components/DefaultErrorBoundary";
+import clerkOpts from "./data/clerkOpts.server";
 
 const loaderCallback = (context: AppLoadContext) => {
   const { lambdaContext } = parseRemixContext(context);
@@ -46,14 +47,9 @@ const loaderCallback = (context: AppLoadContext) => {
 // TODO - how to get handles accessible in loaders? patch a PR for it
 export const loader = (args: LoaderArgs) => {
   // const {skipClerk} = args.handle;
-  const url = new URL(args.request.url);
+  const { context, request } = args;
+  const url = new URL(request.url);
   const skipClerk = /^\/embeds/.test(url.pathname);
-  // clerk uses a `getEnvVariable` method to load env vars, which breaks in esbuild define.
-  // We need to manually pass them in
-  const context = Object.assign(args.context || {}, {
-    CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,
-    CLERK_SECRET_KEY: process.env.CLERK_SECRET_KEY,
-  });
   return skipClerk
     ? loaderCallback(context)
     : rootAuthLoader(
@@ -62,7 +58,7 @@ export const loader = (args: LoaderArgs) => {
           context,
         },
         () => loaderCallback(context),
-        { loadUser: true }
+        clerkOpts
       );
 };
 export const meta: V2_MetaFunction = () => {
@@ -100,7 +96,7 @@ export function ErrorBoundary() {
       return (
         <html
           dangerouslySetInnerHTML={{
-            __html: __clerk_ssr_interstitial_html
+            __html: __clerk_ssr_interstitial_html,
             // .replace(
             //   "function formRedirect()",
             //   "debugger;function formRedirect()"

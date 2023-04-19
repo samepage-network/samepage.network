@@ -3,9 +3,10 @@ import { LoaderFunction, redirect } from "@remix-run/node";
 import { apps, oauthClients } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
 import getMysql from "./mysql.server";
+import clerkOpts from "./clerkOpts.server";
 // http://localhost:3000/admin/emails/79781358-3d87-47f9-ae71-b9568baadb45
 const remixAuthedLoader: LoaderFunction = async (args) => {
-  const authData = await getAuth(args).catch(async (e) => {
+  const authData = await getAuth(args, clerkOpts).catch(async (e) => {
     if (
       e instanceof Response &&
       e.headers.get("x-clerk-auth-status") === "interstitial"

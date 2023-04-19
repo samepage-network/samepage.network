@@ -1,10 +1,11 @@
 import { getAuth } from "@clerk/remix/ssr.server";
 import { DataFunctionArgs } from "@remix-run/node";
 import { offlinePrefs } from "./cookies.server";
+import clerkOpts from "./clerkOpts.server";
 
 const getUserId = async (args: DataFunctionArgs) => {
   const get = () =>
-    getAuth(args)
+    getAuth(args, clerkOpts)
       .then((authData) => authData.userId)
       .catch(async (e) => {
         if (
