@@ -3,7 +3,18 @@ import { DataFunctionArgs } from "@remix-run/node";
 import { offlinePrefs } from "./cookies.server";
 
 const getUserId = async (args: DataFunctionArgs) => {
-  const get = () => getAuth(args).then((authData) => authData.userId);
+  const get = () =>
+    getAuth(args)
+      .then((authData) => authData.userId)
+      .catch(async (e) => {
+        if (
+          e instanceof Response &&
+          e.headers.get("x-clerk-auth-status") === "interstitial"
+        ) {
+          return undefined;
+        }
+        throw e;
+      });
   return process.env.NODE_ENV === "development"
     ? get().catch(() =>
         offlinePrefs

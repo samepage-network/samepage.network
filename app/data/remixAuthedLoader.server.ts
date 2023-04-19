@@ -5,9 +5,15 @@ import { eq } from "drizzle-orm/expressions";
 import getMysql from "./mysql.server";
 // http://localhost:3000/admin/emails/79781358-3d87-47f9-ae71-b9568baadb45
 const remixAuthedLoader: LoaderFunction = async (args) => {
-  console.log("remixAuthedLoader", args.request.url);
-  const authData = await getAuth(args);
-  console.log("authData", !!authData.user);
+  const authData = await getAuth(args).catch(async (e) => {
+    if (
+      e instanceof Response &&
+      e.headers.get("x-clerk-auth-status") === "interstitial"
+    ) {
+      return undefined;
+    }
+    throw e;
+  });
   const searchParams = new URL(args.request.url).searchParams;
   const responseType = searchParams.get("response_type") || "";
   const redirectUri = searchParams.get("redirect_uri") || "";
@@ -22,14 +28,14 @@ const remixAuthedLoader: LoaderFunction = async (args) => {
     await cxn.end();
     if (app) {
       const redirectUrl = `/oauth/${app.app}?client_uri=${redirectUri}`;
-      if (!!authData.userId) return redirect(redirectUrl);
+      if (!!authData?.userId) return redirect(redirectUrl);
       return {
         redirectUrl: `/oauth/${app.app}?client_uri=${redirectUri}`,
       };
     }
   }
   const redirectParam = decodeURIComponent(searchParams.get("redirect") || "");
-  if (!!authData.userId) {
+  if (!!authData?.userId) {
     return redirect(redirectParam || `/user`);
   }
   if (redirectParam) {
