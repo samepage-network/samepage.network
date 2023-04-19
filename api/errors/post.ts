@@ -10,6 +10,7 @@ import EmailLayout from "package/components/EmailLayout";
 import parseZodError from "package/utils/parseZodError";
 import axios from "axios";
 import { apps, notebooks } from "data/schema";
+import WebAppErrorEmail from "~/components/WebAppErrorEmail";
 
 const zBody = z.discriminatedUnion("method", [
   z.object({
@@ -100,8 +101,8 @@ const logic = async (body: Record<string, unknown>) => {
       const { path, stack } = args;
       const messageId = await sendEmail({
         to: "support@samepage.network",
-        subject: `SamePage webapp path failed: /${path}`,
-        body: stack,
+        subject: `SamePage webapp path failed: ${path}`,
+        body: WebAppErrorEmail({ stack, path }),
       });
       return { success: true, messageId };
     }

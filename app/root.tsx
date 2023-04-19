@@ -99,7 +99,13 @@ export function ErrorBoundary() {
     if (__clerk_ssr_interstitial_html) {
       return (
         <html
-          dangerouslySetInnerHTML={{ __html: __clerk_ssr_interstitial_html }}
+          dangerouslySetInnerHTML={{
+            __html: __clerk_ssr_interstitial_html
+            // .replace(
+            //   "function formRedirect()",
+            //   "debugger;function formRedirect()"
+            // ),
+          }}
         />
       );
     }

@@ -25,6 +25,34 @@ const DefaultErrorBoundary: V2_ErrorBoundaryComponent =
         </main>
       );
     }
+    const stack =
+      error instanceof Error
+        ? error.stack || `No Stack. Error Message: ${error.message}`
+        : JSON.stringify(error);
+    if (!matches[0].data) {
+      return (
+        <main className={"font-sans p-8 w-full"}>
+          <h1 className={"text-xl font-bold mb-4"}>Error</h1>
+          <pre className="p-8 bg-red-800 bg-opacity-10 text-red-900 border-red-900 border-2 rounded-sm overflow-auto mb-4">
+            Failed to load the root application. Data:{" "}
+            {JSON.stringify(
+              {
+                matches,
+                error: {
+                  stack,
+                },
+              },
+              null,
+              2
+            )}
+          </pre>
+          <p>
+            The SamePage website is down - we have already been notified and are
+            currently investigating.
+          </p>
+        </main>
+      );
+    }
     const logUrl = matches[0].data.logUrl;
     useEffect(() => {
       apiPost({
@@ -32,13 +60,10 @@ const DefaultErrorBoundary: V2_ErrorBoundaryComponent =
         data: {
           method: "web-app-error",
           path: matches.slice(-1)[0].pathname,
-          stack:
-            error instanceof Error
-              ? error.stack || `No Stack. Error Message: ${error.message}`
-              : JSON.stringify(error),
+          stack,
         },
-      });
-    }, [matches]);
+      }).catch(() => {});
+    }, [matches, stack]);
     return (
       <main className={"font-sans p-8 w-full"}>
         <h1 className={"text-xl font-bold mb-4"}>Error</h1>
