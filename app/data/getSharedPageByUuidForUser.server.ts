@@ -56,7 +56,7 @@ const getSharedPageByUuidForUser = async ({
       ).find((p) => p.pageUuid === page)?.notebookPageId;
       if (title) {
         return {
-          data: DEFAULT_SCHEMA,
+          state: DEFAULT_SCHEMA,
           title,
         };
       }
@@ -68,17 +68,17 @@ const getSharedPageByUuidForUser = async ({
     ? await downloadSharedPage({ cid: pageData.cid }).then((d) => {
         if (d.body.length === 0)
           return {
-            data: DEFAULT_SCHEMA,
+            state: DEFAULT_SCHEMA,
             title: pageData.notebookPageId,
           };
         const data = Automerge.load<Schema>(d.body);
         return {
-          data: unwrapSchema(data),
+          state: unwrapSchema(data),
           title: pageData.notebookPageId,
         };
       })
     : {
-        data: DEFAULT_SCHEMA,
+      state: DEFAULT_SCHEMA,
         title: pageData.notebookPageId,
       };
   return data;

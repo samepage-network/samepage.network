@@ -164,21 +164,21 @@ export const loader = async (args: LoaderArgs) => {
           notebookPageId,
         },
       }).then((r) => r.url),
-    calculateState: (notebookPageId) =>
+    encodeState: (notebookPageId) =>
       apiPost({
         path: `extensions/${app}/backend`,
         data: {
-          type: "CALCULATE_STATE",
+          type: "ENCODE_STATE",
           notebookPageId,
           notebookUuid,
         },
         authorization: `Bearer ${accessToken}`,
       }),
-    applyState: (notebookPageId, state) =>
+    decodeState: (notebookPageId, state) =>
       apiPost({
         path: `extensions/${app}/backend`,
         data: {
-          type: "APPLY_STATE",
+          type: "DECODE_STATE",
           notebookPageId,
           state,
         },

@@ -35,8 +35,8 @@ const setupSharePageWithNotebook = () => {
     // createPage,
     // openPage,
     // deletePage,
-    // applyState,
-    // calculateState,
+    // decodeState,
+    // encodeState,
     // overlayProps,
   });
 

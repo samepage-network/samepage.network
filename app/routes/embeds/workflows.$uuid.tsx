@@ -105,7 +105,7 @@ export const action: ActionFunction = async (args) => {
   await apiPost({
     path: `extensions/${app}/backend`,
     data: {
-      type: "APPLY_STATE",
+      type: "DECODE_STATE",
       data: {
         notebookPageId: newNotebookPageId,
         state,

@@ -1,9 +1,6 @@
 import { pageNotebookLinks, pageProperties } from "data/schema";
 import { and, eq } from "drizzle-orm/expressions";
-import {
-  InitialSchema,
-  zSafeInitialSchema,
-} from "../../package/internal/types";
+import { SamePageSchema, zSamePageSchema } from "../../package/internal/types";
 import getMysql from "./mysql.server";
 
 const getTitleState = async ({
@@ -14,7 +11,7 @@ const getTitleState = async ({
   notebookUuid: string;
   notebookPageId: string;
   requestId: string;
-}): Promise<InitialSchema & { uuid: string }> => {
+}): Promise<SamePageSchema & { uuid: string }> => {
   const cxn = await getMysql(requestId);
   const [link] = await cxn
     .select({ uuid: pageNotebookLinks.uuid })
@@ -37,10 +34,18 @@ const getTitleState = async ({
     .where(
       and(
         eq(pageProperties.linkUuid, link.uuid),
-        eq(pageProperties.key, "title")
+        eq(pageProperties.key, "$title")
       )
     );
-  const { content, annotations } = zSafeInitialSchema.parse(state?.state);
+  const result = zSamePageSchema.safeParse(state?.state);
+  if (!result.success) {
+    return {
+      content: notebookPageId,
+      annotations: [],
+      uuid: link.uuid,
+    };
+  }
+  const { content, annotations } = result.data;
   return {
     content: content || notebookPageId,
     annotations,

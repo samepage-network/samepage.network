@@ -3,7 +3,7 @@ import { deleteId, set } from "../utils/localAutomergeDb";
 import apiClient from "./apiClient";
 import loadAutomergeFromBase64 from "./loadAutomergeFromBase64";
 import saveAndApply from "./saveAndApply";
-import { ApplyState, InitialSchema, Schema } from "./types";
+import { DecodeState, EncodeState, SamePageState, Schema } from "./types";
 import UserOnlyError from "./UserOnlyError";
 import Automerge from "automerge";
 import dispatchAppEvent from "./dispatchAppEvent";
@@ -15,14 +15,14 @@ const acceptSharePageOperation =
     createPage,
     openPage,
     deletePage,
-    applyState,
-    calculateState,
+    decodeState,
+    encodeState,
     initPage,
   }: {
     getNotebookPageIdByTitle: (s: string) => Promise<string | undefined>;
     createPage: (s: string) => Promise<string>;
-    applyState: ApplyState;
-    calculateState: (s: string) => Promise<InitialSchema>;
+    decodeState: DecodeState;
+    encodeState: EncodeState;
     initPage: (s: { notebookPageId: string }) => void;
     openPage: (s: string) => Promise<string>;
     deletePage: (s: string) => Promise<unknown>;
@@ -34,6 +34,7 @@ const acceptSharePageOperation =
     return apiClient<
       | { found: false; reason: string }
       | {
+          properties: SamePageState;
           state: string;
           found: true;
         }
@@ -45,7 +46,12 @@ const acceptSharePageOperation =
       .then(async (res) => {
         if (!res.found) return Promise.reject(new UserOnlyError(res.reason));
         const saveDoc = (doc: Schema) =>
-          saveAndApply({ notebookPageId, doc, applyState })
+          saveAndApply({
+            notebookPageId,
+            doc,
+            decodeState,
+            properties: res.properties,
+          })
             .then(() => {
               initPage({
                 notebookPageId,
@@ -61,13 +67,18 @@ const acceptSharePageOperation =
         const doc = loadAutomergeFromBase64(res.state);
         set(notebookPageId, doc);
         if (preexisted) {
-          const preExistingDoc = await calculateState(notebookPageId);
+          const { $body: preExistingDoc, ...preExistingProperties } =
+            await encodeState(notebookPageId);
           const mergedDoc = mergeDocs(doc, preExistingDoc);
           await apiClient({
             method: "update-shared-page",
             changes: Automerge.getChanges(doc, mergedDoc).map(binaryToBase64),
             notebookPageId,
             state: binaryToBase64(Automerge.save(mergedDoc)),
+            properties: {
+              ...res.properties,
+              ...preExistingProperties,
+            },
           });
           await saveDoc(mergedDoc);
         } else await saveDoc(doc);

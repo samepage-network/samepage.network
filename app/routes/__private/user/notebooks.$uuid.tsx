@@ -21,7 +21,7 @@ import {
 import getUserNotebookProfile from "~/data/getUserNotebookProfile.server";
 import { useEffect, useRef, useState } from "react";
 import setupSamePageClient from "package/protocols/setupSamePageClient";
-import { AddCommand, InitialSchema } from "package/internal/types";
+import { AddCommand, ApplyState, InitialSchema } from "package/internal/types";
 import loadSharePageWithNotebook from "package/protocols/sharePageWithNotebook";
 import { createRoot } from "react-dom/client";
 import getPageUuidByNotebook from "~/data/getPageUuidByNotebook.server";
@@ -46,7 +46,7 @@ const SingleNotebookPage = () => {
     useRef<
       (args: { label?: string; notebookPageId: string }) => Promise<void>
     >();
-  const applyStateRef = useRef<(id: string, state: InitialSchema) => void>();
+  const applyStateRef = useRef<ApplyState>();
   const calcStateRef = useRef<(id: string) => InitialSchema>();
   const onloadRef = useRef<(id: string) => void>((id) => (delayedLoad = id));
   const onunloadRef = useRef<(id: string) => void>();

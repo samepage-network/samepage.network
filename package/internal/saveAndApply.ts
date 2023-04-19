@@ -6,24 +6,37 @@ import dispatchAppEvent from "./dispatchAppEvent";
 import { getSetting } from "./registry";
 import sendExtensionError from "./sendExtensionError";
 import { HandlerError } from "./setupMessageHandlers";
-import { zInitialSchema, Schema, ApplyState } from "./types";
+import {
+  Schema,
+  ApplyState,
+  DecodeState,
+  SamePageState,
+  zSamePageSchema,
+} from "./types";
 import Automerge from "automerge";
 
 const saveAndApply = ({
   notebookPageId,
   doc,
   applyState,
+  decodeState = async (id, state) => applyState?.(id, state.$body),
+  properties = {},
 }: {
   notebookPageId: string;
   doc: Automerge.FreezeObject<Schema>;
-  applyState: ApplyState;
+  applyState?: ApplyState;
+  decodeState?: DecodeState;
+  properties?: SamePageState;
 }) => {
   const docToApply = unwrapSchema(doc);
-  return zInitialSchema
+  return zSamePageSchema
     .safeParseAsync(docToApply)
     .then((parseResult) => {
       if (parseResult.success) {
-        return applyState(notebookPageId, parseResult.data);
+        return decodeState(notebookPageId, {
+          $body: parseResult.data,
+          ...properties,
+        });
       } else {
         // let's not throw yet - let's see how many emails this generates first - can revisit this in a few months
         // This is the previous behavior
@@ -35,7 +48,10 @@ const saveAndApply = ({
             input: docToApply,
           },
         });
-        return applyState(notebookPageId, docToApply);
+        return decodeState(notebookPageId, {
+          $body: docToApply,
+          ...properties,
+        });
       }
     })
     .then(async () => {

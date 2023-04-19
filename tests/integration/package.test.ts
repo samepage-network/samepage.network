@@ -622,11 +622,11 @@ test("Full integration test of extensions", async () => {
     expect(request2.response).toEqual({ hello });
   });
 
-  await test.step("Break client 1 calculate state and test email sent", async () => {
+  await test.step("Break client 1 encode state and test email sent", async () => {
     await client1.send({ type: "breakCalculate" });
     const awaitBreak = client1.send({
       type: "awaitLog",
-      id: "calculate-parse-error",
+      id: "encode-parse-error",
     });
     await client1.send({
       type: "refresh",

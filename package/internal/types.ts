@@ -170,17 +170,18 @@ export type LatestSchema = {
   annotations: Automerge.List<AutomergeAnnotation>;
 };
 export type Schema = LatestSchema | V1Schema;
-export const zInitialSchema = z.object({
+export const zSamePageSchema = z.object({
   content: z.string(),
   annotations: annotationSchema.array(),
 });
-export const zSafeInitialSchema = z
-  .object({
-    content: z.string().default(""),
-    annotations: annotationSchema.array().default([]),
-  })
-  .default({ content: "", annotations: [] });
-export type InitialSchema = z.infer<typeof zInitialSchema>;
+export type SamePageSchema = z.infer<typeof zSamePageSchema>;
+export const zSamePageState = z.record(zSamePageSchema);
+export type SamePageState = z.infer<typeof zSamePageState>;
+
+// TODO - @deprecated - use `zSamePageSchema` instead
+export const zInitialSchema = zSamePageSchema;
+// TODO - @deprecated - use `SamePageSchema` instead
+export type InitialSchema = SamePageSchema;
 
 // TODO - here's how ZOD recommends it. But I need to investigate toJSON(), and Uint8Array usages.
 const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
@@ -220,14 +221,22 @@ export type RenderOverlay = <T extends Record<string, unknown>>(args: {
 type SettingId = (typeof defaultSettings)[number]["id"];
 export type GetSetting = (s: SettingId) => string;
 export type SetSetting = (s: SettingId, v: string) => void;
+// TODO - @deprecated - use `DecodeState` instead
 export type ApplyState = (
   notebookPageId: string,
   state: InitialSchema
 ) => Promise<unknown>;
+export type EncodeState = (notebookPageId: string) => Promise<SamePageState>;
+export type DecodeState = (
+  notebookPageId: string,
+  state: SamePageState
+) => Promise<unknown>;
 export type NotebookRequestHandler = (inner: {
   request: JSONData;
 }) => JSONData | Promise<JSONData> | undefined;
-export type NotebookResponseHandler = (response: NotebookResponse) => Promise<unknown>;
+export type NotebookResponseHandler = (
+  response: NotebookResponse
+) => Promise<unknown>;
 
 export type ConnectionStatus = "DISCONNECTED" | "PENDING" | "CONNECTED";
 
@@ -509,6 +518,7 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     method: z.literal("init-shared-page"),
     notebookPageId: z.string().min(1),
     state: z.string(),
+    properties: zSamePageState.optional().default({}),
   }),
   z.object({
     method: z.literal("join-shared-page"),
@@ -524,6 +534,7 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     notebookPageId: z.string(),
     changes: z.string().array(),
     state: z.string(),
+    properties: zSamePageState.optional().default({}),
   }),
   z.object({
     method: z.literal("force-push-page"),

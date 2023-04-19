@@ -6,8 +6,12 @@ import emailError from "./emailError.server";
 import qs from "querystring";
 import xmljs from "xml-js";
 import ServerError from "./ServerError";
+import { BackendRequest } from "../internal/types";
+import { ZodType } from "zod";
 
-type Logic<T, U> = (e: T) => string | U | Promise<U | string>;
+type Logic<T extends ZodType<any, any, any>, U> = (
+  e: BackendRequest<T>
+) => string | U | Promise<U | string>;
 
 export const qsToJson = (q: string) => {
   const parsed = qs.parse(q) as Record<string, unknown>;
@@ -32,7 +36,7 @@ export const qsToJson = (q: string) => {
 };
 
 const createAPIGatewayProxyHandler =
-  <T extends Record<string, unknown>, U extends Record<string, unknown>>(
+  <T extends ZodType<any, any, any>, U extends Record<string, unknown>>(
     args:
       | Logic<T, U>
       | {

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import base64ToBinary from "./base64ToBinary";
-import { ApplyState, zSharePageUpdateWebsocketMessage } from "./types";
+import { DecodeState, zSharePageUpdateWebsocketMessage } from "./types";
 import Automerge from "automerge";
 import dispatchAppEvent from "./dispatchAppEvent";
 import { HandlerError } from "./setupMessageHandlers";
@@ -19,7 +19,7 @@ const handleSharePageUpdateOperation = async (
     notebookPageId,
     dependencies = {},
   }: z.infer<typeof zSharePageUpdateWebsocketMessage>,
-  applyState: ApplyState
+  decodeState: DecodeState
 ) => {
   const isShared = await has(notebookPageId);
   if (!isShared) return;
@@ -102,7 +102,11 @@ const handleSharePageUpdateOperation = async (
           }
         }
         if (Object.keys(patch.diffs.props).length) {
-          saveAndApply({ notebookPageId, doc: newDoc, applyState });
+          saveAndApply({
+            notebookPageId,
+            doc: newDoc,
+            applyState: (id, state) => decodeState(id, { $body: state }),
+          });
         }
       })
       .finally(() => {

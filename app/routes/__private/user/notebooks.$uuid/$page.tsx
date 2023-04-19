@@ -161,7 +161,7 @@ const EditAnnotation = ({
 const SingleNotebookPagePage = () => {
   const data =
     useLoaderData<Awaited<ReturnType<typeof getSharedPageByUuidForUser>>>();
-  const [pageData, setPageData] = useState(data.data);
+  const [pageData, setPageData] = useState(data.state);
   const [pageDataTitle, setPageDataTitle] = useState(data.title);
   const currentContentRef = useRef(pageData.content);
   const [currentContent, _setCurrentContent] = useState(pageData.content);
@@ -219,9 +219,9 @@ const SingleNotebookPagePage = () => {
   }, [data.title]);
   useEffect(() => {
     if (data.title !== pageDataTitle) {
-      setPageData(data.data);
-      setCurrentContent(data.data.content);
-      setCurrentAnnotations(data.data.annotations);
+      setPageData(data.state);
+      setCurrentContent(data.state.content);
+      setCurrentAnnotations(data.state.annotations);
       setPageDataTitle(data.title);
     }
   }, [data.title]);

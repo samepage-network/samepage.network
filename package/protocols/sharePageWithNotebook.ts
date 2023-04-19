@@ -9,14 +9,16 @@ import {
 } from "../internal/registry";
 import {
   ApplyState,
-  InitialSchema,
+  SamePageSchema,
   Schema,
-  zInitialSchema,
+  zSamePageSchema,
   zRequestPageUpdateWebsocketMessage,
   zSharePageForceWebsocketMessage,
   zSharePageResponseWebsocketMessage,
   zSharePageUpdateWebsocketMessage,
   zSharePageWebsocketMessage,
+  SamePageState,
+  DecodeState,
 } from "../internal/types";
 import Automerge from "automerge";
 import { addNotebookListener } from "../internal/setupMessageHandlers";
@@ -63,6 +65,12 @@ const setupSharePageWithNotebook = ({
   getNotebookPageIdByTitle = (title: string) => Promise.resolve(title),
   applyState = () => Promise.resolve(),
   calculateState = () => Promise.resolve({ annotations: [], content: "" }),
+  decodeState = (notebookPageId, state) =>
+    applyState(notebookPageId, state["$body"]),
+  encodeState = (notebookPageId) =>
+    calculateState(notebookPageId).then((state) => ({
+      $body: state,
+    })),
   onConnect,
 }: {
   overlayProps?: {
@@ -82,8 +90,10 @@ const setupSharePageWithNotebook = ({
   getNotebookPageIdByTitle?: (
     notebookPageId: string
   ) => Promise<string | undefined>;
+  calculateState?: (notebookPageId: string) => Promise<SamePageSchema>;
   applyState?: ApplyState;
-  calculateState?: (notebookPageId: string) => Promise<InitialSchema>;
+  encodeState?: (notebookPageId: string) => Promise<SamePageState>;
+  decodeState?: DecodeState;
   onConnect?: () => () => void;
 } = {}) => {
   const { viewSharedPageProps, sharedPageStatusProps } = overlayProps;
@@ -215,8 +225,8 @@ const setupSharePageWithNotebook = ({
             createPage: (s) => createPage(s).then(() => s),
             openPage,
             deletePage,
-            applyState,
-            calculateState,
+            encodeState,
+            decodeState,
             initPage,
           }),
           reject: async ({ title }) =>
@@ -251,7 +261,7 @@ const setupSharePageWithNotebook = ({
         handler: async (data) =>
           handleSharePageUpdateOperation(
             zSharePageUpdateWebsocketMessage.parse(data),
-            applyState
+            decodeState
           ),
       });
 
@@ -260,7 +270,7 @@ const setupSharePageWithNotebook = ({
         handler: (data) =>
           handleSharePageForceOperation(
             zSharePageForceWebsocketMessage.parse(data),
-            applyState
+            decodeState
           ),
       });
 
@@ -322,45 +332,48 @@ const setupSharePageWithNotebook = ({
           return getCurrentNotebookPageId()
             .then((notebookPageId) =>
               notebookPageId
-                ? calculateState(notebookPageId).then((docInit) => {
-                    const doc = Automerge.from<Schema>(wrapSchema(docInit), {
-                      actorId: actorId.replace(/-/g, ""),
-                    });
-                    set(notebookPageId, doc);
-                    const state = Automerge.save(doc);
-                    return apiClient<{ id: string; created: boolean }>({
-                      method: "init-shared-page",
-                      notebookPageId,
-                      state: binaryToBase64(state),
-                    })
-                      .then(async (r) => {
-                        if (r.created) {
-                          initPage({
-                            notebookPageId,
-                            created: true,
-                          });
-                          dispatchAppEvent({
-                            type: "log",
-                            id: "init-page-success",
-                            content: `Successfully initialized shared page! Click on the invite button below to share the page with other notebooks!`,
-                            intent: "info",
-                          });
-                        } else {
-                          dispatchAppEvent({
-                            type: "log",
-                            id: "samepage-warning",
-                            content:
-                              "This page is already shared from this notebook",
-                            intent: "warning",
-                          });
-                          return Promise.resolve();
-                        }
-                      })
-                      .catch((e) => {
-                        deleteId(notebookPageId);
-                        throw e;
+                ? encodeState(notebookPageId).then(
+                    ({ $body: docInit, ...properties }) => {
+                      const doc = Automerge.from<Schema>(wrapSchema(docInit), {
+                        actorId: actorId.replace(/-/g, ""),
                       });
-                  })
+                      set(notebookPageId, doc);
+                      const state = Automerge.save(doc);
+                      return apiClient<{ id: string; created: boolean }>({
+                        method: "init-shared-page",
+                        notebookPageId,
+                        state: binaryToBase64(state),
+                        properties,
+                      })
+                        .then(async (r) => {
+                          if (r.created) {
+                            initPage({
+                              notebookPageId,
+                              created: true,
+                            });
+                            dispatchAppEvent({
+                              type: "log",
+                              id: "init-page-success",
+                              content: `Successfully initialized shared page! Click on the invite button below to share the page with other notebooks!`,
+                              intent: "info",
+                            });
+                          } else {
+                            dispatchAppEvent({
+                              type: "log",
+                              id: "samepage-warning",
+                              content:
+                                "This page is already shared from this notebook",
+                              intent: "warning",
+                            });
+                            return Promise.resolve();
+                          }
+                        })
+                        .catch((e) => {
+                          deleteId(notebookPageId);
+                          throw e;
+                        });
+                    }
+                  )
                 : Promise.reject(new Error(`Failed to detect a page to share`))
             )
             .catch((e) => {
@@ -392,27 +405,6 @@ const setupSharePageWithNotebook = ({
     });
   };
 
-  const updatePage = ({
-    notebookPageId,
-    label,
-    callback,
-  }: {
-    notebookPageId: string;
-    label: string;
-    callback: (doc: Schema) => void;
-  }) => {
-    return load(notebookPageId).then((oldDoc) => {
-      const doc = Automerge.change(oldDoc, label, callback);
-      set(notebookPageId, doc);
-      return apiClient({
-        method: "update-shared-page",
-        changes: Automerge.getChanges(oldDoc, doc).map(binaryToBase64),
-        notebookPageId,
-        state: binaryToBase64(Automerge.save(doc)),
-      });
-    });
-  };
-
   const refreshContent = async ({
     label = "Refresh",
     notebookPageId,
@@ -420,21 +412,26 @@ const setupSharePageWithNotebook = ({
     label?: string;
     notebookPageId: string;
   }): Promise<void> => {
-    return calculateState(notebookPageId)
-      .then(async (doc) => {
-        const zResult = await zInitialSchema.safeParseAsync(doc);
+    return encodeState(notebookPageId)
+      .then(async ({ $body: doc, ...properties }) => {
+        const zResult = await zSamePageSchema.safeParseAsync(doc);
         if (zResult.success) {
-          await updatePage({
+          const oldDoc = await load(notebookPageId);
+          const doc = Automerge.change(oldDoc, label, (_oldDoc) => {
+            changeAutomergeDoc(_oldDoc, zResult.data);
+          });
+          set(notebookPageId, doc);
+          await apiClient({
+            method: "update-shared-page",
+            changes: Automerge.getChanges(oldDoc, doc).map(binaryToBase64),
             notebookPageId,
-            label,
-            callback: async (oldDoc) => {
-              changeAutomergeDoc(oldDoc, zResult.data);
-            },
+            state: binaryToBase64(Automerge.save(doc)),
+            properties,
           });
         } else {
           // For now, just email error and run updatePage as normal. Should result in pairs of emails being sent I think.
           const data = await sendExtensionError({
-            type: "Failed to calculate valid document",
+            type: "Failed to encode valid document",
             data: {
               notebookPageId,
               doc,
@@ -446,13 +443,13 @@ const setupSharePageWithNotebook = ({
             type: "log",
             intent: "error",
             content: `Failed to parse document. Error report ${data.messageId} has been sent to support@samepage.network`,
-            id: `calculate-parse-error`,
+            id: `encode-parse-error`,
           });
         }
       })
       .catch(async (e) => {
         const data = await sendExtensionError({
-          type: "Failed to calculate document",
+          type: "Failed to encode document",
           data: {
             notebookPageId,
           },
@@ -461,8 +458,8 @@ const setupSharePageWithNotebook = ({
         dispatchAppEvent({
           type: "log",
           intent: "error",
-          content: `Failed to calculate document. Error report ${data.messageId} has been sent to support@samepage.network`,
-          id: `calculate-error`,
+          content: `Failed to encode document. Error report ${data.messageId} has been sent to support@samepage.network`,
+          id: `encode-error`,
         });
       });
   };

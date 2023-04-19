@@ -6,7 +6,7 @@ import handleSharePageUpdateOperation from "../internal/handleSharePageUpdateOpe
 import handleRequestPageUpdateOperation from "../internal/handleRequestPageUpdateOperation";
 import { onAppEvent } from "../internal/registerAppEventListener";
 import {
-  ApplyState,
+  DecodeState,
   NotebookRequestHandler,
   NotebookResponseHandler,
   zBackendWebSocketMessage,
@@ -20,11 +20,11 @@ import OperationNotificationEmail from "../components/OperationNotificationEmail
 
 const createBackendClientHandler =
   ({
-    applyState,
+    decodeState,
     notebookRequestHandler,
     notebookResponseHandler,
   }: {
-    applyState: ApplyState;
+    decodeState: DecodeState;
     notebookRequestHandler: NotebookRequestHandler;
     notebookResponseHandler: NotebookResponseHandler;
   }) =>
@@ -74,9 +74,9 @@ const createBackendClientHandler =
       } else if (data.operation === "SHARE_PAGE_RESPONSE") {
         handleSharePageResponseOperation(data, source);
       } else if (data.operation === "SHARE_PAGE_UPDATE") {
-        await handleSharePageUpdateOperation(data, applyState);
+        await handleSharePageUpdateOperation(data, decodeState);
       } else if (data.operation === "SHARE_PAGE_FORCE") {
-        await handleSharePageForceOperation(data, applyState);
+        await handleSharePageForceOperation(data, decodeState);
       } else if (data.operation === "REQUEST_PAGE_UPDATE") {
         await handleRequestPageUpdateOperation(data, source);
       } else if (data.operation === "REQUEST_DATA") {
