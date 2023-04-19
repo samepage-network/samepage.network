@@ -132,7 +132,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
       const method = paths.slice(-1)[0].toLowerCase() as ExpressMethod;
       const route = `/${
         METHOD_SET.has(method) ? paths.slice(0, -1).join("/") : paths.join("/")
-      }`;
+      }`.replace(/$/, ":");
       if (METHOD_SET.has(method)) {
         // Mock API Gateway
         app[method](route, (req, res) => {
