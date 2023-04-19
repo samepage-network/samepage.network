@@ -26,6 +26,7 @@ const zBody = z.discriminatedUnion("method", [
     method: z.literal("web-app-error"),
     path: z.string(),
     stack: z.string(),
+    data: z.record(z.unknown()).optional().default({}),
   }),
 ]);
 
@@ -98,11 +99,11 @@ const logic = async (body: Record<string, unknown>) => {
       return { success: true, messageId };
     }
     case "web-app-error": {
-      const { path, stack } = args;
+      const { path, stack, data } = args;
       const messageId = await sendEmail({
         to: "support@samepage.network",
         subject: `SamePage webapp path failed: ${path}`,
-        body: WebAppErrorEmail({ stack, path }),
+        body: WebAppErrorEmail({ stack, path, data }),
       });
       return { success: true, messageId };
     }

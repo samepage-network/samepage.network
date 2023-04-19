@@ -34,17 +34,7 @@ const DefaultErrorBoundary: V2_ErrorBoundaryComponent =
         <main className={"font-sans p-8 w-full"}>
           <h1 className={"text-xl font-bold mb-4"}>Error</h1>
           <pre className="p-8 bg-red-800 bg-opacity-10 text-red-900 border-red-900 border-2 rounded-sm overflow-auto mb-4">
-            Failed to load the root application. Data:{" "}
-            {JSON.stringify(
-              {
-                matches,
-                error: {
-                  stack,
-                },
-              },
-              null,
-              2
-            )}
+            Failed to load the root application.
           </pre>
           <p>
             The SamePage website is down - we have already been notified and are
@@ -61,6 +51,9 @@ const DefaultErrorBoundary: V2_ErrorBoundaryComponent =
           method: "web-app-error",
           path: matches.slice(-1)[0].pathname,
           stack,
+          data: {
+            matches,
+          },
         },
       }).catch(() => {});
     }, [matches, stack]);

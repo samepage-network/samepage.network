@@ -167,6 +167,7 @@
           "@aws-sdk/client-ses": "^3.278.0",
           "@types/aws-lambda": "^8.10.84",
           "@types/jsonwebtoken": "^8.5.9",
+          "@types/uuid": "3.4.0",
           "jsonwebtoken": "^8.5.1",
           "react": "18.2.0",
           "react-dom": "18.2.0",
