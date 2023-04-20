@@ -82,7 +82,7 @@ const importAsGlobals = (
               contents: fs.readFileSync(global).toString(),
               loader: "js",
               resolveDir: path.dirname(global),
-            }
+            };
           }
           return {
             contents: `module.exports = ${global};`,
@@ -190,7 +190,9 @@ const compile = ({
                 plugins: [
                   importAsGlobals(
                     Object.fromEntries(
-                      externalModules.filter((e) => e.length === 2)
+                      externalModules
+                        .filter((e) => e.length > 1)
+                        .map(([e, ...g]) => [e, g.join("=")])
                     )
                   ),
                   ...esbuildPlugins("src"),

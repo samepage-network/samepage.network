@@ -7,7 +7,7 @@ import crypto from "crypto";
 import { v4 } from "uuid";
 import { sql as drizzleSql } from "drizzle-orm/sql";
 import type { MySql2Database } from "drizzle-orm/mysql2/driver";
-import { migrations } from "../../data/schema";
+import { apps, migrations, quotas } from "../../data/schema";
 import appPath from "../../package/scripts/internal/appPath";
 import debugMod from "../../package/utils/debugger";
 
@@ -17,6 +17,7 @@ type MigrationProps = {
 
 const debug = debugMod("apply");
 
+// TODO: nuke this and find a better place for one time migrations
 const migrate = async (connection: MySql2Database): Promise<number> => {
   const dir = "data/migrations";
   return connection
@@ -167,6 +168,46 @@ const apply = async ({
   } else {
     console.log("No mysql schema queries to run!");
   }
+
+  if (process.env.NODE_ENV !== "production") {
+    const tablesToSync = [
+      { id: "apps", table: apps, keys: ["code"] },
+      { id: "quotas", table: quotas, keys: ["stripeId", "field"] },
+    ];
+    const queriesToRun = await tablesToSync
+      .map(({ id, table, keys }) => async () => {
+        const inProd = await fetch(`https://api.samepage.network/${id}`)
+          .then((r) => r.json())
+          .then((r) => r[id] as Record<string, string>[]);
+        console.log("inProd", inProd, "id", id);
+        const inLocal = await cxn
+          .select()
+          .from(table)
+          .then((r) =>
+            Object.fromEntries(
+              (r as Record<string, unknown>[]).map((a) => [
+                keys.map((k) => a[k]).join("~"),
+                a,
+              ])
+            )
+          );
+        return inProd
+          .filter((a) => !inLocal[keys.map((k) => a[k]).join("~")])
+          .map((a) => () => cxn.insert(table).values(a));
+      })
+      .reduce(
+        (p, c) => p.then((a) => c().then((b) => [...a, ...b])),
+        Promise.resolve([] as (() => Promise<unknown>)[])
+      );
+
+    console.log("Running", queriesToRun.length, "mysql data queries...");
+    await queriesToRun.reduce(
+      (p, c, i) =>
+        p.then(() => c().then(() => console.log("finished query", i + 1))),
+      Promise.resolve()
+    );
+  }
+
   if (!bare) await migrate(cxn);
   cxn.end();
   return 0;

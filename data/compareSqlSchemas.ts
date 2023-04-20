@@ -17,14 +17,13 @@ const compareSqlSchemas = async () => {
     .readdirSync(OUT_DIR)
     .filter((f) => /^\d{4}/.test(f))
     .sort((a, b) => parseInt(b.slice(0, 4)) - parseInt(a.slice(0, 4)))[0];
-  if (migrationFile) {
-    fs.cpSync(
-      path.join(OUT_DIR, migrationFile),
-      path.join(OUT_DIR, "apply.sql")
-    );
-    const migrationContent = fs
-      .readFileSync(path.join(OUT_DIR, "apply.sql"))
-      .toString();
+  const applyFile = path.join(OUT_DIR, "apply.sql");
+  if (migrationFile) fs.cpSync(path.join(OUT_DIR, migrationFile), applyFile);
+
+  // TODO: Possibly run data migrations here and append to applyFile
+
+  if (fs.existsSync(applyFile)) {
+    const migrationContent = fs.readFileSync(applyFile).toString();
     console.log(fs.readFileSync(path.join(OUT_DIR, migrationFile)).toString());
     console.log("");
     console.log(

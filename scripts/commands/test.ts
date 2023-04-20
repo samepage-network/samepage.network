@@ -79,7 +79,7 @@ const test = ({
         )}-${pad(
           date.getDate()
         )}-${date.getHours()}-${date.getMinutes()}-${date.getSeconds()}`;
-        const root = "data/tests";
+        const root = "extensions/tests";
         const Key = `${root}/${path}/${version}.html`;
         return Promise.all(
           [
