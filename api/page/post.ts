@@ -490,6 +490,7 @@ const logic = async (req: Record<string, unknown>) => {
         if (properties && Object.keys(properties).length) {
           await cxn.insert(pageProperties).values(
             ...Object.entries(properties).map(([key, value]) => ({
+              uuid: v4(),
               linkUuid,
               key,
               value,
@@ -572,6 +573,7 @@ const logic = async (req: Record<string, unknown>) => {
                 ? { key: "$title", value: title }
                 : prop),
               linkUuid: uuid,
+              uuid: v4(),
             }))
           );
         await messageNotebook({
@@ -991,29 +993,24 @@ const logic = async (req: Record<string, unknown>) => {
       }
       case "disconnect-shared-page": {
         const { notebookPageId } = args;
-        return (
-          getSharedPage({
-            notebookUuid,
-            notebookPageId,
-            requestId,
-          })
-            .then(() =>
-              cxn
-                .delete(pageNotebookLinks)
-                .where(
-                  and(
-                    eq(pageNotebookLinks.notebookUuid, notebookUuid),
-                    eq(pageNotebookLinks.notebookPageId, notebookPageId)
-                  )
-                )
+        const { linkUuid } = await getSharedPage({
+          notebookUuid,
+          notebookPageId,
+          requestId,
+        });
+        await cxn
+          .delete(pageProperties)
+          .where(eq(pageProperties.linkUuid, linkUuid));
+        await cxn
+          .delete(pageNotebookLinks)
+          .where(
+            and(
+              eq(pageNotebookLinks.notebookUuid, notebookUuid),
+              eq(pageNotebookLinks.notebookPageId, notebookPageId)
             )
-            // TODO: Let errbody know
-            .then(() => ({ success: true }))
-            .catch(catchError("Failed to disconnect a shared page"))
-            .finally(async () => {
-              await cxn.end();
-            })
-        );
+          );
+        await cxn.end();
+        return { success: true };
       }
       // @deprecated
       case "query": {
