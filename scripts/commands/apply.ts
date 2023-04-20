@@ -179,7 +179,6 @@ const apply = async ({
         const inProd = await fetch(`https://api.samepage.network/${id}`)
           .then((r) => r.json())
           .then((r) => r[id] as Record<string, string>[]);
-        console.log("inProd", inProd, "id", id);
         const inLocal = await cxn
           .select()
           .from(table)
@@ -193,7 +192,23 @@ const apply = async ({
           );
         return inProd
           .filter((a) => !inLocal[keys.map((k) => a[k]).join("~")])
-          .map((a) => () => cxn.insert(table).values(a));
+          .map(
+            (a) => () =>
+              cxn
+                .insert(table)
+                .values(a)
+                .then(() =>
+                  "id" in table && "code" in table
+                    ? cxn
+                        .update(table)
+                        .set({
+                          id: Number(a.id),
+                        })
+                        .where(eq(table.code, a.code))
+                        .then(() => Promise.resolve())
+                    : Promise.resolve()
+                )
+          );
       })
       .reduce(
         (p, c) => p.then((a) => c().then((b) => [...a, ...b])),
