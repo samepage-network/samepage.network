@@ -88,19 +88,29 @@ const publish = async ({
         .map((asset) => {
           const content = fs.readFileSync(asset);
           const contentType = mimeTypes.lookup(asset);
-          return axios.post(
-            `https://uploads.github.com/repos/${process.env.GITHUB_REPOSITORY}/releases/${id}/assets?name=${asset}`,
-            content,
-            contentType
-              ? {
-                  ...opts,
-                  headers: {
-                    ...opts.headers,
-                    "Content-Type": contentType,
-                  },
-                }
-              : opts
-          );
+          return axios
+            .post(
+              `https://uploads.github.com/repos/${process.env.GITHUB_REPOSITORY}/releases/${id}/assets?name=${asset}`,
+              content,
+              contentType
+                ? {
+                    ...opts,
+                    headers: {
+                      ...opts.headers,
+                      "Content-Type": contentType,
+                    },
+                  }
+                : opts
+            )
+            .catch((e) => {
+              console.error(
+                `Failed to upload ${asset}:\n${JSON.stringify(
+                  e.response.data || "{}",
+                  null,
+                  4
+                )}`
+              );
+            });
         })
     );
 
@@ -242,7 +252,7 @@ const build = (args: CliOpts = {}) => {
       esbuild
         .build({
           ...opts,
-          minify: true,
+          minify: process.env.NODE_ENV === "production",
         })
         .then(async (r) => {
           if (!r.metafile) return;
