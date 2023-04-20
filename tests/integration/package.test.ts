@@ -212,11 +212,13 @@ test("Full integration test of extensions", async () => {
       client1.send({ type: "invite", notebookUuid: client2.uuid }),
       client2.send({ type: "waitForNotification" }),
     ]));
+  log("waitForNotification", notification);
   await test.step("Accept Shared Page", () =>
     client2.send({
       type: "accept",
       notebookPageId,
       notificationUuid: (notification as Notification).uuid,
+      data: (notification as Notification).data,
     }));
 
   const client2Read = () =>
@@ -565,6 +567,7 @@ test("Full integration test of extensions", async () => {
       type: "accept",
       notebookPageId,
       notificationUuid: (notification as Notification).uuid,
+      data: (notification as Notification).data,
     });
 
     await expect

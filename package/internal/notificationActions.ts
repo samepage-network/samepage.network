@@ -1,9 +1,10 @@
 import apiClient from "./apiClient";
 import type { Operation } from "./messages";
+import { JSONData } from "./types";
 
 type NotificationActions = Record<
   string,
-  (args: Record<string, string>) => Promise<unknown>
+  (args: JSONData) => Promise<unknown>
 >;
 const notificationActions: {
   [k in Operation]?: NotificationActions;
@@ -25,7 +26,7 @@ export const callNotificationAction = ({
 }: {
   operation: Operation;
   label: string;
-  data: Record<string, string>;
+  data: JSONData;
   messageUuid: string;
 }) => {
   const action = notificationActions[operation]?.[label];

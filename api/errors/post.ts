@@ -33,10 +33,6 @@ const zBody = z.discriminatedUnion("method", [
 export type RequestBody = z.infer<typeof zBody>;
 
 const logic = async (body: Record<string, unknown>) => {
-  if (process.env.NODE_ENV === "development") {
-    console.error(body);
-    return { success: true };
-  }
   const result = zBody.safeParse(body);
   if (!result.success) {
     const messageId = await sendEmail({
@@ -63,21 +59,24 @@ const logic = async (body: Record<string, unknown>) => {
         .innerJoin(apps, eq(apps.id, notebooks.app))
         .where(eq(notebooks.uuid, notebookUuid));
       await cxn.end();
-      const { latest, file = "main.js" } = await axios
-        .get<{
-          tag_name: string;
-          assets: { name: string }[];
-        }>(
-          `https://api.github.com/repos/samepage-network/${notebook.app}-samepage/releases/latest`
-        )
-        .then((r) => ({
-          latest: r.data.tag_name,
-          file: r.data.assets.find((a) => /\.js$/.test(a.name))?.name,
-        }))
-        .catch((e) => ({
-          latest: `failed: ${JSON.stringify(e)}`,
-          file: undefined,
-        }));
+      const { latest, file = "main.js" } =
+        notebook.app === "samepage"
+          ? { latest: "*" }
+          : await axios
+              .get<{
+                tag_name: string;
+                assets: { name: string }[];
+              }>(
+                `https://api.github.com/repos/samepage-network/${notebook.app}-samepage/releases/latest`
+              )
+              .then((r) => ({
+                latest: r.data.tag_name,
+                file: r.data.assets.find((a) => /\.js$/.test(a.name))?.name,
+              }))
+              .catch((e) => ({
+                latest: `failed: ${JSON.stringify(e)}`,
+                file: undefined,
+              }));
       const uuid = v4();
       await uploadFile({
         Key: `data/errors/${uuid}.json`,

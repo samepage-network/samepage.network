@@ -3,6 +3,7 @@ import getMysql from "~/data/mysql.server";
 import getNotebookByUuid from "./getNotebookByUuid.server";
 import { pageNotebookLinks } from "data/schema";
 import { sql } from "drizzle-orm/sql";
+import getTitleState from "./getTitleState.server";
 
 const inviteNotebookToPage = async ({
   requestId,
@@ -18,6 +19,11 @@ const inviteNotebookToPage = async ({
   targetNotebookUuid: string;
 }) => {
   const cxn = await getMysql(requestId);
+  const { uuid, ...title } = await getTitleState({
+    notebookUuid,
+    notebookPageId,
+    requestId,
+  });
   await cxn.insert(pageNotebookLinks).values({
     uuid: sql`UUID()`,
     pageUuid,
@@ -33,9 +39,8 @@ const inviteNotebookToPage = async ({
     target: targetNotebookUuid,
     operation: "SHARE_PAGE",
     data: {
-      // today, these two values are the same. Future state, ideally they are independent
-      notebookPageId,
-      title: notebookPageId,
+      title,
+      page: pageUuid,
     },
     requestId: requestId,
     metadata: ["title"],

@@ -15,6 +15,9 @@ import fs from "fs";
 import dotenv from "dotenv";
 import { pageNotebookLinks } from "data/schema";
 import emailError from "package/backend/emailError.server";
+import debug from "package/utils/debugger";
+
+const log = debug("api/backup");
 
 function toImportCandidate(file: File) {
   let stream: ReadableStream;
@@ -47,6 +50,7 @@ export const handler = async (
         : undefined,
     });
     const Key = `data/${type}/${uuid}`;
+    log("backing up", Key);
 
     const encoded = await downloadFileBuffer({ Key });
 

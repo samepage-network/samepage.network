@@ -21,6 +21,7 @@ import {
   BadRequestResponse,
   InternalServerResponse,
 } from "~/data/responses.server";
+import { JSONData } from "package/internal/types";
 
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
@@ -126,15 +127,15 @@ export const loader = async (args: LoaderArgs) => {
     },
   });
   const url = await acceptSharePageOperation({
-    getNotebookPageIdByTitle: async (title) =>
-      apiPost<{ notebookPageId?: string }>({
+    ensurePageByTitle: async (title) =>
+      apiPost<{ notebookPageId: string; preExisting: boolean }>({
         path: `extensions/${app}/backend`,
         data: {
-          type: "GET_PAGE",
+          type: "ENSURE_PAGE_BY_TITLE",
           title,
         },
         authorization: `Bearer ${accessToken}`,
-      }).then((r) => r.notebookPageId),
+      }),
     initPage: async () => {},
     deletePage: (notebookPageId) =>
       apiPost({
@@ -146,16 +147,6 @@ export const loader = async (args: LoaderArgs) => {
         },
         authorization: `Bearer ${accessToken}`,
       }),
-    createPage: (notebookPageId) =>
-      apiPost<{ notebookPageId: string }>({
-        path: `extensions/${app}/backend`,
-        data: {
-          type: "CREATE_PAGE",
-          notebookPageId,
-          path,
-        },
-        authorization: `Bearer ${accessToken}`,
-      }).then((r) => r.notebookPageId),
     openPage: (notebookPageId) =>
       apiPost<{ url: string }>({
         path: `extensions/${app}/backend`,
@@ -184,7 +175,7 @@ export const loader = async (args: LoaderArgs) => {
         },
         authorization: `Bearer ${accessToken}`,
       }),
-  })(metadata);
+  })(metadata as JSONData);
   return { success: true, url, app: appName };
 };
 

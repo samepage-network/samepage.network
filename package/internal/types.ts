@@ -226,6 +226,9 @@ export type ApplyState = (
   notebookPageId: string,
   state: InitialSchema
 ) => Promise<unknown>;
+export type EnsurePageByTitle = (
+  s: SamePageSchema
+) => Promise<{ notebookPageId: string; preExisting: boolean } | string>;
 export type EncodeState = (notebookPageId: string) => Promise<SamePageState>;
 export type DecodeState = (
   notebookPageId: string,
@@ -266,7 +269,7 @@ export type Notification = {
   operation: Operation;
   title: string;
   description: string;
-  data: Record<string, string>;
+  data: JSONData;
   buttons: readonly string[];
 };
 
@@ -318,7 +321,8 @@ export const zErrorWebsocketMessage = z.object({
 
 export const zSharePageWebsocketMessage = z.object({
   operation: z.literal("SHARE_PAGE"),
-  title: z.string(),
+  title: z.string().or(zSamePageSchema),
+  page: z.string().optional(),
 });
 export const zSharePageResponseWebsocketMessage = z.object({
   operation: z.literal("SHARE_PAGE_RESPONSE"),
@@ -518,12 +522,13 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     method: z.literal("init-shared-page"),
     notebookPageId: z.string().min(1),
     state: z.string(),
-    properties: zSamePageState.optional().default({}),
+    properties: zSamePageState.optional(),
   }),
   z.object({
     method: z.literal("join-shared-page"),
     notebookPageId: z.string(),
-    title: z.string().optional(),
+    title: z.string().or(zSamePageSchema).optional(),
+    pageUuid: z.string().optional(),
   }),
   z.object({
     method: z.literal("revert-page-join"),
@@ -534,7 +539,7 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     notebookPageId: z.string(),
     changes: z.string().array(),
     state: z.string(),
-    properties: zSamePageState.optional().default({}),
+    properties: zSamePageState.optional(),
   }),
   z.object({
     method: z.literal("force-push-page"),
@@ -575,8 +580,9 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
   }),
   z.object({
     method: z.literal("remove-page-invite"),
-    notebookPageId: z.string(),
+    notebookPageId: z.string().optional(),
     target: zNotebook.or(z.string()).optional(),
+    pageUuid: z.string().optional(),
   }),
   z.object({
     method: z.literal("list-page-notebooks"),

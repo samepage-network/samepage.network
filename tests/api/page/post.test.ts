@@ -539,16 +539,12 @@ test("Sharing pages produces messages to be read and marked read", async () => {
   // TODO - edit this test and implementation to rid of the redundancy
   const source = { app: 0, uuid: notebookUuid, workspace, appName: "SamePage" };
   r3.data = JSON.parse(r3.data);
-  expect(r3).toEqual({
-    operation: "SHARE_PAGE",
-    source,
-    data: {
-      notebookPageId,
-      title: notebookPageId,
-      source,
-      operation: "SHARE_PAGE",
-    },
-  });
+  expect(r3.operation).toEqual("SHARE_PAGE");
+  expect(r3.data.operation).toEqual("SHARE_PAGE");
+  expect(r3.source).toEqual(source);
+  expect(r3.data.source).toEqual(source);
+  expect(r3.data.title).toEqual({ content: notebookPageId, annotations: [] });
+  expect(r3.data.page).toBeTruthy();
 
   const r4 = await mockLambda({
     method: "mark-message-read",

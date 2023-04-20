@@ -1,5 +1,5 @@
 import MESSAGES, { Operation } from "./messages";
-import { Notification } from "./types";
+import { JSONData, Notification } from "./types";
 
 const messageToNotification = ({
   uuid,
@@ -15,7 +15,7 @@ const messageToNotification = ({
     appName: string | null;
   };
   operation: Operation;
-  data: Record<string, string>;
+  data: JSONData;
 }): Notification => {
   return {
     uuid,
@@ -27,7 +27,10 @@ const messageToNotification = ({
         /{workspace}/g,
         source.workspace === null ? "Unknown" : source.workspace
       )
-      .replace(/{([a-z]+)}/g, (_, key) => data[key]),
+      .replace(/{([a-z]+)}/g, (_, key) => {
+        const value = data[key];
+        return typeof value === "string" ? value : JSON.stringify(value);
+      }),
     data: {
       ...data,
       source: source.uuid || "",

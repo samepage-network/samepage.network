@@ -3,34 +3,48 @@ import { deleteId, set } from "../utils/localAutomergeDb";
 import apiClient from "./apiClient";
 import loadAutomergeFromBase64 from "./loadAutomergeFromBase64";
 import saveAndApply from "./saveAndApply";
-import { DecodeState, EncodeState, SamePageState, Schema } from "./types";
+import {
+  DecodeState,
+  EncodeState,
+  JSONData,
+  SamePageState,
+  Schema,
+  EnsurePageByTitle,
+  zSamePageSchema,
+} from "./types";
 import UserOnlyError from "./UserOnlyError";
 import Automerge from "automerge";
 import dispatchAppEvent from "./dispatchAppEvent";
 import binaryToBase64 from "./binaryToBase64";
+import { z } from "zod";
 
 const acceptSharePageOperation =
   ({
-    getNotebookPageIdByTitle,
-    createPage,
+    ensurePageByTitle,
     openPage,
     deletePage,
     decodeState,
     encodeState,
     initPage,
   }: {
-    getNotebookPageIdByTitle: (s: string) => Promise<string | undefined>;
-    createPage: (s: string) => Promise<string>;
+    ensurePageByTitle: EnsurePageByTitle;
     decodeState: DecodeState;
     encodeState: EncodeState;
     initPage: (s: { notebookPageId: string }) => void;
     openPage: (s: string) => Promise<string>;
     deletePage: (s: string) => Promise<unknown>;
   }) =>
-  async ({ title }: Record<string, string>) => {
-    const preexisted = await getNotebookPageIdByTitle(title);
+  async ({ title: _title, page }: JSONData) => {
+    const title =
+      typeof _title === "string"
+        ? { content: _title, annotations: [] }
+        : zSamePageSchema.parse(_title);
+    const result = await ensurePageByTitle(title);
     // Custom destination can be handled withing the extension's `createPage` function
-    const notebookPageId = preexisted || (await createPage(title));
+    const { notebookPageId, preExisting } =
+      typeof result === "string"
+        ? { notebookPageId: result, preExisting: false }
+        : result;
     return apiClient<
       | { found: false; reason: string }
       | {
@@ -41,6 +55,10 @@ const acceptSharePageOperation =
     >({
       method: "join-shared-page",
       notebookPageId,
+      pageUuid: await z
+        .string()
+        .parseAsync(page)
+        .catch(() => notebookPageId),
       title,
     })
       .then(async (res) => {
@@ -66,7 +84,7 @@ const acceptSharePageOperation =
             });
         const doc = loadAutomergeFromBase64(res.state);
         set(notebookPageId, doc);
-        if (preexisted) {
+        if (preExisting) {
           const { $body: preExistingDoc, ...preExistingProperties } =
             await encodeState(notebookPageId);
           const mergedDoc = mergeDocs(doc, preExistingDoc);
@@ -85,13 +103,13 @@ const acceptSharePageOperation =
         dispatchAppEvent({
           type: "log",
           id: "join-page-success",
-          content: `Successfully connected to shared page ${title}!`,
+          content: `Successfully connected to shared page ${title.content}!`,
           intent: "success",
         });
         return openPage(notebookPageId);
       })
       .catch((e) => {
-        if (!preexisted) deletePage(notebookPageId);
+        if (!preExisting) deletePage(notebookPageId);
         apiClient({
           method: "revert-page-join",
           notebookPageId,

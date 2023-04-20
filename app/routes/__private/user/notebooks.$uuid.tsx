@@ -115,26 +115,24 @@ const SingleNotebookPage = () => {
         loadSharePageWithNotebook({
           getCurrentNotebookPageId: async () =>
             currentNotebookPageIdRef.current,
-          createPage: async (title) => {
-            submit({ title, stay: "true" }, { method: "post" });
-            return title;
+          ensurePageByTitle: async (title) => {
+            submit({ title: title.content, stay: "true" }, { method: "post" });
+            return title.content;
           },
           openPage: async (title) => {
             submit({ title }, { method: "get" });
             return title;
           },
           deletePage: async (title) => submit({ title }, { method: "delete" }),
-          getNotebookPageIdByTitle: async (title) =>
-            data.pages.find((p) => p.title === title)?.title,
-          applyState: async (notebookPageId, state) =>
-            applyStateRef.current?.(notebookPageId, state),
-          calculateState: async (notebookPageId) => {
+          decodeState: async (notebookPageId, state) =>
+            applyStateRef.current?.(notebookPageId, state.$body),
+          encodeState: async (notebookPageId) => {
             if (!calcStateRef.current) {
               throw new Error(
                 `Calculate state wasn't set for page: ${notebookPageId}`
               );
             }
-            return calcStateRef.current(notebookPageId);
+            return { $body: calcStateRef.current(notebookPageId) };
           },
           overlayProps: {
             sharedPageStatusProps: {

@@ -14,6 +14,7 @@ import {
 import { registerNotificationActions } from "../internal/notificationActions";
 import handleRequestDataOperation from "../internal/handleRequestDataOperation";
 import handleRequestOperation from "../internal/handleRequestOperation";
+import { z } from "zod";
 
 const notebookRequestHandlers: NotebookRequestHandler[] = [];
 const notebookResponseHandlers: Record<string, NotebookResponseHandler> = {};
@@ -35,15 +36,14 @@ const handleRequest = async ({
   request: JSONData;
   target: string;
 }) => {
-  handleRequestOperation({ request }, { uuid: target }, notebookRequestHandlers);
-
+  handleRequestOperation(
+    { request },
+    { uuid: target },
+    notebookRequestHandlers
+  );
 };
 
-const sendNotebookRequest: SendNotebookRequest = ({
-  target,
-  request,
-  label,
-}) =>
+const sendNotebookRequest: SendNotebookRequest = ({ target, request, label }) =>
   apiClient<{ response: NotebookResponse; requestUuid: string }>({
     method: "notebook-request",
     target,
@@ -76,18 +76,18 @@ const setupCrossAppRequests = () => {
     actions: {
       accept: async ({ requestUuid, request, source }) => {
         await handleRequest({
-          request: JSON.parse(request),
-          target: source,
+          request: typeof request === "string" ? JSON.parse(request) : request,
+          target: z.string().parse(source),
         });
         await apiClient({
           method: "accept-request",
-          requestUuid,
+          requestUuid: z.string().parse(requestUuid),
         });
       },
       reject: async ({ requestUuid }) =>
         apiClient({
           method: "reject-request",
-          requestUuid,
+          requestUuid: z.string().parse(requestUuid),
         }),
     },
   });

@@ -9,7 +9,7 @@ const test = ({
   file,
   g,
 }: { debug?: boolean; proj?: string; file?: string; g?: string } = {}) => {
-  process.env.DEBUG = debug ? "*,-pw:*,-babel,-babel:*,-express:*,-follow-redirects,-jwks" : process.env.DEBUG;
+  process.env.DEBUG = debug ? "*,-pw:*,-babel,-babel:*,-express:*,-follow-redirects,-jwks,-proxy-agent" : process.env.DEBUG;
   const args = [
     "c8",
     "--reporter=lcov",

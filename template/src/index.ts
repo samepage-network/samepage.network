@@ -32,7 +32,7 @@ const setupClient = () => {
 const setupSharePageWithNotebook = () => {
   const { unload } = loadSharePageWithNotebook({
     // getCurrentNotebookPageId,
-    // createPage,
+    // ensurePageByTitle,
     // openPage,
     // deletePage,
     // decodeState,

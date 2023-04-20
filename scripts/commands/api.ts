@@ -82,7 +82,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
     process.env.AWS_ENDPOINT || "http://localhost:3003/mocks/aws";
 
   const entryRegex = new RegExp(
-    `^${path}[\\\\/]((ws[/\\\\][a-z0-9-]+)|(:?[a-z0-9-]+[/\\\\])*(get|post|put|delete|[a-z]+)|[a-z0-9-]+)\\.[tj]s$`
+    `^${path}[\\\\/]((ws[/\\\\][a-z0-9-]+)|(\\$?[a-z0-9-]+[/\\\\])*(get|post|put|delete|[a-z]+)|[a-z0-9-]+)\\.[tj]s$`
   );
   const wsRegex = new RegExp(`^${path}[\\\\/]ws[/\\\\][a-z0-9-]+\\.[tj]s$`);
   debug(
@@ -132,7 +132,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
       const method = paths.slice(-1)[0].toLowerCase() as ExpressMethod;
       const route = `/${
         METHOD_SET.has(method) ? paths.slice(0, -1).join("/") : paths.join("/")
-      }`.replace(/$/, ":");
+      }`.replace(/\$/, ":");
       if (METHOD_SET.has(method)) {
         // Mock API Gateway
         app[method](route, (req, res) => {

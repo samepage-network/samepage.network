@@ -8,8 +8,6 @@ import {
   actorId,
 } from "../internal/registry";
 import {
-  ApplyState,
-  SamePageSchema,
   Schema,
   zSamePageSchema,
   zRequestPageUpdateWebsocketMessage,
@@ -19,6 +17,7 @@ import {
   zSharePageWebsocketMessage,
   SamePageState,
   DecodeState,
+  EnsurePageByTitle,
 } from "../internal/types";
 import Automerge from "automerge";
 import { addNotebookListener } from "../internal/setupMessageHandlers";
@@ -59,18 +58,13 @@ type SharedPageObserver = ({
 const setupSharePageWithNotebook = ({
   overlayProps = {},
   getCurrentNotebookPageId = () => Promise.resolve(v4()),
-  createPage = (s) => Promise.resolve(s),
+  ensurePageByTitle = async () => "",
   openPage = (s) => Promise.resolve(s),
   deletePage = () => Promise.resolve(),
-  getNotebookPageIdByTitle = (title: string) => Promise.resolve(title),
-  applyState = () => Promise.resolve(),
-  calculateState = () => Promise.resolve({ annotations: [], content: "" }),
-  decodeState = (notebookPageId, state) =>
-    applyState(notebookPageId, state["$body"]),
-  encodeState = (notebookPageId) =>
-    calculateState(notebookPageId).then((state) => ({
-      $body: state,
-    })),
+  decodeState = () => Promise.resolve(),
+  encodeState = async () => ({
+    $body: { content: "", annotations: [] },
+  }),
   onConnect,
 }: {
   overlayProps?: {
@@ -84,14 +78,9 @@ const setupSharePageWithNotebook = ({
     };
   };
   getCurrentNotebookPageId?: () => Promise<string>;
-  createPage?: (title: string) => Promise<string>;
+  ensurePageByTitle?: EnsurePageByTitle;
   openPage?: (notebookPageId: string) => Promise<string>;
   deletePage?: (notebookPageId: string) => Promise<unknown>;
-  getNotebookPageIdByTitle?: (
-    notebookPageId: string
-  ) => Promise<string | undefined>;
-  calculateState?: (notebookPageId: string) => Promise<SamePageSchema>;
-  applyState?: ApplyState;
   encodeState?: (notebookPageId: string) => Promise<SamePageState>;
   decodeState?: DecodeState;
   onConnect?: () => () => void;
@@ -221,30 +210,37 @@ const setupSharePageWithNotebook = ({
         operation: "SHARE_PAGE",
         actions: {
           accept: acceptSharePageOperation({
-            getNotebookPageIdByTitle,
-            createPage: (s) => createPage(s).then(() => s),
+            ensurePageByTitle,
             openPage,
             deletePage,
             encodeState,
             decodeState,
             initPage,
           }),
-          reject: async ({ title }) =>
-            apiClient({
-              method: "remove-page-invite",
-              notebookPageId: title,
-            }),
+          reject: async ({ title, page }) =>
+            typeof page === "string"
+              ? apiClient({
+                  method: "remove-page-invite",
+                  pageUuid: page,
+                })
+              : typeof title === "string"
+              ? apiClient({
+                  method: "remove-page-invite",
+                  notebookPageId: title,
+                })
+              : Promise.resolve(),
         },
       });
 
       unloadCallbacks["SHARE_PAGE"] = addNotebookListener({
         operation: "SHARE_PAGE",
-        handler: (e, source, uuid) =>
-          handleSharePageOperation(
+        handler: (e, source, uuid) => {
+          return handleSharePageOperation(
             zSharePageWebsocketMessage.parse(e),
             source,
             uuid
-          ),
+          );
+        },
       });
 
       unloadCallbacks["SHARE_PAGE_RESPONSE"] = addNotebookListener({

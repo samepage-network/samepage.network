@@ -227,7 +227,7 @@ export const messages = mysqlTable(
     source: varchar("source", { length: 36 }).notNull().default(""),
     target: varchar("target", { length: 36 }).notNull().default(""),
     operation: varchar("operation", { length: 128 }).notNull().default(""),
-    metadata: json<{ title: string }>("metadata"),
+    metadata: json("metadata"),
   },
   (msgs) => ({
     targetMarkedIndex: index("IX_target_marked").on(msgs.target, msgs.marked),

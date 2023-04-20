@@ -51,8 +51,9 @@ test("Handle receiving multiple changes before saving", async () => {
   set(notebookPageId, doc);
   const applyResolves: (() => void)[] = [];
   const { unload } = sharePageWithNotebook({
-    calculateState: async () => state,
-    applyState: (_, s) => {
+    encodeState: async () => ({ $body: state }),
+    decodeState: (_, _s) => {
+      const s = _s.$body;
       state.content = s.content;
       state.annotations = s.annotations;
       return new Promise<void>((resolve) => {
@@ -123,8 +124,9 @@ test("Should not apply state for updates that aren't shared", async () => {
   const doc = Automerge.from(wrapSchema(state[notebookPageId]));
   set(notebookPageId, doc);
   const { unload } = sharePageWithNotebook({
-    calculateState: async (id) => state[id],
-    applyState: async (id, s) => {
+    encodeState: async (id) => ({ $body: state[id] }),
+    decodeState: async (id, _s) => {
+      const s = _s.$body;
       state[id].content = s.content;
       state[id].annotations = s.annotations;
     },

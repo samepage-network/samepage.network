@@ -35,10 +35,11 @@ const processMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("accept"),
     notebookPageId: z.string(),
     notificationUuid: z.string(),
+    data: zJsonData,
   }),
   z.object({
     type: z.literal("accept-request"),
-    data: z.record(z.string()),
+    data: zJsonData,
     notificationUuid: z.string(),
   }),
   z.object({
@@ -230,15 +231,18 @@ const createTestSamePageClient = async ({
     isShared,
   } = setupSharePageWithNotebook({
     getCurrentNotebookPageId: async () => currentNotebookPageId,
-    createPage: async (notebookPageId) => {
-      appClientState[notebookPageId] = new JSDOM();
-      return notebookPageId;
+    ensurePageByTitle: async (title) => {
+      if (appClientState[title.content]) {
+        return { notebookPageId: title.content, preExisting: true };
+      }
+      appClientState[title.content] = new JSDOM();
+      return title.content;
     },
     deletePage: async (notebookPageId) => delete appClientState[notebookPageId],
-    getNotebookPageIdByTitle: async (notebookPageId) =>
-      appClientState[notebookPageId] ? notebookPageId : undefined,
-    calculateState: async (notebookPageId) => calculateState(notebookPageId),
-    applyState: async (id, data) => applyState(id, data),
+    encodeState: async (notebookPageId) => ({
+      $body: await calculateState(notebookPageId),
+    }),
+    decodeState: async (id, data) => applyState(id, data.$body),
   });
   log("setting up page deprecated query protocol");
   const { unload: unloadNotebookQuerying, query } = setupNotebookQuerying({
@@ -299,7 +303,8 @@ const createTestSamePageClient = async ({
             operation: "SHARE_PAGE",
             label: "accept",
             data: {
-              title: message.notebookPageId,
+              ...message.data,
+              title: { content: message.notebookPageId, annotations: [] },
             },
             messageUuid: message.notificationUuid,
           }).then(() => sendResponse({ success: true }));

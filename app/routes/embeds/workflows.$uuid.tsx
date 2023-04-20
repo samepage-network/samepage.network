@@ -89,12 +89,12 @@ export const action: ActionFunction = async (args) => {
     .innerJoin(apps, eq(apps.id, notebooks.app))
     .where(eq(accessTokens.notebookUuid, notebookUuid));
   const { body } = await downloadSharedPage({ cid });
-  const { data: newNotebookPageId } = await apiPost({
+  const { notebookPageId: newNotebookPageId } = await apiPost({
     path: `extensions/${app}/backend`,
     data: {
-      type: "CREATE_PAGE",
+      type: "ENSURE_PAGE_BY_TITLE",
       data: {
-        notebookPageId,
+        title: notebookPageId,
         path: "Getting-Started-73dc4bf6a0e74a07adc25798a2f5b468",
       },
     },

@@ -47,6 +47,7 @@ import {
   notebookRequests,
   notebooks,
   pageNotebookLinks,
+  pageProperties,
   pages,
   quotas,
   tokenNotebookLinks,
@@ -455,7 +456,7 @@ const logic = async (req: Record<string, unknown>) => {
           .catch(catchError("Failed to load a message"));
       }
       case "init-shared-page": {
-        const { notebookPageId, state } = args;
+        const { notebookPageId, state, properties } = args;
         const [link] = await cxn
           .select({ page_uuid: pageNotebookLinks.pageUuid })
           .from(pageNotebookLinks)
@@ -486,11 +487,20 @@ const logic = async (req: Record<string, unknown>) => {
           uuid: linkUuid,
           doc: state,
         });
+        if (properties && Object.keys(properties).length) {
+          await cxn.insert(pageProperties).values(
+            ...Object.entries(properties).map(([key, value]) => ({
+              linkUuid,
+              key,
+              value,
+            }))
+          );
+        }
         await cxn.end();
         return { created: true, id: pageUuid };
       }
       case "join-shared-page": {
-        const { notebookPageId } = args;
+        const { notebookPageId, pageUuid, title } = args;
         const results = await cxn
           .select({
             uuid: pageNotebookLinks.uuid,
@@ -500,7 +510,9 @@ const logic = async (req: Record<string, unknown>) => {
           .from(pageNotebookLinks)
           .where(
             and(
-              eq(pageNotebookLinks.notebookPageId, notebookPageId),
+              pageUuid
+                ? eq(pageNotebookLinks.pageUuid, pageUuid)
+                : eq(pageNotebookLinks.notebookPageId, notebookPageId),
               eq(pageNotebookLinks.notebookUuid, notebookUuid),
               eq(pageNotebookLinks.open, 1)
             )
@@ -514,7 +526,10 @@ const logic = async (req: Record<string, unknown>) => {
         }
         const { uuid, page_uuid, invited_by } = results[0];
         const invitedByResults = await cxn
-          .select({ cid: pageNotebookLinks.cid })
+          .select({
+            cid: pageNotebookLinks.cid,
+            linkUuid: pageNotebookLinks.uuid,
+          })
           .from(pageNotebookLinks)
           .where(
             and(
@@ -533,9 +548,9 @@ const logic = async (req: Record<string, unknown>) => {
         await validatePageQuota({ requestId, notebookUuid, tokenUuid });
         await cxn
           .update(pageNotebookLinks)
-          .set({ open: 0 })
+          .set({ open: 0, notebookPageId })
           .where(eq(pageNotebookLinks.uuid, uuid));
-        const [{ cid }] = invitedByResults;
+        const [{ cid, linkUuid }] = invitedByResults;
         if (!cid)
           throw new InternalServorError(
             `Could not find cid for page ${page_uuid} invited by ${invited_by}:\n${JSON.stringify(
@@ -546,6 +561,19 @@ const logic = async (req: Record<string, unknown>) => {
           cid,
         });
         await saveSharedPage({ doc: state, uuid });
+        const invitedByPageProperties = await cxn
+          .select({ key: pageProperties.key, value: pageProperties.value })
+          .from(pageProperties)
+          .where(eq(pageProperties.linkUuid, linkUuid));
+        if (invitedByPageProperties.length)
+          await cxn.insert(pageProperties).values(
+            ...invitedByPageProperties.map((prop) => ({
+              ...(prop.key === "$title"
+                ? { key: "$title", value: title }
+                : prop),
+              linkUuid: uuid,
+            }))
+          );
         await messageNotebook({
           target: invited_by,
           source: notebookUuid,
@@ -699,7 +727,7 @@ const logic = async (req: Record<string, unknown>) => {
         };
       }
       case "request-page-update": {
-        const { target, notebookPageId, seq } = args;
+        const { target, notebookPageId, seq = 0 } = args;
         await messageNotebook({
           source: notebookUuid,
           operation: "REQUEST_PAGE_UPDATE",
@@ -785,7 +813,10 @@ const logic = async (req: Record<string, unknown>) => {
         });
       }
       case "remove-page-invite": {
-        const { notebookPageId, target } = args;
+        const { notebookPageId = "", target, pageUuid = "" } = args;
+        const inviteCondition = pageUuid
+          ? eq(pageNotebookLinks.pageUuid, pageUuid)
+          : eq(pageNotebookLinks.notebookPageId, notebookPageId);
         const { linkUuid, invitedBy } = await (typeof target === "string"
           ? cxn
               .select({ uuid: pageNotebookLinks.uuid })
@@ -797,7 +828,7 @@ const logic = async (req: Record<string, unknown>) => {
               .where(
                 and(
                   eq(notebooks.uuid, target),
-                  eq(pageNotebookLinks.notebookPageId, notebookPageId),
+                  inviteCondition,
                   eq(pageNotebookLinks.open, 1),
                   eq(pageNotebookLinks.invitedBy, notebookUuid)
                 )
@@ -818,7 +849,7 @@ const logic = async (req: Record<string, unknown>) => {
                 and(
                   eq(notebooks.workspace, target.workspace),
                   eq(notebooks.app, target.app),
-                  eq(pageNotebookLinks.notebookPageId, notebookPageId),
+                  inviteCondition,
                   eq(pageNotebookLinks.open, 1),
                   eq(pageNotebookLinks.invitedBy, notebookUuid)
                 )
@@ -836,7 +867,7 @@ const logic = async (req: Record<string, unknown>) => {
               .where(
                 and(
                   eq(pageNotebookLinks.notebookUuid, notebookUuid),
-                  eq(pageNotebookLinks.notebookPageId, notebookPageId),
+                  inviteCondition,
                   eq(pageNotebookLinks.open, 1)
                 )
               )

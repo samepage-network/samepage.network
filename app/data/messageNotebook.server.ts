@@ -18,6 +18,7 @@ import { eq, desc } from "drizzle-orm/expressions";
 import { Lambda } from "@aws-sdk/client-lambda";
 import debug from "package/utils/debugger";
 import getPrimaryUserEmail from "./getPrimaryUserEmail.server";
+import { JSONData } from "package/internal/types";
 
 const log = debug("message-notebook");
 
@@ -34,7 +35,7 @@ const messageNotebook = ({
   target: string;
   messageUuid?: string;
   operation?: Operation;
-  data?: Record<string, unknown>;
+  data?: JSONData;
   requestId?: string;
   metadata?: string[];
 }) => {
