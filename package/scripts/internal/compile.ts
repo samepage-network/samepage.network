@@ -135,13 +135,6 @@ const compile = ({
     rootCss.length === 1
       ? rootCss[0]
       : ["index.css", "main.css"].find((f) => rootCss.includes(f));
-  if (!entryTs) {
-    return Promise.reject(
-      `Could not find a suitable entry file in ./src directory. Found: [${rootTs.join(
-        ", "
-      )}]`
-    );
-  }
   const externalModules = (
     typeof external === "string" ? [external] : external || []
   ).map((e) => e.split("="));
