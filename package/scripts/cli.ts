@@ -6,10 +6,7 @@ import path from "path";
 import fs from "fs";
 import type { CliOpts } from "./internal/compile";
 
-const mergeOpts = (
-  args: Record<string, string | string[] | boolean>,
-  rawPath: string
-): Record<string, string | string[] | boolean> => {
+const mergeOpts = (args: CliOpts, rawPath: string): CliOpts => {
   const root = typeof args.root === "string" ? args.root : ".";
   const configPath = path.join(root, rawPath);
   const rawConfigOpts = fs.existsSync(configPath)
@@ -19,10 +16,24 @@ const mergeOpts = (
   const configOpts = rawConfigOpts.extends
     ? mergeOpts(rawConfigOpts, rawConfigOpts.extends)
     : rawConfigOpts;
-  return {
-    ...configOpts,
-    ...args,
-  };
+  const mergedOpts: CliOpts = { ...configOpts };
+  Object.keys(args).forEach((k) => {
+    const mergedOptValue = mergedOpts[k];
+    const argValue = args[k];
+    if (Array.isArray(mergedOptValue)) {
+      mergedOpts[k] = [
+        ...mergedOptValue,
+        ...(typeof argValue === "string"
+          ? [argValue]
+          : Array.isArray(argValue)
+          ? argValue
+          : [`${argValue}`]),
+      ];
+    } else {
+      mergedOpts[k] = argValue;
+    }
+  });
+  return mergedOpts;
 };
 
 const run = async (command: string, args: string[]): Promise<number> => {

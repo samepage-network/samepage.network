@@ -87,6 +87,7 @@ const importAsGlobals = (
           return {
             contents: `module.exports = ${global};`,
             loader: "js",
+            resolveDir: process.cwd(),
           };
         }
       );
