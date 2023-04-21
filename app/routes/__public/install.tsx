@@ -140,7 +140,9 @@ export const loader: LoaderFunction = async ({ context, request }) => {
   const searchParams = new URL(request.url).searchParams;
   const selectedApp =
     searchParams.get("id") || searchParams.get("app") || userApps[0].code;
-  const instructions = await new Octokit().repos
+  const instructions = await new Octokit({
+    // baseUrl: process.env.OCTOKIT_URL,
+  }).repos
     .getContent({
       owner: "samepage-network",
       repo: `${selectedApp}-samepage`,

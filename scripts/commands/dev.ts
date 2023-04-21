@@ -6,6 +6,7 @@ type FeArgs = { port?: string; local?: boolean };
 
 const dev = async (args: FeArgs = {}): Promise<number> => {
   process.env.NODE_ENV = process.env.NODE_ENV || "development";
+  process.env.OCTOKIT_URL = process.env.OCTOKIT_URL || "http://localhost:3003/mocks";
   if (args.port) process.env.PORT = args.port;
 
   // TODO - Future versions of Remix have native Tailwind support
