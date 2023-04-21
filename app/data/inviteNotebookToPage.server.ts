@@ -19,7 +19,7 @@ const inviteNotebookToPage = async ({
   targetNotebookUuid: string;
 }) => {
   const cxn = await getMysql(requestId);
-  const { uuid, ...title } = await getTitleState({
+  const { uuid, ...$title } = await getTitleState({
     notebookUuid,
     notebookPageId,
     requestId,
@@ -39,7 +39,8 @@ const inviteNotebookToPage = async ({
     target: targetNotebookUuid,
     operation: "SHARE_PAGE",
     data: {
-      title,
+      $title,
+      title: $title.content,
       page: pageUuid,
     },
     requestId: requestId,
