@@ -232,10 +232,11 @@ const zBuildArgs = z.object({
   review: z.string().optional(),
   domain: z.string().optional(),
   api: z.string().optional(),
+  verbose: z.boolean().optional(),
 });
 
 const build = (args: CliOpts = {}) => {
-  const { root, review, api } = zBuildArgs.parse(args);
+  const { root, review, api, verbose } = zBuildArgs.parse(args);
   process.env.NODE_ENV = process.env.NODE_ENV || "production";
   process.env.ORIGIN = process.env.ORIGIN || "https://samepage.network";
   const version = toVersion();
@@ -252,7 +253,7 @@ const build = (args: CliOpts = {}) => {
       esbuild
         .build({
           ...opts,
-          minify: process.env.NODE_ENV === "production",
+          minify: !verbose,
         })
         .then(async (r) => {
           if (!r.metafile) return;

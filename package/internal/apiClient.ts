@@ -23,22 +23,21 @@ const handleFetch = <T extends Record<string, unknown> = Record<string, never>>(
     authorization,
   }: Pick<RequestInit, "method"> & Omit<HandleFetchArgs, "data">
 ) => {
-  const url = new URL(`${domain || getApiUrl()}/${path}`);
-  return fetch(
-    ...transformArgs(url, {
-      method,
-      headers: authorization
-        ? {
-            Authorization: authorization,
-          }
-        : undefined,
-    })
-  ).then((r) => {
+  const rawUrl = new URL(`${domain || getApiUrl()}/${path}`);
+  const [url, init] = transformArgs(rawUrl, {
+    method,
+    headers: authorization
+      ? {
+          Authorization: authorization,
+        }
+      : undefined,
+  });
+  return fetch(url, init).then((r) => {
     if (!r.ok) {
       return r
         .text()
         .then((e) =>
-          Promise.reject(new Error(`${method} request to ${url} failed: ${e}`))
+          Promise.reject(new Error(`${init?.method} request to ${url} failed: ${e}`))
         );
     } else if (r.status === 204) {
       return {} as T;
@@ -51,7 +50,9 @@ const handleFetch = <T extends Record<string, unknown> = Record<string, never>>(
           .text()
           .then((e) =>
             Promise.reject(
-              new Error(`Serialization for ${method} request to ${url} failed: ${e}`)
+              new Error(
+                `Serialization for ${init?.method} request to ${url} failed: ${e}`
+              )
             )
           )
       );
