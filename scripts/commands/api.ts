@@ -132,7 +132,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
       const method = paths.slice(-1)[0].toLowerCase() as ExpressMethod;
       const route = `/${
         METHOD_SET.has(method) ? paths.slice(0, -1).join("/") : paths.join("/")
-      }`.replace(/\$/, ":");
+      }`.replace(/\$/g, ":");
       if (METHOD_SET.has(method)) {
         // Mock API Gateway
         app[method](route, (req, res) => {
@@ -410,8 +410,8 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
       Promise.all(
         entries
           .sort((a, b) => {
-            const dynamicA = a.split(":").length - 1;
-            const dynamicB = b.split(":").length - 1;
+            const dynamicA = a.split("$").length - 1;
+            const dynamicB = b.split("$").length - 1;
             return dynamicA - dynamicB || a.localeCompare(b);
           })
           .map(rebuildCallback)

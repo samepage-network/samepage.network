@@ -29,7 +29,7 @@ const messageNotebook = ({
   messageUuid = v4(),
   operation = "PING",
   requestId = v4(),
-  metadata = [],
+  saveData = false,
 }: {
   source: string;
   target: string;
@@ -37,7 +37,7 @@ const messageNotebook = ({
   operation?: Operation;
   data?: JSONData;
   requestId?: string;
-  metadata?: string[];
+  saveData?: boolean;
 }) => {
   return getMysql(requestId).then(async (cxn) => {
     const sourceNotebook = await getNotebookByUuid({ uuid: source, requestId });
@@ -125,9 +125,7 @@ const messageNotebook = ({
       source,
       target,
       operation,
-      metadata: metadata.length
-        ? Object.fromEntries(metadata.map((k) => [k, data[k]]))
-        : null,
+      metadata: saveData ? data : null,
     });
     await uploadFile({
       Key: `data/messages/${messageUuid}.json`,

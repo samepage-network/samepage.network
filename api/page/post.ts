@@ -1136,7 +1136,7 @@ const logic = async (req: Record<string, unknown>) => {
                         title: label,
                       },
                       requestId,
-                      metadata: ["title", "request"],
+                      saveData: true,
                     }));
                 return { target, response: null, requestUuid: uuid };
               } else if (requestRecord.status === "rejected") {

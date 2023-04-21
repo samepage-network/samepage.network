@@ -43,7 +43,7 @@ const inviteNotebookToPage = async ({
       page: pageUuid,
     },
     requestId: requestId,
-    metadata: ["title"],
+    saveData: true,
   })
     .then(() => getNotebookByUuid({ uuid: targetNotebookUuid, requestId }))
     .then((notebook) => ({

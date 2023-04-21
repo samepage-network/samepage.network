@@ -69,15 +69,12 @@ export const loader = async (args: LoaderArgs) => {
   const userId = await getUserId(args);
   const { request, context } = args;
   if (!userId) {
-    console.log("no user id found, redirecting to login");
     return redirect(`/login?redirect=${encodeURIComponent(request.url)}`);
   }
-  console.log("Process notification...");
   const requestId = parseRemixContext(context).lambdaContext.awsRequestId;
   const searchParams = Object.fromEntries(new URL(request.url).searchParams);
   const messageUuid = searchParams.uuid;
   const action = searchParams.action;
-  const path = searchParams.path;
   if (action !== "accept") {
     throw new BadRequestResponse(`Unsupported action: ${action}`);
   }
@@ -143,7 +140,6 @@ export const loader = async (args: LoaderArgs) => {
         data: {
           type: "DELETE_PAGE",
           notebookPageId,
-          path,
         },
         authorization: `Bearer ${accessToken}`,
       }),

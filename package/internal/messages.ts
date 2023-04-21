@@ -19,7 +19,7 @@ const MESSAGES = {
   // Page Sync Protocol
   SHARE_PAGE: {
     title: "Share Page",
-    description: `Notebook **{app}/{workspace}** is attempting to share page \`{title}\`. Would you like to accept?`,
+    description: `Notebook **{app}/{workspace}** is attempting to share page \`{title:atjson}\`. Would you like to accept?`,
     buttons: ["accept", "reject"],
   },
   SHARE_PAGE_RESPONSE: {

@@ -35,14 +35,26 @@ const handleFetch = <T extends Record<string, unknown> = Record<string, never>>(
     })
   ).then((r) => {
     if (!r.ok) {
-      return r.text().then((e) => Promise.reject(new Error(e)));
+      return r
+        .text()
+        .then((e) =>
+          Promise.reject(new Error(`${method} request to ${url} failed: ${e}`))
+        );
     } else if (r.status === 204) {
       return {} as T;
     }
     return r
       .json()
       .then((r) => r as T)
-      .catch(() => r.text().then((e) => Promise.reject(new Error(e))));
+      .catch(() =>
+        r
+          .text()
+          .then((e) =>
+            Promise.reject(
+              new Error(`Serialization for ${method} request to ${url} failed: ${e}`)
+            )
+          )
+      );
   });
 };
 

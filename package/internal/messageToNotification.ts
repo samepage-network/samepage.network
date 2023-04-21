@@ -27,8 +27,19 @@ const messageToNotification = ({
         /{workspace}/g,
         source.workspace === null ? "Unknown" : source.workspace
       )
-      .replace(/{([a-z]+)}/g, (_, key) => {
+      .replace(/{([a-z]+)(?::([a-z]+))?}/g, (_, key, format) => {
         const value = data[key];
+        if (value === null) {
+          return "null";
+        }
+        if (
+          format === "atjson" &&
+          typeof value === "object" &&
+          "content" in value &&
+          typeof value.content === "string"
+        ) {
+          return value.content;
+        }
         return typeof value === "string" ? value : JSON.stringify(value);
       }),
     data: {
