@@ -59,6 +59,7 @@ const messageNotebook = ({
       .limit(1)
       .then((res) => res[0]?.id);
     let online = false;
+    log("Found connection", ConnectionId, "for", target);
     if (ConnectionId) {
       online = await postToConnection({
         ConnectionId,
@@ -94,6 +95,7 @@ const messageNotebook = ({
         .innerJoin(tokens, eq(tokenNotebookLinks.tokenUuid, tokens.uuid))
         .where(eq(accessTokens.notebookUuid, target))
         .limit(1);
+      log("sending message to endpoint", endpoint);
       if (endpoint) {
         const { path, accessToken, token } = endpoint;
         Data["credentials"] = {

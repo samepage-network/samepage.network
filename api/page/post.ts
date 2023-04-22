@@ -58,7 +58,7 @@ import debug from "package/utils/debugger";
 import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
 import getActorInfo from "~/data/getActorInfo.server";
 
-const log = debug("page");
+const log = debug("api:page");
 const zhandlerBody = zUnauthenticatedBody.or(
   zAuthenticatedBody.and(zAuthHeaders)
 );

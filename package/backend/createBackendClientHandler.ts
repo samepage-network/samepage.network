@@ -20,13 +20,13 @@ import OperationNotificationEmail from "../components/OperationNotificationEmail
 
 const createBackendClientHandler =
   ({
-    decodeState,
-    notebookRequestHandler,
-    notebookResponseHandler,
+    getDecodeState,
+    getNotebookRequestHandler,
+    getNotebookResponseHandler,
   }: {
-    decodeState: DecodeState;
-    notebookRequestHandler: NotebookRequestHandler;
-    notebookResponseHandler: NotebookResponseHandler;
+    getDecodeState: (token: string) => DecodeState;
+    getNotebookRequestHandler: (token: string) => NotebookRequestHandler;
+    getNotebookResponseHandler: (token: string) => NotebookResponseHandler;
   }) =>
   async (args: Record<string, unknown>) => {
     try {
@@ -74,17 +74,27 @@ const createBackendClientHandler =
       } else if (data.operation === "SHARE_PAGE_RESPONSE") {
         handleSharePageResponseOperation(data, source);
       } else if (data.operation === "SHARE_PAGE_UPDATE") {
-        await handleSharePageUpdateOperation(data, decodeState);
+        await handleSharePageUpdateOperation(
+          data,
+          getDecodeState(credentials.accessToken)
+        );
       } else if (data.operation === "SHARE_PAGE_FORCE") {
-        await handleSharePageForceOperation(data, decodeState);
+        await handleSharePageForceOperation(
+          data,
+          getDecodeState(credentials.accessToken)
+        );
       } else if (data.operation === "REQUEST_PAGE_UPDATE") {
         await handleRequestPageUpdateOperation(data, source);
       } else if (data.operation === "REQUEST_DATA") {
         handleRequestDataOperation(data, source, uuid);
       } else if (data.operation === "REQUEST") {
-        await handleRequestOperation(data, source, [notebookRequestHandler]);
+        await handleRequestOperation(data, source, [
+          getNotebookRequestHandler(credentials.accessToken),
+        ]);
       } else if (data.operation === "RESPONSE") {
-        await notebookResponseHandler(data.response);
+        await getNotebookResponseHandler(credentials.accessToken)(
+          data.response
+        );
       }
       return { success: true };
     } catch (e) {

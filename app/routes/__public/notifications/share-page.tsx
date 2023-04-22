@@ -133,7 +133,9 @@ export const loader = async (args: LoaderArgs) => {
         },
         authorization: `Bearer ${accessToken}`,
       }),
-    initPage: async () => {},
+    initPage: async (notebookPageId) => {
+      console.log("initPage", notebookPageId);
+    },
     deletePage: (notebookPageId) =>
       apiPost({
         path: `extensions/${app}/backend`,
@@ -150,6 +152,7 @@ export const loader = async (args: LoaderArgs) => {
           type: "OPEN_PAGE",
           notebookPageId,
         },
+        authorization: `Bearer ${accessToken}`,
       }).then((r) => r.url),
     encodeState: (notebookPageId) =>
       apiPost({

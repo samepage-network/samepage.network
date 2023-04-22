@@ -37,7 +37,6 @@ const acceptSharePageOperation =
   async ({ $title, page }: JSONData) => {
     const title = zSamePageSchema.parse($title);
     const result = await ensurePageByTitle(title);
-    // Custom destination can be handled withing the extension's `createPage` function
     const { notebookPageId, preExisting } =
       typeof result === "string"
         ? { notebookPageId: result, preExisting: false }
