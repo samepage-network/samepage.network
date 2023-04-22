@@ -34,11 +34,8 @@ const acceptSharePageOperation =
     openPage: (s: string) => Promise<string>;
     deletePage: (s: string) => Promise<unknown>;
   }) =>
-  async ({ title: _title, page }: JSONData) => {
-    const title =
-      typeof _title === "string"
-        ? { content: _title, annotations: [] }
-        : zSamePageSchema.parse(_title);
+  async ({ $title, page }: JSONData) => {
+    const title = zSamePageSchema.parse($title);
     const result = await ensurePageByTitle(title);
     // Custom destination can be handled withing the extension's `createPage` function
     const { notebookPageId, preExisting } =
