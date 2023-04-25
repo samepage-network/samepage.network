@@ -543,7 +543,7 @@ test("Sharing pages produces messages to be read and marked read", async () => {
   expect(r3.data.operation).toEqual("SHARE_PAGE");
   expect(r3.source).toEqual(source);
   expect(r3.data.source).toEqual(source);
-  expect(r3.data.title).toEqual({ content: notebookPageId, annotations: [] });
+  expect(r3.data.$title).toEqual({ content: notebookPageId, annotations: [] });
   expect(r3.data.page).toBeTruthy();
 
   const r4 = await mockLambda({

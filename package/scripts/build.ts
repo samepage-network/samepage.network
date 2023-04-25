@@ -84,7 +84,7 @@ const publish = async ({
     const assets = fs.readdirSync(".");
     await Promise.all(
       assets
-        .filter((f) => f !== "README.md" && f !== "package.json")
+        .filter((f) => f !== "package.json")
         .map((asset) => {
           const content = fs.readFileSync(asset);
           const contentType = mimeTypes.lookup(asset);
