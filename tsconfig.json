@@ -19,6 +19,7 @@
     "forceConsistentCasingInFileNames": true,
     "allowSyntheticDefaultImports": true,
     "sourceMap": true,
+    "inlineSources": true,
     "importHelpers": true,
     "skipLibCheck": true,
     "isolatedModules": true,
