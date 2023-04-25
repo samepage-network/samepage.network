@@ -53,14 +53,14 @@ const logic = async (body: Record<string, unknown>) => {
     case "extension-error": {
       const { notebookUuid, data, stack, version, type } = args;
       const cxn = await getMysql();
-      const [notebook] = await cxn
+      const [notebook = { app: "unknown", workspace: "unknown" }] = await cxn
         .select({ app: apps.code, workspace: notebooks.workspace })
         .from(notebooks)
         .innerJoin(apps, eq(apps.id, notebooks.app))
         .where(eq(notebooks.uuid, notebookUuid));
       await cxn.end();
       const { latest, file = "main.js" } =
-        notebook.app === "samepage"
+        notebook.app === "samepage" || notebook.app === "unknown"
           ? { latest: "*" }
           : await axios
               .get<{
