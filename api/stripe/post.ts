@@ -136,6 +136,8 @@ export const handler: APIGatewayProxyHandler = async (event) => {
         headers: {},
       };
     }
+    // case "balance transaction"
+    // https://dashboard.stripe.com/balance
     default:
       return {
         statusCode: 400,

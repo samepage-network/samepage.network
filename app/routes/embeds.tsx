@@ -5,6 +5,7 @@ export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const TABS = ["", "Shared Pages", "Workflows"];
 
+// TODO - We might be able to reuse the chrome extension popout for all embeds.
 const EmbedPage: React.FC = () => {
   const matches = useMatches();
   const currentTab = TABS.findIndex(
@@ -14,7 +15,7 @@ const EmbedPage: React.FC = () => {
   );
   return (
     <div className="flex h-full">
-      <div className="w-48 flex flex-col border-r border-r-slate-200 h-full">
+      <div className="w-36 flex flex-shrink-0 flex-col border-r border-r-slate-200 h-full">
         {TABS.map((t, i) => (
           <Link
             className={`capitalize cursor-pointer py-4 px-6 rounded-lg hover:bg-sky-400${
@@ -29,7 +30,6 @@ const EmbedPage: React.FC = () => {
       </div>
       <div
         className="flex-grow p-8 h-full"
-        style={{ padding: 32, height: "100%" }}
       >
         <Outlet />
       </div>

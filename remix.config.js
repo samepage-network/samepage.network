@@ -9,7 +9,7 @@ module.exports = {
   appDirectory: "app",
   assetsBuildDirectory: "public/build",
   devServerPort: 8002,
-  ignoredRouteFiles: [".*"],
+  ignoredRouteFiles: [".*", "_*"],
   publicPath: "/build/",
   serverBuildPath: "app/server/build/index.js",
   future: {
