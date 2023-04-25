@@ -37,7 +37,7 @@ const DirectoryLink = ({
 };
 
 const Directory = () => {
-  const { directory } = useLoaderData<ListMarkdownFiles>();
+  const { directory = [] } = useLoaderData<ListMarkdownFiles>();
   return (
     <>
       {directory.map((d) => (

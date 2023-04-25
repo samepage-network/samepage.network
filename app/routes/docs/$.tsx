@@ -2,7 +2,7 @@ export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import type {
   LoaderFunction,
   LinksFunction,
-  MetaFunction,
+  V2_MetaFunction,
 } from "@remix-run/node";
 import { useLoaderData, Link, useLocation } from "@remix-run/react";
 import loadMarkdownFile from "~/data/loadMarkdownFile.server";
@@ -89,7 +89,7 @@ export const links: LinksFunction = () => {
   return [{ rel: "stylesheet", href: prism }];
 };
 
-export const meta: MetaFunction = (args) =>
+export const meta: V2_MetaFunction = (args) =>
   getMeta({
     title: args.data.frontmatter?.title,
     description: args.data.frontmatter?.description,
