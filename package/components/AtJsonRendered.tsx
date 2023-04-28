@@ -1,5 +1,5 @@
 import React from "react";
-import type { Annotation, InitialSchema } from "../internal/types";
+import type { Annotation, SamePageSchema } from "../internal/types";
 import { getSetting } from "../internal/registry";
 import { NULL_TOKEN } from "../utils/atJsonParser";
 
@@ -7,7 +7,7 @@ type AnnotationTree = (Annotation & { children: AnnotationTree })[];
 type ClassNames = { blockLi?: string };
 export type References = Record<
   string,
-  Record<string, { data: InitialSchema; href: string }>
+  Record<string, { data: SamePageSchema; href: string }>
 >;
 
 // TODO - just use context for content, classNames, references
@@ -164,7 +164,7 @@ const AtJsonRendered = ({
   annotations,
   classNames,
   references,
-}: InitialSchema & {
+}: SamePageSchema & {
   classNames?: ClassNames;
   references?: References;
 }) => {

@@ -1,13 +1,13 @@
 import { users } from "@clerk/clerk-sdk-node";
-import { LoaderFunction, redirect } from "@remix-run/node";
+import { AppData, LoaderFunction, redirect } from "@remix-run/node";
 import remixAppLoader, {
   RemixAppLoaderCallback,
 } from "./remixAppLoader.server";
 
-const remixAdminLoader = (
+const remixAdminLoader = <T = AppData>(
   args: Parameters<LoaderFunction>[0],
-  callback?: RemixAppLoaderCallback
-) => {
+  callback?: RemixAppLoaderCallback<T>
+): Promise<T> => {
   return remixAppLoader(args, (data) =>
     users.getUser(data.userId).then((user) => {
       const isAdmin = user.emailAddresses.find((u) =>

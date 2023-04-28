@@ -1,4 +1,8 @@
-import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
+import {
+  ActionFunction,
+  LoaderArgs,
+  redirect,
+} from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
 import remixAdminLoader from "~/data/remixAdminLoader.server";
 import remixAdminAction from "~/data/remixAdminAction.server";
@@ -19,13 +23,9 @@ import { z } from "zod";
 import listApps from "~/data/listApps.server";
 
 const SinglePagePage = () => {
-  const { notebooks, pages, apps, actors } = useLoaderData<
-    Awaited<ReturnType<typeof getSharedPageByUuid>> & {
-      apps: { id: string; label: string }[];
-    }
-  >();
+  const { notebooks, pages, apps, actors } = useLoaderData<typeof loader>();
   const [chosenNotebook, setChosenNotebook] = useState(0);
-  const { data, history } = pages[notebooks[chosenNotebook]?.cid] || {
+  const { state, history } = pages[notebooks[chosenNotebook]?.cid] || {
     data: { content: "", annotations: [] },
     history: [],
   };
@@ -33,7 +33,7 @@ const SinglePagePage = () => {
   return (
     <div className={"flex flex-col gap-12 h-full"}>
       <div className={"flex gap-8 flex-grow-1"}>
-        <div className="bg-gray-200 flex flex-col-reverse text-gray-800 max-w-sm w-full border border-gray-800 overflow-auto justify-end">
+        <div className="bg-gray-200 flex flex-col-reverse text-gray-800 max-w-xs w-full border border-gray-800 overflow-auto justify-end flex-shrink-0">
           {history.map((l, index) => (
             <div
               key={index}
@@ -59,7 +59,7 @@ const SinglePagePage = () => {
           ))}
           <h1 className="text-3xl p-4">Log</h1>
         </div>
-        <div className="flex-grow border-gray-800 flex flex-col h-full">
+        <div className="flex-grow border-gray-800 flex flex-col h-full overflow-hidden">
           <h1 className={"text-3xl py-4 flex items-center justify-between"}>
             <span className="opacity-75 text-xl italic">
               Showing data from {notebooks[chosenNotebook]?.app || "Unknown"} /{" "}
@@ -76,11 +76,11 @@ const SinglePagePage = () => {
             <pre
               className={"overflow-auto whitespace-pre-wrap flex-grow h-full"}
             >
-              {JSON.stringify(data, null, 4)}
+              {JSON.stringify(state, null, 4)}
             </pre>
           ) : (
             <div>
-              <AtJsonRendered {...data} />
+              <AtJsonRendered {...state} />
             </div>
           )}
         </div>
@@ -141,7 +141,7 @@ const SinglePagePage = () => {
   );
 };
 
-export const loader: LoaderFunction = (args) => {
+export const loader = (args: LoaderArgs) => {
   return remixAdminLoader(args, async ({ params, context }) => {
     const apps = await listApps({ requestId: context.requestId });
     const data = await getSharedPageByUuid(

@@ -1,15 +1,15 @@
-import { LoaderArgs, LoaderFunction, redirect } from "@remix-run/node";
+import { AppData, LoaderArgs, redirect } from "@remix-run/node";
 import type { Params } from "react-router";
 import handleAsResponse from "./handleAsResponse.server";
 import getUserId from "./getUserId.server";
 import parseRemixContext from "~/data/parseRemixContext.server";
 
-export type RemixAppLoaderCallback = (args: {
+export type RemixAppLoaderCallback<T = AppData> = (args: {
   userId: string;
   params: Params<string>;
   searchParams: Record<string, string>;
   context: { requestId: string };
-}) => ReturnType<LoaderFunction>;
+}) => Promise<T> | T;
 
 const remixAppLoader = (
   args: LoaderArgs,

@@ -20,6 +20,9 @@ const getActorInfo = async ({
         email: tokens.userId,
       })
       .from(tokenNotebookLinks)
+      .innerJoin(notebooks, eq(notebooks.uuid, tokenNotebookLinks.notebookUuid))
+      .innerJoin(apps, eq(notebooks.app, apps.id))
+      .innerJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
       .where(
         eq(
           tokenNotebookLinks.uuid,

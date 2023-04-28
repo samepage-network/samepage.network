@@ -26,7 +26,7 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
     })
     .from(pageNotebookLinks)
     .innerJoin(notebooks, eq(notebooks.uuid, pageNotebookLinks.notebookUuid))
-    .innerJoin(apps, eq(apps.id, notebooks.app))
+    .innerJoin(apps, eq(notebooks.app, apps.id))
     .where(eq(pageNotebookLinks.pageUuid, uuid));
   if (!notebookRecords.length) {
     await cxn.end();
@@ -34,23 +34,27 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
   }
   const actorIds: Set<string> = new Set();
   const pages = await Promise.all(
-    notebookRecords.map((n) =>
+    notebookRecords.map(async (n) =>
       n.cid
-        ? downloadSharedPage({ cid: n.cid }).then((d) => {
+        ? await downloadSharedPage({ cid: n.cid }).then((d) => {
             if (d.body.length === 0)
-              return { data: DEFAULT_SCHEMA, history: [], cid: n.cid };
+              return {
+                state: DEFAULT_SCHEMA,
+                history: [] as Automerge.State<Schema>[],
+                cid: n.cid,
+              };
             const data = Automerge.load<Schema>(d.body);
             const history = Automerge.getHistory(data);
             history.forEach((h) => actorIds.add(h.change.actor));
             return {
-              data: unwrapSchema(data),
+              state: unwrapSchema(data),
               history,
               cid: n.cid,
             };
           })
         : {
-            data: DEFAULT_SCHEMA,
-            history: [],
+            state: DEFAULT_SCHEMA,
+            history: [] as Automerge.State<Schema>[],
             cid: n.cid,
           }
     )

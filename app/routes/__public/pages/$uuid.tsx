@@ -19,12 +19,13 @@ import { z } from "zod";
 import getTitleState from "~/data/getTitleState.server";
 
 const PageUuidPage = () => {
-  const data = useLoaderData<Awaited<ReturnType<typeof loader>>>();
+  const data = useLoaderData<typeof loader>();
   return (
     <div className="flex flex-col gap-2 h-full justify-between w-full p-16">
       <AtJsonRendered
         content={data.content}
         annotations={data.annotations}
+        // @ts-ignore - should be fine...
         references={data.references}
       />
     </div>
