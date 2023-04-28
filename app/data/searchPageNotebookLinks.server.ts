@@ -14,7 +14,7 @@ const searchPageNotebookLinks = async ({
   const cxn = await getMysql(requestId);
   const results = await cxn
     .select({
-      uuid: sql`DISTINCT ${pageNotebookLinks.pageUuid}`,
+      uuid: pageNotebookLinks.uuid,
       notebook_page_id: pageNotebookLinks.notebookPageId,
     })
     .from(pageNotebookLinks)

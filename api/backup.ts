@@ -118,7 +118,7 @@ export const handler = async (
     await emailError(
       "Failed to backup latest update",
       e as Error,
-      `Download: https://samepage.network/data/${type}/${uuid}`
+      `View: https://samepage.network/admin/${type}/${uuid}`
     );
     return { cid: "" };
   }

@@ -15,11 +15,20 @@ const DEFAULT_SCHEMA: InitialSchema = {
 
 const getSharedPageByUuid = async (uuid: string, requestId: string) => {
   const cxn = await getMysqlConnection(requestId);
+  const [page] = await cxn
+    .select({ pageUuid: pageNotebookLinks.pageUuid })
+    .from(pageNotebookLinks)
+    .where(eq(pageNotebookLinks.uuid, uuid));
+  if (!page) {
+    await cxn.end();
+    throw new NotFoundError(`No page with uuid: ${uuid}`);
+  }
   const notebookRecords = await cxn
     .select({
       app: apps.name,
       workspace: notebooks.workspace,
-      uuid: pageNotebookLinks.uuid,
+      uuid: notebooks.uuid,
+      linkUuid: pageNotebookLinks.uuid,
       cid: pageNotebookLinks.cid,
       open: pageNotebookLinks.open,
       notebookPageId: pageNotebookLinks.notebookPageId,
@@ -27,7 +36,7 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
     .from(pageNotebookLinks)
     .innerJoin(notebooks, eq(notebooks.uuid, pageNotebookLinks.notebookUuid))
     .innerJoin(apps, eq(notebooks.app, apps.id))
-    .where(eq(pageNotebookLinks.pageUuid, uuid));
+    .where(eq(pageNotebookLinks.pageUuid, page.pageUuid));
   if (!notebookRecords.length) {
     await cxn.end();
     throw new NotFoundError(`No notebooks connected to page ${uuid}`);
@@ -42,6 +51,7 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
                 state: DEFAULT_SCHEMA,
                 history: [] as Automerge.State<Schema>[],
                 cid: n.cid,
+                uuid: n.linkUuid,
               };
             const data = Automerge.load<Schema>(d.body);
             const history = Automerge.getHistory(data);
@@ -50,16 +60,18 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
               state: unwrapSchema(data),
               history,
               cid: n.cid,
+              uuid: n.linkUuid,
             };
           })
         : {
             state: DEFAULT_SCHEMA,
             history: [] as Automerge.State<Schema>[],
             cid: n.cid,
+            uuid: n.linkUuid,
           }
     )
   ).then((pages) =>
-    Object.fromEntries(pages.map(({ cid, ...rest }) => [cid, rest]))
+    Object.fromEntries(pages.map(({ uuid, ...rest }) => [uuid, rest]))
   );
   const actors = await Promise.all(
     Array.from(actorIds).map((id) =>

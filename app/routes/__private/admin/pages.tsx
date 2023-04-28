@@ -68,19 +68,16 @@ const AdminPagesPage = () => {
         </Form>
         {action && (
           <div>
-            {action.results.map(
-              (r) =>
-                r.uuid && (
-                  <Link
-                    to={r.uuid}
-                    className={
-                      "text-sky-500 underline hover:no-underline hover:text-sky-700"
-                    }
-                  >
-                    {r.notebook_page_id}
-                  </Link>
-                )
-            )}
+            {action.results.map((r) => (
+              <Link
+                to={r.uuid}
+                className={
+                  "text-sky-500 underline hover:no-underline hover:text-sky-700"
+                }
+              >
+                {r.notebook_page_id}
+              </Link>
+            ))}
           </div>
         )}
       </div>

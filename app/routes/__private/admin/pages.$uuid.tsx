@@ -1,9 +1,5 @@
-import {
-  ActionFunction,
-  LoaderArgs,
-  redirect,
-} from "@remix-run/node";
-import { Form, useLoaderData } from "@remix-run/react";
+import { ActionFunction, LoaderArgs, redirect } from "@remix-run/node";
+import { Form, Link, useLoaderData } from "@remix-run/react";
 import remixAdminLoader from "~/data/remixAdminLoader.server";
 import remixAdminAction from "~/data/remixAdminAction.server";
 import Button from "~/components/Button";
@@ -23,12 +19,13 @@ import { z } from "zod";
 import listApps from "~/data/listApps.server";
 
 const SinglePagePage = () => {
-  const { notebooks, pages, apps, actors } = useLoaderData<typeof loader>();
-  const [chosenNotebook, setChosenNotebook] = useState(0);
-  const { state, history } = pages[notebooks[chosenNotebook]?.cid] || {
+  const { notebooks, pages, apps, actors, uuid } =
+    useLoaderData<typeof loader>();
+  const { state, history } = pages[uuid] || {
     data: { content: "", annotations: [] },
     history: [],
   };
+  const chosenNotebook = notebooks.find((n) => n.linkUuid === uuid);
   const [isData, setIsData] = useState(false);
   return (
     <div className={"flex flex-col gap-12 h-full"}>
@@ -62,8 +59,8 @@ const SinglePagePage = () => {
         <div className="flex-grow border-gray-800 flex flex-col h-full overflow-hidden">
           <h1 className={"text-3xl py-4 flex items-center justify-between"}>
             <span className="opacity-75 text-xl italic">
-              Showing data from {notebooks[chosenNotebook]?.app || "Unknown"} /{" "}
-              {notebooks[chosenNotebook]?.workspace || "Unknown"}
+              Showing data from {chosenNotebook?.app || "Unknown"} /{" "}
+              {chosenNotebook?.workspace || "Unknown"}
             </span>
             <Switch
               onChange={setIsData}
@@ -87,23 +84,25 @@ const SinglePagePage = () => {
       </div>
       <h1 className={"py-4 text-3xl"}>Notebooks</h1>
       <ul className="list-disc max-w-lg">
-        {notebooks.map((l, index) => (
+        {notebooks.map((l) => (
           <li
-            key={l.uuid}
-            className={`p-2 ${index === chosenNotebook ? "bg-gray-200" : ""}`}
+            key={l.linkUuid}
+            className={`p-2 ${
+              l.linkUuid === chosenNotebook?.linkUuid ? "bg-gray-200" : ""
+            }`}
           >
             <div className={"flex items-center w-full justify-between"}>
-              <span
-                onClick={() => setChosenNotebook(index)}
+              <Link
+                to={`/admin/pages/${l.linkUuid}`}
                 className={"cursor-pointer"}
               >
                 {l.app} / {l.workspace} / {l.notebookPageId}
                 {l.open ? " (PENDING)" : ""}
-              </span>
+              </Link>
               <Form method={"delete"}>
                 <Button
                   name={"link"}
-                  value={l.uuid}
+                  value={l.linkUuid}
                   className={
                     "rounded-md px-2 text-sm uppercase bg-yellow-500 hover:bg-yellow-700 active:bg-yellow-800 disabled:bg-yellow-500"
                   }
@@ -119,12 +118,12 @@ const SinglePagePage = () => {
         <Form className="flex items-center gap-8" method="post">
           <BaseInput
             type={"hidden"}
-            value={notebooks[chosenNotebook]?.uuid}
+            value={chosenNotebook?.uuid}
             name={"notebookUuid"}
           />
           <BaseInput
             type={"hidden"}
-            value={notebooks[chosenNotebook]?.notebookPageId}
+            value={chosenNotebook?.notebookPageId}
             name={"notebookPageId"}
           />
           <Select name={"app"} options={apps} />
@@ -144,12 +143,11 @@ const SinglePagePage = () => {
 export const loader = (args: LoaderArgs) => {
   return remixAdminLoader(args, async ({ params, context }) => {
     const apps = await listApps({ requestId: context.requestId });
-    const data = await getSharedPageByUuid(
-      params["uuid"] || "",
-      context.requestId
-    );
+    const uuid = params["uuid"] || "";
+    const data = await getSharedPageByUuid(uuid, context.requestId);
     return {
       ...data,
+      uuid,
       apps: apps.map((a) => ({ id: a.code, label: a.name })),
     };
   });
