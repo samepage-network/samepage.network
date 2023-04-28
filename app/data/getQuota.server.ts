@@ -57,6 +57,7 @@ const getQuota = async ({
       )
     )
     .then(([q]) => {
+      if (!q) return Number.MAX_VALUE;
       const { value } = q;
       if (quotasInThisPlan) quotasInThisPlan[field] = value;
       else context.quotas[stripeId] = { [field]: value };

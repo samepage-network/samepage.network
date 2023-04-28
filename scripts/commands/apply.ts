@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm/expressions";
+import { and, eq } from "drizzle-orm/expressions";
 import getMysql from "../../app/data/mysql.server";
 import fs from "fs";
 import path from "path";
@@ -10,6 +10,7 @@ import type { MySql2Database } from "drizzle-orm/mysql2/driver";
 import { apps, migrations, quotas } from "../../data/schema";
 import appPath from "../../package/scripts/internal/appPath";
 import debugMod from "../../package/utils/debugger";
+import stripe from "../../app/data/stripe.server";
 
 type MigrationProps = {
   connection: MySql2Database;
@@ -170,50 +171,55 @@ const apply = async ({
   }
 
   if (process.env.NODE_ENV !== "production") {
-    const tablesToSync = [
-      { id: "apps", table: apps, keys: ["code"] },
-      { id: "quotas", table: quotas, keys: ["stripeId", "field"] },
-    ];
-    const queriesToRun = await tablesToSync
-      .map(({ id, table, keys }) => async () => {
-        const inProd = await fetch(`https://api.samepage.network/${id}`)
-          .then((r) => r.json())
-          .then((r) => r[id] as Record<string, string>[]);
-        const inLocal = await cxn
-          .select()
-          .from(table)
-          .then((r) =>
-            Object.fromEntries(
-              (r as Record<string, unknown>[]).map((a) => [
-                keys.map((k) => a[k]).join("~"),
-                a,
-              ])
-            )
-          );
-        return inProd
-          .filter((a) => !inLocal[keys.map((k) => a[k]).join("~")])
-          .map(
-            (a) => () =>
-              cxn
-                .insert(table)
-                .values(a)
-                .then(() =>
-                  "id" in table && "code" in table
-                    ? cxn
-                        .update(table)
-                        .set({
-                          id: Number(a.id),
-                        })
-                        .where(eq(table.code, a.code))
-                        .then(() => Promise.resolve())
-                    : Promise.resolve()
-                )
-          );
-      })
-      .reduce(
-        (p, c) => p.then((a) => c().then((b) => [...a, ...b])),
-        Promise.resolve([] as (() => Promise<unknown>)[])
+    const appsInProd = await fetch(`https://api.samepage.network/apps`)
+      .then((r) => r.json())
+      .then((r) => r.apps as (typeof appsInLocal)[string][]);
+    const appsInLocal = await cxn
+      .select()
+      .from(apps)
+      .then((r) => Object.fromEntries(r.map((a) => [a.code, a])));
+    const appsToMigrate = appsInProd
+      .filter((a) => !appsInLocal[a.code])
+      .map((a) => async () => {
+        await cxn.insert(apps).values(a);
+        await cxn
+          .update(apps)
+          .set({
+            id: Number(a.id),
+          })
+          .where(eq(apps.code, a.code));
+      });
+    const quotasInProd = await fetch(`https://api.samepage.network/quotas`)
+      .then((r) => r.json())
+      .then((r) => r.quotas as (typeof quotasInLocal)[string][]);
+    const quotasInLocal = await cxn
+      .select()
+      .from(quotas)
+      .then((r) =>
+        Object.fromEntries(r.map((a) => [`${a.field}~${a.stripeId}`, a]))
       );
+    const stripeMap = Object.fromEntries(
+      await stripe.prices
+        .list()
+        .then((s) => s.data.map((p) => [p.metadata.live, p.id] as const))
+    );
+    const quotasToMigrate = quotasInProd
+      .filter((a) => !quotasInLocal[`${a.field}~${a.stripeId}`])
+      .map((a) => async () => {
+        await cxn.insert(quotas).values(a);
+        if (!a.stripeId) return;
+        const stripeId = stripeMap[a.stripeId];
+        if (!stripeId) return;
+        await cxn
+          .update(quotas)
+          .set({
+            stripeId,
+          })
+          .where(
+            and(eq(quotas.field, a.field), eq(quotas.stripeId, a.stripeId))
+          );
+      });
+    const queriesToRun = [...appsToMigrate, ...quotasToMigrate];
 
     console.log("Running", queriesToRun.length, "mysql data queries...");
     await queriesToRun.reduce(

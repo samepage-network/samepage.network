@@ -1,9 +1,7 @@
 import Stripe from "stripe";
+import stripe from "./stripe.server";
 
 const getStripePlans = async () => {
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-    apiVersion: "2022-11-15",
-  });
   const links = await stripe.paymentLinks.list({ expand: ["data.line_items"] });
   return Promise.all(
     links.data
