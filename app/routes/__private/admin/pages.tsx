@@ -67,7 +67,7 @@ const AdminPagesPage = () => {
           <Button>Search</Button>
         </Form>
         {action && (
-          <div>
+          <div className="flex flex-col mb-1">
             {action.results.map((r) => (
               <Link
                 to={r.uuid}

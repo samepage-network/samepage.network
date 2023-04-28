@@ -17,10 +17,12 @@ import getNotebookUuids from "~/data/getNotebookUuids.server";
 import BaseInput from "~/components/BaseInput";
 import { z } from "zod";
 import listApps from "~/data/listApps.server";
+import { downloadFileContent } from "~/data/downloadFile.server";
+import ExternalLink from "~/components/ExternalLink";
 
 const SinglePagePage = () => {
-  const { notebooks, pages, apps, actors, uuid } =
-    useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<typeof loadData>();
+  const { notebooks, pages, actors, apps, uuid } = loaderData;
   const { state, history } = pages[uuid] || {
     data: { content: "", annotations: [] },
     history: [],
@@ -62,6 +64,13 @@ const SinglePagePage = () => {
               Showing data from {chosenNotebook?.app || "Unknown"} /{" "}
               {chosenNotebook?.workspace || "Unknown"}
             </span>
+            <ExternalLink
+              href={`https://s3.console.aws.amazon.com/s3/object/samepage.network?region=us-east-1&prefix=data/pages/${uuid}`}
+              className="text-sm text-sky-400 underline bg-sky-50 rounded-sm px-2 py-1"
+            >
+              {/* {TODO - Download directly} */}
+              Download From S3
+            </ExternalLink>
             <Switch
               onChange={setIsData}
               label={"Show Raw Data"}
@@ -140,16 +149,38 @@ const SinglePagePage = () => {
   );
 };
 
+const loadData = async ({
+  requestId,
+  uuid,
+}: {
+  requestId: string;
+  uuid: string;
+}) => {
+  const apps = await listApps({ requestId });
+  const data = await getSharedPageByUuid(uuid, requestId);
+  return {
+    ...data,
+    uuid,
+    apps: apps.map((a) => ({ id: a.code, label: a.name })),
+  };
+};
+
 export const loader = (args: LoaderArgs) => {
-  return remixAdminLoader(args, async ({ params, context }) => {
-    const apps = await listApps({ requestId: context.requestId });
+  return remixAdminLoader(args, async ({ params, context, searchParams }) => {
     const uuid = params["uuid"] || "";
-    const data = await getSharedPageByUuid(uuid, context.requestId);
-    return {
-      ...data,
-      uuid,
-      apps: apps.map((a) => ({ id: a.code, label: a.name })),
-    };
+    // TODO - fix direct download
+    if (searchParams["download"]) {
+      const uuid = params["uuid"] || "";
+      const data = await downloadFileContent({ Key: `data/pages/${uuid}` });
+      return new Response(data, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "Content-Disposition": `attachment; filename="${uuid}.json"`,
+        },
+      });
+    }
+    return loadData({ requestId: context.requestId, uuid });
   });
 };
 
