@@ -304,7 +304,7 @@ const createTestSamePageClient = async ({
             label: "accept",
             data: {
               ...message.data,
-              title: { content: message.notebookPageId, annotations: [] },
+              $title: { content: message.notebookPageId, annotations: [] },
             },
             messageUuid: message.notificationUuid,
           }).then(() => sendResponse({ success: true }));
