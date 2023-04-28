@@ -10,6 +10,8 @@ const test = ({
   g,
 }: { debug?: boolean; proj?: string; file?: string; g?: string } = {}) => {
   process.env.DEBUG = debug ? "*,-pw:*,-babel,-babel:*,-express:*,-follow-redirects,-jwks,-proxy-agent" : process.env.DEBUG;
+  // process.env.AWS_ENDPOINT =
+  //   process.env.AWS_ENDPOINT || "http://localhost:3003/mocks/aws";
   const args = [
     "c8",
     "--reporter=lcov",

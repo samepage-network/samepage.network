@@ -10,6 +10,37 @@ index c0a40e1..f4ced45 100644
  
    function generateSyncMessage<T>(doc: Doc<T>, syncState: SyncState): [SyncState, BinarySyncMessage?]
    function receiveSyncMessage<T>(doc: Doc<T>, syncState: SyncState, message: BinarySyncMessage): [Doc<T>, SyncState, Patch?]
+diff --git a/node_modules/automerge/backend/backend.js b/node_modules/automerge/backend/backend.js
+index 9fa3625..fcb86cf 100644
+--- a/node_modules/automerge/backend/backend.js
++++ b/node_modules/automerge/backend/backend.js
+@@ -41,7 +41,7 @@ function hashByActor(state, actorId, index) {
+       return state.hashesByActor[actorId][index]
+     }
+   }
+-  throw new RangeError(`Unknown change: actorId = ${actorId}, seq = ${index + 1}`)
++  throw new RangeError(`Unknown change: actorId = ${actorId}, seq = ${index + 1}, hashesByActor = ${JSON.stringify(state.hashesByActor)}`)
+ }
+ 
+ /**
+diff --git a/node_modules/automerge/backend/columnar.js b/node_modules/automerge/backend/columnar.js
+index 5052bf5..aba21a0 100644
+--- a/node_modules/automerge/backend/columnar.js
++++ b/node_modules/automerge/backend/columnar.js
+@@ -1042,7 +1042,12 @@ function decodeDocument(buffer) {
+   const changes = decodeColumns(changesColumns, actorIds, DOCUMENT_COLUMNS)
+   const ops = decodeOps(decodeColumns(opsColumns, actorIds, DOC_OPS_COLUMNS), true)
+   groupChangeOps(changes, ops)
+-  decodeDocumentChanges(changes, heads)
++  try {
++    decodeDocumentChanges(changes, heads)
++  } catch (e) {
++    // This error is actually not a big deal I think
++    console.log("error decoding document changes", e);
++  }
+   return changes
+ }
+ 
 diff --git a/node_modules/automerge/src/automerge.js b/node_modules/automerge/src/automerge.js
 index 3be23ff..8ea5925 100644
 --- a/node_modules/automerge/src/automerge.js

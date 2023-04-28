@@ -6,13 +6,11 @@ import { eq } from "drizzle-orm/expressions";
 import type { Context } from "aws-lambda";
 import { v4 } from "uuid";
 import Automerge from "automerge";
-import type { Memo } from "package/internal/types";
+import { Memo, Schema} from "package/internal/types";
 import { decode } from "@ipld/dag-cbor";
 import { MemoryBlockStore } from "ipfs-car/blockstore/memory";
 import { pack } from "ipfs-car/pack";
 import downloadSharedPage from "../app/data/downloadSharedPage.server";
-import fs from "fs";
-import dotenv from "dotenv";
 import { pageNotebookLinks } from "data/schema";
 import emailError from "package/backend/emailError.server";
 import debug from "package/utils/debugger";
@@ -68,14 +66,17 @@ export const handler = async (
             wrapWithDirectory: false,
             maxChunkSize: 1048576,
             maxChildrenPerNode: 1024,
-          }).then((a) => rootReadyResolve(a.root.toString()))
+          }).then((a) => {
+            const cid = a.root.toString();
+            rootReadyResolve(cid);
+            return cid;
+          })
         : client
             .put(files, {
               wrapWithDirectory: false,
               onRootCidReady: (cid) => rootReadyResolve(cid),
             })
-            // test would fail without it?
-            .then(() => {}),
+            .then((cid) => cid.toString()),
       ipfsUpload.then(async (cid) => {
         await uploadFile({
           Key: `data/ipfs/${cid}`,
@@ -97,7 +98,8 @@ export const handler = async (
           // TODO: Automerge's changes uses seconds denomination which is not gonna fly
           // the version column also doesn't allow date value
           const decoded = decode<Memo>(encoded);
-          const newHistory = Automerge.getHistory(Automerge.load(decoded.body));
+          const doc = Automerge.load<Schema>(decoded.body);
+          const newHistory = Automerge.getHistory(doc);
           const newVersion = newHistory.length;
           if (newVersion > storedVersion) {
             await cxn
@@ -123,12 +125,3 @@ export const handler = async (
     return { cid: "" };
   }
 };
-
-if (require.main === module) {
-  dotenv.config();
-  const requestId = process.argv[2];
-  const data = JSON.parse(
-    fs.readFileSync(`/tmp/${requestId}.json`).toString()
-  ) as Parameters<typeof handler>[0];
-  handler({ ...data, dry: true }, { awsRequestId: requestId });
-}
