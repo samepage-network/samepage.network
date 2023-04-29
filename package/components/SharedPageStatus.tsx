@@ -30,6 +30,10 @@ export type SharedPageStatusProps = {
   portalContainer?: HTMLElement;
   defaultOpenInviteDialog?: boolean;
   onCopy?: (s: string) => void;
+  credentials?: {
+    notebookUuid: string;
+    token: string;
+  };
 };
 
 type SamePageHistory = {
@@ -268,6 +272,7 @@ const SharedPageStatus = ({
   notebookPageId,
   portalContainer,
   defaultOpenInviteDialog,
+  credentials,
   onCopy = (s) => window.navigator.clipboard.writeText(s),
 }: OverlayProps<SharedPageStatusProps>) => {
   const [loading, setLoading] = React.useState(false);
@@ -298,6 +303,7 @@ const SharedPageStatus = ({
               return apiClient<{ uuid: string }>({
                 method: "create-public-link",
                 notebookPageId,
+                ...credentials,
               })
                 .then(({ uuid }) => {
                   onCopy(`${process.env.ORIGIN}/pages/${uuid}`);
@@ -327,7 +333,11 @@ const SharedPageStatus = ({
           portalContainer={portalContainer}
           icon={"share"}
           Overlay={(props) => (
-            <SharePageDialog {...props} notebookPageId={notebookPageId} />
+            <SharePageDialog
+              {...props}
+              notebookPageId={notebookPageId}
+              credentials={credentials}
+            />
           )}
         />
         <TooltipButtonOverlay
@@ -372,6 +382,7 @@ const SharedPageStatus = ({
               return apiClient({
                 method: "disconnect-shared-page",
                 notebookPageId,
+                ...credentials,
               })
                 .then(() => {
                   deleteId(notebookPageId);
@@ -408,6 +419,7 @@ const SharedPageStatus = ({
                 method: "force-push-page",
                 notebookPageId,
                 state: doc ? binaryToBase64(Automerge.save(doc)) : undefined,
+                ...credentials,
               })
                 .then(() =>
                   dispatchAppEvent({

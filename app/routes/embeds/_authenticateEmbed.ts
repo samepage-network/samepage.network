@@ -7,16 +7,20 @@ const authenticateEmbed = async ({ request, context }: LoaderArgs) => {
   const requestId = parseRemixContext(context).lambdaContext.awsRequestId;
   const auth = searchParams.get("auth");
   if (!auth) {
-    return { auth: false, requestId };
+    return { auth: false as const, requestId };
   }
   const [notebookUuid, token] = Buffer.from(auth, "base64")
     .toString()
     .split(":");
   if (!notebookUuid || !token) {
-    return { auth: false, requestId };
+    return { auth: false as const, requestId };
   }
-  await authenticateNotebook({ notebookUuid, token, requestId });
-  return { auth: true, notebookUuid, requestId };
+  const { tokenUuid } = await authenticateNotebook({
+    notebookUuid,
+    token,
+    requestId,
+  });
+  return { auth: true as const, notebookUuid, requestId, token, tokenUuid };
 };
 
 export default authenticateEmbed;

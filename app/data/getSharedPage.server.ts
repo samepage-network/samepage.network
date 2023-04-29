@@ -41,7 +41,7 @@ const getSharedPage = <T extends SharedPageInput & { safe?: true }>({
           if (safe) return undefined;
           else
             throw new NotFoundError(
-              `Could not find page from id ${notebookUuid}, and notebookPageId ${notebookPageId}`
+              `Could not find page from notebook ${notebookUuid}, and notebookPageId ${notebookPageId}`
             );
         }
         return link;

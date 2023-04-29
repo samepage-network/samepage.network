@@ -1,27 +1,26 @@
-import { LoaderArgs } from "@remix-run/node";
+import { LoaderArgs, redirect } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
 import AtJsonRendered from "package/components/AtJsonRendered";
 import Button from "~/components/Button";
-import authenticateNotebook from "~/data/authenticateNotebook.server";
 import getTitleState from "~/data/getTitleState.server";
-import parseRemixContext from "~/data/parseRemixContext.server";
-import { BadRequestResponse, NotFoundResponse } from "~/data/responses.server";
+import { NotFoundResponse } from "~/data/responses.server";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { ActionFunction } from "@remix-run/node";
 import { accessTokens, apps, notebooks, pageNotebookLinks } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { and, eq } from "drizzle-orm/expressions";
 import { apiPost } from "package/internal/apiClient";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
 import getMysql from "~/data/mysql.server";
 import Automerge from "automerge";
 import unwrapSchema from "package/utils/unwrapSchema";
+import authenticateEmbed from "./_authenticateEmbed";
 
 const SingleWokflowEmbed = () => {
-  const { title } = useLoaderData<Awaited<ReturnType<typeof loader>>>();
-  return (
+  const data = useLoaderData<Awaited<ReturnType<typeof loader>>>();
+  return "auth" in data ? (
     <Form method={"post"}>
       <h1 className="text-3xl font-bold mb-8">
-        <AtJsonRendered {...title} />{" "}
+        <AtJsonRendered {...data.title} />{" "}
         <img
           src={"https://samepage.network/images/logo.png"}
           className={"inline h-12 w-12"}
@@ -29,56 +28,71 @@ const SingleWokflowEmbed = () => {
       </h1>
       <Button>Trigger</Button>
     </Form>
+  ) : (
+    <div>User is unauthenticates. Click Home to log in.</div>
   );
 };
 
-const authenticateEmbed = async ({ request, context }: LoaderArgs) => {
-  const searchParams = new URL(request.url).searchParams;
-  const requestId = parseRemixContext(context).lambdaContext.awsRequestId;
-  const uuid = searchParams.get("uuid");
-  if (!uuid) {
-    throw new BadRequestResponse(`Missing "uuid" query parameter`);
+export const loader = async (args: LoaderArgs) => {
+  const result = await authenticateEmbed(args);
+  if (!result.auth) {
+    await getMysql(result.requestId).then((c) => c.end());
+    return redirect("/embeds");
   }
-  const token = searchParams.get("token");
-  if (!token) {
-    throw new BadRequestResponse(`Missing "token" query parameter`);
-  }
+  const { requestId, notebookUuid } = result;
+  const uuid = args.params.uuid || "";
   const cxn = await getMysql(requestId);
   const [page] = await cxn
     .select({
-      notebookUuid: pageNotebookLinks.notebookUuid,
       notebookPageId: pageNotebookLinks.notebookPageId,
-      cid: pageNotebookLinks.cid,
     })
     .from(pageNotebookLinks)
-    .where(eq(pageNotebookLinks.uuid, uuid));
+    .where(
+      and(
+        eq(pageNotebookLinks.uuid, uuid),
+        eq(pageNotebookLinks.notebookUuid, notebookUuid)
+      )
+    );
   if (!page) {
     await cxn.end();
     throw new NotFoundResponse(`No page found for uuid "${uuid}"`);
   }
-  const { notebookUuid, notebookPageId, cid } = page;
-  await authenticateNotebook({ notebookUuid, token, requestId });
-  return { notebookUuid, notebookPageId, requestId, cid };
-};
-
-export const loader = async (args: LoaderArgs) => {
-  const { notebookUuid, notebookPageId, requestId } = await authenticateEmbed(
-    args
-  );
-  const cxn = await getMysql(requestId);
+  const { notebookPageId } = page;
   const title = await getTitleState({
     notebookUuid,
     notebookPageId,
     requestId,
   });
   await cxn.end();
-  return { title };
+  return { title, auth: true };
 };
 
 export const action: ActionFunction = async (args) => {
-  const { notebookUuid, notebookPageId, requestId, cid } =
-    await authenticateEmbed(args);
+  const result = await authenticateEmbed(args);
+  if (!result.auth) {
+    await getMysql(result.requestId).then((c) => c.end());
+    return redirect("/embeds");
+  }
+  const { requestId, notebookUuid } = result;
   const cxn = await getMysql(requestId);
+  const uuid = args.params.uuid || "";
+  const [page] = await cxn
+    .select({
+      notebookPageId: pageNotebookLinks.notebookPageId,
+      cid: pageNotebookLinks.cid,
+    })
+    .from(pageNotebookLinks)
+    .where(
+      and(
+        eq(pageNotebookLinks.uuid, uuid),
+        eq(pageNotebookLinks.notebookUuid, notebookUuid)
+      )
+    );
+  if (!page) {
+    await cxn.end();
+    throw new NotFoundResponse(`No page found for uuid "${uuid}"`);
+  }
+  const { notebookPageId, cid } = page;
   const [{ authorization, app }] = await cxn
     .select({
       authorization: accessTokens.value,
@@ -95,7 +109,6 @@ export const action: ActionFunction = async (args) => {
       type: "ENSURE_PAGE_BY_TITLE",
       data: {
         title: notebookPageId,
-        path: "Getting-Started-73dc4bf6a0e74a07adc25798a2f5b468",
       },
     },
     authorization,

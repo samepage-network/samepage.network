@@ -1,22 +1,10 @@
-import { ActionFunction, LoaderArgs, redirect } from "@remix-run/node";
+import { ActionArgs, LoaderArgs, redirect } from "@remix-run/node";
 import React from "react";
 import authenticateEmbed from "./_authenticateEmbed";
-import { Form, Link, useLoaderData, useSearchParams } from "@remix-run/react";
-import TextInput from "~/components/TextInput";
-import BaseInput from "~/components/BaseInput";
-import Button from "~/components/Button";
-import {
-  BadRequestResponse,
-  ForbiddenResponse,
-  NotFoundResponse,
-  UnauthorizedResponse,
-} from "~/data/responses.server";
-import { users } from "@clerk/clerk-sdk-node";
-import listApps from "~/data/listApps.server";
+import { Form, useLoaderData } from "@remix-run/react";
 import getMysql from "~/data/mysql.server";
-import Select from "~/components/Select";
-import parseRemixContext from "~/data/parseRemixContext.server";
 import {
+  accessTokens,
   apps,
   notebooks,
   pageNotebookLinks,
@@ -27,46 +15,46 @@ import {
 import { and, eq } from "drizzle-orm/expressions";
 import AtJsonRendered from "package/components/AtJsonRendered";
 import { zSamePageSchema } from "package/internal/types";
+import LinkWithSearch from "~/components/LinkWithSearch";
+import TextInput from "~/components/TextInput";
+import Button from "~/components/Button";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
+import {
+  InternalServerResponse,
+  NotFoundResponse,
+} from "~/data/responses.server";
+import sharePageCommandCalback from "package/internal/sharePageCommandCallback";
+import { apiPost } from "package/internal/apiClient";
 
 const SharedPagesEmbedPage: React.FC = () => {
   const data = useLoaderData<Awaited<ReturnType<typeof loader>>>();
-  const [params] = useSearchParams();
   return (
     <div>
-      {!data.auth && (
-        <Form action={"post"}>
-          <TextInput
-            name={"email"}
-            label={"Email"}
-            placeholder="support@samepage.network"
-          />
-          <BaseInput
-            type={"password"}
-            name={"password"}
-            label={"Password"}
-            placeholder="****************"
-          />
-          <Select
-            name={"app"}
-            options={data.apps.map((a) => ({
-              label: a.name,
-              id: a.code,
-            }))}
-          />
-          <Button>Log In</Button>
-        </Form>
-      )}
-      {data.auth && (
-        <ul>
-          {data.pages.map((p) => (
-            <li key={p.notebookPageId}>
-              <Link to={`${p.notebookPageId}?auth=${params.get("auth")}`}>
-                <AtJsonRendered {...p.title} />
-              </Link>
-            </li>
-          ))}
-        </ul>
+      {"auth" in data && (
+        <div>
+          <h1 className="font-bold mb-4 text-xl">Shared Pages</h1>
+          <div className="mb-4">
+            {/* TODO: import ViewSharedPages Modal Content here */}
+            <ul>
+              {data.pages.map((p) => (
+                <li key={p.linkUuid} className="mb-2">
+                  <LinkWithSearch to={p.linkUuid} className="text-sky-400">
+                    <AtJsonRendered {...p.title} />
+                  </LinkWithSearch>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h2 className="font-semibold mb-3 text-lg">
+              Share Page on SamePage
+            </h2>
+            <Form method="post">
+              <TextInput label={"Search"} name={"title"} />
+              <Button>Share</Button>
+            </Form>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -75,17 +63,13 @@ const SharedPagesEmbedPage: React.FC = () => {
 export const loader = async (args: LoaderArgs) => {
   const result = await authenticateEmbed(args);
   if (!result.auth) {
-    const apps = await listApps({ requestId: result.requestId });
     await getMysql(result.requestId).then((c) => c.end());
-    return {
-      auth: false as const,
-      apps,
-    };
+    return redirect("/embeds");
   }
   const cxn = await getMysql(result.requestId);
   const pages = await cxn
     .select({
-      notebookPageId: pageNotebookLinks.notebookPageId,
+      linkUuid: pageNotebookLinks.uuid,
       title: pageProperties.value,
     })
     .from(pageNotebookLinks)
@@ -95,71 +79,89 @@ export const loader = async (args: LoaderArgs) => {
     )
     .where(
       and(
-        eq(pageNotebookLinks.notebookUuid, notebooks.uuid),
-        eq(pageProperties.key, "$title")
+        eq(pageNotebookLinks.notebookUuid, result.notebookUuid),
+        eq(pageProperties.key, "$title"),
+        eq(pageNotebookLinks.open, 0)
       )
     );
   await cxn.end();
   return {
     auth: true as const,
     pages: pages.map((p) => ({
-      notebookPageId: p.notebookPageId,
+      linkUuid: p.linkUuid,
       title: zSamePageSchema.parse(p.title),
     })),
   };
 };
 
-export const action: ActionFunction = async (args) => {
-  const data = await args.request.formData();
-  const email = data.get("email");
-  const password = data.get("password");
-  const app = data.get("app");
-  if (typeof email !== "string") {
-    throw new BadRequestResponse("Missing email");
+export const action = async (args: ActionArgs) => {
+  const result = await authenticateEmbed(args);
+  if (!result.auth) {
+    await getMysql(result.requestId).then((c) => c.end());
+    return redirect("/embeds");
   }
-  if (typeof password !== "string") {
-    throw new BadRequestResponse("Missing password");
-  }
-  if (typeof app !== "string") {
-    throw new BadRequestResponse("Missing app");
-  }
-  const [user] = await users.getUserList({ emailAddress: [email] });
-  if (!user) {
-    throw new NotFoundResponse(`No user exists with email ${email}`);
-  }
-  const { verified } = await users.verifyPassword({
-    userId: user.id,
-    password,
-  });
-  if (!verified) {
-    throw new UnauthorizedResponse("Invalid password");
-  }
-  const requestId = parseRemixContext(args.context).lambdaContext.awsRequestId;
+  const {
+    request: { method, formData },
+  } = args;
+  if (method !== "post")
+    throw new NotFoundResponse(`Unsupported method ${method}`);
+  const data = await formData();
+  const title = data.get("title") as string;
+  const { requestId, notebookUuid, tokenUuid } = result;
   const cxn = await getMysql(requestId);
-  const [auth] = await cxn
+
+  const [{ actorId, accessToken, app }] = await cxn
     .select({
-      notebookUuid: notebooks.uuid,
-      token: tokens.value,
+      actorId: tokenNotebookLinks.uuid,
+      accessToken: accessTokens.value,
+      app: apps.code,
     })
     .from(tokens)
     .innerJoin(
       tokenNotebookLinks,
-      eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
+      eq(tokens.uuid, tokenNotebookLinks.tokenUuid)
     )
-    .innerJoin(notebooks, eq(notebooks.uuid, tokenNotebookLinks.notebookUuid))
-    .innerJoin(apps, eq(notebooks.app, apps.id))
-    .where(and(eq(tokens.userId, user.id), eq(apps.code, app)));
-  await cxn.end();
-  if (!auth) {
-    throw new ForbiddenResponse(
-      `You have not yet installed SamePage to this application. Learn how at https://samepage.network/install?code=${app}`
+    .innerJoin(
+      accessTokens,
+      eq(accessTokens.notebookUuid, tokenNotebookLinks.notebookUuid)
+    )
+    .innerJoin(notebooks, eq(accessTokens.notebookUuid, notebooks.uuid))
+    .innerJoin(apps, eq(apps.id, notebooks.app))
+    .where(
+      and(
+        eq(tokenNotebookLinks.notebookUuid, notebookUuid),
+        eq(tokens.uuid, tokenUuid)
+      )
     );
-  }
-  return redirect(
-    `/embeds/shared-pages?auth=${Buffer.from(
-      `${auth.notebookUuid}:${auth.token}`
-    ).toString("base64")}`
-  );
+  const shared = await sharePageCommandCalback({
+    // TODO - figure out how to get the notebookPageId
+    getNotebookPageId: async () => title,
+    encodeState: (notebookPageId) =>
+      apiPost({
+        path: `extensions/${app}/backend`,
+        data: {
+          type: "ENCODE_STATE",
+          notebookPageId,
+          notebookUuid,
+        },
+        authorization: `Bearer ${accessToken}`,
+      }),
+    actorId,
+  });
+  if (!shared) throw new InternalServerResponse(`Failed to share ${title}`);
+  const [linkUuid] = await cxn
+    .select({ linkUuid: pageNotebookLinks.uuid })
+    .from(pageNotebookLinks)
+    .where(
+      and(
+        eq(pageNotebookLinks.notebookUuid, notebookUuid),
+        eq(pageNotebookLinks.notebookPageId, shared.notebookPageId)
+      )
+    );
+  await cxn.end();
+  if (!linkUuid)
+    throw new InternalServerResponse(`Page ${title} did not share correctly`);
+  return redirect(`/embeds/shared-pages/${linkUuid}`);
 };
 
 export default SharedPagesEmbedPage;

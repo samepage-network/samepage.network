@@ -8,7 +8,6 @@ import {
   actorId,
 } from "../internal/registry";
 import {
-  Schema,
   zSamePageSchema,
   zRequestPageUpdateWebsocketMessage,
   zSharePageForceWebsocketMessage,
@@ -33,7 +32,7 @@ import { onAppEvent } from "../internal/registerAppEventListener";
 import binaryToBase64 from "../internal/binaryToBase64";
 import { clear, has, deleteId, load, set } from "../utils/localAutomergeDb";
 import changeAutomergeDoc from "../utils/changeAutomergeDoc";
-import wrapSchema from "../utils/wrapSchema";
+import sharePageCommandCalback from "../internal/sharePageCommandCallback";
 import parseZodError from "../utils/parseZodError";
 import sendExtensionError from "../internal/sendExtensionError";
 import { registerNotificationActions } from "../internal/notificationActions";
@@ -115,13 +114,13 @@ const setupSharePageWithNotebook = ({
   };
 
   const initPage = ({
-    notebookPageId,
+    notebookPageId = "",
     created = false,
   }: {
-    notebookPageId: string;
+    notebookPageId?: string;
     created?: boolean;
-  }) => {
-    if (sharedPageStatusProps) {
+  } = {}) => {
+    if (sharedPageStatusProps && notebookPageId) {
       sharedPageStatusProps
         .getPaths(notebookPageId)
         .forEach((path) =>
@@ -324,63 +323,12 @@ const setupSharePageWithNotebook = ({
 
       addCommand({
         label: COMMAND_PALETTE_LABEL,
-        callback: () => {
-          return getCurrentNotebookPageId()
-            .then((notebookPageId) =>
-              notebookPageId
-                ? encodeState(notebookPageId).then(
-                    ({ $body: docInit, ...properties }) => {
-                      const doc = Automerge.from<Schema>(wrapSchema(docInit), {
-                        actorId: actorId.replace(/-/g, ""),
-                      });
-                      set(notebookPageId, doc);
-                      const state = Automerge.save(doc);
-                      return apiClient<{ id: string; created: boolean }>({
-                        method: "init-shared-page",
-                        notebookPageId,
-                        state: binaryToBase64(state),
-                        properties,
-                      })
-                        .then(async (r) => {
-                          if (r.created) {
-                            initPage({
-                              notebookPageId,
-                              created: true,
-                            });
-                            dispatchAppEvent({
-                              type: "log",
-                              id: "init-page-success",
-                              content: `Successfully initialized shared page! Click on the invite button below to share the page with other notebooks!`,
-                              intent: "info",
-                            });
-                          } else {
-                            dispatchAppEvent({
-                              type: "log",
-                              id: "samepage-warning",
-                              content:
-                                "This page is already shared from this notebook",
-                              intent: "warning",
-                            });
-                            return Promise.resolve();
-                          }
-                        })
-                        .catch((e) => {
-                          deleteId(notebookPageId);
-                          throw e;
-                        });
-                    }
-                  )
-                : Promise.reject(new Error(`Failed to detect a page to share`))
-            )
-            .catch((e) => {
-              dispatchAppEvent({
-                type: "log",
-                intent: "error",
-                id: "init-page-failure",
-                content: `Failed to share page on network: ${e.message}`,
-              });
-            });
-        },
+        callback: () =>
+          sharePageCommandCalback({
+            getNotebookPageId: getCurrentNotebookPageId,
+            encodeState,
+            actorId,
+          }).then(initPage),
       });
 
       offConnect = onConnect?.();
