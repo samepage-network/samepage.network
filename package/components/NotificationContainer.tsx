@@ -10,33 +10,41 @@ import sendExtensionError from "../internal/sendExtensionError";
 import { getSetting } from "../internal/registry";
 
 const ActionButtons = ({
-  actions,
+  notification,
+  removeNotification,
 }: {
-  actions: {
-    label: string;
-    callback: () => Promise<unknown>;
-  }[];
+  notification: Notification;
+  removeNotification: (not: Notification) => void;
 }) => {
   const [loading, setLoading] = React.useState(false);
 
   return (
     <>
       <div className={"flex gap-8"}>
-        {actions.map((action) => (
+        {notification.buttons.map((label) => (
           <Button
-            key={action.label}
-            text={action.label}
+            key={label}
+            text={label}
             className={"capitalize"}
             onClick={() => {
               setLoading(true);
-              action
-                .callback()
+              callNotificationAction({
+                operation: notification.operation,
+                label,
+                data: notification.data,
+                messageUuid: notification.uuid,
+              })
+                .then(() => removeNotification(notification))
                 .catch((e) => {
                   if (!e.skipEmail)
                     sendExtensionError({
                       type: "Failed to run notification action",
                       error: e as Error,
-                      data: { label: action.label },
+                      data: {
+                        label,
+                        data: notification.data,
+                        uuid: notification.uuid,
+                      },
                     });
                   dispatchAppEvent({
                     type: "log",
@@ -149,17 +157,8 @@ const NotificationContainer = () => {
                   </div>
                   <div className={"flex gap-2 mt-2 justify-between"}>
                     <ActionButtons
-                      actions={not.buttons.map((label) => ({
-                        label,
-                        callback: () => {
-                          return callNotificationAction({
-                            operation: not.operation,
-                            label,
-                            data: not.data,
-                            messageUuid: not.uuid,
-                          }).then(() => removeNotification(not));
-                        },
-                      }))}
+                      notification={not}
+                      removeNotification={removeNotification}
                     />
                     <Button
                       icon={"trash"}

@@ -21,7 +21,7 @@ export type WSEvent = Pick<APIGatewayProxyEvent, "body"> & {
   requestContext: Pick<APIGatewayProxyEvent["requestContext"], "connectionId">;
 };
 
-const debug = debugMod("sendmessage");
+const debug = debugMod("api:sendmessage");
 
 export type WSHandler = (
   event: WSEvent,
