@@ -11,6 +11,7 @@ import {
   Schema,
   EnsurePageByTitle,
   zSamePageSchema,
+  SamePageSchema,
 } from "./types";
 import UserOnlyError from "./UserOnlyError";
 import Automerge from "automerge";
@@ -34,8 +35,11 @@ const acceptSharePageOperation =
     openPage: (s: string) => Promise<string>;
     deletePage: (s: string) => Promise<unknown>;
   }) =>
-  async ({ $title, page }: JSONData) => {
-    const title = zSamePageSchema.parse($title);
+  async ({ $title, title: legacyTitle, page }: JSONData) => {
+    const parsedTitle = zSamePageSchema.safeParse($title);
+    const title: SamePageSchema = parsedTitle.success
+      ? parsedTitle.data
+      : { content: legacyTitle as string, annotations: [] };
     const result = await ensurePageByTitle(title);
     const { notebookPageId, preExisting } =
       typeof result === "string"

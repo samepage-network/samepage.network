@@ -17,7 +17,7 @@ export const loader: LoaderFunction = (args) => {
   return remixAdminLoader(args, async ({ params }) => {
     const id = params.uuid;
     return {
-      json: await downloadFileContent({ Key: `data/errors/${id}.html` }),
+      json: await downloadFileContent({ Key: `data/errors/${id}.json` }),
     };
   });
 };
