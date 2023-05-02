@@ -1,9 +1,8 @@
 import { ActionFunction, LoaderArgs, redirect } from "@remix-run/node";
 import { Form, useLoaderData, useNavigate } from "@remix-run/react";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import BaseInput from "~/components/BaseInput";
 import Button from "~/components/Button";
-import Select from "~/components/Select";
 import TextInput from "~/components/TextInput";
 import authenticateEmbed from "./_authenticateEmbed";
 import listApps from "~/data/listApps.server";
@@ -23,10 +22,12 @@ export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 const EmbedsIndexPage: React.FC = () => {
   const data = useLoaderData<Awaited<ReturnType<typeof loader>>>();
   const navigate = useNavigate();
-  if (typeof document !== "undefined") {
-    console.log("referer", document.referrer);
-    console.log("ao", document.location?.ancestorOrigins?.[0]);
-  }
+  const [origin, setOrigin] = useState("");
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      setOrigin(document.location?.ancestorOrigins?.[0] || "");
+    }
+  }, [setOrigin]);
   return (
     <div>
       <h1 className="font-bold mb-4 text-xl">SamePage Widget</h1>
@@ -36,8 +37,7 @@ const EmbedsIndexPage: React.FC = () => {
       {!data.auth ? (
         <Form method={"post"}>
           <div className="mb-2">
-            Log into your SamePage account and pick the current application to
-            get started.
+            Log into your SamePage account to get started.
           </div>
           <TextInput
             name={"email"}
@@ -50,14 +50,7 @@ const EmbedsIndexPage: React.FC = () => {
             label={"Password"}
             placeholder="****************"
           />
-          <Select
-            label="Application"
-            name={"app"}
-            options={data.apps.map((a) => ({
-              label: a.name,
-              id: a.code,
-            }))}
-          />
+          <input type="hidden" name="origin" value={origin} />
           <Button>Log In</Button>
         </Form>
       ) : (
@@ -94,15 +87,15 @@ export const action: ActionFunction = async (args) => {
   const data = await args.request.formData();
   const email = data.get("email");
   const password = data.get("password");
-  const app = data.get("app");
+  const origin = data.get("origin");
   if (typeof email !== "string") {
     throw new BadRequestResponse("Missing email");
   }
   if (typeof password !== "string") {
     throw new BadRequestResponse("Missing password");
   }
-  if (typeof app !== "string") {
-    throw new BadRequestResponse("Missing app");
+  if (typeof origin !== "string") {
+    throw new BadRequestResponse("Missing origin");
   }
   const [user] = await users.getUserList({ emailAddress: [email] });
   if (!user) {
@@ -117,6 +110,17 @@ export const action: ActionFunction = async (args) => {
   }
   const requestId = parseRemixContext(args.context).lambdaContext.awsRequestId;
   const cxn = await getMysql(requestId);
+  const [app] = await cxn
+    .select({ code: apps.code, originRegex: apps.originRegex })
+    .from(apps)
+    .then((all) =>
+      all.filter((app) => new RegExp(app.originRegex).test(origin))
+    );
+  if (!app) {
+    throw new BadRequestResponse(
+      `Widget is currently in an unsupported domain: ${origin}`
+    );
+  }
   const [auth] = await cxn
     .select({
       notebookUuid: notebooks.uuid,
@@ -129,7 +133,7 @@ export const action: ActionFunction = async (args) => {
     )
     .innerJoin(notebooks, eq(notebooks.uuid, tokenNotebookLinks.notebookUuid))
     .innerJoin(apps, eq(notebooks.app, apps.id))
-    .where(and(eq(tokens.userId, user.id), eq(apps.code, app)));
+    .where(and(eq(tokens.userId, user.id), eq(apps.code, app.code)));
   await cxn.end();
   if (!auth) {
     throw new ForbiddenResponse(

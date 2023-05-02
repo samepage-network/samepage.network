@@ -312,6 +312,9 @@ export const apps = mysqlTable(
     workspaceLabel: varchar("workspace_label", { length: 128 })
       .notNull()
       .default("workspace"),
+    originRegex: varchar("origin_regex", { length: 256 })
+      .notNull()
+      .default("^$"),
   },
   (apps) => ({
     codeIndex: uniqueIndex("UC_code").on(apps.code),

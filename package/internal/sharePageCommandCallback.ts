@@ -10,10 +10,12 @@ const sharePageCommandCalback = ({
   actorId,
   getNotebookPageId,
   encodeState,
+  credentials,
 }: {
   getNotebookPageId: () => Promise<string>;
   encodeState: EncodeState;
   actorId: string;
+  credentials?: { notebookUuid: string; token: string };
 }) => {
   return getNotebookPageId()
     .then((notebookPageId) =>
@@ -30,6 +32,7 @@ const sharePageCommandCalback = ({
                 notebookPageId,
                 state: binaryToBase64(state),
                 properties,
+                ...credentials,
               })
                 .then(async (r) => {
                   if (r.created) {
@@ -49,7 +52,8 @@ const sharePageCommandCalback = ({
                   }
                   return {
                     notebookPageId,
-                    created: true,
+                    created: r.created,
+                    success: true as const,
                   };
                 })
                 .catch((e) => {
@@ -61,13 +65,17 @@ const sharePageCommandCalback = ({
         : Promise.reject(new Error(`Failed to detect a page to share`))
     )
     .catch((e) => {
+      const content = `Failed to share page on network: ${e.message}`;
       dispatchAppEvent({
         type: "log",
         intent: "error",
         id: "init-page-failure",
-        content: `Failed to share page on network: ${e.message}`,
+        content,
       });
-      return undefined;
+      return {
+        success: false as const,
+        error: content,
+      };
     });
 };
 

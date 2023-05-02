@@ -33,7 +33,7 @@ const DefaultErrorBoundary: V2_ErrorBoundaryComponent =
       return (
         <main className={"font-sans p-8 w-full"}>
           <h1 className={"text-xl font-bold mb-4"}>Error</h1>
-          <pre className="p-8 bg-red-800 bg-opacity-10 text-red-900 border-red-900 border-2 rounded-sm overflow-auto mb-4">
+          <pre className="p-8 bg-red-800 bg-opacity-10 text-red-900 border-red-900 border-2 rounded-sm overflow-auto mb-4 whitespace-pre-wrap">
             Failed to load the root application.
           </pre>
           <p>

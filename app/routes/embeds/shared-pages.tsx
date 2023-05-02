@@ -100,14 +100,12 @@ export const action = async (args: ActionArgs) => {
     await getMysql(result.requestId).then((c) => c.end());
     return redirect("/embeds");
   }
-  const {
-    request: { method, formData },
-  } = args;
-  if (method !== "post")
-    throw new NotFoundResponse(`Unsupported method ${method}`);
-  const data = await formData();
+  const { request } = args;
+  if (request.method !== "POST")
+    throw new NotFoundResponse(`Unsupported method ${request.method}`);
+  const data = await request.formData();
   const title = data.get("title") as string;
-  const { requestId, notebookUuid, tokenUuid } = result;
+  const { requestId, notebookUuid, tokenUuid, token, param } = result;
   const cxn = await getMysql(requestId);
 
   const [{ actorId, accessToken, app }] = await cxn
@@ -134,8 +132,15 @@ export const action = async (args: ActionArgs) => {
       )
     );
   const shared = await sharePageCommandCalback({
-    // TODO - figure out how to get the notebookPageId
-    getNotebookPageId: async () => title,
+    getNotebookPageId: async () =>
+      apiPost<{ notebookPageId: string }>({
+        path: `extensions/${app}/backend`,
+        data: {
+          type: "ENSURE_PAGE_BY_TITLE",
+          title: { content: title, annotations: [] },
+        },
+        authorization: `Bearer ${accessToken}`,
+      }).then((r) => r.notebookPageId),
     encodeState: (notebookPageId) =>
       apiPost({
         path: `extensions/${app}/backend`,
@@ -147,8 +152,12 @@ export const action = async (args: ActionArgs) => {
         authorization: `Bearer ${accessToken}`,
       }),
     actorId,
+    credentials: {
+      notebookUuid,
+      token,
+    },
   });
-  if (!shared) throw new InternalServerResponse(`Failed to share ${title}`);
+  if (!shared.success) throw new InternalServerResponse(shared.error);
   const [linkUuid] = await cxn
     .select({ linkUuid: pageNotebookLinks.uuid })
     .from(pageNotebookLinks)
@@ -161,7 +170,7 @@ export const action = async (args: ActionArgs) => {
   await cxn.end();
   if (!linkUuid)
     throw new InternalServerResponse(`Page ${title} did not share correctly`);
-  return redirect(`/embeds/shared-pages/${linkUuid}`);
+  return redirect(`/embeds/shared-pages/${linkUuid}?auth=${param}`);
 };
 
 export default SharedPagesEmbedPage;

@@ -17,7 +17,7 @@ const EmbedPage: React.FC = () => {
     );
   return (
     <div className="flex h-full">
-      <div className="w-36 flex flex-shrink-0 flex-col border-r border-r-slate-200 h-full">
+      <div className="w-40 flex flex-shrink-0 flex-col border-r border-r-slate-200 h-full">
         {TABS.map((t, i) => (
           <LinkWithSearch
             className={`capitalize cursor-pointer py-4 px-6 rounded-lg hover:bg-sky-400${
@@ -30,7 +30,7 @@ const EmbedPage: React.FC = () => {
           </LinkWithSearch>
         ))}
       </div>
-      <div className="flex-grow p-8 h-full">
+      <div className="flex-grow p-8 h-full overflow-hidden">
         <Outlet />
       </div>
     </div>

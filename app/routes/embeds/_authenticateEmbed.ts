@@ -20,7 +20,14 @@ const authenticateEmbed = async ({ request, context }: LoaderArgs) => {
     token,
     requestId,
   });
-  return { auth: true as const, notebookUuid, requestId, token, tokenUuid };
+  return {
+    auth: true as const,
+    notebookUuid,
+    requestId,
+    token,
+    tokenUuid,
+    param: auth,
+  };
 };
 
 export default authenticateEmbed;
