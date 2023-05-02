@@ -1404,6 +1404,28 @@ const logic = async (req: Record<string, unknown>) => {
         await cxn.end();
         return { success: true };
       }
+      case "import-shared-page": {
+        const { cid } = args;
+        const results = await cxn
+          .select({ uuid: pageNotebookLinks.uuid })
+          .from(pageNotebookLinks)
+          .innerJoin(
+            tokenNotebookLinks,
+            eq(tokenNotebookLinks.notebookUuid, pageNotebookLinks.notebookUuid)
+          )
+          .where(
+            and(
+              eq(pageNotebookLinks.cid, cid),
+              eq(tokenNotebookLinks.tokenUuid, tokenUuid)
+            )
+          );
+        if (!results.length) {
+          throw new NotFoundError(`No shared page found for cid: ${cid}`);
+        }
+        const { body: state } = await downloadSharedPage({ cid });
+        await cxn.end();
+        return { state: Buffer.from(state).toString("base64") };
+      }
     }
   } catch (e) {
     await cxn.end();

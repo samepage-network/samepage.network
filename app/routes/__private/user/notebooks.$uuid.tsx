@@ -24,17 +24,12 @@ import setupSamePageClient from "package/protocols/setupSamePageClient";
 import { AddCommand, ApplyState, InitialSchema } from "package/internal/types";
 import loadSharePageWithNotebook from "package/protocols/sharePageWithNotebook";
 import { createRoot } from "react-dom/client";
-import getPageUuidByNotebook from "~/data/getPageUuidByNotebook.server";
 import { v4 } from "uuid";
 import { downloadFileContent } from "~/data/downloadFile.server";
 import uploadFile from "~/data/uploadFile.server";
 import Dialog from "~/components/Dialog";
-
-const Back = () => (
-  <Link to={"/user/notebooks"} className={"text-sky-500 underline"}>
-    Back
-  </Link>
-);
+import { z } from "zod";
+import { NotFoundResponse } from "~/data/responses.server";
 
 const commands: Parameters<AddCommand>[0][] = [];
 let delayedLoad: string;
@@ -117,6 +112,8 @@ const SingleNotebookPage = () => {
             currentNotebookPageIdRef.current,
           ensurePageByTitle: async (title) => {
             submit({ title: title.content, stay: "true" }, { method: "post" });
+            // TODO: need a better way to detect when Remix returns this response. Prob useFetcher
+            await new Promise((resolve) => setTimeout(resolve, 1000));
             return title.content;
           },
           openPage: async (title) => {
@@ -185,18 +182,6 @@ const SingleNotebookPage = () => {
     <div className="flex gap-4 h-full items-start relative">
       <div className={"flex gap-8 flex-col h-full max-w-sm"}>
         <div className="flex-grow">
-          <div>
-            <Button
-              type="button"
-              onClick={() =>
-                window.navigator.clipboard.writeText(
-                  `${process.env.ORIGIN}/notebook/embeds?uuid=${data.notebook.uuid}&token=${data.notebook.token}`
-                )
-              }
-            >
-              Copy embed link
-            </Button>
-          </div>
           <b>Shared Pages: </b>
           <ul>
             {data.pages.map((i) => (
@@ -208,16 +193,16 @@ const SingleNotebookPage = () => {
             ))}
           </ul>
         </div>
-        {data.notebook.app === "SamePage" ? (
-          <div>
-            <TextInput
-              name={"title"}
-              label={"Title"}
-              placeholder={"Title..."}
-              value={newNotebookPageId}
-              onChange={(e) => setNewNotebookPageId(e.target.value)}
-            />
-            <div className="flex items-center gap-4">
+        <div className="flex items-end gap-4">
+          {data.notebook.app === "SamePage" && (
+            <div className="flex flex-col">
+              <TextInput
+                name={"title"}
+                label={"Title"}
+                placeholder={"Title..."}
+                value={newNotebookPageId}
+                onChange={(e) => setNewNotebookPageId(e.target.value)}
+              />
               <Button
                 onClick={() => {
                   setNewNotebookPageId("");
@@ -226,12 +211,27 @@ const SingleNotebookPage = () => {
               >
                 Create Page
               </Button>
-              <Back />
             </div>
-          </div>
-        ) : (
-          <Back />
-        )}
+          )}
+          <Button
+            type="button"
+            onClick={() =>
+              window.navigator.clipboard.writeText(
+                `${process.env.ORIGIN}/notebook/embeds?auth=${window.btoa(
+                  `${data.notebook.uuid}:${data.notebook.token}`
+                )}`
+              )
+            }
+          >
+            Copy embed
+          </Button>
+          <Link
+            to={"/user/notebooks"}
+            className={"text-sky-500 underline py-3"}
+          >
+            Back
+          </Link>
+        </div>
       </div>
       <div className="flex-grow h-full">
         <Outlet
@@ -267,19 +267,38 @@ const SingleNotebookPage = () => {
   );
 };
 
+const zNotebookDatabase = z.object({
+  pages: z
+    .object({
+      notebookPageId: z.string(),
+      pageUuid: z.string(),
+    })
+    .array()
+    .optional()
+    .default([]),
+});
+
 export const loader: LoaderFunction = (args) => {
-  return remixAppLoader(args, ({ context, params, searchParams }) => {
+  return remixAppLoader(args, async ({ context, params, searchParams }) => {
     const uuid = params["uuid"] || "";
     const notebookPageId = searchParams["title"] || "";
-    return notebookPageId
-      ? getPageUuidByNotebook({
-          uuid,
-          notebookPageId,
-          requestId: context.requestId,
-        }).then(({ pageUuid }) =>
-          redirect(`/user/notebooks/${uuid}/${pageUuid}`)
-        )
-      : getUserNotebookProfile({ context, params });
+    if (notebookPageId) {
+      const Key = `data/notebooks/${uuid}.json`;
+      const content = await downloadFileContent({
+        Key,
+      });
+      const { pages } = zNotebookDatabase.parse(JSON.parse(content || "{}"));
+      const pageUuid = pages.find(
+        (p) => p.notebookPageId === notebookPageId
+      )?.pageUuid;
+      if (!pageUuid) {
+        throw new NotFoundResponse(
+          `Notebook ${uuid} not connected to page ${notebookPageId}`
+        );
+      }
+      return redirect(`/user/notebooks/${uuid}/${pageUuid}`);
+    }
+    return getUserNotebookProfile({ context, params });
   });
 };
 

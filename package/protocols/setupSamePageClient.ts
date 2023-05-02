@@ -1,7 +1,3 @@
-import {
-  addNotebookListener,
-  removeNotebookListener,
-} from "../internal/setupMessageHandlers";
 import type {
   AddCommand,
   RemoveCommand,
@@ -12,7 +8,6 @@ import type {
   SamePageAPI,
 } from "../internal/types";
 import setupRegistry from "../internal/registry";
-import sendToNotebook from "../internal/sendToNotebook";
 import setupWsFeatures from "../internal/setupWsFeatures";
 import { onAppEvent } from "../internal/registerAppEventListener";
 import apiClient from "../internal/apiClient";
@@ -61,19 +56,8 @@ const setupSamePageClient = ({
   } = setupCrossAppRequests();
 
   const samepageApi: SamePageAPI = {
-    // These three are for WebSocket Operations. I'm not sure that we should actually expose
-    // them anymore for other applications, as we won't be monitoring their usage. And official
-    // Requests are being routed with the next two methods.
-    addNotebookListener,
-    removeNotebookListener,
-    sendToNotebook,
-
-    // These two are for official requests. They are the only two methods that should be used
-    // for querying data across applications.
     sendNotebookRequest,
     addNotebookRequestListener,
-
-    // These are other miscellaneous methods that are useful for interacting with the SamePage
     listNotebooks: () => apiClient({ method: "list-recent-notebooks" }),
     postToAppBackend,
   };

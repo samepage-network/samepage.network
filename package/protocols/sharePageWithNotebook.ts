@@ -17,6 +17,7 @@ import {
   SamePageState,
   DecodeState,
   EnsurePageByTitle,
+  Schema,
 } from "../internal/types";
 import Automerge from "automerge";
 import { addNotebookListener } from "../internal/setupMessageHandlers";
@@ -42,9 +43,13 @@ import handleSharePageUpdateOperation from "../internal/handleSharePageUpdateOpe
 import handleSharePageForceOperation from "../internal/handleSharePageForceOperation";
 import handleRequestPageUpdateOperation from "../internal/handleRequestPageUpdateOperation";
 import acceptSharePageOperation from "../internal/acceptSharePageOperation";
+import ImportSharedPage from "../components/ImportSharedPage";
+import base64ToBinary from "../internal/base64ToBinary";
+import unwrapSchema from "../utils/unwrapSchema";
 
-const COMMAND_PALETTE_LABEL = "Share Page on SamePage";
+const SHARE_PAGE_COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
+const IMPORT_SHARED_PAGE_COMMAND_PALETTE_LABEL = "Import Shared Page";
 
 type SharedPageObserver = ({
   onload,
@@ -281,54 +286,81 @@ const setupSharePageWithNotebook = ({
       if (viewSharedPageProps)
         addCommand({
           label: VIEW_COMMAND_PALETTE_LABEL,
-          callback: () => {
-            apiClient<{ notebookPageIds: string[] }>({
+          callback: async () => {
+            const props = await apiClient<{ notebookPageIds: string[] }>({
               method: "list-shared-pages",
-            }).then((props) =>
-              renderOverlay({
-                id: "samepage-view-shared-pages",
-                Overlay: ViewSharedPages,
-                props: {
-                  ...props,
-                  ...viewSharedPageProps,
-                  linkNewPage: (oldNotebookPageId, title) =>
-                    (viewSharedPageProps.linkNewPage
-                      ? viewSharedPageProps.linkNewPage(
-                          oldNotebookPageId,
-                          title
-                        )
-                      : Promise.resolve(v4())
-                    ).then((newNotebookPageId) => {
-                      if (!newNotebookPageId) {
-                        dispatchAppEvent({
-                          type: "log",
-                          id: "link-shared-page",
-                          content: `Unable to link page: ${title}`,
-                          intent: "error",
-                        });
-                        return "";
-                      }
-                      return linkNewPage({
-                        oldNotebookPageId,
-                        newNotebookPageId,
-                        title,
-                      }).then(() => newNotebookPageId);
-                    }),
-                  portalContainer: appRoot,
-                },
-              })
-            );
+            });
+            renderOverlay({
+              id: "samepage-view-shared-pages",
+              Overlay: ViewSharedPages,
+              props: {
+                ...props,
+                ...viewSharedPageProps,
+                linkNewPage: (oldNotebookPageId, title) =>
+                  (viewSharedPageProps.linkNewPage
+                    ? viewSharedPageProps.linkNewPage(oldNotebookPageId, title)
+                    : Promise.resolve(v4())
+                  ).then((newNotebookPageId) => {
+                    if (!newNotebookPageId) {
+                      dispatchAppEvent({
+                        type: "log",
+                        id: "link-shared-page",
+                        content: `Unable to link page: ${title}`,
+                        intent: "error",
+                      });
+                      return "";
+                    }
+                    return linkNewPage({
+                      oldNotebookPageId,
+                      newNotebookPageId,
+                      title,
+                    }).then(() => newNotebookPageId);
+                  }),
+                portalContainer: appRoot,
+              },
+            });
           },
         });
 
       addCommand({
-        label: COMMAND_PALETTE_LABEL,
+        label: SHARE_PAGE_COMMAND_PALETTE_LABEL,
         callback: () =>
           sharePageCommandCalback({
             getNotebookPageId: getCurrentNotebookPageId,
             encodeState,
             actorId,
           }).then(initPage),
+      });
+
+      addCommand({
+        label: IMPORT_SHARED_PAGE_COMMAND_PALETTE_LABEL,
+        callback: () => {
+          renderOverlay({
+            id: "samepage-import-shared-page",
+            Overlay: ImportSharedPage,
+            props: {
+              onSubmit: async ({ cid, title }) => {
+                const { state } = await apiClient<{ state: string }>({
+                  method: "import-shared-page",
+                  cid,
+                });
+                const $body = unwrapSchema(
+                  Automerge.load<Schema>(
+                    base64ToBinary(state) as Automerge.BinaryDocument
+                  )
+                );
+                const result = await ensurePageByTitle({
+                  content: title,
+                  annotations: [],
+                });
+                const notebookPageId =
+                  typeof result === "string" ? result : result.notebookPageId;
+                await decodeState(notebookPageId, { $body });
+                await openPage(notebookPageId);
+              },
+            },
+          });
+        },
       });
 
       offConnect = onConnect?.();
@@ -342,10 +374,13 @@ const setupSharePageWithNotebook = ({
     offConnect?.();
     Object.values(unloadCallbacks).forEach((u) => u());
     removeCommand({
-      label: COMMAND_PALETTE_LABEL,
+      label: SHARE_PAGE_COMMAND_PALETTE_LABEL,
     });
     removeCommand({
       label: VIEW_COMMAND_PALETTE_LABEL,
+    });
+    removeCommand({
+      label: IMPORT_SHARED_PAGE_COMMAND_PALETTE_LABEL,
     });
   };
 

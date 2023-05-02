@@ -644,6 +644,10 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     method: z.literal("save-access-token"),
     accessToken: z.string(),
   }),
+  z.object({
+    method: z.literal("import-shared-page"),
+    cid: z.string(),
+  })
 ]);
 
 export const zBaseHeaders = z.object({
@@ -675,10 +679,6 @@ export type BackendRequest<T extends ZodType<any, any, any>> = z.infer<T> & {
 };
 
 export type SamePageAPI = {
-  addNotebookListener: AddNotebookListener;
-  removeNotebookListener: RemoveNotebookListener;
-  sendToNotebook: SendToNotebook;
-
   addNotebookRequestListener: AddNotebookRequestListener;
   sendNotebookRequest: SendNotebookRequest;
 
