@@ -1,0 +1,31 @@
+.notion-topbar > div {
+  overflow: unset !important;
+}
+
+.samepage-onboarding-portal .bp4-overlay {
+  z-index: 1000;
+}
+
+.samepage-shared-page-status {
+  margin-bottom: 0;
+}
+
+div[id*="samepage-shared"] {
+  padding: 0 96px;
+}
+
+.samepage-command-portal {
+  z-index: 150;
+}
+
+.samepage-command-menu {
+  z-index: 200;
+}
+
+.samepage-command-menu .bp4-overlay-content {
+  width: 470px;
+}
+
+#notion-app a.bp4-button {
+  cursor: pointer;
+}

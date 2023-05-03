@@ -1,0 +1,15 @@
+{
+  "TODO": "Delete this file and include the config elsewhere",
+  "samepage": {
+    "include": [
+      "index.html",
+      "logo.png",
+      "node_modules/samepage/samepage.css",
+      "manifest.json"
+    ],
+    "entry": [
+      "background.ts",
+      "content.ts"
+    ]
+  }
+}

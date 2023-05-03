@@ -329,7 +329,9 @@ const setupSharePageWithNotebook = ({
             getNotebookPageId: getCurrentNotebookPageId,
             encodeState,
             actorId,
-          }).then(initPage),
+          }).then((result) =>
+            result.success ? initPage(result) : Promise.reject(result.error)
+          ),
       });
 
       addCommand({
