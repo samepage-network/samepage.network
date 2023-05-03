@@ -501,16 +501,6 @@ export const zUnauthenticatedBody = z.discriminatedUnion("method", [
     app: z.string().or(z.number()),
     workspace: z.string(),
   }),
-  z.object({
-    method: z.literal("connect-device"),
-    email: z.string(),
-    password: z.string(),
-  }),
-  z.object({
-    method: z.literal("login-device"),
-    token: z.string(),
-    userId: z.string(),
-  }),
   z.object({ method: z.literal("ping") }),
 ]);
 

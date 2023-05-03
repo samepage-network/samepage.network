@@ -1,4 +1,3 @@
-import React from "react";
 import {
   SignedIn,
   SignedOut,
@@ -10,7 +9,6 @@ import { useNavigate, Routes, Route, MemoryRouter } from "react-router-dom";
 
 const publishableKey = process.env.CLERK_PUBLISHABLE_KEY || "";
 
-// TODO - look into clerking this
 const AppRoutes = () => {
   const navigate = useNavigate();
   return (
