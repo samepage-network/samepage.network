@@ -1,6 +1,6 @@
 import { Button, Classes, Dialog, InputGroup, Label } from "@blueprintjs/core";
 import type { OverlayProps } from "../internal/types";
-import { useRef, useState } from "react";
+import React from "react";
 
 type Props = {
   portalContainer?: HTMLElement;
@@ -13,8 +13,8 @@ const ImportSharedPage = ({
   portalContainer,
   onSubmit = () => Promise.resolve(),
 }: OverlayProps<Props>) => {
-  const formRef = useRef<HTMLFormElement>(null);
-  const [error, setError] = useState("");
+  const formRef = React.useRef<HTMLFormElement>(null);
+  const [error, setError] = React.useState("");
   return (
     <Dialog
       onClose={onClose}

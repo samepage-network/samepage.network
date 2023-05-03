@@ -1245,7 +1245,7 @@ test("Inviting a notebook to a page that isn't shared should error", async () =>
     .catch((e) => ({ success: false, e: e as string }));
   expect(r).toEqual({
     success: false,
-    e: `Could not find page from id ${notebookUuid}, and notebookPageId ${notebookPageId}`,
+    e: `Could not find page from notebook ${notebookUuid}, and notebookPageId ${notebookPageId}`,
   });
 });
 
