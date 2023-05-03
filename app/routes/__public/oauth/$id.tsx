@@ -31,7 +31,10 @@ const OauthConnectionPage = (): React.ReactElement => {
         <div className="mb-2">
           We recommend installing the SamePage Chrome extension to use with{" "}
           {data.body.appName}. You can install it to your browser by{" "}
-          <a href="https://chrome.google.com/webstore/category/extensions">
+          <a
+            href="https://chrome.google.com/webstore/category/extensions"
+            className="text-sky-400"
+          >
             clicking here!
           </a>
         </div>
@@ -117,7 +120,7 @@ const loadData = async ({
       success: true,
       body: {
         appName,
-        workspace: response.body.workspace,
+        workspace: response.body.label || response.body.workspace,
         suggestExtension: response.body.suggestExtension,
       },
     };

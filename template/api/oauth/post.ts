@@ -36,6 +36,7 @@ const logic = async (
   return {
     accessToken: access_token,
     workspace,
+    label: workspace,
   };
 };
 

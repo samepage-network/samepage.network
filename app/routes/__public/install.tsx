@@ -94,7 +94,7 @@ const InstallPage = () => {
             Install SamePage in {name}
           </h1>
           <img
-            src={`/images/apps/${selectedApp}.png`}
+            src={`/assets/${selectedApp}/logo.png`}
             width={300}
             height={300}
           />
@@ -141,24 +141,25 @@ export const loader: LoaderFunction = async ({ context, request }) => {
   const selectedApp =
     searchParams.get("id") || searchParams.get("app") || userApps[0].code;
   const instructions = await new Octokit({
-    // baseUrl: process.env.OCTOKIT_URL,
+    baseUrl: process.env.OCTOKIT_URL,
   }).repos
     .getContent({
       owner: "samepage-network",
       repo: `${selectedApp}-samepage`,
       path: "package.json",
     })
-    .then((json) =>
-      "type" in json.data && json.data.type === "file"
+    .then((json) => {
+      return "type" in json.data && json.data.type === "file"
         ? json.data.content
-        : undefined
-    )
-    .then((content) =>
-      content
+        : undefined;
+    })
+    .then((content) => {
+      console.log(content);
+      return content
         ? JSON.parse(Buffer.from(content, "base64").toString()).samepage
             ?.install || {}
-        : {}
-    );
+        : {};
+    });
   return {
     userApps,
     ...instructions,

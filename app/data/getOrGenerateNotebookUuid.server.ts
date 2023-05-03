@@ -9,11 +9,13 @@ import getQuota from "./getQuota.server";
 const getOrGenerateNotebookUuid = async ({
   requestId,
   workspace,
+  label: _label = workspace,
   app,
   tokenUuid,
 }: {
   requestId: string;
   workspace: string;
+  label?: string;
   app: number | string;
   tokenUuid: string;
 }) => {
