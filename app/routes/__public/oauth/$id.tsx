@@ -132,7 +132,7 @@ export const loader = async (args: DataFunctionArgs) => {
   const { request, params, context } = args;
   const userId = await getUserId(args);
   if (!userId) {
-    return redirect(`/login?redirect=${encodeURIComponent(request.url)})}`);
+    return redirect(`/login?redirect=${encodeURIComponent(request.url)}`);
   }
   const requestId = parseRemixContext(context).lambdaContext.awsRequestId;
   const searchParams = Object.fromEntries(new URL(request.url).searchParams);

@@ -42,7 +42,7 @@ const recordTransaction = async (
   await sendEmail({
     to: "support@samepage.network",
     subject: "SamePage Transaction Recorded",
-    body: `Add transaction to Google Sheet: ${record.Date}\t${record.Source}\t${record.Description}\t${record.Amount}\t${record.Code}\t${record.ID}}`,
+    body: `Add transaction to Google Sheet: ${record.Date}\t${record.Source}\t${record.Description}\t${record.Amount}\t${record.Code}\t${record.ID}`,
   });
 };
 

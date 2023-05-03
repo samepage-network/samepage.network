@@ -637,7 +637,7 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
   z.object({
     method: z.literal("import-shared-page"),
     cid: z.string(),
-  })
+  }),
 ]);
 
 export const zBaseHeaders = z.object({
@@ -662,6 +662,24 @@ export const zOauthResponse = z.object({
   suggestExtension: z.boolean().optional(),
   label: z.string().optional(),
   redirectUrl: z.string().optional(),
+});
+
+const zCondition = z.object({
+  source: z.string(),
+  target: z.string(),
+  relation: z.string(),
+});
+
+const zSelection = z.object({
+  label: z.string(),
+  text: z.string(),
+});
+
+export const notebookRequestNodeQuerySchema = z.object({
+  schema: z.literal("node-query"),
+  conditions: zCondition.array().optional().default([]),
+  returnNode: z.string(),
+  selections: zSelection.array().optional().default([]),
 });
 
 export type BackendRequest<T extends ZodType<any, any, any>> = z.infer<T> & {
