@@ -1,4 +1,11 @@
-import { Button, Classes, Dialog, InputGroup, Label } from "@blueprintjs/core";
+import {
+  Button,
+  Classes,
+  Dialog,
+  InputGroup,
+  Label,
+  Spinner,
+} from "@blueprintjs/core";
 import type { OverlayProps } from "../internal/types";
 import React from "react";
 
@@ -15,6 +22,7 @@ const ImportSharedPage = ({
 }: OverlayProps<Props>) => {
   const formRef = React.useRef<HTMLFormElement>(null);
   const [error, setError] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
   return (
     <Dialog
       onClose={onClose}
@@ -38,24 +46,30 @@ const ImportSharedPage = ({
       </div>
       <div className={Classes.DIALOG_FOOTER}>
         <div className={Classes.DIALOG_FOOTER_ACTIONS}>
+          {loading && <Spinner size={12} />}
           {error && <span className={`text-red-800`}>{error}</span>}
           <Button
             onClick={() => {
               const el = formRef.current;
               if (el) {
                 const formData = new FormData(el);
+                setLoading(true);
                 onSubmit({
                   cid: formData.get("cid") as string,
                   title: formData.get("title") as string,
                 })
                   .then(onClose)
-                  .catch((e) => setError(e.message));
+                  .catch((e) => {
+                    setError(e.message);
+                    setLoading(false);
+                  });
               }
             }}
             intent="primary"
             text="Import"
+            disabled={loading}
           />
-          <Button onClick={onClose} text="Cancel" />
+          <Button onClick={onClose} text="Cancel" disabled={loading} />
         </div>
       </div>
     </Dialog>

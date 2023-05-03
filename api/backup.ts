@@ -15,7 +15,7 @@ import { pageNotebookLinks } from "data/schema";
 import emailError from "package/backend/emailError.server";
 import debug from "package/utils/debugger";
 
-const log = debug("api/backup");
+const log = debug("api:backup");
 
 function toImportCandidate(file: File) {
   let stream: ReadableStream;

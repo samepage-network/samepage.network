@@ -65,7 +65,7 @@ const SinglePagePage = () => {
               {chosenNotebook?.workspace || "Unknown"}
             </span>
             <ExternalLink
-              href={`https://s3.console.aws.amazon.com/s3/object/samepage.network?region=us-east-1&prefix=data/pages/${uuid}`}
+              href={`https://s3.console.aws.amazon.com/s3/object/samepage.network?region=us-east-1&prefix=data/ipfs/${chosenNotebook?.cid}`}
               className="text-sm text-sky-400 underline bg-sky-50 rounded-sm px-2 py-1"
             >
               {/* {TODO - Download directly} */}

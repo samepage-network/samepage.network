@@ -40,7 +40,7 @@ const getNotebookProfile = async ({
     throw new NotFoundError(`Could not find notebook by uuid: ${uuid}`);
   const pages = await cxn
     .select({
-      uuid: pageNotebookLinks.pageUuid,
+      uuid: pageNotebookLinks.uuid,
       title: pageNotebookLinks.notebookPageId,
     })
     .from(pageNotebookLinks)
