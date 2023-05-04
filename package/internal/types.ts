@@ -493,6 +493,7 @@ export const zUnauthenticatedBody = z.discriminatedUnion("method", [
     password: z.string(),
     app: z.string().or(z.number()),
     workspace: z.string(),
+    label: z.string().optional(),
   }),
   z.object({
     method: z.literal("add-notebook"),
@@ -500,6 +501,7 @@ export const zUnauthenticatedBody = z.discriminatedUnion("method", [
     password: z.string(),
     app: z.string().or(z.number()),
     workspace: z.string(),
+    label: z.string().optional(),
   }),
   z.object({ method: z.literal("ping") }),
 ]);

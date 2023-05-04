@@ -18,7 +18,7 @@ export const handler: Handler<unknown, OnboardNotebookResponse> = async (
   event,
   context
 ) => {
-  const { email, password, app, workspace } =
+  const { email, password, app, workspace, label } =
     zOnboardNotebookPayload.parse(event);
   const userId = await users
     .getUserList({ emailAddress: [email] })
@@ -47,6 +47,7 @@ export const handler: Handler<unknown, OnboardNotebookResponse> = async (
     workspace,
     requestId,
     tokenUuid: tokenRecord.uuid,
+    label,
   });
 
   await cxn.end();

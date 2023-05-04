@@ -10,11 +10,13 @@ const createNotebook = async ({
   app,
   workspace,
   userId,
+  label,
 }: {
   requestId: string;
   userId: string;
   app: string | number;
   workspace: string;
+  label?: string;
 }) => {
   const token = await randomString({ length: 12, encoding: "base64" });
   const tokenUuid = v4();
@@ -27,6 +29,7 @@ const createNotebook = async ({
     app,
     workspace,
     tokenUuid,
+    label,
   });
   return { notebookUuid, token, tokenUuid };
 };

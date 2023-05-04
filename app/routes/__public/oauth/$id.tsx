@@ -106,6 +106,7 @@ const loadData = async ({
       app: appId,
       workspace: response.body.workspace,
       tokenUuid,
+      label: response.body.label,
     });
     await cxn
       .insert(accessTokens)

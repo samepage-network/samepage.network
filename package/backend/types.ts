@@ -35,6 +35,7 @@ export const zOnboardNotebookPayload = z.object({
   password: z.string(),
   app: z.string(),
   workspace: z.string(),
+  label: z.string().optional(),
 });
 export type OnboardNotebookPayload = z.infer<typeof zOnboardNotebookPayload>;
 export const zOnboardNotebookResponse = z.object({

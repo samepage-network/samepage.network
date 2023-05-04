@@ -178,7 +178,7 @@ const logic = async (req: Record<string, unknown>) => {
   log("received method", args.method);
   try {
     if (args.method === "create-notebook") {
-      const { app, workspace, email, password } = args;
+      const { app, workspace, email, password, label } = args;
       const userId = await users
         .createUser({ emailAddress: [email], password })
         .then((u) => u.id)
@@ -199,11 +199,12 @@ const logic = async (req: Record<string, unknown>) => {
         app,
         workspace,
         userId,
+        label,
       });
       await cxn.end();
       return { notebookUuid, token };
     } else if (args.method === "add-notebook") {
-      const { app, workspace, email, password } = args;
+      const { app, workspace, email, password, label } = args;
       const userResponse = await users.getUserList({ emailAddress: [email] });
       if (userResponse.length === 0) {
         throw new UnauthorizedError(
@@ -236,6 +237,7 @@ const logic = async (req: Record<string, unknown>) => {
         tokenUuid: tokenRecord.uuid,
         app,
         workspace,
+        label,
       });
       await cxn.end();
       return { notebookUuid, token: tokenRecord.value };

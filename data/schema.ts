@@ -97,6 +97,7 @@ export const notebooks = mysqlTable("notebooks", {
   uuid: primaryUuid(),
   workspace: varchar("workspace", { length: 128 }).notNull().default(""),
   app: unsignedSmallInt("app").notNull().default(0),
+  label: varchar("label", { length: 256 }).notNull().default(""),
 });
 
 export const pageNotebookLinks = mysqlTable(

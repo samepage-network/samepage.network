@@ -7,7 +7,7 @@ import qs from "querystring";
 import xmljs from "xml-js";
 import ServerError from "./ServerError";
 import { BackendRequest } from "../internal/types";
-import { ZodType } from "zod";
+import { ZodType, z } from "zod";
 
 type Logic<T extends ZodType<any, any, any>, U> = (
   e: BackendRequest<T>
@@ -38,11 +38,11 @@ export const qsToJson = (q: string) => {
 const createAPIGatewayProxyHandler =
   <T extends ZodType<any, any, any>, U extends Record<string, unknown>>(
     args:
-      | Logic<T, U>
+      | Logic<z.infer<T>, U>
       | {
-          logic: Logic<T, U>;
+          logic: Logic<z.infer<T>, U>;
           allowedOrigins?: (string | RegExp)[];
-          bodySchema?: { parse: (s: string) => T };
+          bodySchema?: { parse: (s: string) => z.infer<T> };
           includeHeaders?: string[];
           validate?: (args: {
             body: string | null;
