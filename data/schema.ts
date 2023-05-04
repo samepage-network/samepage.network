@@ -291,7 +291,7 @@ export const accessTokens = mysqlTable(
     notebookUuid: varchar("notebook_uuid", { length: 36 })
       .notNull()
       .default(""),
-    value: varchar("value", { length: 256 }).notNull().default(""),
+    value: varchar("value", { length: 1024 }).notNull().default(""),
     userId: varchar("user_id", { length: 128 }).notNull().default(""),
   },
   (accessTokens) => ({
