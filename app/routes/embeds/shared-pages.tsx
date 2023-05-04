@@ -1,6 +1,6 @@
 import { ActionArgs, LoaderArgs, redirect } from "@remix-run/node";
 import React from "react";
-import authenticateEmbed from "./_authenticateEmbed";
+import authenticateEmbed from "./_authenticateEmbed.server";
 import { Form, useLoaderData } from "@remix-run/react";
 import getMysql from "~/data/mysql.server";
 import {

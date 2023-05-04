@@ -24,7 +24,7 @@ const EmbedPage: React.FC = () => {
               t === currentTab ? " bg-sky-200" : ""
             }`}
             key={i}
-            to={t.toLowerCase().replace(" ", "-")}
+            to={t.toLowerCase().replace(" ", "-") || "/embeds"}
           >
             {t || "Home"}
           </LinkWithSearch>

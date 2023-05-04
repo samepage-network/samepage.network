@@ -1,5 +1,5 @@
 import { LinksFunction, LoaderArgs, redirect } from "@remix-run/node";
-import authenticateEmbed from "./_authenticateEmbed";
+import authenticateEmbed from "./_authenticateEmbed.server";
 import getMysql from "~/data/mysql.server";
 import { useLoaderData } from "@remix-run/react";
 import blueprintcss from "@blueprintjs/core/lib/css/blueprint.css";
@@ -64,7 +64,7 @@ export const loader = async (args: LoaderArgs) => {
     credentials: {
       notebookUuid: result.notebookUuid,
       token: result.token,
-    }
+    },
   };
 };
 

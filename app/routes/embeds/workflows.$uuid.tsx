@@ -13,7 +13,7 @@ import downloadSharedPage from "~/data/downloadSharedPage.server";
 import getMysql from "~/data/mysql.server";
 import Automerge from "automerge";
 import unwrapSchema from "package/utils/unwrapSchema";
-import authenticateEmbed from "./_authenticateEmbed";
+import authenticateEmbed from "./_authenticateEmbed.server";
 
 const SingleWokflowEmbed = () => {
   const data = useLoaderData<Awaited<ReturnType<typeof loader>>>();

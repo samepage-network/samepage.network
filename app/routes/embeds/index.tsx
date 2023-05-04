@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import BaseInput from "~/components/BaseInput";
 import Button from "~/components/Button";
 import TextInput from "~/components/TextInput";
-import authenticateEmbed from "./_authenticateEmbed";
+import authenticateEmbed from "./_authenticateEmbed.server";
 import listApps from "~/data/listApps.server";
 import getMysql from "~/data/mysql.server";
 import { users } from "@clerk/clerk-sdk-node";

@@ -1,6 +1,6 @@
 import { LoaderArgs, redirect } from "@remix-run/node";
 import getMysql from "~/data/mysql.server";
-import authenticateEmbed from "./_authenticateEmbed";
+import authenticateEmbed from "./_authenticateEmbed.server";
 
 const RequestsEmbed = () => {
   return <div>Coming Soon...</div>;
