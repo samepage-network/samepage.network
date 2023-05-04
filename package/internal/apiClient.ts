@@ -37,7 +37,9 @@ const handleFetch = <T extends Record<string, unknown> = Record<string, never>>(
       return r
         .text()
         .then((e) =>
-          Promise.reject(new Error(`${init?.method} request to ${url} failed: ${e}`))
+          Promise.reject(
+            new Error(`${init?.method} request to ${url} failed: ${e}`)
+          )
         );
     } else if (r.status === 204) {
       return {} as T;
@@ -45,16 +47,17 @@ const handleFetch = <T extends Record<string, unknown> = Record<string, never>>(
     return r
       .json()
       .then((r) => r as T)
-      .catch(() =>
-        r
-          .text()
-          .then((e) =>
-            Promise.reject(
-              new Error(
-                `Serialization for ${init?.method} request to ${url} failed: ${e}`
-              )
+      .catch((cause) =>
+        r.text().then((e) =>
+          Promise.reject(
+            new Error(
+              `Serialization for ${init?.method} request to ${url} failed: ${e}`,
+              {
+                cause,
+              }
             )
           )
+        )
       );
   });
 };

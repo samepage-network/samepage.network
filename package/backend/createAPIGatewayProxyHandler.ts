@@ -146,13 +146,12 @@ const createAPIGatewayProxyHandler =
             ? e.code
             : 500;
         const headers = makeResponseHeaders(e.headers);
-        const userResponse = {
-          statusCode,
-          body: e.message,
-          headers,
-        };
         if (statusCode >= 400 && statusCode < 500) {
-          return userResponse;
+          return {
+            statusCode,
+            body: e.message,
+            headers,
+          };
         }
         return typeof e.name === "string" &&
           e.name &&
@@ -166,7 +165,11 @@ const createAPIGatewayProxyHandler =
               body: `Unknown error - Message Id ${id}`,
               headers,
             }))
-          : userResponse;
+          : {
+              statusCode,
+              body: e.stack,
+              headers,
+            };
       });
   };
 
