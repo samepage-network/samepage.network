@@ -11,5 +11,8 @@ export const loader: LoaderFunction = async ({ params }) => {
     repo: `${app}-samepage`,
     path: `assets/${asset}`,
   });
-  return fetch(content.url);
+  return fetch(content.url).then((r) => {
+    r.headers.delete("connection");
+    return r;
+  });
 };
