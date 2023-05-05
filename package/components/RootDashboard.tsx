@@ -1,6 +1,6 @@
 import React from "react";
 import { Outlet } from "react-router";
-import LinkWithSearch from "package/components/LinkWithSearch";
+import LinkWithSearch from "./LinkWithSearch";
 
 const TABS = ["", "Shared Pages", "Workflows"];
 

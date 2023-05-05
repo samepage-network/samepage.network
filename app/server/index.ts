@@ -7,7 +7,7 @@ export const handler = createRequestHandler({
   originPaths: [
     "favicon.ico",
     // ignore tldraw asets for now since they're in S3, rest are in GH
-    /^\/assets\/[^t].*/,
+    /^\/assets\/tld.+/,
     /^\/build\/.*/,
     {
       test: /^\/extensions\/[a-z0-9]+\.zip$/,
