@@ -1,6 +1,12 @@
 import { LoaderFunction } from "@remix-run/node";
 import { Octokit } from "@octokit/rest";
 
+// TODO - inline remix-lambda-adapter and move this logic there.
+const illegalHeaders = [
+  "transfer-encoding",
+  "connection",
+];
+
 export const loader: LoaderFunction = async ({ params }) => {
   const { app, asset = "" } = params;
   const octokit = new Octokit({
@@ -12,7 +18,7 @@ export const loader: LoaderFunction = async ({ params }) => {
     path: `assets/${asset}`,
   });
   return fetch(content.url).then((r) => {
-    r.headers.delete("connection");
+    illegalHeaders.forEach((h) => r.headers.delete(h));
     return r;
   });
 };
