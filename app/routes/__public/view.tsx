@@ -1,5 +1,5 @@
-import Button from "~/components/Button";
-import TextInput from "~/components/TextInput";
+import Button from "package/components/Button";
+import TextInput from "package/components/TextInput";
 import { Link, Outlet, useParams } from "@remix-run/react";
 import { useState, useEffect } from "react";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";

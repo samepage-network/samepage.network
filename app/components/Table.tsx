@@ -1,6 +1,6 @@
 import { useLoaderData, useNavigate, useSearchParams } from "@remix-run/react";
 import React from "react";
-import mixClasses from "./mixClasses";
+import mixClasses from "../../package/components/mixClasses";
 
 const Table = ({
   activeRow,

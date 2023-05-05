@@ -1,6 +1,7 @@
 import esbuild from "esbuild";
 import fs from "fs";
 import path from "path";
+import os from "os";
 import { z } from "zod";
 import appPath from "./appPath";
 import dotenv from "dotenv";
@@ -9,6 +10,8 @@ import readDir from "./readDir";
 import { getOpts as getNodeOpts } from "./nodeCompile";
 import getDotEnvObject from "./getDotEnvObject";
 import esbuildPlugins from "./esbuildPlugins";
+// @ts-ignore
+import { build as tw } from "tailwindcss/lib/cli/build";
 dotenv.config();
 
 // TODO - Move this to a central location
@@ -189,11 +192,40 @@ const compile = ({
                         .map(([e, ...g]) => [e, g.join("=")])
                     )
                   ),
+                  {
+                    name: "tailwind",
+                    setup(build) {
+                      build.onResolve({ filter: /samepage\.css$/ }, () => {
+                        return {
+                          path: "samepage.css",
+                          namespace: "samepage",
+                        };
+                      });
+                      build.onLoad(
+                        { filter: /samepage\.css$/, namespace: "samepage" },
+                        async () => {
+                          const out = path.join(os.tmpdir(), "tailwind.css");
+                          await tw({
+                            _: ["build"],
+                            "--config": path.resolve(
+                              path.join(__dirname, "..", ".."),
+                              "tailwind.config.js"
+                            ),
+                            "--output": out,
+                          });
+                          return {
+                            contents: fs.readFileSync(out).toString(),
+                            loader: "css",
+                          };
+                        }
+                      );
+                    },
+                  },
                   ...esbuildPlugins("src"),
                   {
                     name: "onFinish",
                     setup(build) {
-                      build.onEnd(() => {
+                      build.onEnd(async () => {
                         DEFAULT_FILES_INCLUDED.concat(
                           typeof include === "string"
                             ? [include]

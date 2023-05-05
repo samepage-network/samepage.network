@@ -5,11 +5,11 @@ import remixAdminAction from "~/data/remixAdminAction.server";
 import listPageNotebookLinks from "~/data/listAllPageNotebookLinks.server";
 import searchPageNotebookLinks from "~/data/searchPageNotebookLinks.server";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
-import TextInput from "~/components/TextInput";
+import TextInput from "package/components/TextInput";
 import StatPanels from "~/components/StatPanels";
 import { Chart, ChartOptions } from "react-charts";
 import { useMemo } from "react";
-import Button from "~/components/Button";
+import Button from "package/components/Button";
 
 const AdminPagesPage = () => {
   const { pages, stats, timeSeries } =

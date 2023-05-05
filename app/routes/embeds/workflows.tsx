@@ -3,7 +3,7 @@ import { LoaderArgs, redirect } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import getMysql from "~/data/mysql.server";
 import authenticateEmbed from "./_authenticateEmbed.server";
-import LinkWithSearch from "~/components/LinkWithSearch";
+import LinkWithSearch from "package/components/LinkWithSearch";
 import workflowsLoader from "./_workflowsLoader.server";
 import AtJsonRendered from "dist/components/AtJsonRendered";
 

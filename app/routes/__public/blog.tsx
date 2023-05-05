@@ -4,8 +4,8 @@ import type { ActionFunction, LoaderFunction } from "@remix-run/node";
 import { Link, useLoaderData, useFetcher } from "@remix-run/react";
 import listBlogPosts from "~/data/listBlogPosts.server";
 import { useState } from "react";
-import Button from "~/components/Button";
-import TextInput from "~/components/TextInput";
+import Button from "package/components/Button";
+import TextInput from "package/components/TextInput";
 import SuccessfulActionToast from "~/components/SuccessfulActionToast";
 import getMeta from "~/components/getMeta";
 

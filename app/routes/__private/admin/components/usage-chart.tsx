@@ -1,6 +1,6 @@
 import { useState } from "react";
 import UsageChart, { UsageChartProps } from "package/components/UsageChart";
-import Button from "~/components/Button";
+import Button from "package/components/Button";
 import apiClient from "package/internal/apiClient";
 
 const UsageChartPage = () => {

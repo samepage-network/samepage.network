@@ -1,8 +1,17 @@
 import React from "react";
 import { InputGroup, Label, Spinner } from "@blueprintjs/core";
-import apiClient from "samepage/internal/apiClient";
-import { useNavigate, MemoryRouter, Routes, Route } from "react-router-dom";
+// import apiClient from "samepage/internal/apiClient";
+import {
+  useNavigate,
+  Route,
+  createMemoryRouter,
+  createRoutesFromElements,
+  RouterProvider,
+} from "react-router-dom";
 import { ClerkProvider, SignedIn, SignedOut } from "@clerk/chrome-extension";
+import RootDashboard from "samepage/components/RootDashboard";
+import SharedPagesTab from "package/components/SharedPagesTab";
+import apiClient from "package/internal/apiClient";
 
 type Notebook = {
   uuid: string;
@@ -20,25 +29,25 @@ const PopupDashboard = () => {
   }>();
   const currentNotebook = notebooks[currentTab];
   React.useEffect(() => {
-    apiClient<{
-      notebooks: Notebook[];
-      credentials: {
-        notebookUuid: string;
-        token: string;
-      };
-    }>({
-      // @ts-ignore
-      method: "get-notebook-credentials",
-      origin: "TODO - get origin from current tab",
-      // does a cookie automatically get sent?
-    })
-      .then((r) => {
-        setNotebooks(r.notebooks);
-        setCreds(r.credentials);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    // apiClient<{
+    //   notebooks: Notebook[];
+    //   credentials: {
+    //     notebookUuid: string;
+    //     token: string;
+    //   };
+    // }>({
+    //   // @ts-ignore
+    //   method: "get-notebook-credentials",
+    //   origin: "TODO - get origin from current tab",
+    //   // does a cookie automatically get sent?
+    // })
+    //   .then((r) => {
+    //     setNotebooks(r.notebooks);
+    //     setCreds(r.credentials);
+    //   })
+    //   .finally(() => {
+    //     setLoading(false);
+    //   });
   }, [setLoading, setNotebooks]);
   return loading ? (
     <div className="m-auto" style={{ margin: "auto" }}>
@@ -73,30 +82,6 @@ const PopupDashboard = () => {
           </div>
         ))}
       </div>
-      <div
-        className="flex-grow p-8 h-full"
-        style={{ padding: 32, height: "100%" }}
-      >
-        <div className="py-2 flex flex-col gap-2">
-          <Label>
-            Notebook Universal ID
-            <InputGroup
-              placeholder={"Notebook Universal ID"}
-              disabled
-              defaultValue={currentNotebook.uuid}
-            />
-          </Label>
-          <Label>
-            Token
-            <InputGroup
-              placeholder={"Token"}
-              disabled
-              defaultValue={creds?.token}
-              type={"password"}
-            />
-          </Label>
-        </div>
-      </div>
     </div>
   );
 };
@@ -106,30 +91,43 @@ const publishableKey = process.env.CLERK_PUBLISHABLE_KEY || "";
 // TODO - Allow TW to pick up on extension classes
 const PopupMain = () => {
   const navigate = useNavigate();
-
   return (
     <ClerkProvider
       publishableKey={publishableKey}
       navigate={(to) => navigate(to)}
     >
       <div style={{ width: 480, height: 360 }}>
-        <Routes>
-          <SignedOut></SignedOut>
-          <SignedIn>
-            <Route path={"/"} element={<PopupDashboard />} />
-          </SignedIn>
-        </Routes>
+        <RootDashboard root="/" currentTab="" />
       </div>
     </ClerkProvider>
   );
 };
 
+const router = createMemoryRouter(
+  createRoutesFromElements(
+    <Route path={"/"} element={<PopupMain />}>
+      <Route path={""} element={<PopupDashboard />} />
+      <Route
+        path={"shared-pages"}
+        element={<SharedPagesTab />}
+        loader={({ request }) => {
+          console.log(request.headers, document.cookie);
+          return apiClient({
+            method: "list-shared-pages",
+            // TODO - get notebookUuid from current tab
+            notebookUuid: localStorage.getItem("notebookUuid") || undefined,
+            // TODO - get token from current user
+            token: localStorage.getItem("token") || undefined,
+          });
+        }}
+      />
+      <Route path={"workflows"} element={<PopupDashboard />} />
+    </Route>
+  )
+);
+
 const Popup = () => {
-  return (
-    <MemoryRouter>
-      <PopupMain />
-    </MemoryRouter>
-  );
+  return <RouterProvider router={router} />;
 };
 
 export default Popup;

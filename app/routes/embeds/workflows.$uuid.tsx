@@ -1,7 +1,7 @@
 import { LoaderArgs, redirect } from "@remix-run/node";
 import { Form, useLoaderData } from "@remix-run/react";
 import AtJsonRendered from "package/components/AtJsonRendered";
-import Button from "~/components/Button";
+import Button from "package/components/Button";
 import getTitleState from "~/data/getTitleState.server";
 import { NotFoundResponse } from "~/data/responses.server";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";

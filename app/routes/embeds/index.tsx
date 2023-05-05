@@ -1,9 +1,9 @@
 import { ActionFunction, LoaderArgs, redirect } from "@remix-run/node";
 import { Form, useLoaderData, useNavigate } from "@remix-run/react";
 import React, { useEffect, useState } from "react";
-import BaseInput from "~/components/BaseInput";
-import Button from "~/components/Button";
-import TextInput from "~/components/TextInput";
+import BaseInput from "package/components/BaseInput";
+import Button from "package/components/Button";
+import TextInput from "package/components/TextInput";
 import authenticateEmbed from "./_authenticateEmbed.server";
 import listApps from "~/data/listApps.server";
 import getMysql from "~/data/mysql.server";

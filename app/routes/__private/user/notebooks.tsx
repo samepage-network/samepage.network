@@ -8,8 +8,8 @@ import {
 } from "@remix-run/react";
 import Table from "~/components/Table";
 import listNotebooksForUser from "~/data/listNotebooksForUser.server";
-import TextInput from "~/components/TextInput";
-import Button from "~/components/Button";
+import TextInput from "package/components/TextInput";
+import Button from "package/components/Button";
 import createUserNotebook from "~/data/createUserNotebook.server";
 import remixAppAction from "~/data/remixAppAction.server";
 import remixAppLoader from "~/data/remixAppLoader.server";

@@ -1,7 +1,7 @@
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import remixAdminAction from "~/data/remixAdminAction.server";
 import remixAdminLoader from "~/data/remixAdminLoader.server";
-import Button from "~/components/Button";
+import Button from "package/components/Button";
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
 import { Form, useLoaderData, Link } from "@remix-run/react";
 import deleteNotebook from "~/data/deleteNotebook.server";

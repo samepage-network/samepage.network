@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from "@remix-run/react";
+import { Link, useSearchParams } from "react-router-dom";
 
 const LinkWithSearch = (props: Parameters<typeof Link>[0]) => {
   const [searchParams] = useSearchParams();

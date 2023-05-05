@@ -1,3 +1,5 @@
+@import "samepage/samepage.css";
+
 .notion-topbar > div {
   overflow: unset !important;
 }

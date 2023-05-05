@@ -57,6 +57,7 @@ import { z } from "zod";
 import debug from "package/utils/debugger";
 import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
 import getActorInfo from "~/data/getActorInfo.server";
+import listSharedPages from "~/data/listSharedPages.server";
 
 const log = debug("api:page");
 const zhandlerBody = zUnauthenticatedBody.or(
@@ -904,6 +905,7 @@ const logic = async (req: Record<string, unknown>) => {
         };
       }
       case "list-shared-pages": {
+        // @DEPRECATED
         const notebookPageIds = await cxn
           .select({ notebookPageId: pageNotebookLinks.notebookPageId })
           .from(pageNotebookLinks)
@@ -915,8 +917,12 @@ const logic = async (req: Record<string, unknown>) => {
             )
           )
           .then((r) => r.map(({ notebookPageId }) => notebookPageId));
+        const result = await listSharedPages({
+          requestId,
+          notebookUuid,
+        });
         await cxn.end();
-        return { notebookPageIds };
+        return { notebookPageIds, ...result };
       }
       case "disconnect-shared-page": {
         const { notebookPageId } = args;

@@ -1,5 +1,5 @@
 import { Link } from "@remix-run/react";
-import mixClasses from "./mixClasses";
+import mixClasses from "../../package/components/mixClasses";
 
 const ButtonLink = ({
   className,

@@ -5,7 +5,7 @@ import { useLoaderData, Link, Form } from "@remix-run/react";
 import getUserProfile from "~/data/getUserProfile.server";
 import deleteUser from "~/data/deleteUser.server";
 import remixAdminAction from "~/data/remixAdminAction.server";
-import Button from "~/components/Button";
+import Button from "package/components/Button";
 
 const SingleUserPage = () => {
   const data = useLoaderData<Awaited<ReturnType<typeof getUserProfile>>>();

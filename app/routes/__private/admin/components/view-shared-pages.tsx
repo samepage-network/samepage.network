@@ -3,7 +3,7 @@ import ViewSharedPages from "package/components/ViewSharedPages";
 import remixAdminLoader from "~/data/remixAdminLoader.server";
 import type { LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
-import Button from "~/components/Button";
+import Button from "package/components/Button";
 import listPages from "~/data/listPages.server";
 import { getSetting } from "package/internal/registry";
 

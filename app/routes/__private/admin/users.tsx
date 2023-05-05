@@ -3,8 +3,8 @@ import { Outlet, Form } from "@remix-run/react";
 import Table from "~/components/Table";
 import remixAdminLoader from "~/data/remixAdminLoader.server";
 import listUsers from "~/data/listUsers.server";
-import TextInput from "~/components/TextInput";
-import Button from "~/components/Button";
+import TextInput from "package/components/TextInput";
+import Button from "package/components/Button";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const UsersPage = () => {

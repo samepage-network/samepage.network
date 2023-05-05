@@ -5,9 +5,9 @@ import type { LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import Select from "~/components/Select";
 import { getSetting, setSetting } from "package/internal/registry";
-import TextInput from "~/components/TextInput";
+import TextInput from "package/components/TextInput";
 import React from "react";
-import Button from "~/components/Button";
+import Button from "package/components/Button";
 import dispatchAppEvent from "package/internal/dispatchAppEvent";
 
 const NotificationContainerPage = () => {

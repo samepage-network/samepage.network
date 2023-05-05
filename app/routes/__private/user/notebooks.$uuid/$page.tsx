@@ -16,7 +16,7 @@ import {
   InitialSchema,
   annotationSchema,
 } from "package/internal/types";
-import Button from "~/components/Button";
+import Button from "package/components/Button";
 import ChevronRightIcon from "@heroicons/react/solid/ChevronRightIcon";
 import ChevronDownIcon from "@heroicons/react/solid/ChevronDownIcon";
 import { getSetting } from "package/internal/registry";

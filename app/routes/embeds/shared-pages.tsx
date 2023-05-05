@@ -1,23 +1,15 @@
 import { ActionArgs, LoaderArgs, redirect } from "@remix-run/node";
-import React from "react";
 import authenticateEmbed from "./_authenticateEmbed.server";
-import { Form, useLoaderData } from "@remix-run/react";
 import getMysql from "~/data/mysql.server";
 import {
   accessTokens,
   apps,
   notebooks,
   pageNotebookLinks,
-  pageProperties,
   tokenNotebookLinks,
   tokens,
 } from "data/schema";
 import { and, eq } from "drizzle-orm/expressions";
-import AtJsonRendered from "package/components/AtJsonRendered";
-import { zSamePageSchema } from "package/internal/types";
-import LinkWithSearch from "~/components/LinkWithSearch";
-import TextInput from "~/components/TextInput";
-import Button from "~/components/Button";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import {
   InternalServerResponse,
@@ -25,40 +17,8 @@ import {
 } from "~/data/responses.server";
 import sharePageCommandCalback from "package/internal/sharePageCommandCallback";
 import { apiPost } from "package/internal/apiClient";
-
-const SharedPagesEmbedPage: React.FC = () => {
-  const data = useLoaderData<Awaited<ReturnType<typeof loader>>>();
-  return (
-    <div>
-      {"auth" in data && (
-        <div>
-          <h1 className="font-bold mb-4 text-xl">Shared Pages</h1>
-          <div className="mb-4">
-            {/* TODO: import ViewSharedPages Modal Content here */}
-            <ul>
-              {data.pages.map((p) => (
-                <li key={p.linkUuid} className="mb-2">
-                  <LinkWithSearch to={p.linkUuid} className="text-sky-400">
-                    <AtJsonRendered {...p.title} />
-                  </LinkWithSearch>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h2 className="font-semibold mb-3 text-lg">
-              Share Page on SamePage
-            </h2>
-            <Form method="post">
-              <TextInput label={"Search"} name={"title"} />
-              <Button>Share</Button>
-            </Form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+import listSharedPages from "~/data/listSharedPages.server";
+export { default as default } from "package/components/SharedPagesTab";
 
 export const loader = async (args: LoaderArgs) => {
   const result = await authenticateEmbed(args);
@@ -67,31 +27,9 @@ export const loader = async (args: LoaderArgs) => {
     return redirect("/embeds");
   }
   const cxn = await getMysql(result.requestId);
-  const pages = await cxn
-    .select({
-      linkUuid: pageNotebookLinks.uuid,
-      title: pageProperties.value,
-    })
-    .from(pageNotebookLinks)
-    .innerJoin(
-      pageProperties,
-      eq(pageProperties.linkUuid, pageNotebookLinks.uuid)
-    )
-    .where(
-      and(
-        eq(pageNotebookLinks.notebookUuid, result.notebookUuid),
-        eq(pageProperties.key, "$title"),
-        eq(pageNotebookLinks.open, 0)
-      )
-    );
+  const pagesResult = await listSharedPages(result);
   await cxn.end();
-  return {
-    auth: true as const,
-    pages: pages.map((p) => ({
-      linkUuid: p.linkUuid,
-      title: zSamePageSchema.parse(p.title),
-    })),
-  };
+  return pagesResult;
 };
 
 export const action = async (args: ActionArgs) => {
@@ -172,5 +110,3 @@ export const action = async (args: ActionArgs) => {
     throw new InternalServerResponse(`Page ${title} did not share correctly`);
   return redirect(`/embeds/shared-pages/${linkUuid.linkUuid}?auth=${param}`);
 };
-
-export default SharedPagesEmbedPage;

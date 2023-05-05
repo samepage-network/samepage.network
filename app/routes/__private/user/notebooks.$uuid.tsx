@@ -1,8 +1,8 @@
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import remixAppAction from "~/data/remixAppAction.server";
 import remixAppLoader from "~/data/remixAppLoader.server";
-import Button from "~/components/Button";
-import TextInput from "~/components/TextInput";
+import Button from "package/components/Button";
+import TextInput from "package/components/TextInput";
 import {
   ActionFunction,
   LoaderFunction,
