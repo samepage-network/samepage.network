@@ -5,14 +5,12 @@ import type { LoaderFunction } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import Button from "package/components/Button";
 import listPages from "~/data/listPages.server";
-import { getSetting } from "package/internal/registry";
+import listSharedPages from "~/data/listSharedPages.server";
 
 const ViewSharedPagesPage = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { pages } = useLoaderData<Awaited<ReturnType<typeof listPages>>>();
-  const notebookPageIds = pages
-    .filter((p) => p.notebook_uuid === getSetting("uuid"))
-    .map((p) => p.notebook_page_id);
+  const { pages } =
+    useLoaderData<Awaited<ReturnType<typeof listSharedPages>>>();
   return (
     <>
       <Button type={"button"} onClick={() => setIsOpen(true)}>
@@ -21,7 +19,7 @@ const ViewSharedPagesPage = () => {
       <ViewSharedPages
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
-        notebookPageIds={notebookPageIds}
+        pages={pages}
         onLinkClick={(id) => window.alert(id)}
       />
     </>

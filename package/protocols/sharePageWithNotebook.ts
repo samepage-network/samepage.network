@@ -18,6 +18,7 @@ import {
   DecodeState,
   EnsurePageByTitle,
   Schema,
+  SamePageSchema,
 } from "../internal/types";
 import Automerge from "automerge";
 import { addNotebookListener } from "../internal/setupMessageHandlers";
@@ -287,7 +288,14 @@ const setupSharePageWithNotebook = ({
         addCommand({
           label: VIEW_COMMAND_PALETTE_LABEL,
           callback: async () => {
-            const props = await apiClient<{ notebookPageIds: string[] }>({
+            const props = await apiClient<{
+              notebookPageIds: string[];
+              pages: {
+                linkUuid: string;
+                notebookPageId: string;
+                title: SamePageSchema;
+              }[];
+            }>({
               method: "list-shared-pages",
             });
             renderOverlay({

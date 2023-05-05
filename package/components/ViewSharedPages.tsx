@@ -1,7 +1,7 @@
 import { Button, Classes, Dialog } from "@blueprintjs/core";
 import React from "react";
 import LinkNewPage from "./LinkNewPage";
-import type { OverlayProps } from "../internal/types";
+import type { OverlayProps, SamePageSchema } from "../internal/types";
 import { renderOverlay } from "../internal/registry";
 
 type LinkProps = {
@@ -16,7 +16,7 @@ export type ViewSharedPagesProps = {
 } & LinkProps;
 
 type Props = {
-  notebookPageIds: string[];
+  pages: { linkUuid: string; title: SamePageSchema; notebookPageId: string }[];
 } & ViewSharedPagesProps;
 
 const PageLink = ({
@@ -80,7 +80,7 @@ const PageLink = ({
 const ViewSharedPages = ({
   onClose,
   isOpen,
-  notebookPageIds,
+  pages,
   portalContainer,
   ...linkProps
 }: OverlayProps<Props>) => {
@@ -94,12 +94,12 @@ const ViewSharedPages = ({
       portalContainer={portalContainer}
     >
       <div className={Classes.DIALOG_BODY}>
-        {notebookPageIds.length ? (
+        {pages.length ? (
           <ul>
-            {notebookPageIds.map((notebookPageId) => (
-              <li key={notebookPageId}>
+            {pages.map((page) => (
+              <li key={page.notebookPageId}>
                 <PageLink
-                  notebookPageId={notebookPageId}
+                  notebookPageId={page.notebookPageId}
                   onClose={onClose}
                   {...linkProps}
                 />

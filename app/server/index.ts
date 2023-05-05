@@ -6,7 +6,8 @@ export const handler = createRequestHandler({
   getBuild: () => require("./build"),
   originPaths: [
     "favicon.ico",
-    /^\/assets\/.*/,
+    // ignore tldraw asets for now since they're in S3, rest are in GH
+    /^\/assets\/[^t].*/,
     /^\/build\/.*/,
     {
       test: /^\/extensions\/[a-z0-9]+\.zip$/,
@@ -21,7 +22,7 @@ export const handler = createRequestHandler({
     /^\/images\/.*/,
     /^\/svgs\/.*/,
     /^\/videos\/.*/,
-    /^\/.well-known\/.*/
+    /^\/.well-known\/.*/,
   ],
   onError: (e) => console.log("Send email to me", e),
 });

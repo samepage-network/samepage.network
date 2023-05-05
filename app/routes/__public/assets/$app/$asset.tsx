@@ -1,15 +1,15 @@
 import { LoaderFunction } from "@remix-run/node";
-import fs from "fs";
-import mimeTypes from "mime-types";
+import { Octokit } from "@octokit/rest";
 
-export const loader: LoaderFunction = ({ params }) => {
+export const loader: LoaderFunction = async ({ params }) => {
   const { app, asset = "" } = params;
-  const buffer = fs.readFileSync(`../${app}-samepage/assets/${asset}`);
-  const mimeType = mimeTypes.lookup(asset);
-  return new Response(buffer, {
-    status: 200,
-    headers: {
-      "Content-Type": mimeType || "application/octet-stream",
-    },
+  const octokit = new Octokit({
+    baseUrl: process.env.OCTOKIT_URL,
   });
+  const content = await octokit.repos.getContent({
+    owner: "samepage-network",
+    repo: `${app}-samepage`,
+    path: `assets/${asset}`,
+  });
+  return fetch(content.url);
 };

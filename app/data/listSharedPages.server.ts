@@ -33,6 +33,7 @@ const listSharedPages = async ({
     pages: pages.map((p) => ({
       linkUuid: p.linkUuid,
       title: zSamePageSchema.parse(p.title),
+      notebookPageId: p.notebookPageId,
     })),
   };
 };
