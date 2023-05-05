@@ -860,7 +860,7 @@ test("Disconnecting a page should remove it from list", async () => {
     notebookUuid,
     token,
   });
-  expect(pages).toEqual({ notebookPageIds: [notebookPageId] });
+  expect(pages).toEqual({ notebookPageIds: [notebookPageId], pages: [] });
 
   const disconnect = await mockLambda({
     method: "disconnect-shared-page",

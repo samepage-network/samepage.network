@@ -1,15 +1,13 @@
+import React from "react";
 import { Outlet } from "react-router";
 import LinkWithSearch from "package/components/LinkWithSearch";
 
 const TABS = ["", "Shared Pages", "Workflows"];
 
-const RootDashboard = ({
-  currentTab,
-  root,
-}: {
+const RootDashboard: React.FC<{
   currentTab: string;
   root: string;
-}) => {
+}> = ({ currentTab, root }) => {
   return (
     <div className="flex h-full">
       <div className="w-40 flex flex-shrink-0 flex-col border-r border-r-slate-200 h-full">
