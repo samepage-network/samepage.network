@@ -5,7 +5,7 @@ import getMysql from "~/data/mysql.server";
 import authenticateEmbed from "./_authenticateEmbed.server";
 import LinkWithSearch from "package/components/LinkWithSearch";
 import workflowsLoader from "./_workflowsLoader.server";
-import AtJsonRendered from "dist/components/AtJsonRendered";
+import AtJsonRendered from "package/components/AtJsonRendered";
 
 const WorkflowsEmbed = () => {
   const data = useLoaderData<Awaited<ReturnType<typeof workflowsLoader>>>();
