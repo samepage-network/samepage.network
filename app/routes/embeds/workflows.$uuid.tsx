@@ -6,7 +6,13 @@ import getTitleState from "~/data/getTitleState.server";
 import { NotFoundResponse } from "~/data/responses.server";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { ActionFunction } from "@remix-run/node";
-import { accessTokens, apps, notebooks, pageNotebookLinks } from "data/schema";
+import {
+  accessTokens,
+  apps,
+  notebooks,
+  pageNotebookLinks,
+  tokenNotebookLinks,
+} from "data/schema";
 import { and, eq } from "drizzle-orm/expressions";
 import { apiPost } from "package/internal/apiClient";
 import downloadSharedPage from "~/data/downloadSharedPage.server";
@@ -14,6 +20,7 @@ import getMysql from "~/data/mysql.server";
 import Automerge from "automerge";
 import unwrapSchema from "package/utils/unwrapSchema";
 import authenticateEmbed from "./_authenticateEmbed.server";
+import Select from "~/components/Select";
 
 const SingleWokflowEmbed = () => {
   const data = useLoaderData<Awaited<ReturnType<typeof loader>>>();
@@ -26,6 +33,13 @@ const SingleWokflowEmbed = () => {
           className={"inline h-12 w-12"}
         />
       </h1>
+      <Select
+        label="Destination"
+        options={data.destinations.map((d) => ({
+          id: d.notebookUuid,
+          label: `${d.app} ${d.workspace}`,
+        }))}
+      />
       <Button>Trigger</Button>
     </Form>
   ) : (
@@ -39,7 +53,7 @@ export const loader = async (args: LoaderArgs) => {
     await getMysql(result.requestId).then((c) => c.end());
     return redirect("/embeds");
   }
-  const { requestId, notebookUuid } = result;
+  const { requestId, notebookUuid, tokenUuid } = result;
   const uuid = args.params.uuid || "";
   const cxn = await getMysql(requestId);
   const [page] = await cxn
@@ -63,8 +77,21 @@ export const loader = async (args: LoaderArgs) => {
     notebookPageId,
     requestId,
   });
+  const destinations = await cxn
+    .select({
+      notebookUuid: notebooks.uuid,
+      app: apps.name,
+      workspace: notebooks.workspace,
+    })
+    .from(notebooks)
+    .innerJoin(
+      tokenNotebookLinks,
+      eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
+    )
+    .innerJoin(apps, eq(apps.id, notebooks.app))
+    .where(eq(tokenNotebookLinks.tokenUuid, tokenUuid));
   await cxn.end();
-  return { title, auth: true };
+  return { title, auth: true, destinations };
 };
 
 export const action: ActionFunction = async (args) => {
@@ -107,22 +134,17 @@ export const action: ActionFunction = async (args) => {
     path: `extensions/${app}/backend`,
     data: {
       type: "ENSURE_PAGE_BY_TITLE",
-      data: {
-        title: notebookPageId,
-      },
+      title: notebookPageId,
     },
     authorization,
   });
   const state = unwrapSchema(Automerge.load(body));
-  state.content = state.content.replace("<%DATE:today%>", "April 07, 2023");
   await apiPost({
     path: `extensions/${app}/backend`,
     data: {
       type: "DECODE_STATE",
-      data: {
-        notebookPageId: newNotebookPageId,
-        state,
-      },
+      notebookPageId: newNotebookPageId,
+      state,
     },
     authorization,
   });

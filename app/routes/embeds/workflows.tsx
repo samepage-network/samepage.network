@@ -5,6 +5,7 @@ import getMysql from "~/data/mysql.server";
 import authenticateEmbed from "./_authenticateEmbed.server";
 import LinkWithSearch from "~/components/LinkWithSearch";
 import workflowsLoader from "./_workflowsLoader.server";
+import AtJsonRendered from "dist/components/AtJsonRendered";
 
 const WorkflowsEmbed = () => {
   const data = useLoaderData<Awaited<ReturnType<typeof workflowsLoader>>>();
@@ -16,8 +17,11 @@ const WorkflowsEmbed = () => {
           <ul>
             {data.workflows.map((wf) => (
               <li key={wf.uuid}>
-                <LinkWithSearch to={wf.uuid}>
-                  {wf.title || wf.notebookPageId}
+                <LinkWithSearch
+                  to={wf.uuid}
+                  className="text-sky-400 hover:underline cursor-pointer"
+                >
+                  <AtJsonRendered {...wf.title} />
                 </LinkWithSearch>
               </li>
             ))}

@@ -6,10 +6,14 @@ import blueprintcss from "@blueprintjs/core/lib/css/blueprint.css";
 import blueprinticonscss from "@blueprintjs/icons/lib/css/blueprint-icons.css";
 import Button from "~/components/Button";
 import SharedPageStatus from "package/components/SharedPageStatus";
-import { pageNotebookLinks } from "data/schema";
+import { pageNotebookLinks, pageProperties } from "data/schema";
 import { and, eq } from "drizzle-orm/expressions";
 import LinkWithSearch from "~/components/LinkWithSearch";
 import useNavigateWithSearch from "~/components/useNavigateWithSearch";
+import AtJsonRendered from "package/components/AtJsonRendered";
+import { NotFoundResponse } from "~/data/responses.server";
+import { zSamePageSchema } from "package/internal/types";
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const SingleSharedPageEmbedPage: React.FC = () => {
   const data = useLoaderData<Awaited<ReturnType<typeof loader>>>();
@@ -21,17 +25,17 @@ const SingleSharedPageEmbedPage: React.FC = () => {
       </LinkWithSearch>
       {!("auth" in data) ? (
         <div>User is not authenticated. Log in to manage this page.</div>
-      ) : !data.notebookPageId ? (
-        <div>
-          User is authenticated, but does not have access to page{" "}
-          {data.notebookPageId}
-        </div>
       ) : (
-        <SharedPageStatus
-          notebookPageId={data.notebookPageId}
-          onClose={() => navigate(`/embeds/shared-pages`)}
-          credentials={data.credentials}
-        />
+        <div>
+          <h1 className="mb-8 text-3xl mt-4">
+            <AtJsonRendered {...data.title} />
+          </h1>
+          <SharedPageStatus
+            notebookPageId={data.notebookPageId}
+            onClose={() => navigate(`/embeds/shared-pages`)}
+            credentials={data.credentials}
+          />
+        </div>
       )}
     </div>
   );
@@ -48,19 +52,31 @@ export const loader = async (args: LoaderArgs) => {
   const [page] = await cxn
     .select({
       notebookPageId: pageNotebookLinks.notebookPageId,
+      title: pageProperties.value,
     })
     .from(pageNotebookLinks)
+    .innerJoin(
+      pageProperties,
+      eq(pageProperties.linkUuid, pageNotebookLinks.uuid)
+    )
     .where(
       and(
         eq(pageNotebookLinks.uuid, linkUuid),
         eq(pageNotebookLinks.notebookUuid, result.notebookUuid),
-        eq(pageNotebookLinks.open, 0)
+        eq(pageNotebookLinks.open, 0),
+        eq(pageProperties.key, "$title")
       )
     );
   await cxn.end();
+  if (!page) {
+    throw new NotFoundResponse(
+      `User is authenticated, but does not have access to page ${linkUuid}`
+    );
+  }
   return {
     auth: true as const,
-    notebookPageId: page?.notebookPageId,
+    notebookPageId: page.notebookPageId,
+    title: zSamePageSchema.parse(page.title),
     credentials: {
       notebookUuid: result.notebookUuid,
       token: result.token,

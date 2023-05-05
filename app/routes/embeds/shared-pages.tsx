@@ -170,7 +170,7 @@ export const action = async (args: ActionArgs) => {
   await cxn.end();
   if (!linkUuid)
     throw new InternalServerResponse(`Page ${title} did not share correctly`);
-  return redirect(`/embeds/shared-pages/${linkUuid}?auth=${param}`);
+  return redirect(`/embeds/shared-pages/${linkUuid.linkUuid}?auth=${param}`);
 };
 
 export default SharedPagesEmbedPage;

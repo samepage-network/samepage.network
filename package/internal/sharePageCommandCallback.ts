@@ -18,52 +18,51 @@ const sharePageCommandCalback = ({
   credentials?: { notebookUuid: string; token: string };
 }) => {
   return getNotebookPageId()
-    .then((notebookPageId) =>
-      notebookPageId
-        ? encodeState(notebookPageId).then(
-            ({ $body: docInit, ...properties }) => {
-              const doc = Automerge.from<Schema>(wrapSchema(docInit), {
-                actorId: actorId.replace(/-/g, ""),
-              });
-              set(notebookPageId, doc);
-              const state = Automerge.save(doc);
-              return apiClient<{ id: string; created: boolean }>({
-                method: "init-shared-page",
-                notebookPageId,
-                state: binaryToBase64(state),
-                properties,
-                ...credentials,
-              })
-                .then(async (r) => {
-                  if (r.created) {
-                    dispatchAppEvent({
-                      type: "log",
-                      id: "init-page-success",
-                      content: `Successfully initialized shared page! Click on the invite button below to share the page with other notebooks!`,
-                      intent: "info",
-                    });
-                  } else {
-                    dispatchAppEvent({
-                      type: "log",
-                      id: "samepage-warning",
-                      content: "This page is already shared from this notebook",
-                      intent: "warning",
-                    });
-                  }
-                  return {
-                    notebookPageId,
-                    created: r.created,
-                    success: true as const,
-                  };
-                })
-                .catch((e) => {
-                  deleteId(notebookPageId);
-                  throw e;
-                });
-            }
-          )
-        : Promise.reject(new Error(`Failed to detect a page to share`))
-    )
+    .then(async (notebookPageId) => {
+      if (!notebookPageId)
+        return Promise.reject(new Error(`Failed to detect a page to share`));
+      const { $body: docInit, ...properties } = await encodeState(
+        notebookPageId
+      );
+      const doc = Automerge.from<Schema>(wrapSchema(docInit), {
+        actorId: actorId.replace(/-/g, ""),
+      });
+      set(notebookPageId, doc);
+      const state = Automerge.save(doc);
+      return apiClient<{ id: string; created: boolean }>({
+        method: "init-shared-page",
+        notebookPageId,
+        state: binaryToBase64(state),
+        properties,
+        ...credentials,
+      })
+        .then(async (r) => {
+          if (r.created) {
+            dispatchAppEvent({
+              type: "log",
+              id: "init-page-success",
+              content: `Successfully initialized shared page! Click on the invite button below to share the page with other notebooks!`,
+              intent: "info",
+            });
+          } else {
+            dispatchAppEvent({
+              type: "log",
+              id: "samepage-warning",
+              content: "This page is already shared from this notebook",
+              intent: "warning",
+            });
+          }
+          return {
+            notebookPageId,
+            created: r.created,
+            success: true as const,
+          };
+        })
+        .catch((e) => {
+          deleteId(notebookPageId);
+          throw e;
+        });
+    })
     .catch((e) => {
       const content = `Failed to share page on network: ${e.message}`;
       dispatchAppEvent({
