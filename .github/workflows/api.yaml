@@ -21,6 +21,7 @@ env:
   CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY }}
   CONVERTKIT_API_KEY: ${{ secrets.CONVERTKIT_API_KEY }}
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
+  GITHUB_TOKEN: ${{ secrets.TERRAFORM_GITHUB_TOKEN }}
   IS_PRODUCTION: 1
   ORIGIN: https://samepage.network
   STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
