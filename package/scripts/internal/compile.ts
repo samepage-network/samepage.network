@@ -215,7 +215,7 @@ const compile = ({
                           });
                           return {
                             // TODO - rid of blueprint once we cut over fully to our own component library
-                            contents: `import "normalize.css/normalize.css";\nimport "@blueprintjs/core/lib/css/blueprint.css";\n${fs
+                            contents: `@import "normalize.css";\n@import "@blueprintjs/core/lib/css/blueprint.css";\n${fs
                               .readFileSync(out)
                               .toString()}`,
                             loader: "css",
