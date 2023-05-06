@@ -208,13 +208,16 @@ const compile = ({
                           await tw({
                             _: ["build"],
                             "--config": path.resolve(
-                              path.join(__dirname, "..", ".."),
+                              path.join(__dirname, ".."),
                               "tailwind.config.js"
                             ),
                             "--output": out,
                           });
                           return {
-                            contents: fs.readFileSync(out).toString(),
+                            // TODO - rid of blueprint once we cut over fully to our own component library
+                            contents: `import "normalize.css/normalize.css";\nimport "@blueprintjs/core/lib/css/blueprint.css";\n${fs
+                              .readFileSync(out)
+                              .toString()}`,
                             loader: "css",
                           };
                         }

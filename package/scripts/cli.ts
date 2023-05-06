@@ -1,10 +1,12 @@
 #!/usr/bin/env node
+import type { CliOpts } from "./internal/compile";
 import build from "./build";
 import dev from "./dev";
 import test from "./test";
 import path from "path";
 import fs from "fs";
-import type { CliOpts } from "./internal/compile";
+import dotenv from "dotenv";
+dotenv.config();
 
 const mergeOpts = (args: CliOpts, rawPath: string): CliOpts => {
   const root = typeof args.root === "string" ? args.root : ".";
@@ -77,6 +79,15 @@ const run = async (command: string, args: string[]): Promise<number> => {
       return prev;
     }, {} as CliOpts);
   const opts = mergeOpts(cliOpts, "package.json");
+  const interpolate = (s: string) =>
+    s.replace(/\$([A-Z_]+)/g, (orig, k) => process.env[k] || orig);
+  Object.entries(opts).forEach(([k, v]) => {
+    if (typeof v === "string") {
+      opts[k] = interpolate(v);
+    } else if (Array.isArray(v)) {
+      opts[k] = v.map(interpolate);
+    }
+  });
   switch (command) {
     case "build":
       return build(opts);

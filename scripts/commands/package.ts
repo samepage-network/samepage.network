@@ -41,25 +41,8 @@ const packageCmd = async ({ out = "dist" }: { out?: string } = {}) => {
     }
   );
 
-  fs.writeFileSync(
-    path.join(out, "samepage.css"),
-    `@import url("https://unpkg.com/normalize.css@^8.0.1");
-@import url("https://unpkg.com/@blueprintjs/core@^4.8.0/lib/css/blueprint.css");
-
-`
-  );
-  ["package/tailwind.config.js", "template/tsconfig.json"].forEach((f) =>
+  ["package/scripts/tailwind.config.js", "template/tsconfig.json"].forEach((f) =>
     fs.cpSync(f, path.join(out, "scripts", path.basename(f)))
-  );
-
-  // @deprecated TODO
-  cp.execSync(
-    `npx tailwindcss -c package/tailwind.config.js -o /tmp/samepage.css`,
-    { stdio: "inherit" }
-  );
-  fs.appendFileSync(
-    path.join(out, "samepage.css"),
-    fs.readFileSync("/tmp/samepage.css")
   );
 
   ["LICENSE", "package/README.md"].forEach((f) =>
