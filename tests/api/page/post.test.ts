@@ -875,7 +875,7 @@ test("Disconnecting a page should remove it from list", async () => {
     notebookUuid,
     token,
   });
-  expect(pages2).toEqual({ notebookPageIds: [] });
+  expect(pages2).toEqual({ notebookPageIds: [], pages: [] });
 });
 
 test("Invitee can remove invite from invitee's notebook", async () => {

@@ -219,6 +219,7 @@ const compile = ({
                               .readFileSync(out)
                               .toString()}`,
                             loader: "css",
+                            resolveDir: process.cwd(),
                           };
                         }
                       );
