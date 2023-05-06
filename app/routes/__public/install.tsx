@@ -94,7 +94,8 @@ const InstallPage = () => {
             Install SamePage in {name}
           </h1>
           <img
-            src={`/assets/${selectedApp}/logo.png`}
+            // src={`/assets/${selectedApp}/logo.png`}
+            src={`https://raw.githubusercontent.com/samepage-network/${selectedApp}-samepage/main/assets/logo.png`}
             width={300}
             height={300}
           />
