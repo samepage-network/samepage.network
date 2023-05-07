@@ -1,7 +1,7 @@
 import type { default as defaultSettings } from "../utils/defaultSettings";
 import React from "react";
 import { v4 } from "uuid";
-import type { AddCommand, RemoveCommand, RenderOverlay } from "./types";
+import type { AddCommand, ConnectionStatus, RemoveCommand, RenderOverlay } from "./types";
 import defaultGetSetting from "../utils/defaultGetSetting";
 import defaultSetSetting from "../utils/defaultSetSetting";
 
@@ -71,6 +71,10 @@ export let workspace = "Main";
 export let getSetting = defaultGetSetting;
 export let setSetting = defaultSetSetting;
 export let actorId: string = Array(32).fill("0").join("");
+export const samePageBackend: {
+  channel?: WebSocket;
+  status: ConnectionStatus;
+} = { status: "DISCONNECTED" };
 
 const setupRegistry = ({
   app: _app,

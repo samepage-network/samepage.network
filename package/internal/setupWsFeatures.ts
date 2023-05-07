@@ -3,7 +3,6 @@ import React from "react";
 import Onboarding from "../components/Onboarding";
 import UsageChart, { UsageChartProps } from "../components/UsageChart";
 import {
-  ConnectionStatus,
   SendToBackend,
   Notification,
   MessageSource,
@@ -20,6 +19,7 @@ import setupRegistry, {
   getSetting,
   removeCommand,
   renderOverlay,
+  samePageBackend,
   setSetting,
   workspace,
 } from "./registry";
@@ -37,11 +37,6 @@ import handleErrorOperation from "./handleErrorOperation";
 const log = debug("ws");
 
 const USAGE_LABEL = "View SamePage Usage";
-
-const samePageBackend: {
-  channel?: WebSocket;
-  status: ConnectionStatus;
-} = { status: "DISCONNECTED" };
 
 const onError = (e: { error: Error } | Event) => {
   if (

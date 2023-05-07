@@ -7,7 +7,7 @@ import Markdown from "markdown-to-jsx";
 import { callNotificationAction } from "../internal/notificationActions";
 import apiClient from "../internal/apiClient";
 import sendExtensionError from "../internal/sendExtensionError";
-import { getSetting } from "../internal/registry";
+import { getSetting, samePageBackend } from "../internal/registry";
 
 const ActionButtons = ({
   notification,
@@ -70,7 +70,9 @@ const NotificationContainer = () => {
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const notificationsRef = React.useRef<Notification[]>(notifications);
   const [isOpen, setIsOpen] = React.useState(false);
-  const [status, setStatus] = React.useState<ConnectionStatus>("DISCONNECTED");
+  const [status, setStatus] = React.useState<ConnectionStatus>(
+    samePageBackend.status
+  );
   const removeNotification = React.useCallback(
     (not: Notification) => {
       notificationsRef.current = notificationsRef.current.filter(
