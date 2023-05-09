@@ -14,6 +14,7 @@ import debugMod from "../../package/utils/debugger";
 import fs from "fs";
 import crypto from "crypto";
 import { qsToJson } from "../../package/backend/createAPIGatewayProxyHandler";
+import * as dirPath from "path";
 
 const debug = debugMod("api");
 const METHODS = ["get", "post", "put", "delete", "options"] as const;
@@ -477,7 +478,9 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
         debug("new message from", connectionId);
         const body = data.toString();
         const action = JSON.parse(body).action;
-        const filePath = wsEntries.find((f) => f.endsWith(`/ws/${action}`));
+        const filePath = wsEntries.find((f) =>
+          f.endsWith(dirPath.join("ws", action))
+        );
         if (filePath) {
           import(filePath).then(({ handler }) => {
             delete require.cache[filePath];
@@ -494,7 +497,9 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
       ws.on("close", (a: number, b: Buffer) => {
         debug("client closing...", a, b.toString());
         removeLocalSocket(connectionId);
-        const filePath = wsEntries.find((f) => f.endsWith(`/ws/ondisconnect`));
+        const filePath = wsEntries.find((f) =>
+          f.endsWith(dirPath.join("ws", "ondisconnect"))
+        );
         if (filePath) {
           import(filePath).then(({ handler }) => {
             delete require.cache[filePath];
@@ -509,7 +514,9 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
         }
       });
       addLocalSocket(connectionId, ws);
-      const filePath = wsEntries.find((f) => f.endsWith(`/ws/onconnect`));
+      const filePath = wsEntries.find((f) =>
+        f.endsWith(dirPath.join("ws", "onconnect"))
+      );
       if (filePath) {
         import(filePath).then(({ handler }) => {
           delete require.cache[filePath];
