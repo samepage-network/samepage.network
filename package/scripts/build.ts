@@ -28,111 +28,125 @@ const publish = async ({
   const assetsDir = path.join(root, "assets");
   const distDir = path.join(root, "dist");
   const branch = process.env.GITHUB_REF_NAME || "main";
-  if (token && branch === "main") {
-    console.log(
-      `Preparing to publish zip to destination ${destPath} as version ${version}`
-    );
-    const cwd = process.cwd();
-    process.chdir(distDir);
-    execSync(`zip -qr ${destPath}.zip .`);
-    const opts = {
-      headers: {
-        Authorization: `token ${token}`,
-        Accept: "application/vnd.github+json",
-      },
-    };
-    const message = await axios
-      .get<{ commit: { message: string } }>(
-        `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/commits/${process.env.GITHUB_SHA}`,
-        opts
-      )
-      .then((r) => r.data.commit.message)
-      .catch((r) =>
-        Promise.reject(
-          new Error(
-            `Failed to read commit message for ${process.env.GITHUB_SHA} in ${
-              process.env.GITHUB_REPOSITORY
-            }:\n${JSON.stringify(r.response.data || "No response data found")}`
-          )
-        )
+  if (branch === "main") {
+    if (token) {
+      console.log(
+        `Preparing to publish zip to destination ${destPath} as version ${version}`
       );
-    const release = await axios
-      .post(
-        `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/releases`,
-        {
-          tag_name: version,
-          name:
-            message.length > 50 ? `${message.substring(0, 47)}...` : message,
-          body: message.length > 50 ? `...${message.substring(47)}` : "",
+      const cwd = process.cwd();
+      process.chdir(distDir);
+      execSync(`zip -qr ${destPath}.zip .`);
+      const opts = {
+        headers: {
+          Authorization: `token ${token}`,
+          Accept: "application/vnd.github+json",
         },
-        opts
-      )
-      .catch((r) => {
-        const { data } = r.response;
-        if (data && data.errors && data.errors[0].code === "already_exists") {
-          return axios.get(
-            `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/releases/tags/${version}`,
-            opts
-          );
-        }
-        return Promise.reject(
-          new Error(
-            `Failed to read post release ${version} for repo ${
-              process.env.GITHUB_REPOSITORY
-            }:\n${JSON.stringify(data || "No response data found")}`
+      };
+      const message = await axios
+        .get<{ commit: { message: string } }>(
+          `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/commits/${process.env.GITHUB_SHA}`,
+          opts
+        )
+        .then((r) => r.data.commit.message)
+        .catch((r) =>
+          Promise.reject(
+            new Error(
+              `Failed to read commit message for ${process.env.GITHUB_SHA} in ${
+                process.env.GITHUB_REPOSITORY
+              }:\n${JSON.stringify(
+                r.response.data || "No response data found"
+              )}`
+            )
           )
         );
-      });
-    const { tag_name, id } = release.data;
-
-    const assets = fs.readdirSync(".");
-    await Promise.all(
-      assets
-        .filter((f) => f !== "package.json")
-        .map((asset) => {
-          const content = fs.readFileSync(asset);
-          const contentType = mimeTypes.lookup(asset);
-          return axios
-            .post(
-              `https://uploads.github.com/repos/${process.env.GITHUB_REPOSITORY}/releases/${id}/assets?name=${asset}`,
-              content,
-              contentType
-                ? {
-                    ...opts,
-                    headers: {
-                      ...opts.headers,
-                      "Content-Type": contentType,
-                    },
-                  }
-                : opts
+      const release = await axios
+        .post(
+          `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/releases`,
+          {
+            tag_name: version,
+            name:
+              message.length > 50 ? `${message.substring(0, 47)}...` : message,
+            body: message.length > 50 ? `...${message.substring(47)}` : "",
+          },
+          opts
+        )
+        .catch((r) => {
+          const { data } = r.response;
+          if (data && data.errors && data.errors[0].code === "already_exists") {
+            return axios.get(
+              `https://api.github.com/repos/${process.env.GITHUB_REPOSITORY}/releases/tags/${version}`,
+              opts
+            );
+          }
+          return Promise.reject(
+            new Error(
+              `Failed to read post release ${version} for repo ${
+                process.env.GITHUB_REPOSITORY
+              }:\n${JSON.stringify(data || "No response data found")}`
             )
-            .catch((e) => {
-              console.error(
-                `Failed to upload ${asset}:\n${JSON.stringify(
-                  e.response.data || "{}",
-                  null,
-                  4
-                )}`
-              );
-            });
-        })
-    );
+          );
+        });
+      const { tag_name, id } = release.data;
 
-    console.log(`Successfully created github release for version ${tag_name}`);
-    process.chdir(cwd);
+      const assets = fs.readdirSync(".");
+      await Promise.all(
+        assets
+          .filter((f) => f !== "package.json")
+          .map((asset) => {
+            const content = fs.readFileSync(asset);
+            const contentType = mimeTypes.lookup(asset);
+            return axios
+              .post(
+                `https://uploads.github.com/repos/${process.env.GITHUB_REPOSITORY}/releases/${id}/assets?name=${asset}`,
+                content,
+                contentType
+                  ? {
+                      ...opts,
+                      headers: {
+                        ...opts.headers,
+                        "Content-Type": contentType,
+                      },
+                    }
+                  : opts
+              )
+              .catch((e) => {
+                console.error(
+                  `Failed to upload ${asset}:\n${JSON.stringify(
+                    e.response.data || "{}",
+                    null,
+                    4
+                  )}`
+                );
+              });
+          })
+      );
+
+      console.log(
+        `Successfully created github release for version ${tag_name}`
+      );
+      process.chdir(cwd);
+    } else {
+      console.warn(
+        "Github Release are only created when the GITHUB_TOKEN is set"
+      );
+    }
+
+    await updateLambdaFunctions({
+      api,
+      out: "out",
+      root,
+      prefix: `extensions-${destPath.replace(/-samepage$/, "")}-`,
+    });
+
+    if (review && fs.existsSync(path.join(root, review)) && branch === "main") {
+      await import(appPath(`${root}/${review.replace(/\.[jt]s$/, "")}`)).then(
+        //@ts-ignore
+        (mod) => typeof mod.default === "function" && mod.default()
+      );
+    }
   } else {
-    console.warn(
-      "Github Release are only created when the GITHUB_TOKEN is set on the `main` branch"
-    );
+    console.warn("Not on main branch, skipping production releases")
   }
-
-  await updateLambdaFunctions({
-    api,
-    out: "out",
-    root,
-    prefix: `extensions-${destPath.replace(/-samepage$/, "")}-`,
-  });
-
   const awsToken = process.env.AWS_ACCESS_KEY_ID;
   if (!!awsToken) {
     const s3 = new S3({});
@@ -165,13 +179,6 @@ const publish = async ({
             ContentType: mimeTypes.lookup(Path) || "application/octet-stream",
           })
         )
-    );
-  }
-
-  if (review && fs.existsSync(path.join(root, review))) {
-    await import(appPath(`${root}/${review.replace(/\.[jt]s$/, "")}`)).then(
-      //@ts-ignore
-      (mod) => typeof mod.default === "function" && mod.default()
     );
   }
 };
