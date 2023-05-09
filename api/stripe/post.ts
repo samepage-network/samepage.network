@@ -184,6 +184,22 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           body: JSON.stringify({ success: true }),
           headers: {},
         };
+      case "charge.succeeded":
+        const charge = object as Stripe.Charge;
+        await recordTransaction(charge.balance_transaction);
+        return {
+          statusCode: 200,
+          body: JSON.stringify({ success: true }),
+          headers: {},
+        };
+      case "application_fee.created":
+        const fee = object as Stripe.ApplicationFee;
+        await recordTransaction(fee.balance_transaction);
+        return {
+          statusCode: 200,
+          body: JSON.stringify({ success: true }),
+          headers: {},
+        };
       // case "balance transaction"
       // https://dashboard.stripe.com/balance
       default:
