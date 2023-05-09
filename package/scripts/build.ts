@@ -172,12 +172,14 @@ const publish = async ({
             : []
         )
         .map(({ Key, Path }) =>
-          s3.putObject({
-            Bucket,
-            Key,
-            Body: fs.createReadStream(Path),
-            ContentType: mimeTypes.lookup(Path) || "application/octet-stream",
-          })
+          s3
+            .putObject({
+              Bucket,
+              Key,
+              Body: fs.createReadStream(Path),
+              ContentType: mimeTypes.lookup(Path) || "application/octet-stream",
+            })
+            .then(() => console.log("Uploaded", Path, "to", Key))
         )
     );
   } else {
