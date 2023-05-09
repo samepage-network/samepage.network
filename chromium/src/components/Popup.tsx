@@ -1,6 +1,5 @@
-import React from "react";
-import { InputGroup, Label, Spinner } from "@blueprintjs/core";
-// import apiClient from "samepage/internal/apiClient";
+import React, { useContext } from "react";
+import { Spinner } from "@blueprintjs/core";
 import {
   useNavigate,
   Route,
@@ -8,87 +7,92 @@ import {
   createRoutesFromElements,
   RouterProvider,
 } from "react-router-dom";
-import { ClerkProvider, SignedIn, SignedOut } from "@clerk/chrome-extension";
+import {
+  ClerkProvider,
+  SignedIn,
+  SignedOut,
+  useClerk,
+  useSession,
+} from "@clerk/chrome-extension";
 import RootDashboard from "samepage/components/RootDashboard";
-import SharedPagesTab from "package/components/SharedPagesTab";
-import apiClient from "package/internal/apiClient";
+import SharedPagesTab from "samepage/components/SharedPagesTab";
+import apiClient from "samepage/internal/apiClient";
+import HomeDashboardTab from "package/components/HomeDashboardTab";
+import DefaultErrorBoundary from "~/components/DefaultErrorBoundary";
 
-type Notebook = {
-  uuid: string;
-  appName: string;
-  workspace: string;
-};
+const SamePageContext = React.createContext<{
+  notebookUuid: string;
+  token: string;
+  url: string;
+}>({
+  notebookUuid: "",
+  token: "",
+  url: "",
+});
 
-const PopupDashboard = () => {
-  const [currentTab, setCurrentTab] = React.useState(0);
+const SamePageProvider = () => {
+  const [notebookUuid, setNotebookUuid] = React.useState("");
+  const [token, setToken] = React.useState("");
+  const [url, setUrl] = React.useState("");
+  const session = useSession();
   const [loading, setLoading] = React.useState(true);
-  const [notebooks, setNotebooks] = React.useState<Notebook[]>([]);
-  const [creds, setCreds] = React.useState<{
-    notebookUuid: string;
-    token: string;
-  }>();
-  const currentNotebook = notebooks[currentTab];
   React.useEffect(() => {
-    // apiClient<{
-    //   notebooks: Notebook[];
-    //   credentials: {
-    //     notebookUuid: string;
-    //     token: string;
-    //   };
-    // }>({
-    //   // @ts-ignore
-    //   method: "get-notebook-credentials",
-    //   origin: "TODO - get origin from current tab",
-    //   // does a cookie automatically get sent?
-    // })
-    //   .then((r) => {
-    //     setNotebooks(r.notebooks);
-    //     setCreds(r.credentials);
-    //   })
-    //   .finally(() => {
-    //     setLoading(false);
-    //   });
-  }, [setLoading, setNotebooks]);
+    if (!session.isLoaded) return () => {};
+    if (!session.isSignedIn) return () => {};
+    session.session
+      .getToken()
+      .then(async (sessionToken) => {
+        if (!sessionToken) return;
+        const tabs = await chrome.tabs.query({
+          active: true,
+          lastFocusedWindow: true,
+        });
+        const url = tabs[0].url || "";
+        const r = await apiClient<{
+          notebooks: {
+            notebookUuid: string;
+            appName: string;
+            workspace: string;
+            token: string;
+          }[];
+        }>({
+          method: "list-user-notebooks",
+          url,
+          sessionToken,
+          sessionId: session.session.id,
+        });
+        const { notebookUuid, token } = r.notebooks[0];
+        setNotebookUuid(notebookUuid);
+        setToken(token);
+        setUrl(url);
+        // TODO - look into accessing from shared context https://github.com/remix-run/react-router/discussions/9564
+        localStorage.setItem("notebookUuid", notebookUuid);
+        localStorage.setItem("token", token);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+    return () => {};
+  }, [setLoading, setNotebookUuid, session.isSignedIn, session.isLoaded]);
   return loading ? (
     <div className="m-auto" style={{ margin: "auto" }}>
       <Spinner size={64} />
     </div>
-  ) : !notebooks.length ? (
-    <div className="m-auto text-green-700" style={{ margin: "auto" }}>
-      No Notebooks Connected to this Account... yet
-    </div>
   ) : (
-    <div className="flex">
-      <div className="w-32" style={{ width: 128 }}>
-        {notebooks.map((t, i) => (
-          <div
-            className={`capitalize cursor-pointer py-4 px-6 rounded-lg hover:bg-sky-400${
-              i === currentTab ? " bg-sky-200" : ""
-            }`}
-            style={{
-              textTransform: "capitalize",
-              cursor: "pointer",
-              padding: "16px 24px",
-              borderRadius: "12px",
-              background: i === currentTab ? "rgb(186, 230, 253)" : "inherit",
-            }}
-            key={i}
-            onClick={() => {
-              setCurrentTab(i);
-            }}
-          >
-            <div>{t.appName}</div>
-            <div>{t.workspace}</div>
-          </div>
-        ))}
-      </div>
-    </div>
+    <SamePageContext.Provider value={{ notebookUuid, token, url }}>
+      <SignedIn>
+        <RootDashboard root="/" currentTab={window.location.pathname} />
+      </SignedIn>
+      <SignedOut>
+        <div className="m-auto text-green-700" style={{ margin: "auto" }}>
+          Please sign in to Samepage to use this extension
+        </div>
+      </SignedOut>
+    </SamePageContext.Provider>
   );
 };
 
 const publishableKey = process.env.CLERK_PUBLISHABLE_KEY || "";
-
-// TODO - Allow TW to pick up on extension classes
 const PopupMain = () => {
   const navigate = useNavigate();
   return (
@@ -97,31 +101,46 @@ const PopupMain = () => {
       navigate={(to) => navigate(to)}
     >
       <div style={{ width: 480, height: 360 }}>
-        <RootDashboard root="/" currentTab="" />
+        <SamePageProvider />
       </div>
     </ClerkProvider>
   );
 };
 
+const HomeDashboardTabRoute = () => {
+  const clerk = useClerk();
+  const url = useContext(SamePageContext).url;
+  return <HomeDashboardTab onLogOut={() => clerk.signOut()} url={url} />;
+};
+
 const router = createMemoryRouter(
   createRoutesFromElements(
-    <Route path={"/"} element={<PopupMain />}>
-      <Route path={""} element={<PopupDashboard />} />
+    <Route
+      path={"/"}
+      element={<PopupMain />}
+      errorElement={<DefaultErrorBoundary />}
+    >
+      <Route
+        path={""}
+        element={<HomeDashboardTabRoute />}
+        loader={() => {
+          return {
+            auth: !!localStorage.getItem("notebookUuid"),
+          };
+        }}
+      />
       <Route
         path={"shared-pages"}
         element={<SharedPagesTab />}
-        loader={({ request }) => {
-          console.log(request.headers, document.cookie);
+        loader={() => {
           return apiClient({
             method: "list-shared-pages",
-            // TODO - get notebookUuid from current tab
             notebookUuid: localStorage.getItem("notebookUuid") || undefined,
-            // TODO - get token from current user
             token: localStorage.getItem("token") || undefined,
           });
         }}
       />
-      <Route path={"workflows"} element={<PopupDashboard />} />
+      <Route path={"workflows"} element={<div />} />
     </Route>
   )
 );

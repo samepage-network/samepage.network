@@ -503,6 +503,12 @@ export const zUnauthenticatedBody = z.discriminatedUnion("method", [
     workspace: z.string(),
     label: z.string().optional(),
   }),
+  z.object({
+    method: z.literal("list-user-notebooks"),
+    url: z.string().optional(),
+    sessionToken: z.string(),
+    sessionId: z.string(),
+  }),
   z.object({ method: z.literal("ping") }),
 ]);
 

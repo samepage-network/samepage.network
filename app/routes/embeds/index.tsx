@@ -1,9 +1,6 @@
 import { ActionFunction, LoaderArgs, redirect } from "@remix-run/node";
-import { Form, useLoaderData, useNavigate } from "@remix-run/react";
+import { useNavigate } from "@remix-run/react";
 import React, { useEffect, useState } from "react";
-import BaseInput from "package/components/BaseInput";
-import Button from "package/components/Button";
-import TextInput from "package/components/TextInput";
 import authenticateEmbed from "./_authenticateEmbed.server";
 import listApps from "~/data/listApps.server";
 import getMysql from "~/data/mysql.server";
@@ -17,10 +14,10 @@ import {
   UnauthorizedResponse,
   ForbiddenResponse,
 } from "~/data/responses.server";
+import HomeDashboardTab from "package/components/HomeDashboardTab";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const EmbedsIndexPage: React.FC = () => {
-  const data = useLoaderData<Awaited<ReturnType<typeof loader>>>();
   const navigate = useNavigate();
   const [origin, setOrigin] = useState("");
   useEffect(() => {
@@ -28,44 +25,7 @@ const EmbedsIndexPage: React.FC = () => {
       setOrigin(document.location?.ancestorOrigins?.[0] || "");
     }
   }, [setOrigin]);
-  return (
-    <div>
-      <h1 className="font-bold mb-4 text-xl">SamePage Widget</h1>
-      <div className="mb-2">
-        This widget helps you manage all your SamePage related resources!
-      </div>
-      {!data.auth ? (
-        <Form method={"post"}>
-          <div className="mb-2">
-            Log into your SamePage account to get started.
-          </div>
-          <TextInput
-            name={"email"}
-            label={"Email"}
-            placeholder="support@samepage.network"
-          />
-          <BaseInput
-            type={"password"}
-            name={"password"}
-            label={"Password"}
-            placeholder="****************"
-          />
-          <input type="hidden" name="origin" value={origin} />
-          <Button>Log In</Button>
-        </Form>
-      ) : (
-        <div>
-          <div className="mb-2">
-            Successfully logged in! Click on one of the resources on the left to
-            get started.
-          </div>
-          <Button type={"button"} onClick={() => navigate("/embeds")}>
-            Log Out
-          </Button>
-        </div>
-      )}
-    </div>
-  );
+  return <HomeDashboardTab onLogOut={() => navigate("/embeds")} url={origin} />;
 };
 
 export const loader = async (args: LoaderArgs) => {
