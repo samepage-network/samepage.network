@@ -45,7 +45,10 @@ const updateLambdaFunctions = async ({
             .replace(/\.js$/, "")
             .replace(new RegExp(`^${backendOutdir}/`), "")
             .replace(/[\\/]/g, "_");
-          zip.file(appPath(f), { name: `${prefix}${functionName}.js`, ...options });
+          zip.file(appPath(f), {
+            name: `${prefix}${functionName}.js`,
+            ...options,
+          });
           const shasum = crypto.createHash("sha256");
           const data: Uint8Array[] = [];
           return new Promise((resolve, reject) =>
@@ -55,7 +58,9 @@ const updateLambdaFunctions = async ({
                 shasum.update(d);
               })
               .on("end", () => {
-                console.log(`Zip of ${functionName} complete (${data.length}).`);
+                console.log(
+                  `Zip of ${functionName} complete (${data.length}).`
+                );
                 const sha256 = shasum.digest("base64");
                 const FunctionName = `${api}_${prefix}${functionName}`;
                 lambda
@@ -97,6 +102,8 @@ const updateLambdaFunctions = async ({
           );
         })
     );
+  } else {
+    console.warn(`No functions found in ${backendOutdir}`);
   }
 };
 

@@ -20,6 +20,7 @@ export const handler = createRequestHandler({
     /^\/extensions\/tests\/.+$/,
     /^\/fonts\/.*/,
     /^\/images\/.*/,
+    /^\/releases\/.*/,
     /^\/svgs\/.*/,
     /^\/videos\/.*/,
     /^\/.well-known\/.*/,

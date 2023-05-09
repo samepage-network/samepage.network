@@ -10,6 +10,7 @@ import esbuild from "esbuild";
 import appPath from "./internal/appPath";
 import updateLambdaFunctions from "./internal/updateLambdaFunctions";
 import { z } from "zod";
+import { S3 } from "@aws-sdk/client-s3";
 
 const publish = async ({
   api,
@@ -24,12 +25,15 @@ const publish = async ({
 } = {}): Promise<void> => {
   const token = process.env.GITHUB_TOKEN;
   const destPath = getPackageName();
-  if (token) {
+  const assetsDir = path.join(root, "assets");
+  const distDir = path.join(root, "dist");
+  const branch = process.env.GITHUB_REF_NAME || "main";
+  if (token && branch === "main") {
     console.log(
       `Preparing to publish zip to destination ${destPath} as version ${version}`
     );
     const cwd = process.cwd();
-    process.chdir(path.join(root, "dist"));
+    process.chdir(distDir);
     execSync(`zip -qr ${destPath}.zip .`);
     const opts = {
       headers: {
@@ -118,7 +122,7 @@ const publish = async ({
     process.chdir(cwd);
   } else {
     console.warn(
-      "No GitHub token set - please set one to create a Github release"
+      "Github Release are only created when the GITHUB_TOKEN is set on the `main` branch"
     );
   }
 
@@ -128,6 +132,41 @@ const publish = async ({
     root,
     prefix: `extensions-${destPath.replace(/-samepage$/, "")}-`,
   });
+
+  const awsToken = process.env.AWS_ACCESS_KEY_ID;
+  if (!!awsToken) {
+    const s3 = new S3({});
+    const Bucket = "samepage-extensions";
+    const artifacts = fs.existsSync(distDir) ? fs.readdirSync(distDir) : [];
+    const assets = fs.existsSync(assetsDir) ? fs.readdirSync(assetsDir) : [];
+    const repo = process.env.GITHUB_REPOSITORY || "samepage.network";
+    await Promise.all(
+      artifacts
+        .map((a) => ({
+          Key: `releases/${repo}/${branch === "main" ? "" : `${branch}/`}${a}`,
+          Path: path.join(distDir, a),
+        }))
+        .concat(
+          branch === "main"
+            ? assets.map((a) => ({
+                Key: `assets/${repo
+                  .split("/")
+                  .slice(-1)[0]
+                  .replace(/-samepage$/, "")}/${a}`,
+                Path: path.join(assetsDir, a),
+              }))
+            : []
+        )
+        .map(({ Key, Path }) =>
+          s3.putObject({
+            Bucket,
+            Key,
+            Body: fs.createReadStream(Path),
+            ContentType: mimeTypes.lookup(Path) || "application/octet-stream",
+          })
+        )
+    );
+  }
 
   if (review && fs.existsSync(path.join(root, review))) {
     await import(appPath(`${root}/${review.replace(/\.[jt]s$/, "")}`)).then(

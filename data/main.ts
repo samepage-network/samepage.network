@@ -149,7 +149,7 @@ const setupInfrastructure = async (): Promise<void> => {
         corsRule: [
           {
             allowedHeaders: ["*"],
-            allowedMethods: ["GET"],
+            allowedMethods: ["GET", "HEAD"],
             allowedOrigins: ["*"],
             exposeHeaders: [],
           },
