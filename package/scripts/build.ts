@@ -150,7 +150,7 @@ const publish = async ({
   const awsToken = process.env.AWS_ACCESS_KEY_ID;
   if (!!awsToken) {
     const s3 = new S3({});
-    const Bucket = "samepage-extensions";
+    const Bucket = "samepage.network";
     const artifacts = fs.existsSync(distDir) ? fs.readdirSync(distDir) : [];
     const assets = fs.existsSync(assetsDir) ? fs.readdirSync(assetsDir) : [];
     const repo = process.env.GITHUB_REPOSITORY || "samepage.network";
