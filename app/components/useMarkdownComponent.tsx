@@ -128,6 +128,7 @@ export const MarkdownComponent = ({ children }: { children: string }) => (
           ) : (
             <Link
               to={props.href.replace(/\.md$/, "")}
+              relative="path"
               className={"text-sky-500 underline hover:no-underline"}
             >
               {props.children}

@@ -73,12 +73,12 @@ Extensions are free to configure additional settings on top of this set, but the
 import defaultSettings from "samepage/utils/defaultSettings";
 
 const settings = defaultSettings.map((d) => ({
-    id: d.id,                   // string
-    name: d.name,               // string
-    description: d.description, // string
-    value: d.default,           // boolean or string
-    type: d.type                // "boolean" or "string"
-}))
+  id: d.id, // string
+  name: d.name, // string
+  description: d.description, // string
+  value: d.default, // boolean or string
+  type: d.type, // "boolean" or "string"
+}));
 ```
 
 ### Setup Client
@@ -103,7 +103,7 @@ const { unload, ...globalAPI } = setupSamePageClient({
 });
 ```
 
-The setup method returns an `unload` prop, and a set of methods that make up the [Global API](./global_api.md). It also accepts a few other properties aimed at smoothing out differences between apps. For those, please consult the full [NPM API](./npm_api.md). This method will also attach some WebSocket listeners so that it's ready to accept data.
+The setup method returns an `unload` prop, and a set of methods that make up the [Global API](../global_api.md). It also accepts a few other properties aimed at smoothing out differences between apps. For those, please consult the full [NPM API](../npm_api.md). This method will also attach some WebSocket listeners so that it's ready to accept data.
 
 ### Setup Protocols
 
@@ -141,7 +141,7 @@ const setupSharePageWithNotebook = () => {
 };
 ```
 
-To learn more about how to implement each of these properties of the protocol, checkout out our guide on the [Share Page Protocol](./share_page_protocol.md).
+To learn more about how to implement each of these properties of the protocol, checkout out our guide on the [Share Page Protocol](../share_page_protocol.md).
 
 ### Cleanup on Unload
 
@@ -174,6 +174,7 @@ Coming soon...
 ### Standard Arguments
 
 There are four commands that make up the development environment:
+
 - `dev`
 - `test`
 - `build`
@@ -199,7 +200,8 @@ Compiles the extension with a file watcher running to respond to file changes an
 
 ### Test
 
-Compiles the extension and runs tests using [Playwright](https://playwright.dev). Tests are expected to be in the `tests` directory with a `.test.ts` suffix. There should be at least one full integration test defined.  The `process.env.NODE_ENV` variable has a value of `test`. Along with the standard arguments from above, the following two arguments are also supported:
+Compiles the extension and runs tests using [Playwright](https://playwright.dev). Tests are expected to be in the `tests` directory with a `.test.ts` suffix. There should be at least one full integration test defined. The `process.env.NODE_ENV` variable has a value of `test`. Along with the standard arguments from above, the following two arguments are also supported:
+
 - `forward` - Could be specified multiple times, to forward the arguments to `Playwright` directly.
 
 The `samepage` package also exposes a set of testing utilities available in the `testing` module. These utilities are meant to ease the development of tests and provide a consistent SamePage test client to test against.
@@ -207,5 +209,6 @@ The `samepage` package also exposes a set of testing utilities available in the 
 ### Build
 
 Compiles the extension with a `process.env.NODE_ENV` value of `production` and publishes the artifacts created as a Github Release. Along with the standard arguments from above, the following two arguments are also supported:
+
 - `dry` - Add this flag to build the extension without publishing the artifacts.
 - `review` - Value should resolve to a javascript file with a callback default exported that will run after publishing as a GitHub Release. Useful for if the company behind the related application requires an extra review process to publish to.

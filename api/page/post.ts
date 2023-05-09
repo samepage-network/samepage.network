@@ -37,7 +37,7 @@ import createNotebook from "~/data/createNotebook.server";
 import QUOTAS from "~/data/quotas.server";
 import getQuota from "~/data/getQuota.server";
 import { encode } from "@ipld/dag-cbor";
-import clerk, { users } from "@clerk/clerk-sdk-node";
+import clerk, { sessions, users } from "@clerk/clerk-sdk-node";
 import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
 import {
   accessTokens,
@@ -242,6 +242,42 @@ const logic = async (req: Record<string, unknown>) => {
       });
       await cxn.end();
       return { notebookUuid, token: tokenRecord.value };
+    } else if (args.method === "list-user-notebooks") {
+      const { sessionToken, url, sessionId } = args;
+      const { userId } = await sessions.verifySession(sessionId, sessionToken);
+      const userNotebooks = await cxn
+        .select({
+          notebookUuid: notebooks.uuid,
+          workspace: notebooks.label,
+          appName: apps.name,
+          regex: apps.originRegex,
+          token: tokens.value,
+        })
+        .from(tokens)
+        .innerJoin(
+          tokenNotebookLinks,
+          eq(tokenNotebookLinks.tokenUuid, tokens.uuid)
+        )
+        .innerJoin(
+          notebooks,
+          eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
+        )
+        .innerJoin(apps, eq(apps.id, notebooks.app))
+        .where(eq(tokens.userId, userId));
+      return {
+        notebooks: userNotebooks.sort((a, b) => {
+          if (url) {
+            const aMatch = new RegExp(a.regex).test(url);
+            const bMatch = new RegExp(b.regex).test(url);
+            if (aMatch && !bMatch) return -1;
+            if (!aMatch && bMatch) return 1;
+          }
+          return (
+            a.appName.localeCompare(b.appName) ||
+            a.workspace.localeCompare(b.workspace)
+          );
+        }),
+      };
     } else if (args.method === "ping") {
       // uptime checker
       return { success: true };

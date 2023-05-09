@@ -155,7 +155,6 @@ export const loader: LoaderFunction = async ({ context, request }) => {
         : undefined;
     })
     .then((content) => {
-      console.log(content);
       return content
         ? JSON.parse(Buffer.from(content, "base64").toString()).samepage
             ?.install || {}

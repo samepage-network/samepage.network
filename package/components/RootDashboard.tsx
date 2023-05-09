@@ -1,13 +1,20 @@
 import React from "react";
-import { Outlet } from "react-router";
+import { Outlet, useMatches } from "react-router";
 import LinkWithSearch from "./LinkWithSearch";
 
 const TABS = ["", "Shared Pages", "Workflows"];
 
 const RootDashboard: React.FC<{
-  currentTab: string;
+  currentTab?: string;
   root: string;
-}> = ({ currentTab, root }) => {
+}> = ({ root }) => {
+  const matches = useMatches();
+  const lastPath = matches.slice(-1)[0].pathname || "";
+  const currentTab = TABS.slice(0)
+    .sort((a, b) => b.length - a.length)
+    .find((t) =>
+      lastPath.startsWith(`${root}${t.toLowerCase().replace(" ", "-")}`)
+    );
   return (
     <div className="flex h-full">
       <div className="w-40 flex flex-shrink-0 flex-col border-r border-r-slate-200 h-full">
