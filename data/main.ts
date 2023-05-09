@@ -1085,6 +1085,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         });
 
         new ActionsSecret(this, `${repo}_aws_access_secret`, {
+          provider: personalProvider,
           repository: repo,
           secretName: "AWS_SECRET_ACCESS_KEY",
           plaintextValue: appKey.secret,

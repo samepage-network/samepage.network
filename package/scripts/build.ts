@@ -145,7 +145,7 @@ const publish = async ({
       );
     }
   } else {
-    console.warn("Not on main branch, skipping production releases")
+    console.warn("Not on main branch, skipping production releases");
   }
   const awsToken = process.env.AWS_ACCESS_KEY_ID;
   if (!!awsToken) {
@@ -180,6 +180,8 @@ const publish = async ({
           })
         )
     );
+  } else {
+    console.warn("No access to AWS, skipping S3 uploads");
   }
 };
 
