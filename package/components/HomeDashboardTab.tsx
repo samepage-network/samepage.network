@@ -1,3 +1,4 @@
+import React from "react";
 import { Form, useLoaderData } from "react-router-dom";
 import Button from "./Button";
 import TextInput from "./TextInput";
@@ -9,7 +10,7 @@ const HomeDashboardTab = ({
 }: {
   onLogOut: () => void;
   url: string;
-}) => {
+}): React.ReactElement => {
   const data = useLoaderData() as { auth: boolean };
   return (
     <div>
