@@ -6,7 +6,10 @@ const compareSqlSchemas = async () => {
   const OUT_DIR = path.join("out", "migrations");
   if (fs.existsSync(OUT_DIR)) fs.rmSync(OUT_DIR, { recursive: true });
   execSync(
-    `npx drizzle-kit introspect:mysql --out ${OUT_DIR} --connectionString="${process.env.DATABASE_URL}"`,
+    `npx drizzle-kit introspect:mysql --out ${OUT_DIR} --connectionString="${process.env.DATABASE_URL?.replace(
+      /"/g,
+      '\\"'
+    )}"`,
     { stdio: "inherit" }
   );
   execSync(
