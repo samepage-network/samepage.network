@@ -29,7 +29,7 @@ Once installed, the extension should automatically kick off the onboarding flow.
 
 <div style="position: relative; padding-bottom: 64.5933014354067%; height: 0; margin-bottom:32px;"><iframe src="https://www.loom.com/embed/6ad21a2983ce43b6bcc2acdbe8b7ff4f" frameborder="0" webkitallowfullscreen="true" mozallowfullscreen="true" allowfullscreen="true" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
-For help with onboarding, check out our [Onboarding docs.](../getting_started/install#onboarding)
+For help with onboarding, check out our [Onboarding docs.](../../getting_started/install#onboarding)
 
 ## Installing the Development version
 
