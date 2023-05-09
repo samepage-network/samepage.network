@@ -42,8 +42,9 @@ The following directories also exist but are expected to be temporary:
    1. Create Database: `CREATE DATABASE samepage_network;`
    2. Create User: `CREATE USER 'samepage_network'@'localhost' IDENTIFIED BY 'samepage_network';`
    3. Grant Privileges: `GRANT ALL PRIVILEGES ON samepage_network.* TO 'samepage_network'@'localhost';`
-1. Apply the SamePage schema to your local `mysql` instance by running `npx ts-node scripts/cli.ts plan --sql`, followed by `npx ts-node scripts/cli.ts apply --sql --bare`.
+1. Apply the SamePage database schema to your local `mysql` instance by running `npx ts-node scripts/cli.ts plan --sql`, followed by `npx ts-node scripts/cli.ts apply --sql --bare`.
 1. `npm start` to run the app.
+1. Debugging: we use `debug` to help with debugging. See its [NPM package documentation](https://www.npmjs.com/package/debug) for usage details.
 
 ### Contributing
 
