@@ -9,6 +9,9 @@ import { DocSearch } from "@docsearch/react";
 import { useState } from "react";
 import ChevronRightIcon from "@heroicons/react/solid/ChevronRightIcon";
 import ChevronDownIcon from "@heroicons/react/solid/ChevronDownIcon";
+import parseRemixContext from "~/data/parseRemixContext.server";
+import getMysql from "~/data/mysql.server";
+import { apps } from "data/schema";
 
 const DirectoryLink = ({
   level = 0,
@@ -102,8 +105,27 @@ const DocsPage = () => {
   );
 };
 
-export const loader: LoaderFunction = () => {
-  return listMarkdownFiles("docs");
+export const loader: LoaderFunction = ({ context }) => {
+  return listMarkdownFiles("docs", {
+    "docs/applications": async () => {
+      const requestId = parseRemixContext(context).lambdaContext.awsRequestId;
+      const cxn = await getMysql(requestId);
+      const applications = await cxn
+        .select({ name: apps.name, code: apps.code, live: apps.live })
+        .from(apps)
+        .orderBy(apps.code);
+      await cxn.end();
+      const directory = applications
+        .filter((a) => a.live || process.env.NODE_ENV === "development")
+        .map((a) => ({
+          name: a.name,
+          path: `applications/${a.code}`,
+        }));
+      return {
+        directory,
+      };
+    },
+  });
 };
 
 export const links: LinksFunction = () => [

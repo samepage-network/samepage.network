@@ -27,7 +27,8 @@ const publish = async ({
   const destPath = getPackageName();
   const assetsDir = path.join(root, "assets");
   const distDir = path.join(root, "dist");
-  const branch = process.env.GITHUB_REF_NAME || "main";
+  const branch =
+    process.env.GITHUB_HEAD_REF || process.env.GITHUB_REF_NAME || "main";
   if (branch === "main") {
     if (token) {
       console.log(

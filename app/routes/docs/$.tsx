@@ -82,7 +82,11 @@ const DocsPage = (): React.ReactElement => {
 
 export const loader: LoaderFunction = ({ params }) => {
   const path = params["*"] || "";
-  return loadMarkdownFile({ path: `docs/${path}` });
+  const isApp = path.match(/^applications\/([^/]+)(?:\/(.*))?$/);
+  return loadMarkdownFile({
+    path: isApp ? `docs/${isApp[2] || "index"}` : `docs/${path}`,
+    repo: isApp ? `${isApp[1]}-samepage` : "samepage.network",
+  });
 };
 
 export const links: LinksFunction = () => {

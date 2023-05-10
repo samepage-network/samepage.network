@@ -1,4 +1,5 @@
 import fs from "fs";
+import nodepath from "path";
 import axios from "axios";
 import grayMatter from "gray-matter";
 
@@ -7,20 +8,40 @@ const bundleMDX = async ({ source }: { source: string }) => {
   return { frontmatter: data, code: content };
 };
 
-const loadMarkdownFile = async ({ path }: { path: string }) => {
+const rawGithubClient = async ({
+  repo,
+  file,
+}: {
+  repo: string;
+  file: string;
+}) => {
+  if (process.env.NODE_ENV === "development") {
+    const fileName =
+      repo === "samepage.network" ? file : nodepath.join("..", repo, file);
+    if (!fs.existsSync(fileName)) return "";
+    return fs.readFileSync(fileName).toString();
+  }
+  return axios
+    .get(
+      `https://raw.githubusercontent.com/samepage-network/${repo}/main/${file}`,
+      { responseType: "document" }
+    )
+    .then((r) => r.data as string)
+    .catch(() => "");
+};
+
+const loadMarkdownFile = async ({
+  path,
+  repo = "samepage.network",
+}: {
+  path: string;
+  repo?: string;
+}) => {
   const fileName = path || "index";
-  const source =
-    process.env.NODE_ENV === "development"
-      ? fs.existsSync(`./${fileName}.md`)
-        ? fs.readFileSync(`./${fileName}.md`).toString()
-        : undefined
-      : await axios
-          .get(
-            `https://raw.githubusercontent.com/vargasarts/samepage.network/main/${fileName}.md`,
-            { responseType: "document" }
-          )
-          .then((r) => r.data as string)
-          .catch(() => "");
+  const source = await rawGithubClient({
+    repo,
+    file: `${fileName}.md`,
+  });
   return source
     ? {
         ...(await bundleMDX({ source }).catch((e) => ({

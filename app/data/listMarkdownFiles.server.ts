@@ -49,8 +49,12 @@ export const gatherDocs = (path: string) => {
 };
 
 const listMarkdownFiles = async (
-  root: string
+  root: string,
+  customLoaders?: {
+    [key: string]: () => Promise<{ directory: DirectoryNode[] }>;
+  }
 ): Promise<{ directory: DirectoryNode[] }> => {
+  if (customLoaders && root in customLoaders) return customLoaders[root]();
   return gatherDocs(root)
     .then(({ metadata: d, files: r }) => {
       const parsedMeta = zMetadata.safeParse(d);
@@ -67,12 +71,14 @@ const listMarkdownFiles = async (
               f.name in orderByPath ? orderByPath[f.name] : Number.MAX_VALUE;
             const path = f.path.replace(/\.[a-z]+$/, "").replace(/^docs\//, "");
             return f.type === "dir"
-              ? listMarkdownFiles(f.path).then(({ directory: children }) => ({
-                  name,
-                  path,
-                  children,
-                  order,
-                }))
+              ? listMarkdownFiles(f.path, customLoaders).then(
+                  ({ directory: children }) => ({
+                    name,
+                    path,
+                    children,
+                    order,
+                  })
+                )
               : {
                   name,
                   path,
