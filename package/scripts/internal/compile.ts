@@ -19,9 +19,11 @@ declare global {
   namespace NodeJS {
     interface ProcessEnv {
       API_URL: string;
+      CLERK_PUBLISHABLE_KEY: string;
       GITHUB_TOKEN: string;
       NODE_ENV: "development" | "production" | "test";
       ORIGIN: string;
+      STRIPE_PUBLIC_KEY: string;
       STRIPE_SECRET_KEY: string;
       SVIX_SECRET: string;
     }

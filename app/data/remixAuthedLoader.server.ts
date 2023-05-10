@@ -6,6 +6,7 @@ import getMysql from "./mysql.server";
 import clerkOpts from "./clerkOpts.server";
 // http://localhost:3000/admin/emails/79781358-3d87-47f9-ae71-b9568baadb45
 const remixAuthedLoader: LoaderFunction = async (args) => {
+  if (!process.env.CLERK_PUBLISHABLE_KEY) return { clerk: false };
   const authData = await getAuth(args, clerkOpts).catch(async (e) => {
     if (
       e instanceof Response &&
@@ -32,6 +33,7 @@ const remixAuthedLoader: LoaderFunction = async (args) => {
       if (!!authData?.userId) return redirect(redirectUrl);
       return {
         redirectUrl: `/oauth/${app.app}?client_uri=${redirectUri}`,
+        clerk: true,
       };
     }
   }
@@ -42,10 +44,12 @@ const remixAuthedLoader: LoaderFunction = async (args) => {
   if (redirectParam) {
     return {
       redirectUrl: redirectParam,
+      clerk: true,
     };
   }
   return {
     redirectUrl: "/install?refresh=true",
+    clerk: true,
   };
 };
 

@@ -32,7 +32,6 @@ const loaderCallback = (context: AppLoadContext) => {
   return {
     ENV: {
       API_URL: process.env.API_URL,
-      CLERK_FRONTEND_API: process.env.CLERK_FRONTEND_API,
       CLERK_PUBLISHABLE_KEY: process.env.CLERK_PUBLISHABLE_KEY,
       ORIGIN: process.env.ORIGIN,
       NODE_ENV: process.env.NODE_ENV,
@@ -49,7 +48,8 @@ export const loader = (args: LoaderArgs) => {
   // const {skipClerk} = args.handle;
   const { context, request } = args;
   const url = new URL(request.url);
-  const skipClerk = /^\/embeds/.test(url.pathname);
+  const skipClerk =
+    !process.env.CLERK_PUBLISHABLE_KEY || /^\/embeds/.test(url.pathname);
   return skipClerk
     ? loaderCallback(context)
     : rootAuthLoader(
@@ -147,6 +147,8 @@ const App = () => {
 
 export default () => {
   const matches = useMatches();
-  const skipClerk = matches.some((match) => match.handle?.skipClerk);
+  const skipClerk =
+    !process.env.CLERK_PUBLISHABLE_KEY ||
+    matches.some((match) => match.handle?.skipClerk);
   return skipClerk ? App() : ClerkApp(App, {})();
 };
