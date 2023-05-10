@@ -1071,7 +1071,11 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
       });
 
       // TODO - Once these repos are elevated to the SamePage extension, we could remove.
-      const exceptionRepos = ["roamjs-query-builder", "roamjs-smartblocks"];
+      const exceptionRepos = [
+        "roamjs-query-builder",
+        "roamjs-smartblocks",
+        "roamjs-workbench",
+      ];
       const personalProvider = new GithubProvider(this, "personal_provider", {
         token: process.env.GITHUB_TOKEN,
         owner: "dvargas92495",
