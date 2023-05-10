@@ -160,16 +160,18 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             customer.deleted ? "DELETED" : customer.email || "UNKNOWN"
           )
           .catch(() => "ERROR");
-        await sendEmail({
-          to: "support@samepage.network",
-          subject: "SamePage Subscription Updated",
-          body: SubscriptionUpdateEmail({
-            email: customerEmail,
-            status: subscription.status,
-            id: subscription.id,
-            feedback: subscription.cancellation_details?.feedback || undefined,
-          }),
-        });
+        if (subscription.status !== "active")
+          await sendEmail({
+            to: "support@samepage.network",
+            subject: "SamePage Subscription Updated",
+            body: SubscriptionUpdateEmail({
+              email: customerEmail,
+              status: subscription.status,
+              id: subscription.id,
+              feedback:
+                subscription.cancellation_details?.feedback || undefined,
+            }),
+          });
         return {
           statusCode: 200,
           body: JSON.stringify({ success: true }),
