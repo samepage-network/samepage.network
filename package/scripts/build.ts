@@ -17,11 +17,13 @@ const publish = async ({
   root = ".",
   review,
   version,
+  host = "samepage.network",
 }: {
   api?: string;
   root?: string;
   review?: string;
   version?: string;
+  host?: string;
 } = {}): Promise<void> => {
   const token = process.env.GITHUB_TOKEN;
   const destPath = getPackageName();
@@ -149,9 +151,9 @@ const publish = async ({
     console.warn("Not on main branch, skipping production releases");
   }
   const awsToken = process.env.AWS_ACCESS_KEY_ID;
-  if (!!awsToken) {
+  if (!!awsToken && host !== "none") {
     const s3 = new S3({});
-    const Bucket = "samepage.network";
+    const Bucket = host;
     const artifacts = fs.existsSync(distDir) ? fs.readdirSync(distDir) : [];
     const assets = fs.existsSync(assetsDir) ? fs.readdirSync(assetsDir) : [];
     const repo = process.env.GITHUB_REPOSITORY || "samepage.network";
@@ -284,10 +286,11 @@ const zBuildArgs = z.object({
   domain: z.string().optional(),
   api: z.string().optional(),
   verbose: z.boolean().optional(),
+  host: z.string().optional(),
 });
 
 const build = (args: CliOpts = {}) => {
-  const { root, review, api, verbose } = zBuildArgs.parse(args);
+  const { root, review, api, verbose, host } = zBuildArgs.parse(args);
   process.env.NODE_ENV = process.env.NODE_ENV || "production";
   process.env.ORIGIN = process.env.ORIGIN || "https://samepage.network";
   const version = toVersion();
@@ -319,6 +322,7 @@ const build = (args: CliOpts = {}) => {
             version,
             root,
             api,
+            host,
           })
     )
     .then(() => {

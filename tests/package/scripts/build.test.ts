@@ -219,10 +219,11 @@ test("build command with publish fails without github token", async () => {
     `${root}/src/index.ts`,
     `const foo: string = "hello";console.log(foo);`
   );
-  const code = await build({ root });
+  const code = await build({ root, host: "none" });
   expect(code).toEqual(0);
   expect(Array.from(warnings)).toEqual([
-    "No GitHub token set - please set one to create a Github release",
+    "Github Release are only created when the GITHUB_TOKEN is set",
+    `No functions found in ${root}/out`,
   ]);
 
   process.env.GITHUB_TOKEN = oldToken;
@@ -298,6 +299,7 @@ test("build command automatically publishes to GitHub and runs a post publish sc
     root,
     review: "scripts/review.js",
     include: "hello.invalid",
+    host: "none",
   });
   expect(code).toEqual(0);
   expect(releaseBody).toEqual({ name: "Testing publish", body: "" });
@@ -315,6 +317,7 @@ test("build command automatically publishes to GitHub and runs a post publish sc
     root,
     review: "scripts/review.js",
     include: "hello.invalid",
+    host: "none",
   });
   expect(code2).toEqual(0);
   expect(releaseBody).toEqual({
