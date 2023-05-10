@@ -79,6 +79,7 @@ const setupInfrastructure = async (): Promise<void> => {
         "clerk_secret_key",
         "convertkit_api_key",
         "staging_clerk_api_key",
+        "staging_clerk_secret_key",
         "web3_storage_api_key",
         "stripe_webhook_secret",
         "svix_secret",
