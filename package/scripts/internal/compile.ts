@@ -23,6 +23,7 @@ declare global {
       NODE_ENV: "development" | "production" | "test";
       ORIGIN: string;
       STRIPE_SECRET_KEY: string;
+      PACKAGE_NAME: string;
       SVIX_SECRET: string;
     }
   }
@@ -46,6 +47,13 @@ const cliArgs = z.object({
 });
 
 export type CliArgs = z.infer<typeof cliArgs>;
+
+const zPackageJson = z
+  .object({
+    name: z.string().optional().default(""),
+  })
+  .optional()
+  .default({});
 
 // https://github.com/evanw/esbuild/issues/337#issuecomment-954633403
 const importAsGlobals = (
@@ -125,6 +133,13 @@ const compile = ({
 
   const srcRoot = path.join(root, "src");
   const apiRoot = path.join(root, "api");
+  const packageJsonPath = path.join(root, "package.json");
+  const packageJson = zPackageJson.parse(
+    fs.existsSync(packageJsonPath)
+      ? JSON.parse(fs.readFileSync(packageJsonPath).toString())
+      : {}
+  );
+  process.env.PACKAGE_NAME = process.env.PACKAGE_NAME || packageJson.name;
   const rootDir = fs
     .readdirSync(srcRoot, { withFileTypes: true })
     .filter((f) => f.isFile())
@@ -307,12 +322,14 @@ const compile = ({
                           const mirrorPath = path.resolve(root, mirror);
                           if (!fs.existsSync(mirrorPath))
                             fs.mkdirSync(mirrorPath, { recursive: true });
-                          readDir(outdir).forEach((f) => {
-                            fs.cpSync(
-                              appPath(f),
-                              path.join(mirrorPath, path.relative(outdir, f))
-                            );
-                          });
+                          readDir(outdir)
+                            .filter((f) => fs.existsSync(appPath(f)))
+                            .forEach((f) => {
+                              fs.cpSync(
+                                appPath(f),
+                                path.join(mirrorPath, path.relative(outdir, f))
+                              );
+                            });
                         }
                       });
                     },

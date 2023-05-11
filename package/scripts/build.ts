@@ -113,13 +113,23 @@ const publish = async ({
                   : opts
               )
               .catch((e) => {
-                console.error(
-                  `Failed to upload ${asset}:\n${JSON.stringify(
-                    e.response.data || "{}",
-                    null,
-                    4
-                  )}`
-                );
+                if (
+                  Array.isArray(e.response.data?.errors) &&
+                  e.response.data?.errors[0]?.code === "already_exists"
+                ) {
+                  console.error(`Release asset ${asset} already exists`);
+                } else {
+                  console.error(
+                    `Failed to upload ${asset}:\n${JSON.stringify(
+                      e.response.data?.errors ||
+                        e.response?.data ||
+                        e.message ||
+                        "{}",
+                      null,
+                      4
+                    )}`
+                  );
+                }
               });
           })
       );
