@@ -28,5 +28,32 @@
   "homepage": "https://github.com/samepage-network/{{id}}-samepage#readme",
   "dependencies": {
     "samepage": "^{{latest}}"
+  },
+  "samepage": {
+    "install": {
+      "steps": [
+        {
+          "title": "Connect your account",
+          "children": "link",
+          "props": {
+            "href": "TODO"
+          }
+        },
+        {
+          "title": "Step 2",
+          "children": "image",
+          "props": {
+            "src": "TODO"
+          }
+        },
+        {
+          "title": "Step 3",
+          "children": "image",
+          "props": {
+            "src": "TODO"
+          }
+        }
+      ]
+    }
   }
 }
