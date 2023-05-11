@@ -1128,11 +1128,12 @@ const logic = async (req: Record<string, unknown>) => {
                 await messageRequest(requestRecord.uuid);
                 return {
                   target,
-                  response: JSON.parse(data),
+                  response: data ? JSON.parse(data) : {},
                   requestUuid: requestRecord.uuid,
                 };
               }
             } catch (e) {
+              console.error("Failed to request target", target, e);
               return {
                 target,
                 response: { success: false, error: (e as Error).message },
