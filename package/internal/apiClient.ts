@@ -38,7 +38,9 @@ const handleFetch = <T extends Record<string, unknown> = Record<string, never>>(
         .text()
         .then((e) =>
           Promise.reject(
-            new Error(`${init?.method} request to ${url} failed: ${e}`)
+            new Error(
+              `${init?.method} request to ${url} failed (${r.status}): ${e}`
+            )
           )
         );
     } else if (r.status === 204) {

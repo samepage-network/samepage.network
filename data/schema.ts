@@ -338,3 +338,9 @@ export const authorizationCodes = mysqlTable("authorization_codes", {
     .default(sql`(DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 1 HOUR))`),
   scope: varchar("scope", { length: 256 }).notNull().default(""),
 });
+
+export const padawanMissions = mysqlTable("padawan_missions", {
+  uuid: primaryUuid(),
+  label: varchar("label", { length: 256 }).notNull().default(""),
+  startDate: date("start"),
+});
