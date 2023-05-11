@@ -602,7 +602,9 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
       const extensionPaths = Object.entries(
         opts.backendFunctionsByRepo
       ).flatMap(([repo, paths]) => {
-        const lambdas = paths.map((p) => p.replace(/\.ts$/, ""));
+        const lambdas = paths
+          .filter((p) => !/^_[a-z]/.test(p))
+          .map((p) => p.replace(/\.ts$/, ""));
         const app = repo.replace(/-samepage$/, "");
         return lambdas
           .filter((p) => p.includes("/"))

@@ -409,14 +409,17 @@ const zWebsocketMessage = z.discriminatedUnion("operation", [
 ]);
 export type WebsocketMessage = z.infer<typeof zWebsocketMessage>;
 
+export const zBackendWebSocketMessageCredentials = z.object({
+  notebookUuid: z.string(),
+  token: z.string(),
+  accessToken: z.string(),
+  email: z.string(),
+  workspace: z.string(),
+});
+
 export const zBackendWebSocketMessage = z
   .object({
-    credentials: z.object({
-      notebookUuid: z.string(),
-      token: z.string(),
-      accessToken: z.string(),
-      email: z.string(),
-    }),
+    credentials: zBackendWebSocketMessageCredentials,
     source: zWebsocketMessageSource,
     uuid: z.string(),
   })

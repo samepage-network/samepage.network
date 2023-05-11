@@ -84,6 +84,7 @@ const messageNotebook = ({
           path: apps.code,
           token: tokens.value,
           userId: tokens.userId,
+          workspace: notebooks.workspace,
         })
         .from(accessTokens)
         .innerJoin(notebooks, eq(accessTokens.notebookUuid, notebooks.uuid))
@@ -103,6 +104,7 @@ const messageNotebook = ({
           notebookUuid: target,
           token,
           email: await getPrimaryUserEmail(endpoint.userId),
+          workspace: endpoint.workspace,
         };
         Data["uuid"] = messageUuid;
         const lambda = new Lambda({

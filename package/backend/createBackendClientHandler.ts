@@ -10,6 +10,7 @@ import {
   NotebookRequestHandler,
   NotebookResponseHandler,
   zBackendWebSocketMessage,
+  zBackendWebSocketMessageCredentials,
 } from "../internal/types";
 import sendEmail from "./sendEmail.server";
 import handleRequestDataOperation from "../internal/handleRequestDataOperation";
@@ -17,6 +18,9 @@ import handleRequestOperation from "../internal/handleRequestOperation";
 import sendExtensionError from "../internal/sendExtensionError";
 import setupRegistry from "../internal/registry";
 import OperationNotificationEmail from "../components/OperationNotificationEmail";
+import { z } from "zod";
+
+type Credentials = z.infer<typeof zBackendWebSocketMessageCredentials>;
 
 const createBackendClientHandler =
   ({
@@ -24,9 +28,13 @@ const createBackendClientHandler =
     getNotebookRequestHandler,
     getNotebookResponseHandler,
   }: {
-    getDecodeState: (token: string) => DecodeState;
-    getNotebookRequestHandler: (token: string) => NotebookRequestHandler;
-    getNotebookResponseHandler: (token: string) => NotebookResponseHandler;
+    getDecodeState: (credentials: Credentials) => DecodeState;
+    getNotebookRequestHandler: (
+      credentials: Credentials
+    ) => NotebookRequestHandler;
+    getNotebookResponseHandler: (
+      credentials: Credentials
+    ) => NotebookResponseHandler;
   }) =>
   async (args: Record<string, unknown>) => {
     try {
@@ -74,27 +82,19 @@ const createBackendClientHandler =
       } else if (data.operation === "SHARE_PAGE_RESPONSE") {
         handleSharePageResponseOperation(data, source);
       } else if (data.operation === "SHARE_PAGE_UPDATE") {
-        await handleSharePageUpdateOperation(
-          data,
-          getDecodeState(credentials.accessToken)
-        );
+        await handleSharePageUpdateOperation(data, getDecodeState(credentials));
       } else if (data.operation === "SHARE_PAGE_FORCE") {
-        await handleSharePageForceOperation(
-          data,
-          getDecodeState(credentials.accessToken)
-        );
+        await handleSharePageForceOperation(data, getDecodeState(credentials));
       } else if (data.operation === "REQUEST_PAGE_UPDATE") {
         await handleRequestPageUpdateOperation(data, source);
       } else if (data.operation === "REQUEST_DATA") {
         handleRequestDataOperation(data, source, uuid);
       } else if (data.operation === "REQUEST") {
         await handleRequestOperation(data, source, [
-          getNotebookRequestHandler(credentials.accessToken),
+          getNotebookRequestHandler(credentials),
         ]);
       } else if (data.operation === "RESPONSE") {
-        await getNotebookResponseHandler(credentials.accessToken)(
-          data.response
-        );
+        await getNotebookResponseHandler(credentials)(data.response);
       }
       return { success: true };
     } catch (e) {
