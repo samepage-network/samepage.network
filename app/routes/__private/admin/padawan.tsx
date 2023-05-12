@@ -97,6 +97,7 @@ export const action: ActionFunction = async (args) => {
           issue,
           type: "User",
           missionUuid,
+          webhookUrl: `${process.env.API_URL}/padawan`,
         }
       );
       return redirect(`/admin/padawan/${missionUuid}`);

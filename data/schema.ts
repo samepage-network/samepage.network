@@ -344,3 +344,10 @@ export const padawanMissions = mysqlTable("padawan_missions", {
   label: varchar("label", { length: 256 }).notNull().default(""),
   startDate: date("start"),
 });
+
+export const padawanMissionSteps = mysqlTable("padawan_mission_steps", {
+  uuid: primaryUuid(),
+  missionUuid: uuid("mission_uuid").notNull(),
+  stepHash: varchar("step_hash", { length: 128 }).notNull().default(""),
+  executionDate: date("execution"),
+});
