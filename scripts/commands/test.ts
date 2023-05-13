@@ -2,14 +2,18 @@ import fs from "fs";
 import { spawn } from "child_process";
 import { S3 } from "@aws-sdk/client-s3";
 import mime from "mime-types";
+import os from "os";
 
+const shell = os.platform() === "win32";
 const test = ({
   debug,
   proj: project,
   file,
   g,
 }: { debug?: boolean; proj?: string; file?: string; g?: string } = {}) => {
-  process.env.DEBUG = debug ? "*,-pw:*,-babel,-babel:*,-express:*,-follow-redirects,-jwks,-proxy-agent" : process.env.DEBUG;
+  process.env.DEBUG = debug
+    ? "*,-pw:*,-babel,-babel:*,-express:*,-follow-redirects,-jwks,-proxy-agent"
+    : process.env.DEBUG;
   // process.env.AWS_ENDPOINT =
   //   process.env.AWS_ENDPOINT || "http://localhost:3003/mocks/aws";
   const args = [
@@ -42,6 +46,7 @@ const test = ({
   const options = {
     stdio: "inherit" as const,
     env: process.env,
+    shell,
   };
   const proc = spawn("npx", args, options);
   return new Promise<number>((resolve, reject) => {

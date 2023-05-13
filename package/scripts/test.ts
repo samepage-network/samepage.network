@@ -6,7 +6,9 @@ import toVersion from "./internal/toVersion";
 import getPackageName from "./internal/getPackageName";
 import mime from "mime-types";
 import { z } from "zod";
+import os from "os";
 
+const shell = os.platform() === "win32";
 const zTestArgs = z.object({
   forward: z.string().or(z.string().array()).optional(),
   path: z.string().optional(),
@@ -46,6 +48,7 @@ const test = (args: CliOpts) => {
       const options = {
         stdio: "inherit" as const,
         env: process.env,
+        shell,
       };
       const proc = isDebug
         ? spawn("npx", ["--inspect"].concat(args), options)
