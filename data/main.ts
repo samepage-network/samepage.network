@@ -1077,6 +1077,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         "roamjs-query-builder",
         "roamjs-smartblocks",
         "roamjs-workbench",
+        "roamjs-google",
       ];
       const personalProvider = new GithubProvider(this, "personal_provider", {
         token: process.env.GITHUB_TOKEN,
