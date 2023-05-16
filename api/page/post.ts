@@ -14,7 +14,6 @@ import {
   InternalServorError,
   MethodNotAllowedError,
   NotFoundError,
-  UnauthorizedError,
 } from "~/data/errors.server";
 import catchError from "~/data/catchError.server";
 import getMysql from "~/data/mysql.server";
@@ -37,7 +36,7 @@ import createNotebook from "~/data/createNotebook.server";
 import QUOTAS from "~/data/quotas.server";
 import getQuota from "~/data/getQuota.server";
 import { encode } from "@ipld/dag-cbor";
-import clerk, { sessions, users } from "@clerk/clerk-sdk-node";
+import { sessions, users } from "@clerk/clerk-sdk-node";
 import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
 import {
   accessTokens,
@@ -55,9 +54,9 @@ import {
 } from "data/schema";
 import { z } from "zod";
 import debug from "package/utils/debugger";
-import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
 import getActorInfo from "~/data/getActorInfo.server";
 import listSharedPages from "~/data/listSharedPages.server";
+import onboardNotebook from "~/data/onboardNotebook.server";
 
 const log = debug("api:page");
 const zhandlerBody = zUnauthenticatedBody.or(
@@ -205,43 +204,9 @@ const logic = async (req: Record<string, unknown>) => {
       await cxn.end();
       return { notebookUuid, token };
     } else if (args.method === "add-notebook") {
-      const { app, workspace, email, password, label } = args;
-      const userResponse = await users.getUserList({ emailAddress: [email] });
-      if (userResponse.length === 0) {
-        throw new UnauthorizedError(
-          `No user found with email ${email}. Please create an account first.`
-        );
-      }
-      if (userResponse.length > 1) {
-        throw new ConflictError(
-          `Multiple users found with email ${email}. Contact support@samepage.network for help.`
-        );
-      }
-      const userId = userResponse[0].id;
-      const passwordResponse = await clerk.users
-        .verifyPassword({ userId, password })
-        .catch(() => ({ verified: false }));
-      if (!passwordResponse.verified) {
-        throw new ForbiddenError(`Incorrect password for this email`);
-      }
-      const [tokenRecord] = await cxn
-        .select({ uuid: tokens.uuid, value: tokens.value })
-        .from(tokens)
-        .where(eq(tokens.userId, userId));
-      if (!tokenRecord) {
-        throw new InternalServorError(
-          `Could not find token to use for this user. Please contact support@samepage.network for help.`
-        );
-      }
-      const notebookUuid = await getOrGenerateNotebookUuid({
-        requestId,
-        tokenUuid: tokenRecord.uuid,
-        app,
-        workspace,
-        label,
-      });
+      const response = await onboardNotebook({ requestId, ...args });
       await cxn.end();
-      return { notebookUuid, token: tokenRecord.value };
+      return response;
     } else if (args.method === "list-user-notebooks") {
       const { sessionToken, url, sessionId } = args;
       const { userId } = await sessions.verifySession(sessionId, sessionToken);

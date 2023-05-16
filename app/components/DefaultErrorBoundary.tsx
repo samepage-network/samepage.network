@@ -2,21 +2,24 @@ import React, { useEffect } from "react";
 import type { V2_ErrorBoundaryComponent } from "@remix-run/node";
 import {
   useMatches,
+  useLocation,
   useRouteError,
   isRouteErrorResponse,
-} from "@remix-run/react";
+} from "react-router-dom";
 import { apiPost } from "package/internal/apiClient";
 
 const DefaultErrorBoundary: V2_ErrorBoundaryComponent =
   (): React.ReactElement => {
     const error = useRouteError();
     const matches = useMatches();
+    const location = useLocation();
     if (matches.length === 0) {
+      console.error(error);
       return (
         <main className={"font-sans p-8 w-full"}>
           <h1 className={"text-xl font-bold mb-4"}>Error</h1>
           <pre className="p-8 bg-red-800 bg-opacity-10 text-red-900 border-red-900 border-2 rounded-sm overflow-auto mb-4">
-            Failed to load the root application
+            Failed to load the root application at {location.pathname}
           </pre>
           <p>
             The SamePage website is down - we have already been notified and are
@@ -30,11 +33,12 @@ const DefaultErrorBoundary: V2_ErrorBoundaryComponent =
         ? error.stack || `No Stack. Error Message: ${error.message}`
         : JSON.stringify(error);
     if (!matches[0].data) {
+      console.error(error);
       return (
         <main className={"font-sans p-8 w-full"}>
           <h1 className={"text-xl font-bold mb-4"}>Error</h1>
           <pre className="p-8 bg-red-800 bg-opacity-10 text-red-900 border-red-900 border-2 rounded-sm overflow-auto mb-4 whitespace-pre-wrap">
-            Failed to load the root application.
+            Failed to load the root application at {location.pathname}
           </pre>
           <p>
             The SamePage website is down - we have already been notified and are
@@ -43,7 +47,7 @@ const DefaultErrorBoundary: V2_ErrorBoundaryComponent =
         </main>
       );
     }
-    const logUrl = matches[0].data.logUrl;
+    const logUrl = (matches[0].data as { logUrl: string }).logUrl;
     useEffect(() => {
       apiPost({
         path: "errors",

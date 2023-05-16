@@ -1,4 +1,4 @@
-import { useNavigate, useSearchParams } from "@remix-run/react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const useNavigateWithSearch = () => {
   const [searchParams] = useSearchParams();

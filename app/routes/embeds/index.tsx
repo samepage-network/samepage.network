@@ -4,17 +4,11 @@ import React, { useEffect, useState } from "react";
 import authenticateEmbed from "./_authenticateEmbed.server";
 import listApps from "~/data/listApps.server";
 import getMysql from "~/data/mysql.server";
-import { users } from "@clerk/clerk-sdk-node";
-import { tokens, tokenNotebookLinks, apps, notebooks } from "data/schema";
-import { eq, and } from "drizzle-orm/expressions";
+import { apps } from "data/schema";
 import parseRemixContext from "~/data/parseRemixContext.server";
-import {
-  BadRequestResponse,
-  NotFoundResponse,
-  UnauthorizedResponse,
-  ForbiddenResponse,
-} from "~/data/responses.server";
+import { BadRequestResponse } from "~/data/responses.server";
 import HomeDashboardTab from "package/components/HomeDashboardTab";
+import onboardNotebook from "~/data/onboardNotebook.server";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const EmbedsIndexPage: React.FC = () => {
@@ -57,17 +51,6 @@ export const action: ActionFunction = async (args) => {
   if (typeof origin !== "string") {
     throw new BadRequestResponse("Missing origin");
   }
-  const [user] = await users.getUserList({ emailAddress: [email] });
-  if (!user) {
-    throw new NotFoundResponse(`No user exists with email ${email}`);
-  }
-  const { verified } = await users.verifyPassword({
-    userId: user.id,
-    password,
-  });
-  if (!verified) {
-    throw new UnauthorizedResponse("Invalid password");
-  }
   const requestId = parseRemixContext(args.context).lambdaContext.awsRequestId;
   const cxn = await getMysql(requestId);
   const [app] = await cxn
@@ -81,25 +64,15 @@ export const action: ActionFunction = async (args) => {
       `Widget is currently in an unsupported domain: ${origin}`
     );
   }
-  const [auth] = await cxn
-    .select({
-      notebookUuid: notebooks.uuid,
-      token: tokens.value,
-    })
-    .from(tokens)
-    .innerJoin(
-      tokenNotebookLinks,
-      eq(tokenNotebookLinks.tokenUuid, tokens.uuid)
-    )
-    .innerJoin(notebooks, eq(notebooks.uuid, tokenNotebookLinks.notebookUuid))
-    .innerJoin(apps, eq(notebooks.app, apps.id))
-    .where(and(eq(tokens.userId, user.id), eq(apps.code, app.code)));
+  const auth = await onboardNotebook({
+    app: app.code,
+    // TODO: how do we get the workspace?
+    workspace: "",
+    email,
+    password,
+    requestId,
+  });
   await cxn.end();
-  if (!auth) {
-    throw new ForbiddenResponse(
-      `You have not yet installed SamePage to this application. Learn how at https://samepage.network/install?code=${app}`
-    );
-  }
   return redirect(
     `/embeds?auth=${Buffer.from(`${auth.notebookUuid}:${auth.token}`).toString(
       "base64"

@@ -33,7 +33,7 @@ export type GetNotebookCredentialsResponse = z.infer<
 export const zOnboardNotebookPayload = z.object({
   email: z.string(),
   password: z.string(),
-  app: z.string(),
+  app: z.string().or(z.number()),
   workspace: z.string(),
   label: z.string().optional(),
 });

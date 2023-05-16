@@ -30,7 +30,7 @@ const RootDashboard: React.FC<{
           </LinkWithSearch>
         ))}
       </div>
-      <div className="flex-grow p-8 h-full overflow-hidden">
+      <div className="flex-grow p-8 h-full overflow-auto">
         <Outlet />
       </div>
     </div>

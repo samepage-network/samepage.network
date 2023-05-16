@@ -7,18 +7,13 @@ import {
   createRoutesFromElements,
   RouterProvider,
 } from "react-router-dom";
-import {
-  ClerkProvider,
-  SignedIn,
-  SignedOut,
-  useClerk,
-  useSession,
-} from "@clerk/chrome-extension";
+import { ClerkProvider, useClerk, useSession } from "@clerk/chrome-extension";
 import RootDashboard from "samepage/components/RootDashboard";
 import SharedPagesTab from "samepage/components/SharedPagesTab";
 import apiClient from "samepage/internal/apiClient";
-import HomeDashboardTab from "package/components/HomeDashboardTab";
+import HomeDashboardTab from "samepage/components/HomeDashboardTab";
 import DefaultErrorBoundary from "~/components/DefaultErrorBoundary";
+import SharedPageTab from "samepage/components/SharedPageTab";
 
 const SamePageContext = React.createContext<{
   notebookUuid: string;
@@ -37,42 +32,47 @@ const SamePageProvider = () => {
   const session = useSession();
   const [loading, setLoading] = React.useState(true);
   React.useEffect(() => {
-    if (!session.isLoaded) return () => {};
-    if (!session.isSignedIn) return () => {};
-    session.session
-      .getToken()
-      .then(async (sessionToken) => {
-        if (!sessionToken) return;
-        const tabs = await chrome.tabs.query({
-          active: true,
-          lastFocusedWindow: true,
-        });
-        const url = tabs[0].url || "";
-        const r = await apiClient<{
-          notebooks: {
-            notebookUuid: string;
-            appName: string;
-            workspace: string;
-            token: string;
-          }[];
-        }>({
-          method: "list-user-notebooks",
-          url,
-          sessionToken,
-          sessionId: session.session.id,
-        });
-        const { notebookUuid, token } = r.notebooks[0];
-        setNotebookUuid(notebookUuid);
-        setToken(token);
-        setUrl(url);
-        // TODO - look into accessing from shared context https://github.com/remix-run/react-router/discussions/9564
-        localStorage.setItem("notebookUuid", notebookUuid);
-        localStorage.setItem("token", token);
-      })
-      .finally(() => {
+    if (session.isLoaded) {
+      if (session.isSignedIn) {
+        session.session
+          .getToken()
+          .then(async (sessionToken) => {
+            if (!sessionToken) return;
+            const tabs = await chrome.tabs.query({
+              active: true,
+              lastFocusedWindow: true,
+            });
+            const url = tabs[0].url || "";
+            const r = await apiClient<{
+              notebooks: {
+                notebookUuid: string;
+                appName: string;
+                workspace: string;
+                token: string;
+              }[];
+            }>({
+              method: "list-user-notebooks",
+              url,
+              sessionToken,
+              sessionId: session.session.id,
+            });
+            const { notebookUuid, token } = r.notebooks[0];
+            setNotebookUuid(notebookUuid);
+            setToken(token);
+            setUrl(url);
+            // TODO - look into accessing from shared context https://github.com/remix-run/react-router/discussions/9564
+            localStorage.setItem("notebookUuid", notebookUuid);
+            localStorage.setItem("token", token);
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+      } else {
+        localStorage.removeItem("notebookUuid");
+        localStorage.removeItem("token");
         setLoading(false);
-      });
-    return () => {};
+      }
+    }
   }, [setLoading, setNotebookUuid, session.isSignedIn, session.isLoaded]);
   return loading ? (
     <div className="m-auto" style={{ margin: "auto" }}>
@@ -80,14 +80,7 @@ const SamePageProvider = () => {
     </div>
   ) : (
     <SamePageContext.Provider value={{ notebookUuid, token, url }}>
-      <SignedIn>
-        <RootDashboard root="/" currentTab={window.location.pathname} />
-      </SignedIn>
-      <SignedOut>
-        <div className="m-auto text-green-700" style={{ margin: "auto" }}>
-          Please sign in to Samepage to use this extension
-        </div>
-      </SignedOut>
+      <RootDashboard root="/" currentTab={window.location.pathname} />
     </SamePageContext.Provider>
   );
 };
@@ -110,7 +103,16 @@ const PopupMain = () => {
 const HomeDashboardTabRoute = () => {
   const clerk = useClerk();
   const url = useContext(SamePageContext).url;
-  return <HomeDashboardTab onLogOut={() => clerk.signOut()} url={url} />;
+  return (
+    <HomeDashboardTab
+      onLogOut={() => {
+        localStorage.removeItem("notebookUuid");
+        localStorage.removeItem("token");
+        clerk.signOut();
+      }}
+      url={url}
+    />
+  );
 };
 
 const router = createMemoryRouter(
@@ -128,6 +130,9 @@ const router = createMemoryRouter(
             auth: !!localStorage.getItem("notebookUuid"),
           };
         }}
+        action={({ request }) => {
+          return fetch(request);
+        }}
       />
       <Route
         path={"shared-pages"}
@@ -139,7 +144,24 @@ const router = createMemoryRouter(
             token: localStorage.getItem("token") || undefined,
           });
         }}
-      />
+      >
+        <Route
+          path={":uuid"}
+          element={<SharedPageTab />}
+          loader={({ params }) => {
+            const credentials = {
+              notebookUuid: localStorage.getItem("notebookUuid") || undefined,
+              token: localStorage.getItem("token") || undefined,
+            };
+            // TODO - proper loader here
+            return {
+              notebookPageId: params.uuid,
+              credentials,
+              title: { content: params.uuid, annotations: [] },
+            };
+          }}
+        />
+      </Route>
       <Route path={"workflows"} element={<div />} />
     </Route>
   )
