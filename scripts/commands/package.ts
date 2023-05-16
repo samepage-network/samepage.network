@@ -41,8 +41,8 @@ const packageCmd = async ({ out = "dist" }: { out?: string } = {}) => {
     }
   );
 
-  ["package/scripts/tailwind.config.js", "template/tsconfig.json"].forEach((f) =>
-    fs.cpSync(f, path.join(out, "scripts", path.basename(f)))
+  ["package/scripts/tailwind.config.js", "template/tsconfig.json"].forEach(
+    (f) => fs.cpSync(f, path.join(out, "scripts", path.basename(f)))
   );
 
   ["LICENSE", "package/README.md"].forEach((f) =>
@@ -91,9 +91,15 @@ const packageCmd = async ({ out = "dist" }: { out?: string } = {}) => {
   );
   fs.readdirSync("patches").forEach((f) => {
     const pkg = /(.*?)\+\d+\./.exec(f)?.[1];
-    if (pkg && root.peerDependencies[pkg.replace(/\+/g, "/")]) {
-      fs.cpSync(path.join("patches", f), path.join(out, "patches", f));
-    }
+    if (!pkg) return;
+    const name = pkg.replace(/\+/g, "/");
+    if (!root.peerDependencies[name]) return;
+    if (
+      root.peerDependencies[name] !== rootPackageJson.dependencies[name] &&
+      root.peerDependencies[name] !== rootPackageJson.devDependencies[name]
+    )
+      return;
+    fs.cpSync(path.join("patches", f), path.join(out, "patches", f));
   });
 
   const scoped = (packageField.scoped || {}) as Record<
