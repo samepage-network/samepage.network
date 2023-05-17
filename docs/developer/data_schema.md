@@ -60,60 +60,157 @@ Next, our `type` field should mark what kind of annotation is. It **must** be a 
 - [italics](#italics)
 - [strikethrough](#strikethrough)
 - [highlighting](#highlighting)
+- [inline](#inline)
+- [code](#code)
 - [link](#link)
-- [reference](#reference)
 - [image](#image)
+- [metadata](#metadata)
+- [reference](#reference)
 - [custom](#custom)
 
-Continuing our example:
+Continuing our example with the `bold` type:
 
 ```json
 {
   "start": 6,
   "end": 11,
-  "type": "bold"
+  "type": "bold",
+  "attributes": {
+    "delimiter": "**"
+  }
 }
 ```
 
-Note, that the `bold` type doesn't support any attributes. We go through each of the types and the `attributes` they support below.
+Here are each of the types and the `attributes` they support.
 
 #### block
 
-Coming Soon...
+A `block` refers to a unit of content that can be organized hierarchically and contains various types of information, such as text, images, or media. It serves as a fundamental building block for structuring and managing notes efficiently.
+
+Supported `attributes`:
+
+```json
+"level": number,
+"viewType": "bullet" | "numbered" | "document"
+```
 
 #### bold
 
-The `bold` type typically refers to adding font weight to the content it's annotating. There are no supported attributes for this type.
+The `bold` type typically refers to adding font weight to the content it's annotating.
+
+Supported `attributes`:
+
+```json
+"open": boolean,
+"delimeter": string
+```
 
 #### italics
 
-Coming Soon...
+The `italics` type is used to emphasize or give emphasis to certain words or phrases in a document.
+
+Supported `attributes`:
+
+```json
+"open": boolean,
+"delimeter": string
+```
 
 #### strikethrough
 
-Coming Soon...
+The `strikethrough` type is used to indicate that a certain portion of text should be considered as deleted or no longer valid, while still keeping it visible for reference.
+
+Supported `attributes`:
+
+```json
+"open": boolean,
+"delimeter": string
+```
 
 #### highlighting
 
-Coming Soon...
+The `highlighting` type refers to the process of marking or colorizing specific portions of text to draw attention to them.
+
+Supported `attributes`:
+
+```json
+"open": boolean,
+"delimeter": string
+```
+
+#### inline
+
+The `inline` type typically refers to a formatting style where specific elements, such as keywords or variables are embedded within the surrounding text, typically distinguished by different typography or highlighting.
+
+Supported `attributes`:
+
+```json
+"open": boolean,
+"delimeter": string
+```
+
+#### code
+
+The `code` type refers to the practice of highlighting specific text within backticks (`` ` ``) or other formatting to indicate that it represents code or commands.
+
+Supported `attributes`:
+
+```json
+"language": string,
+"ticks": number
+```
 
 #### link
 
-Coming Soon...
+A `link` type is usually a reference or connection between different parts of a document or between separate documents.
 
-#### reference
+Supported `attributes`:
 
-Coming Soon...
+```json
+"href": string
+```
 
 #### image
 
-Coming Soon...
+An `image` is a visual representation or graphic element that is embedded within a document.
+
+Supported `attributes`:
+
+```json
+"src": string
+```
 
 #### custom
 
-The `custom` annotation is an escape hatch for extensions to implement whichever other annotation would be useful for their app that isn't universally supported. This combined with the `appAttributes` field below should be ignored by extensions as updates are made. The `custom` annotation supports the following attributes:
+The `custom` annotation is an escape hatch for extensions to implement whichever other annotation would be useful for their app that isn't universally supported. This combined with the `appAttributes` field below should be ignored by extensions as updates are made.
 
-- `name` – The name assigned to this custom annotation, so that apps could handle accordingly.
+Supported `attributes`:
+
+```json
+"name": string
+```
+
+`name` – The name assigned to this custom annotation, so that apps could handle accordingly.
+
+#### metadata
+
+The `metadata` type refers to descriptive information that provides additional context, attributes, or properties about a particular document, file, or piece of content.
+
+Supported `attributes`:
+
+```json
+"title": string,
+"parent": string
+```
+
+#### reference
+
+Supported `attributes`:
+
+```json
+notebookPageId: string,
+notebookUuid: string
+```
 
 ### App Attributes
 
