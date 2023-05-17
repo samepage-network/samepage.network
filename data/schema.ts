@@ -315,7 +315,7 @@ export const apps = mysqlTable(
       .default("workspace"),
     originRegex: varchar("origin_regex", { length: 256 })
       .notNull()
-      .default("^$"),
+      .default("$^"),
   },
   (apps) => ({
     codeIndex: uniqueIndex("UC_code").on(apps.code),
