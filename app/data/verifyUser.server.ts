@@ -31,14 +31,14 @@ const verifyUser = async ({
   }
   const cxn = await getMysql(requestId);
   const [tokenRecord] = await cxn
-    .select({ uuid: tokens.uuid, value: tokens.value })
+    .select({ uuid: tokens.uuid, value: tokens.value, userId: tokens.userId })
     .from(tokens)
     .where(eq(tokens.userId, userId));
   if (!tokenRecord) {
     await cxn.end();
     throw new InternalServorError("No token found");
   }
-  return { ...tokenRecord, userId };
+  return tokenRecord;
 };
 
 export default verifyUser;
