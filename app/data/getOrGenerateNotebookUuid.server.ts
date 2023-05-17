@@ -20,11 +20,6 @@ const getOrGenerateNotebookUuid = async ({
   tokenUuid: string;
 }) => {
   const cxn = await getMysql(requestId);
-  const notebookQuota = await getQuota({
-    requestId,
-    field: "Notebooks",
-    tokenUuid,
-  });
   const appId =
     typeof app === "number"
       ? app
@@ -33,25 +28,21 @@ const getOrGenerateNotebookUuid = async ({
           .from(apps)
           .where(eq(apps.code, app))
           .then((r) => r[0].id);
-  const tokenLinks = await cxn
-    .select({
-      uuid: tokenNotebookLinks.uuid,
-      notebook_uuid: tokenNotebookLinks.notebookUuid,
-      app: notebooks.app,
-      workspace: notebooks.workspace,
-    })
-    .from(tokenNotebookLinks)
-    .leftJoin(notebooks, eq(notebooks.uuid, tokenNotebookLinks.notebookUuid))
-    .where(eq(tokenNotebookLinks.tokenUuid, tokenUuid));
+          notebookRecord
   const existingTokenLink = tokenLinks.find(
     (tl) => tl.app === appId && tl.workspace === workspace
   );
   if (existingTokenLink) {
     return existingTokenLink.notebook_uuid;
   }
+  const notebookQuota = await getQuota({
+    requestId,
+    field: "Notebooks",
+    tokenUuid,
+  });
   if (tokenLinks.length >= notebookQuota) {
     throw new ConflictError(
-      `Maximum number of notebooks allowed to be connected to this token with this plan is ${notebookQuota}.`
+      `The maximum number of notebooks allowed to be connected to this token with this plan is ${notebookQuota}.`
     );
   }
 

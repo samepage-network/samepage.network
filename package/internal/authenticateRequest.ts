@@ -1,10 +1,23 @@
-import { LoaderArgs } from "@remix-run/node";
-import authenticateNotebook from "~/data/authenticateNotebook.server";
-import parseRemixContext from "~/data/parseRemixContext.server";
+import { LoaderFunctionArgs } from "react-router";
+import parseRequestContext from "./parseRequestContext";
 
-const authenticateEmbed = async ({ request, context }: LoaderArgs) => {
+const authenticateRequest = async ({
+  args: { request, context },
+  authenticateNotebook,
+}: {
+  args: LoaderFunctionArgs;
+  authenticateNotebook: (args: {
+    notebookUuid: string;
+    token: string;
+    requestId: string;
+  }) => Promise<{
+    tokenUuid: string;
+    app: string;
+    workspace: string;
+  }>;
+}) => {
   const searchParams = new URL(request.url).searchParams;
-  const requestId = parseRemixContext(context).lambdaContext.awsRequestId;
+  const { requestId } = parseRequestContext(context);
   const auth = searchParams.get("auth");
   if (!auth) {
     return { auth: false as const, requestId };
@@ -32,4 +45,4 @@ const authenticateEmbed = async ({ request, context }: LoaderArgs) => {
   };
 };
 
-export default authenticateEmbed;
+export default authenticateRequest;

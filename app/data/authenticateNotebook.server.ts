@@ -2,12 +2,9 @@ import { apps, notebooks, tokenNotebookLinks, tokens } from "data/schema";
 import { NotFoundError, UnauthorizedError } from "~/data/errors.server";
 import getMysql from "~/data/mysql.server";
 import { eq, and } from "drizzle-orm/expressions";
+import { AuthenticateNotebook } from "samepage/internal/types";
 
-const authenticateNotebook = async (args: {
-  notebookUuid: string;
-  token: string;
-  requestId: string;
-}) => {
+const authenticateNotebook: AuthenticateNotebook = async (args) => {
   const { notebookUuid, token, requestId } = args;
   const cxn = await getMysql(requestId);
   const isApp = await cxn
@@ -20,6 +17,8 @@ const authenticateNotebook = async (args: {
     const tokenLinks = await cxn
       .select({
         notebookUuid: notebooks.uuid,
+        app: apps.name,
+        workspace: notebooks.label,
         tokenUuid: tokenNotebookLinks.tokenUuid,
         actorId: tokenNotebookLinks.uuid,
       })
@@ -29,6 +28,7 @@ const authenticateNotebook = async (args: {
         eq(tokenNotebookLinks.tokenUuid, tokens.uuid)
       )
       .innerJoin(notebooks, eq(notebooks.uuid, tokenNotebookLinks.notebookUuid))
+      .innerJoin(apps, eq(apps.id, notebooks.app))
       .where(and(eq(tokens.value, token), eq(notebooks.app, isApp[0].app)));
     if (!tokenLinks.length) {
       throw new NotFoundError(
@@ -41,8 +41,12 @@ const authenticateNotebook = async (args: {
     .select({
       tokenUuid: tokenNotebookLinks.tokenUuid,
       actorId: tokenNotebookLinks.uuid,
+      app: apps.name,
+      workspace: notebooks.label,
     })
     .from(tokenNotebookLinks)
+    .innerJoin(notebooks, eq(notebooks.uuid, tokenNotebookLinks.notebookUuid))
+    .innerJoin(apps, eq(apps.id, notebooks.app))
     .where(eq(tokenNotebookLinks.notebookUuid, notebookUuid));
   if (!tokenLinks.length) {
     throw new NotFoundError(
@@ -65,9 +69,7 @@ const authenticateNotebook = async (args: {
               // should I just query by stored value?
               if (token !== storedValue)
                 throw new UnauthorizedError(`Unauthorized notebook and token`);
-              return token === storedValue
-                ? { tokenUuid, actorId: t.actorId }
-                : undefined;
+              return token === storedValue ? t : undefined;
             })
         : Promise.reject(
             new UnauthorizedError(`Unauthorized notebook and token`)
@@ -75,9 +77,7 @@ const authenticateNotebook = async (args: {
     })
     .reduce(
       (p, c) => p.then((f) => f || c()),
-      Promise.resolve<{ tokenUuid: string; actorId: string } | undefined>(
-        undefined
-      )
+      Promise.resolve<(typeof tokenLinks)[number] | undefined>(undefined)
     );
   if (!authenticated)
     throw new UnauthorizedError(`Unauthorized notebook and token`);
