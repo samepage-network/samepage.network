@@ -26,11 +26,11 @@ This is the core idea of our data schema and `AtJson`. Our schema says that all 
 
 Each annotation have the following fields:
 
-- `start` - the index within `content` where this annotation starts.
-- `end` - the index within `content` where this annotation ends.
-- `type` - the type of annotation it is. We go through all of the different annotation types below.
-- `attributes` - the set of properties associated with this annotation. These are universal cross-app properties so they are expected to be implemented by each app's extension. The schema of `attributes` is predefined depending on the `type` of the annotation.
-- `appAttributes` - this field could be used by extensions to store attributes about a given annotation that it's app cares about that no other app does. It's an object that maps the app's identifier with a key value object.
+- `start` – the index within `content` where this annotation starts.
+- `end` – the index within `content` where this annotation ends.
+- `type` – the type of annotation it is. We go through all of the different annotation types below.
+- `attributes` – the set of properties associated with this annotation. These are universal cross-app properties so they are expected to be implemented by each app's extension. The schema of `attributes` is predefined depending on the `type` of the annotation.
+- `appAttributes` – this field could be used by extensions to store attributes about a given annotation that it's app cares about that no other app does. It's an object that maps the app's identifier with a key value object.
 
 Let's use our example to go through each one.
 
@@ -112,7 +112,8 @@ Coming Soon...
 #### custom
 
 The `custom` annotation is an escape hatch for extensions to implement whichever other annotation would be useful for their app that isn't universally supported. This combined with the `appAttributes` field below should be ignored by extensions as updates are made. The `custom` annotation supports the following attributes:
-- `name` - The name assigned to this custom annotation, so that apps could handle accordingly.
+
+- `name` – The name assigned to this custom annotation, so that apps could handle accordingly.
 
 ### App Attributes
 
@@ -165,7 +166,8 @@ Putting our `Hello &&World&&` example together, it would have the following fina
 ### Differentiating Content Types
 
 There are few important types to become familiar with:
-- `InitialSchema` - An intemediary representation used by extensions to actually calculate and apply the related data. This type only contains the `content` and `annotations` fields.
-- `LatestSchema` - This is the latest version of the schema that is actually stored in IPFS. The data is wrapped by [Automerge](https://automerge.org/docs/types/values/) utilities to assist in conflict resolution and history management.
-- `V*Schema` - Previous versions of `LatestSchema` that can be found stored in IPFS.
-- `Schema` - Conjuction of `LatestSchema` and all `V*Schema`s. This data type represents all of the possibilities stored in IPFS - the `unwrapSchema` utility helps convert this data into the `InitialSchema` intermediate data type.
+
+- `InitialSchema` – An intemediary representation used by extensions to actually calculate and apply the related data. This type only contains the `content` and `annotations` fields.
+- `LatestSchema` – This is the latest version of the schema that is actually stored in IPFS. The data is wrapped by [Automerge](https://automerge.org/docs/types/values/) utilities to assist in conflict resolution and history management.
+- `V*Schema` – Previous versions of `LatestSchema` that can be found stored in IPFS.
+- `Schema` – Conjuction of `LatestSchema` and all `V*Schema`s. This data type represents all of the possibilities stored in IPFS - the `unwrapSchema` utility helps convert this data into the `InitialSchema` intermediate data type.
