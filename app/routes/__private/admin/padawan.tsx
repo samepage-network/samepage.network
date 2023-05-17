@@ -39,7 +39,7 @@ const PadawanAdminPage = () => {
         <h2 className="text-xl">Past Missions</h2>
         <Table onRowClick={"uuid"} />
       </div>
-      <div className="flex-grow">
+      <div className="flex-grow overflow-auto">
         <Outlet />
       </div>
     </div>
