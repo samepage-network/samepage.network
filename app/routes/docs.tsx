@@ -12,6 +12,7 @@ import ChevronDownIcon from "@heroicons/react/solid/ChevronDownIcon";
 import parseRemixContext from "~/data/parseRemixContext.server";
 import getMysql from "~/data/mysql.server";
 import { apps } from "data/schema";
+import { ne } from "drizzle-orm/expressions";
 
 const DirectoryLink = ({
   level = 0,
@@ -113,6 +114,7 @@ export const loader: LoaderFunction = ({ context }) => {
       const applications = await cxn
         .select({ name: apps.name, code: apps.code, live: apps.live })
         .from(apps)
+        .where(ne(apps.code, "samepage"))
         .orderBy(apps.code);
       await cxn.end();
       const directory = applications

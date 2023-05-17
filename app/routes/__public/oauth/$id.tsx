@@ -122,7 +122,9 @@ const loadData = async ({
       body: {
         appName,
         workspace: response.body.label || response.body.workspace,
-        suggestExtension: response.body.suggestExtension,
+        suggestExtension:
+          process.env.NODE_ENV === "development" &&
+          response.body.suggestExtension,
       },
     };
   }

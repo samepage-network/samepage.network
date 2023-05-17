@@ -1,14 +1,16 @@
-import { ActionFunction, LoaderArgs, redirect } from "@remix-run/node";
+import { ActionFunction, redirect } from "@remix-run/node";
 import { useNavigate } from "@remix-run/react";
 import React, { useEffect, useState } from "react";
-import authenticateEmbed from "./_authenticateEmbed.server";
-import listApps from "~/data/listApps.server";
 import getMysql from "~/data/mysql.server";
-import { apps } from "data/schema";
+import { apps, notebooks, tokenNotebookLinks } from "data/schema";
 import parseRemixContext from "~/data/parseRemixContext.server";
 import { BadRequestResponse } from "~/data/responses.server";
-import HomeDashboardTab from "package/components/HomeDashboardTab";
-import onboardNotebook from "~/data/onboardNotebook.server";
+import HomeDashboardTab, {
+  makeLoader,
+} from "samepage/components/HomeDashboardTab";
+import { and, eq } from "drizzle-orm/expressions";
+import verifyUser from "~/data/verifyUser.server";
+import authenticateNotebook from "~/data/authenticateNotebook.server";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const EmbedsIndexPage: React.FC = () => {
@@ -22,20 +24,7 @@ const EmbedsIndexPage: React.FC = () => {
   return <HomeDashboardTab onLogOut={() => navigate("/embeds")} url={origin} />;
 };
 
-export const loader = async (args: LoaderArgs) => {
-  const result = await authenticateEmbed(args);
-  if (!result.auth) {
-    const apps = await listApps({ requestId: result.requestId });
-    await getMysql(result.requestId).then((c) => c.end());
-    return {
-      auth: false as const,
-      apps,
-    };
-  }
-  return {
-    auth: true as const,
-  };
-};
+export const loader = makeLoader({ authenticateNotebook });
 
 export const action: ActionFunction = async (args) => {
   const data = await args.request.formData();
@@ -52,31 +41,49 @@ export const action: ActionFunction = async (args) => {
     throw new BadRequestResponse("Missing origin");
   }
   const requestId = parseRemixContext(args.context).lambdaContext.awsRequestId;
+  const tokenRecord = await verifyUser({ email, password, requestId });
   const cxn = await getMysql(requestId);
-  const [app] = await cxn
-    .select({ code: apps.code, originRegex: apps.originRegex })
-    .from(apps)
-    .then((all) =>
-      all.filter((app) => new RegExp(app.originRegex).test(origin))
-    );
-  if (!app) {
-    throw new BadRequestResponse(
-      `Widget is currently in an unsupported domain: ${origin}`
+  const appRecords = await cxn
+    .select({ id: apps.id, originRegex: apps.originRegex })
+    .from(apps);
+  const thisApp = appRecords.find((app) =>
+    new RegExp(app.originRegex).test(origin)
+  );
+  const [notebookRecord] = !thisApp
+    ? await cxn
+        .select({
+          uuid: tokenNotebookLinks.uuid,
+        })
+        .from(tokenNotebookLinks)
+        .where(eq(tokenNotebookLinks.tokenUuid, tokenRecord.uuid))
+        .limit(1)
+    : await cxn
+        .select({
+          uuid: tokenNotebookLinks.uuid,
+        })
+        .from(tokenNotebookLinks)
+        .innerJoin(
+          notebooks,
+          eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
+        )
+        .where(
+          and(
+            eq(tokenNotebookLinks.tokenUuid, tokenRecord.uuid),
+            eq(notebooks.app, thisApp.id)
+          )
+        );
+  await cxn.end();
+  if (!notebookRecord) {
+    return redirect(
+      `/embeds?user_auth=${Buffer.from(
+        `${tokenRecord.userId}:${tokenRecord.value}`
+      ).toString("base64")}`
     );
   }
-  const auth = await onboardNotebook({
-    app: app.code,
-    // TODO: how do we get the workspace?
-    workspace: "",
-    email,
-    password,
-    requestId,
-  });
-  await cxn.end();
   return redirect(
-    `/embeds?auth=${Buffer.from(`${auth.notebookUuid}:${auth.token}`).toString(
-      "base64"
-    )}`
+    `/embeds?auth=${Buffer.from(
+      `${notebookRecord.uuid}:${tokenRecord.value}`
+    ).toString("base64")}`
   );
 };
 

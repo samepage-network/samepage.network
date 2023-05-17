@@ -20,11 +20,6 @@ const getOrGenerateNotebookUuid = async ({
   tokenUuid: string;
 }) => {
   const cxn = await getMysql(requestId);
-  const notebookQuota = await getQuota({
-    requestId,
-    field: "Notebooks",
-    tokenUuid,
-  });
   const appId =
     typeof app === "number"
       ? app
@@ -49,9 +44,14 @@ const getOrGenerateNotebookUuid = async ({
   if (existingTokenLink) {
     return existingTokenLink.notebook_uuid;
   }
+  const notebookQuota = await getQuota({
+    requestId,
+    field: "Notebooks",
+    tokenUuid,
+  });
   if (tokenLinks.length >= notebookQuota) {
     throw new ConflictError(
-      `Maximum number of notebooks allowed to be connected to this token with this plan is ${notebookQuota}.`
+      `The maximum number of notebooks allowed to be connected to this token with this plan is ${notebookQuota}.`
     );
   }
 

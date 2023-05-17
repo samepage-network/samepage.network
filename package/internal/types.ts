@@ -470,6 +470,17 @@ export type ListNotebooks = () => Promise<{
 export type AddNotebookRequestListener = (
   args: NotebookRequestHandler
 ) => () => void;
+export type AuthenticateNotebook = (args: {
+  notebookUuid: string;
+  token: string;
+  requestId: string;
+}) => Promise<{
+  notebookUuid: string;
+  tokenUuid: string;
+  actorId: string;
+  app: string;
+  workspace: string;
+}>;
 
 export type ActorInfo = {
   notebookUuid: string;
