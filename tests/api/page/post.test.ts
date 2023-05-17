@@ -1554,7 +1554,7 @@ test("Reaching the notebook limit should throw on create", async () => {
     .catch((e) => ({ success: false, e: e as string }));
   expect(r).toEqual({
     success: false,
-    e: `Error: Maximum number of notebooks allowed to be connected to this token with this plan is 1.`,
+    e: `Error: The maximum number of notebooks allowed to be connected to this token with this plan is 1.`,
   });
   await users.deleteUser(user.id);
 });

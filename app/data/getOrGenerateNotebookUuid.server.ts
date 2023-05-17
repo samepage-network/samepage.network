@@ -28,7 +28,16 @@ const getOrGenerateNotebookUuid = async ({
           .from(apps)
           .where(eq(apps.code, app))
           .then((r) => r[0].id);
-          notebookRecord
+  const tokenLinks = await cxn
+    .select({
+      uuid: tokenNotebookLinks.uuid,
+      notebook_uuid: tokenNotebookLinks.notebookUuid,
+      app: notebooks.app,
+      workspace: notebooks.workspace,
+    })
+    .from(tokenNotebookLinks)
+    .leftJoin(notebooks, eq(notebooks.uuid, tokenNotebookLinks.notebookUuid))
+    .where(eq(tokenNotebookLinks.tokenUuid, tokenUuid));
   const existingTokenLink = tokenLinks.find(
     (tl) => tl.app === appId && tl.workspace === workspace
   );
