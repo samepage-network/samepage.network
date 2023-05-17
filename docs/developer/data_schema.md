@@ -89,7 +89,7 @@ A `block` refers to a unit of content that can be organized hierarchically and c
 
 Supported `attributes`:
 
-```json
+```typescript
 "level": number,
 "viewType": "bullet" | "numbered" | "document"
 ```
@@ -100,7 +100,7 @@ The `bold` type typically refers to adding font weight to the content it's annot
 
 Supported `attributes`:
 
-```json
+```typescript
 "open": boolean,
 "delimeter": string
 ```
@@ -111,7 +111,7 @@ The `italics` type is used to emphasize or give emphasis to certain words or phr
 
 Supported `attributes`:
 
-```json
+```typescript
 "open": boolean,
 "delimeter": string
 ```
@@ -122,7 +122,7 @@ The `strikethrough` type is used to indicate that a certain portion of text shou
 
 Supported `attributes`:
 
-```json
+```typescript
 "open": boolean,
 "delimeter": string
 ```
@@ -133,7 +133,7 @@ The `highlighting` type refers to the process of marking or colorizing specific 
 
 Supported `attributes`:
 
-```json
+```typescript
 "open": boolean,
 "delimeter": string
 ```
@@ -144,7 +144,7 @@ The `inline` type typically refers to a formatting style where specific elements
 
 Supported `attributes`:
 
-```json
+```typescript
 "open": boolean,
 "delimeter": string
 ```
@@ -155,18 +155,18 @@ The `code` type refers to the practice of highlighting specific text within back
 
 Supported `attributes`:
 
-```json
+```typescript
 "language": string,
 "ticks": number
 ```
 
 #### link
 
-A `link` type is usually a reference or connection between different parts of a document or between separate documents.
+A `link` type is usually a reference or connection between the current document and an external resource.
 
 Supported `attributes`:
 
-```json
+```typescript
 "href": string
 ```
 
@@ -176,7 +176,7 @@ An `image` is a visual representation or graphic element that is embedded within
 
 Supported `attributes`:
 
-```json
+```typescript
 "src": string
 ```
 
@@ -186,7 +186,7 @@ The `custom` annotation is an escape hatch for extensions to implement whichever
 
 Supported `attributes`:
 
-```json
+```typescript
 "name": string
 ```
 
@@ -198,18 +198,20 @@ The `metadata` type refers to descriptive information that provides additional c
 
 Supported `attributes`:
 
-```json
+```typescript
 "title": string,
 "parent": string
 ```
 
 #### reference
 
+A `reference` type is a SamePage connection that points internally to an app on our network.
+
 Supported `attributes`:
 
-```json
-notebookPageId: string,
-notebookUuid: string
+```typescript
+"notebookPageId": string,
+"notebookUuid": string
 ```
 
 ### App Attributes
@@ -264,7 +266,7 @@ Putting our `Hello &&World&&` example together, it would have the following fina
 
 There are few important types to become familiar with:
 
-- `InitialSchema` – An intemediary representation used by extensions to actually calculate and apply the related data. This type only contains the `content` and `annotations` fields.
+- `SamePageSchema` – An intemediary representation used by extensions to actually calculate and apply the related data. This type only contains the `content` and `annotations` fields.
 - `LatestSchema` – This is the latest version of the schema that is actually stored in IPFS. The data is wrapped by [Automerge](https://automerge.org/docs/types/values/) utilities to assist in conflict resolution and history management.
 - `V*Schema` – Previous versions of `LatestSchema` that can be found stored in IPFS.
-- `Schema` – Conjuction of `LatestSchema` and all `V*Schema`s. This data type represents all of the possibilities stored in IPFS - the `unwrapSchema` utility helps convert this data into the `InitialSchema` intermediate data type.
+- `Schema` – Conjuction of `LatestSchema` and all `V*Schema`s. This data type represents all of the possibilities stored in IPFS - the `unwrapSchema` utility helps convert this data into the `SamePageSchema` intermediate data type.
