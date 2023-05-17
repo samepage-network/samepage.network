@@ -57,6 +57,7 @@ import debug from "package/utils/debugger";
 import getActorInfo from "~/data/getActorInfo.server";
 import listSharedPages from "~/data/listSharedPages.server";
 import onboardNotebook from "~/data/onboardNotebook.server";
+import { apiPost } from "package/internal/apiClient";
 
 const log = debug("api:page");
 const zhandlerBody = zUnauthenticatedBody.or(
@@ -1360,6 +1361,51 @@ const logic = async (req: Record<string, unknown>) => {
         const { body: state } = await downloadSharedPage({ cid });
         await cxn.end();
         return { state: Buffer.from(state).toString("base64") };
+      }
+      case "call-workflow-command": {
+        const {
+          commandContext,
+          args: commandArgs,
+          text,
+          workflowContext,
+        } = args;
+        const [targetNotebook] = await cxn
+          .select({
+            uuid: notebooks.uuid,
+            path: apps.code,
+            accessToken: accessTokens.value,
+          })
+          .from(notebooks)
+          .innerJoin(apps, eq(notebooks.app, apps.id))
+          .innerJoin(
+            tokenNotebookLinks,
+            eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
+          )
+          .innerJoin(
+            accessTokens,
+            eq(notebooks.uuid, accessTokens.notebookUuid)
+          )
+          .where(
+            and(
+              eq(apps.code, commandContext),
+              eq(tokenNotebookLinks.tokenUuid, tokenUuid)
+            )
+          );
+        await cxn.end();
+        return await apiPost({
+          path: `extensions/${targetNotebook.path}/backend`,
+          data: {
+            type: "COMMAND_HANDLER",
+            notebookUuid: targetNotebook.uuid,
+            args: commandArgs,
+            text,
+            workflowContext,
+          },
+          authorization: `Bearer ${targetNotebook.accessToken}`,
+        });
+      }
+      default: {
+        throw new Error(`Unknown method: ${args["method"]}`);
       }
     }
   } catch (e) {
