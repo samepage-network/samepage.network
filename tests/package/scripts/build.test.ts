@@ -207,6 +207,8 @@ test("build command compiles template", async () => {
 });
 
 test("build command with publish fails without github token", async () => {
+  const oldRef = process.env.GITHUB_HEAD_REF;
+  process.env.GITHUB_HEAD_REF = "main";  
   const oldToken = process.env.GITHUB_TOKEN;
   process.env.GITHUB_TOKEN = "";
   const oldWarn = console.warn;
@@ -227,6 +229,7 @@ test("build command with publish fails without github token", async () => {
   ]);
 
   process.env.GITHUB_TOKEN = oldToken;
+  process.env.GITHUB_HEAD_REF = oldRef;
   console.warn = oldWarn;
 });
 
@@ -294,7 +297,10 @@ test("build command automatically publishes to GitHub and runs a post publish sc
   );
   fs.writeFileSync(`${root}/hello.invalid`, `Hello World`);
 
+  const oldSha = process.env.GITHUB_SHA;
   process.env.GITHUB_SHA = commit1;
+  const oldRef = process.env.GITHUB_HEAD_REF;
+  process.env.GITHUB_HEAD_REF = "main";
   const code = await build({
     root,
     review: "scripts/review.js",
@@ -324,6 +330,8 @@ test("build command automatically publishes to GitHub and runs a post publish sc
     name: "A super long test commit message that we want t...",
     body: "...o use to ensure that it gets split on release.",
   });
+  process.env.GITHUB_SHA = oldSha;
+  process.env.GITHUB_HEAD_REF = oldRef;
 });
 
 test.skip("Run from cli with node env not set", async () => {
