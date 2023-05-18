@@ -70,7 +70,7 @@ const addNotebookRequestListener: AddNotebookRequestListener = (handler) => {
   };
 };
 
-const setupCrossAppRequests = () => {
+const setupCrossNotebookRequests = () => {
   registerNotificationActions({
     operation: "REQUEST_DATA",
     actions: {
@@ -132,4 +132,4 @@ const setupCrossAppRequests = () => {
   };
 };
 
-export default setupCrossAppRequests;
+export default setupCrossNotebookRequests;
