@@ -7,6 +7,7 @@ const base64 = (s: string) =>
     ? Buffer.from(s).toString("base64")
     : window.btoa(s);
 
+// TODO: lots of redundancy here
 const postToAppBackend: PostToAppBackend = <
   T extends Record<string, unknown> = Record<string, never>
 >(

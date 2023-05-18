@@ -493,12 +493,16 @@ export type SendNotebookRequest = (
   args: Omit<z.infer<typeof zNotebookRequestApi>, "method">
 ) => Promise<NotebookResponse>;
 
-export type PostToAppBackend = <
-  T extends Record<string, unknown> = Record<string, never>
->(
-  path: string,
-  data: Record<string, unknown>
-) => Promise<T>;
+export type PostToAppBackend<
+  T extends Record<string, unknown> = Record<string, object>
+> = (path: string, data: Record<string, unknown>) => Promise<T>;
+
+export const zCommandArgs = z.record(z.string());
+export const zWorkflowContext = z.object({
+  variables: zJsonData,
+  target: z.string(),
+  exitWorkflow: z.boolean().optional(),
+});
 
 export const zUnauthenticatedBody = z.discriminatedUnion("method", [
   z.object({
@@ -659,6 +663,13 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
   z.object({
     method: z.literal("import-shared-page"),
     cid: z.string(),
+  }),
+  z.object({
+    method: z.literal("call-workflow-command"),
+    text: z.string(),
+    commandContext: z.string(),
+    args: zCommandArgs,
+    workflowContext: zWorkflowContext,
   }),
 ]);
 

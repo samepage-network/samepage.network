@@ -12,7 +12,7 @@ import setupWsFeatures from "../internal/setupWsFeatures";
 import { onAppEvent } from "../internal/registerAppEventListener";
 import apiClient from "../internal/apiClient";
 import postToAppBackend from "../internal/postToAppBackend";
-import setupCrossAppRequests from "./crossNotebookRequests";
+import setupCrossNotebookRequests from "./crossNotebookRequests";
 
 const setupSamePageClient = ({
   app,
@@ -50,10 +50,10 @@ const setupSamePageClient = ({
   const unloadWS = setupWsFeatures({ notificationContainerPath });
   const offAppEvent = onAppEvent("log", onAppLog);
   const {
-    unload: unloadCrossAppRequests,
+    unload: unloadCrossNotebookRequests,
     sendNotebookRequest,
     addNotebookRequestListener,
-  } = setupCrossAppRequests();
+  } = setupCrossNotebookRequests();
 
   const samepageApi: SamePageAPI = {
     sendNotebookRequest,
@@ -71,7 +71,7 @@ const setupSamePageClient = ({
 
   return {
     unload: () => {
-      unloadCrossAppRequests();
+      unloadCrossNotebookRequests();
       offAppEvent();
       unloadWS();
     },
