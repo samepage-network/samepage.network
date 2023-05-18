@@ -1,3 +1,4 @@
+import React from "react";
 import { SamePageSchema } from "../internal/types";
 import AtJsonRendered from "./AtJsonRendered";
 import Button from "./Button";
@@ -6,7 +7,7 @@ import SharedPageStatus from "./SharedPageStatus";
 import useNavigateWithSearch from "./useNavigateWithSearch";
 import { useLoaderData } from "react-router-dom";
 
-const SharedPageTab = () => {
+const SharedPageTab: React.FC = () => {
   const data = useLoaderData() as {
     auth: true;
     notebookPageId: string;
