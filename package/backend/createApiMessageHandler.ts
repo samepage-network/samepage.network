@@ -22,7 +22,7 @@ import { z } from "zod";
 
 type Credentials = z.infer<typeof zBackendWebSocketMessageCredentials>;
 
-const createBackendClientHandler =
+const createApiMessageHandler =
   ({
     getDecodeState,
     getNotebookRequestHandler,
@@ -107,4 +107,4 @@ const createBackendClientHandler =
     }
   };
 
-export default createBackendClientHandler;
+export default createApiMessageHandler;

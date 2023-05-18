@@ -1,12 +1,12 @@
-import createBackendClientHandler from "samepage/backend/createBackendClientHandler";
+import createApiMessageHandler from "package/backend/createApiMessageHandler";
 import { notebookRequestNodeQuerySchema } from "samepage/internal/types";
 import fireNodeQuery from "samepage/utils/fireNodeQuery";
 import decodeState from "../src/util/decodeState";
 import encodeState from "../src/util/encodeState";
 
-const message = createBackendClientHandler({
+const message = createApiMessageHandler({
   getDecodeState: (token) => (id, state) => {
-    return decodeState({id, state, token});
+    return decodeState({ id, state, token });
   },
   getNotebookRequestHandler:
     (token) =>

@@ -120,7 +120,7 @@ const SingleNotebookPage = () => {
           },
           openPage: async (title) => {
             submit({ title }, { method: "get" });
-            return title;
+            return { notebookPageId: title, url: title };
           },
           deletePage: async (title) => submit({ title }, { method: "delete" }),
           decodeState: async (notebookPageId, state) =>

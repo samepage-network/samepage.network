@@ -227,19 +227,34 @@ export type ApplyState = (
   state: InitialSchema
 ) => Promise<unknown>;
 export type EnsurePageByTitle = (
-  s: SamePageSchema
+  s: SamePageSchema,
+  path?: string
 ) => Promise<{ notebookPageId: string; preExisting: boolean } | string>;
 export type EncodeState = (notebookPageId: string) => Promise<SamePageState>;
 export type DecodeState = (
   notebookPageId: string,
   state: SamePageState
 ) => Promise<unknown>;
+export type OpenPage = (
+  s: string
+) => Promise<{ url: string; notebookPageId: string }>;
+export type DeletePage = (s: string) => Promise<unknown>;
 export type NotebookRequestHandler = (inner: {
   request: JSONData;
 }) => JSONData | Promise<JSONData> | undefined;
 export type NotebookResponseHandler = (
   response: NotebookResponse
 ) => Promise<unknown>;
+
+export type WorkflowContext = z.infer<typeof zWorkflowContext>;
+export type CommandHandler = (
+  args: Record<string, string>,
+  context: WorkflowContext
+) => SamePageSchema | Promise<SamePageSchema>;
+export type CommandLibrary = Record<
+  string,
+  { handler: CommandHandler; help?: string }
+>;
 
 export type ConnectionStatus = "DISCONNECTED" | "PENDING" | "CONNECTED";
 

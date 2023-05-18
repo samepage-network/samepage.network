@@ -123,7 +123,7 @@ export const loader = async (args: LoaderArgs) => {
       return "";
     },
   });
-  const url = await acceptSharePageOperation({
+  const { url } = await acceptSharePageOperation({
     ensurePageByTitle: async (title) =>
       apiPost<{ notebookPageId: string; preExisting: boolean }>({
         path: `extensions/${app}/backend`,

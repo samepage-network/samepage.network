@@ -1,11 +1,12 @@
 import {
+  CommandHandler,
+  CommandLibrary,
   DecodeState,
   EncodeState,
   referenceAnnotation,
   SamePageSchema,
-  SamePageState,
+  WorkflowContext,
   zSamePageSchema,
-  zWorkflowContext,
 } from "../internal/types";
 import { z } from "zod";
 import { app, getSetting } from "../internal/registry";
@@ -13,23 +14,6 @@ import apiClient from "../internal/apiClient";
 import { NULL_TOKEN } from "../utils/atJsonParser";
 
 type ReferenceAnnotation = z.infer<typeof referenceAnnotation>;
-
-type WorkflowContext = z.infer<typeof zWorkflowContext>;
-
-type WorkflowParameters = {
-  state: SamePageState;
-  context: WorkflowContext;
-};
-
-type CommandHandler = (
-  args: Record<string, string>,
-  context: WorkflowContext
-) => SamePageSchema | Promise<SamePageSchema>;
-
-type CommandLibrary = Record<
-  string,
-  { handler: CommandHandler; help?: string }
->;
 
 const samePageCommands: CommandLibrary = {
   GET: {
@@ -59,13 +43,22 @@ const EMPTY_SCHEMA = { content: "", annotations: [] };
 const setupCrossNotebookWorkflows = ({
   decodeState,
   encodeState,
+  appCommands = {},
 }: {
   decodeState: DecodeState;
   encodeState: EncodeState;
+  appCommands?: CommandLibrary;
 }) => {
-  const appCommands: CommandLibrary = {};
-  const triggerWorkflow = async ({ state, context }: WorkflowParameters) => {
+  const triggerWorkflow = async ({
+    source,
+    target,
+  }: {
+    source: string;
+    target: string;
+  }) => {
     const notebookUuid = getSetting("uuid");
+    const state = await encodeState(source);
+    const context: WorkflowContext = { variables: {}, target };
     const output = await state.$body.annotations
       .filter(
         (a): a is ReferenceAnnotation =>

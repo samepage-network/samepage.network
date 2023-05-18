@@ -14,11 +14,13 @@ import {
   zSharePageResponseWebsocketMessage,
   zSharePageUpdateWebsocketMessage,
   zSharePageWebsocketMessage,
-  SamePageState,
   DecodeState,
   EnsurePageByTitle,
   Schema,
   SamePageSchema,
+  OpenPage,
+  DeletePage,
+  EncodeState,
 } from "../internal/types";
 import Automerge from "automerge";
 import { addNotebookListener } from "../internal/setupMessageHandlers";
@@ -64,7 +66,7 @@ const setupSharePageWithNotebook = ({
   overlayProps = {},
   getCurrentNotebookPageId = () => Promise.resolve(v4()),
   ensurePageByTitle = async () => "",
-  openPage = (s) => Promise.resolve(s),
+  openPage = (s) => Promise.resolve({ notebookPageId: s, url: s }),
   deletePage = () => Promise.resolve(),
   decodeState = () => Promise.resolve(),
   encodeState = async () => ({
@@ -84,9 +86,9 @@ const setupSharePageWithNotebook = ({
   };
   getCurrentNotebookPageId?: () => Promise<string>;
   ensurePageByTitle?: EnsurePageByTitle;
-  openPage?: (notebookPageId: string) => Promise<string>;
-  deletePage?: (notebookPageId: string) => Promise<unknown>;
-  encodeState?: (notebookPageId: string) => Promise<SamePageState>;
+  openPage?: OpenPage;
+  deletePage?: DeletePage;
+  encodeState?: EncodeState;
   decodeState?: DecodeState;
   onConnect?: () => () => void;
 } = {}) => {

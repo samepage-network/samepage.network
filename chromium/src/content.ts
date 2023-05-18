@@ -219,7 +219,7 @@ const setupSharePageWithNotebook = (data: SupportedNotebook) => {
     openPage: async (notebookPageId) => {
       const href = `/${notebookPageId}`;
       window.location.assign(href);
-      return href;
+      return { url: href, notebookPageId };
     },
     deletePage: (notebookPageId) =>
       apiPost(`extensions/${id}/backend`, {

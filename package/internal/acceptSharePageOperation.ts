@@ -12,6 +12,8 @@ import {
   EnsurePageByTitle,
   zSamePageSchema,
   SamePageSchema,
+  DeletePage,
+  OpenPage,
 } from "./types";
 import UserOnlyError from "./UserOnlyError";
 import Automerge from "automerge";
@@ -32,8 +34,8 @@ const acceptSharePageOperation =
     decodeState: DecodeState;
     encodeState: EncodeState;
     initPage: (s: { notebookPageId: string }) => void;
-    openPage: (s: string) => Promise<string>;
-    deletePage: (s: string) => Promise<unknown>;
+    openPage: OpenPage;
+    deletePage: DeletePage;
   }) =>
   async ({ $title, title: legacyTitle, page }: JSONData) => {
     const parsedTitle = zSamePageSchema.safeParse($title);
