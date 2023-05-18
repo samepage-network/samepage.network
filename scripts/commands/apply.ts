@@ -130,10 +130,12 @@ const apply = async ({
   sql,
   tf,
   bare,
+  logger,
 }: {
   tf?: boolean;
   sql?: boolean;
   bare?: boolean;
+  logger?: boolean;
 } = {}): Promise<number> => {
   if (!sql) {
     // TODO - REMOVE
@@ -151,7 +153,7 @@ const apply = async ({
   const content = fs.existsSync(PLAN_OUT_FILE)
     ? fs.readFileSync(PLAN_OUT_FILE).toString()
     : "";
-  const cxn = await getMysql();
+  const cxn = await getMysql(v4(), { logger });
   if (content.length) {
     // TODO - set up planet scale branch and merge
     const queries = content.split(";").filter(Boolean);

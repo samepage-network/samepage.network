@@ -2,7 +2,6 @@ import React from "react";
 import { DataFunctionArgs, redirect } from "@remix-run/node";
 import getUserId from "~/data/getUserId.server";
 import { useLoaderData } from "@remix-run/react";
-import axios from "axios";
 import parseRemixContext from "~/data/parseRemixContext.server";
 import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
 import getMysql from "~/data/mysql.server";
@@ -18,6 +17,7 @@ import { sql } from "drizzle-orm/sql";
 import randomString from "~/data/randomString.server";
 import { zOauthResponse } from "package/internal/types";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
+import { apiPost } from "package/internal/apiClient";
 
 const OauthConnectionPage = (): React.ReactElement => {
   const data = useLoaderData<typeof loadData>();
@@ -43,10 +43,17 @@ const OauthConnectionPage = (): React.ReactElement => {
         You can close this window and use SamePage within your newly connected
         notebook:
       </div>
-      <div>
+      <div className="mb-8">
         <span className="text-xl font-bold">{data.body.appName}</span>{" "}
         <span>{data.body.workspace}</span>
       </div>
+      {!data.body.postInstallResult.success && (
+        <div>
+          Our post-install process failed however, with the following reason{" "}
+          {data.body.postInstallResult.reason}. Our support team has already
+          been notified.
+        </div>
+      )}
     </div>
   ) : (
     <div>
@@ -83,22 +90,21 @@ const loadData = async ({
   if (error) {
     return { error: `Failed to install SamePage to ${appName}: ${error}` };
   }
-  const response = await axios
-    .post(`${process.env.API_URL}/extensions/${id}/oauth`, {
-      code,
-      state,
-      userId,
-      customParams,
-    })
+  const response = await apiPost(`extensions/${id}/oauth`, {
+    code,
+    state,
+    userId,
+    customParams,
+  })
     .then((r) => ({
-      body: zOauthResponse.parse(r.data),
+      body: zOauthResponse.parse(r),
       success: true as const,
     }))
-    .catch((e) => ({ body: e.response.data, success: false as const }));
+    .catch((e) => ({ body: e.message, success: false as const }));
 
   if (response.success) {
-    const [{ uuid: tokenUuid }] = await cxn
-      .select({ uuid: tokens.uuid })
+    const [{ uuid: tokenUuid, token }] = await cxn
+      .select({ uuid: tokens.uuid, token: tokens.value })
       .from(tokens)
       .where(eq(tokens.userId, userId));
     const notebookUuid = await getOrGenerateNotebookUuid({
@@ -117,6 +123,30 @@ const loadData = async ({
         userId,
       })
       .onDuplicateKeyUpdate({ set: { value: response.body.accessToken } });
+    const postInstallResult = response.body.postInstall
+      ? await apiPost<{ success: false; reason: string } | { success: true }>(
+          `extensions/${id}/postinstall`,
+          {
+            workspace: response.body.workspace,
+            accessToken: response.body.accessToken,
+            notebookUuid,
+            token,
+          }
+        )
+      : { success: true as const };
+    if (!postInstallResult.success)
+      await apiPost({
+        path: "errors",
+        data: {
+          method: "web-app-error",
+          path: `/oauth/${id}`,
+          stack: postInstallResult.reason,
+          data: {
+            notebookUuid,
+          },
+        },
+      });
+
     return {
       success: true,
       body: {
@@ -125,6 +155,7 @@ const loadData = async ({
         suggestExtension:
           process.env.NODE_ENV === "development" &&
           response.body.suggestExtension,
+        postInstallResult,
       },
     };
   }

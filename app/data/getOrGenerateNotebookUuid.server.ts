@@ -9,7 +9,7 @@ import getQuota from "./getQuota.server";
 const getOrGenerateNotebookUuid = async ({
   requestId,
   workspace,
-  label: _label = workspace,
+  label = workspace,
   app,
   tokenUuid,
 }: {
@@ -58,7 +58,7 @@ const getOrGenerateNotebookUuid = async ({
   const notebookUuid = v4();
   await cxn
     .insert(notebooks)
-    .values({ uuid: notebookUuid, app: appId, workspace });
+    .values({ uuid: notebookUuid, app: appId, workspace, label });
   await cxn.insert(tokenNotebookLinks).values({
     uuid: sql`UUID()`,
     tokenUuid,

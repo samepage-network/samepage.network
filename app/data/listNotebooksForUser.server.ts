@@ -6,7 +6,7 @@ import {
   tokenNotebookLinks,
   apps,
 } from "data/schema";
-import { desc, like, eq, and } from "drizzle-orm/mysql-core/expressions";
+import { desc, or, eq, and } from "drizzle-orm/mysql-core/expressions";
 import { sql } from "drizzle-orm/sql";
 
 const columns = [
@@ -32,7 +32,7 @@ const listNotebooksForUser = async ({
     .select({
       uuid: notebooks.uuid,
       app: apps.name,
-      workspace: notebooks.workspace,
+      workspace: notebooks.label,
       created_date: sql<Date>`MAX(${onlineClients.createdDate})`.as(
         "created_date"
       ),
@@ -46,21 +46,23 @@ const listNotebooksForUser = async ({
     )
     .leftJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
     .innerJoin(apps, eq(notebooks.app, apps.id))
-    // TODO - sql injection
     .where(
       and(
         eq(tokens.userId, userId),
         search
-          ? like(notebooks.workspace, sql`CONCAT('%', ${search}, '%')`)
+          ? // TODO - sql injection
+            // ? like(notebooks.workspace, sql`CONCAT('%', ${search}, '%')`)
+            or(
+              eq(notebooks.label, search),
+              eq(notebooks.workspace, search),
+              eq(apps.name, search),
+              eq(apps.code, search)
+            )
           : undefined
       )
     )
     .groupBy(notebooks.uuid)
-    .orderBy(
-      desc(sql`created_date`),
-      notebooks.app,
-      notebooks.workspace
-    )
+    .orderBy(desc(sql`created_date`), notebooks.app, notebooks.workspace)
     .limit(size)
     .offset(index * size);
   const [count] = await cxn

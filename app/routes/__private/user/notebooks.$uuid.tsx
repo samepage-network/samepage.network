@@ -17,6 +17,7 @@ import {
   Outlet,
   useMatches,
   useSubmit,
+  Form,
 } from "@remix-run/react";
 import getUserNotebookProfile from "~/data/getUserNotebookProfile.server";
 import { useEffect, useRef, useState } from "react";
@@ -30,6 +31,7 @@ import uploadFile from "~/data/uploadFile.server";
 import Dialog from "~/components/Dialog";
 import { z } from "zod";
 import { NotFoundResponse } from "~/data/responses.server";
+import deleteNotebook from "~/data/deleteNotebook.server";
 
 const commands: Parameters<AddCommand>[0][] = [];
 let delayedLoad: string;
@@ -225,6 +227,11 @@ const SingleNotebookPage = () => {
           >
             Copy embed
           </Button>
+          <Form method="delete">
+            <Button intent={"danger"} name={"notebook"} value={"true"}>
+              Delete Notebook
+            </Button>
+          </Form>
           <Link
             to={"/user/notebooks"}
             className={"text-sky-500 underline py-3"}
@@ -322,8 +329,14 @@ export const action: ActionFunction = (args) => {
         ? { success: true }
         : redirect(`/user/notebooks/${uuid}/${pageUuid}`);
     },
-    DELETE: async ({ params, data }) => {
+    DELETE: async ({ params, data, context: { requestId } }) => {
       const uuid = params["uuid"] || "";
+      const notebook = data["notebook"]?.[0] || "";
+      if (notebook) {
+        await deleteNotebook({ uuid, requestId });
+        return redirect(`/user/notebooks`);
+      }
+      // TODO - move this to /user/notebooks/${uuid}/${pageUuid}
       const notebookPageId = data["title"]?.[0] || "";
       const Key = `data/notebooks/${uuid}.json`;
       const content = await downloadFileContent({

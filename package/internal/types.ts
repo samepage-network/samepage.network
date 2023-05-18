@@ -693,6 +693,7 @@ export const zOauthResponse = z.object({
   accessToken: z.string(),
   workspace: z.string(),
   suggestExtension: z.boolean().optional(),
+  postInstall: z.boolean().optional(),
   label: z.string().optional(),
   redirectUrl: z.string().optional(),
 });

@@ -77,7 +77,7 @@ const test = (args: CliOpts) => {
           : [];
 
         const version = toVersion();
-        const root = "data/tests";
+        const root = "extensions/tests";
         const Key = `${root}/${path}/${version}.html`;
         return Promise.all(
           [
