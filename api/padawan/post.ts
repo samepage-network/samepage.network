@@ -1,11 +1,16 @@
-import { padawanMissionSteps, padawanMissions } from "data/schema";
+import {
+  padawanMissionSteps,
+  padawanMissions,
+  padawanMissionEvents,
+} from "data/schema";
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
 import { BackendRequest } from "package/internal/types";
 import { z } from "zod";
 import getMysql from "~/data/mysql.server";
 import crypto from "crypto";
 import uploadFile from "~/data/uploadFile.server";
-import { eq } from "drizzle-orm/expressions";
+import { desc, eq } from "drizzle-orm/expressions";
+import { v4 } from "uuid";
 
 const bodySchema = z.discriminatedUnion("method", [
   z.object({
@@ -28,6 +33,15 @@ const bodySchema = z.discriminatedUnion("method", [
     method: z.literal("RECORD_OBSERVATION"),
     stepUuid: z.string(),
     observation: z.string(),
+  }),
+  z.object({
+    method: z.literal("GET_STATUS"),
+    missionUuid: z.string(),
+  }),
+  z.object({
+    method: z.literal("FINISH_MISSION"),
+    finish: z.string(),
+    missionUuid: z.string(),
   }),
 ]);
 
@@ -78,6 +92,30 @@ const logic = async (args: BackendRequest<typeof bodySchema>) => {
           }),
         });
       }
+    } else if (method === "GET_STATUS") {
+      const [mission] = await cxn
+        .select({ status: padawanMissionEvents.status })
+        .from(padawanMissionEvents)
+        .where(eq(padawanMissionEvents.missionUuid, args.missionUuid))
+        .orderBy(desc(padawanMissionEvents.createdDate))
+        .limit(1);
+      await cxn.end();
+      return { success: true, status: mission?.status };
+    } else if (method === "FINISH_MISSION") {
+      const { missionUuid, finish } = args;
+      const eventUuid = v4();
+      await cxn.insert(padawanMissionEvents).values({
+        uuid: eventUuid,
+        missionUuid,
+        status: "FINISHED",
+        createdDate: new Date(),
+      });
+      await uploadFile({
+        Key: `data/padawan/events/${eventUuid}.json`,
+        Body: JSON.stringify({
+          finish,
+        }),
+      });
     }
     await cxn.end();
     return { success: true };

@@ -345,6 +345,13 @@ export const padawanMissions = mysqlTable("padawan_missions", {
   startDate: date("start"),
 });
 
+export const padawanMissionEvents = mysqlTable("padawan_mission_events", {
+  uuid: primaryUuid(),
+  missionUuid: uuid("mission_uuid").notNull(),
+  status: varchar("status", { length: 64 }).notNull().default(""),
+  createdDate: date("created"),
+});
+
 export const padawanMissionSteps = mysqlTable("padawan_mission_steps", {
   uuid: primaryUuid(),
   missionUuid: uuid("mission_uuid").notNull(),

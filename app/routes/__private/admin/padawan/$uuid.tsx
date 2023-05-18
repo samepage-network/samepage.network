@@ -1,14 +1,19 @@
 import { ActionFunction, LoaderArgs, redirect } from "@remix-run/node";
-import { Form, useLoaderData } from "@remix-run/react";
-import { padawanMissionSteps, padawanMissions } from "data/schema";
-import { eq } from "drizzle-orm/mysql-core/expressions";
+import { Form, useLoaderData, useSubmit } from "@remix-run/react";
+import {
+  padawanMissionSteps,
+  padawanMissions,
+  padawanMissionEvents,
+} from "data/schema";
+import { eq, desc } from "drizzle-orm/mysql-core/expressions";
 import Button from "package/components/Button";
 import { downloadFileContent } from "~/data/downloadFile.server";
 import getMysql from "~/data/mysql.server";
 import remixAdminAction from "~/data/remixAdminAction.server";
 import remixAdminLoader from "~/data/remixAdminLoader.server";
 import { z } from "zod";
-import React from "react";
+import React, { useEffect, useMemo } from "react";
+import { v4 } from "uuid";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const stepSchema = z.object({
@@ -61,20 +66,44 @@ const PadawanMissionStep = (
 
 const PadawanMissionPage = () => {
   const {
+    events,
     mission: { label },
     steps,
   } = useLoaderData<typeof loader>();
+  const submit = useSubmit();
+  const status = useMemo(() => events[0]?.status || "RUNNING", [events]);
+  useEffect(() => {
+    // TODO - replace with a websocket
+    if (status !== "FINISHED") {
+      const interval = setInterval(() => {
+        submit({}, { method: "GET" });
+      }, 1000 * 30);
+      return () => {
+        clearInterval(interval);
+      };
+    }
+    return () => {};
+  }, [status, submit]);
   return (
     <div className="flex flex-col gap-4 h-full">
-      <h1 className="my-4 text-3xl">{label}</h1>
+      <h1 className="my-4 text-3xl">
+        {label} [{status}]
+      </h1>
       <div className="flex-grow flex flex-col gap-2">
         {steps.map((step, index) => (
           <PadawanMissionStep {...step} key={step.uuid} index={index} />
         ))}
       </div>
-      <Form method={"delete"}>
-        <Button>Delete</Button>
-      </Form>
+      <div className="flex items-center gap-4">
+        <Form method={"post"}>
+          <Button name={"status"} value={"interupted"}>
+            Stop
+          </Button>
+        </Form>
+        <Form method={"delete"}>
+          <Button intent={"danger"}>Delete</Button>
+        </Form>
+      </div>
     </div>
   );
 };
@@ -89,6 +118,14 @@ export const loader = (args: LoaderArgs) => {
       })
       .from(padawanMissions)
       .where(eq(padawanMissions.uuid, missionUuid));
+    const events = await cxn
+      .select({
+        status: padawanMissionEvents.status,
+        date: padawanMissionEvents.createdDate,
+      })
+      .from(padawanMissionEvents)
+      .where(eq(padawanMissionEvents.missionUuid, missionUuid))
+      .orderBy(desc(padawanMissionEvents.createdDate));
     const stepRecords = await cxn
       .select({
         uuid: padawanMissionSteps.uuid,
@@ -126,6 +163,7 @@ export const loader = (args: LoaderArgs) => {
     return {
       mission,
       steps,
+      events,
     };
   });
 };
@@ -143,6 +181,19 @@ export const action: ActionFunction = async (args) => {
         .where(eq(padawanMissions.uuid, missionUuid));
       await cxn.end();
       return redirect(`/admin/padawan`);
+    },
+    POST: async ({ context: { requestId }, data, params }) => {
+      console.log(data);
+      const missionUuid = params.uuid || "";
+      const cxn = await getMysql(requestId);
+      await cxn.insert(padawanMissionEvents).values({
+        status: "STOP",
+        uuid: v4(),
+        missionUuid,
+        createdDate: new Date(),
+      });
+      await cxn.end();
+      return { success: true };
     },
   });
 };

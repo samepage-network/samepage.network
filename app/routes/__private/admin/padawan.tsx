@@ -34,6 +34,11 @@ const PadawanAdminPage = () => {
             name={"issue"}
             defaultValue={63}
           />
+          <TextInput
+            label={"Label"}
+            name={"label"}
+            defaultValue={`Padawan Mission ${v4().slice(0, 8)}`}
+          />
           <Button>Assign</Button>
         </Form>
         <h2 className="text-xl">Past Missions</h2>
@@ -74,18 +79,19 @@ export const loader: LoaderFunction = (args) => {
 const zData = z.object({
   owner: z.tuple([z.string()]).transform((v) => v[0]),
   repo: z.tuple([z.string()]).transform((v) => v[0]),
+  label: z.tuple([z.string()]).transform((v) => v[0]),
   issue: z.tuple([z.string()]).transform((v) => Number(v[0])),
 });
 
 export const action: ActionFunction = async (args) => {
   return remixAdminAction(args, {
     POST: async ({ context: { requestId }, data }) => {
-      const { owner, repo, issue } = zData.parse(data);
+      const { owner, repo, issue, label } = zData.parse(data);
       const missionUuid = v4();
       const cxn = await getMysql(requestId);
       await cxn.insert(padawanMissions).values({
         uuid: missionUuid,
-        label: `Issue #${issue} from ${owner}/${repo}`,
+        label,
         startDate: new Date(),
       });
       await cxn.end();
