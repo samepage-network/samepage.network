@@ -31,7 +31,7 @@ const DirectoryLink = ({
     <Link
       to={d.path.replace(/\/?index$/, "")}
       className={`w-full py-1 px-4 cursor-pointer hover:bg-gray-200 capitalize ${
-        pathSelected.replace(/^docs\//, "") === d.path ? "bg-gray-100" : ""
+        pathSelected.replace(/^docs[\\/]/, "") === d.path ? "bg-gray-100" : ""
       }`}
       key={d.path}
     >
