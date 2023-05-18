@@ -58,6 +58,7 @@ import getActorInfo from "~/data/getActorInfo.server";
 import listSharedPages from "~/data/listSharedPages.server";
 import onboardNotebook from "~/data/onboardNotebook.server";
 import { apiPost } from "package/internal/apiClient";
+import authenticateUser from "~/data/authenticateUser.server";
 
 const log = debug("api:page");
 const zhandlerBody = zUnauthenticatedBody.or(
@@ -244,102 +245,105 @@ const logic = async (req: Record<string, unknown>) => {
           );
         }),
       };
+    } else if (args.method === "authenticate-user") {
+      const user = authenticateUser({ requestId, ...args });
+      await cxn.end();
+      return user;
     } else if (args.method === "ping") {
       // uptime checker
       return { success: true };
     }
-    const { tokenUuid, notebookUuid } = await authenticateNotebook({
+    const authenticatedNotebook = await authenticateNotebook({
       requestId,
       ...args,
     });
+    const { tokenUuid, notebookUuid } = authenticatedNotebook;
 
     switch (args.method) {
+      case "authenticate-notebook": {
+        await cxn.end();
+        return authenticatedNotebook;
+      }
       case "usage": {
         const currentDate = new Date();
         const currentMonth = currentDate.getMonth();
         const currentYear = currentDate.getFullYear();
         const startDate = new Date(currentYear, currentMonth, 1);
 
-        return getMysql(requestId)
-          .then(async (cxn) => {
-            const [sessions, messageRecords, notebookRecords, quotaRecords] =
-              await Promise.all([
-                cxn
-                  .select({
-                    id: clientSessions.id,
-                    created_date: clientSessions.createdDate,
-                    end_date: clientSessions.endDate,
-                  })
-                  .from(clientSessions)
-                  .where(
-                    and(
-                      eq(clientSessions.notebookUuid, notebookUuid),
-                      gt(clientSessions.createdDate, startDate)
-                    )
-                  ),
-                cxn
-                  .select({ uuid: messages.uuid })
-                  .from(messages)
-                  .where(
-                    and(
-                      eq(messages.source, notebookUuid),
-                      gt(messages.createdDate, startDate)
-                    )
-                  ),
-                cxn
-                  .select({ uuid: tokenNotebookLinks.uuid })
-                  .from(tokenNotebookLinks)
-                  .where(eq(tokenNotebookLinks.notebookUuid, notebookUuid))
-                  .then((links) =>
-                    cxn
-                      .select({
-                        uuid: notebooks.uuid,
-                        app: notebooks.app,
-                        appName: apps.name,
-                        workspace: notebooks.workspace,
-                        pages: sql<number>`COUNT(${pageNotebookLinks.uuid})`,
-                      })
-                      .from(pageNotebookLinks)
-                      .innerJoin(
-                        notebooks,
-                        eq(pageNotebookLinks.notebookUuid, notebooks.uuid)
-                      )
-                      .innerJoin(
-                        tokenNotebookLinks,
-                        eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
-                      )
-                      .innerJoin(apps, eq(apps.id, notebooks.app))
-                      .where(
-                        and(
-                          eq(pageNotebookLinks.open, 0),
-                          inArray(
-                            tokenNotebookLinks.uuid,
-                            links.map((l) => l.uuid)
-                          )
-                        )
-                      )
-                  ),
-                cxn
-                  .select({ field: quotas.field, value: quotas.value })
-                  .from(quotas)
-                  .where(isNull(quotas.stripeId)),
-              ]);
-            await cxn.end();
-            return {
-              minutes: sessions.reduce(
-                (p, c) => differenceInMinutes(c.end_date, c.created_date) + p,
-                0
-              ),
-              messages: messageRecords.length,
-              notebooks: notebookRecords,
-              quotas: Object.fromEntries(
-                quotaRecords.map(
-                  (q) => [QUOTAS[q.field || 0], q.value] as const
+        const [sessions, messageRecords, notebookRecords, quotaRecords] =
+          await Promise.all([
+            cxn
+              .select({
+                id: clientSessions.id,
+                created_date: clientSessions.createdDate,
+                end_date: clientSessions.endDate,
+              })
+              .from(clientSessions)
+              .where(
+                and(
+                  eq(clientSessions.notebookUuid, notebookUuid),
+                  gt(clientSessions.createdDate, startDate)
                 )
               ),
-            };
-          })
-          .catch(catchError("Failed to retrieve usage"));
+            cxn
+              .select({ uuid: messages.uuid })
+              .from(messages)
+              .where(
+                and(
+                  eq(messages.source, notebookUuid),
+                  gt(messages.createdDate, startDate)
+                )
+              ),
+            cxn
+              .select({ uuid: tokenNotebookLinks.uuid })
+              .from(tokenNotebookLinks)
+              .where(eq(tokenNotebookLinks.notebookUuid, notebookUuid))
+              .then((links) =>
+                cxn
+                  .select({
+                    uuid: notebooks.uuid,
+                    app: notebooks.app,
+                    appName: apps.name,
+                    workspace: notebooks.workspace,
+                    pages: sql<number>`COUNT(${pageNotebookLinks.uuid})`,
+                  })
+                  .from(pageNotebookLinks)
+                  .innerJoin(
+                    notebooks,
+                    eq(pageNotebookLinks.notebookUuid, notebooks.uuid)
+                  )
+                  .innerJoin(
+                    tokenNotebookLinks,
+                    eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
+                  )
+                  .innerJoin(apps, eq(apps.id, notebooks.app))
+                  .where(
+                    and(
+                      eq(pageNotebookLinks.open, 0),
+                      inArray(
+                        tokenNotebookLinks.uuid,
+                        links.map((l) => l.uuid)
+                      )
+                    )
+                  )
+              ),
+            cxn
+              .select({ field: quotas.field, value: quotas.value })
+              .from(quotas)
+              .where(isNull(quotas.stripeId)),
+          ]);
+        await cxn.end();
+        return {
+          minutes: sessions.reduce(
+            (p, c) => differenceInMinutes(c.end_date, c.created_date) + p,
+            0
+          ),
+          messages: messageRecords.length,
+          notebooks: notebookRecords,
+          quotas: Object.fromEntries(
+            quotaRecords.map((q) => [QUOTAS[q.field || 0], q.value] as const)
+          ),
+        };
       }
       case "get-actor": {
         const { actorId } = args;

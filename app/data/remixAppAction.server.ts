@@ -3,7 +3,7 @@ import type { Params } from "react-router";
 import getUserId from "~/data/getUserId.server";
 import handleAsResponse from "~/data/handleAsResponse.server";
 import parseRemixContext from "~/data/parseRemixContext.server";
-import { NotFoundResponse } from "~/data/responses.server";
+import { NotFoundResponse } from "package/utils/responses";
 
 type ActionMethod = "POST" | "PUT" | "DELETE";
 

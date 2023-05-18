@@ -481,6 +481,20 @@ export type AuthenticateNotebook = (args: {
   app: string;
   workspace: string;
 }>;
+export type AuthenticateUser = (args: {
+  email: string;
+  password: string;
+  requestId: string;
+}) => Promise<
+  | {
+      notebookUuid: string;
+      token: string;
+    }
+  | {
+      token: string;
+      userId: string;
+    }
+>;
 
 export type ActorInfo = {
   notebookUuid: string;
@@ -527,10 +541,18 @@ export const zUnauthenticatedBody = z.discriminatedUnion("method", [
     sessionToken: z.string(),
     sessionId: z.string(),
   }),
+  z.object({
+    method: z.literal("authenticate-user"),
+    email: z.string(),
+    password: z.string(),
+  }),
   z.object({ method: z.literal("ping") }),
 ]);
 
 export const zAuthenticatedBody = z.discriminatedUnion("method", [
+  z.object({
+    method: z.literal("authenticate-notebook"),
+  }),
   z.object({ method: z.literal("usage") }),
   z.object({ method: z.literal("get-actor"), actorId: z.string() }),
   z.object({ method: z.literal("load-message"), messageUuid: z.string() }),

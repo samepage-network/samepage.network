@@ -3,7 +3,7 @@ import { Form, useLoaderData } from "@remix-run/react";
 import AtJsonRendered from "package/components/AtJsonRendered";
 import Button from "package/components/Button";
 import getTitleState from "~/data/getTitleState.server";
-import { NotFoundResponse } from "~/data/responses.server";
+import { NotFoundResponse } from "package/utils/responses";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { ActionFunction } from "@remix-run/node";
 import {

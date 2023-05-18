@@ -1,10 +1,18 @@
 import React from "react";
-import { Form, LoaderFunctionArgs, useLoaderData } from "react-router-dom";
+import {
+  ActionFunctionArgs,
+  Form,
+  LoaderFunctionArgs,
+  useLoaderData,
+  redirect,
+} from "react-router-dom";
 import Button from "./Button";
 import TextInput from "./TextInput";
 import BaseInput from "./BaseInput";
 import authenticateRequest from "../internal/authenticateRequest";
-import { AuthenticateNotebook } from "../internal/types";
+import { AuthenticateNotebook, AuthenticateUser } from "../internal/types";
+import { BadRequestResponse, NotFoundResponse } from "../utils/responses";
+import parseRequestContext from "../internal/parseRequestContext";
 
 const HomeDashboardTab = ({
   onLogOut,
@@ -70,6 +78,44 @@ export const makeLoader =
       app: result.app,
       workspace: result.workspace,
     };
+  };
+
+export const makeAction =
+  ({ authenticateUser }: { authenticateUser: AuthenticateUser }) =>
+  async (args: ActionFunctionArgs) => {
+    if (args.request.method !== "POST")
+      throw new NotFoundResponse(`Unsupported method ${args.request.method}`);
+    const data = await args.request.formData();
+    const email = data.get("email");
+    const password = data.get("password");
+    const origin = data.get("origin");
+    if (typeof email !== "string") {
+      throw new BadRequestResponse("Missing email");
+    }
+    if (typeof password !== "string") {
+      throw new BadRequestResponse("Missing password");
+    }
+    if (typeof origin !== "string") {
+      throw new BadRequestResponse("Missing origin");
+    }
+    const { requestId } = parseRequestContext(args.context);
+    const authenticatedUser = await authenticateUser({
+      email,
+      password,
+      requestId,
+    });
+    if (!("notebookUuid" in authenticatedUser)) {
+      return redirect(
+        `/embeds?user_auth=${Buffer.from(
+          `${authenticatedUser.userId}:${authenticatedUser.token}`
+        ).toString("base64")}`
+      );
+    }
+    return redirect(
+      `/embeds?auth=${Buffer.from(
+        `${authenticatedUser.notebookUuid}:${authenticatedUser.token}`
+      ).toString("base64")}`
+    );
   };
 
 export default HomeDashboardTab;

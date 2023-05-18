@@ -14,7 +14,7 @@ import parseRemixContext from "~/data/parseRemixContext.server";
 import getMysql from "~/data/mysql.server";
 import { pageNotebookLinks } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
-import { NotFoundResponse, ForbiddenResponse } from "~/data/responses.server";
+import { NotFoundResponse, ForbiddenResponse } from "package/utils/responses";
 import { z } from "zod";
 import getTitleState from "~/data/getTitleState.server";
 

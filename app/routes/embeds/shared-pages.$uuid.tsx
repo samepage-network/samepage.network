@@ -5,7 +5,7 @@ import blueprintcss from "@blueprintjs/core/lib/css/blueprint.css";
 import blueprinticonscss from "@blueprintjs/icons/lib/css/blueprint-icons.css";
 import { pageNotebookLinks, pageProperties } from "data/schema";
 import { and, eq } from "drizzle-orm/expressions";
-import { NotFoundResponse } from "~/data/responses.server";
+import { NotFoundResponse } from "package/utils/responses";
 import { zSamePageSchema } from "package/internal/types";
 export { default as default } from "package/components/SharedPageTab";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";

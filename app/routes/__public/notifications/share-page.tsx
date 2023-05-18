@@ -20,7 +20,7 @@ import parseRemixContext from "~/data/parseRemixContext.server";
 import {
   BadRequestResponse,
   InternalServerResponse,
-} from "~/data/responses.server";
+} from "package/utils/responses";
 import { JSONData } from "package/internal/types";
 
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";

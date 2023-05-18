@@ -30,7 +30,7 @@ import { downloadFileContent } from "~/data/downloadFile.server";
 import uploadFile from "~/data/uploadFile.server";
 import Dialog from "~/components/Dialog";
 import { z } from "zod";
-import { NotFoundResponse } from "~/data/responses.server";
+import { NotFoundResponse } from "package/utils/responses";
 import deleteNotebook from "~/data/deleteNotebook.server";
 
 const commands: Parameters<AddCommand>[0][] = [];

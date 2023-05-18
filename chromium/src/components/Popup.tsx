@@ -11,7 +11,10 @@ import { ClerkProvider, useClerk, useSession } from "@clerk/chrome-extension";
 import RootDashboard from "samepage/components/RootDashboard";
 import SharedPagesTab from "samepage/components/SharedPagesTab";
 import apiClient from "samepage/internal/apiClient";
-import HomeDashboardTab from "samepage/components/HomeDashboardTab";
+import HomeDashboardTab, {
+  makeLoader as homeMakeLoader,
+  makeAction as homeMakeAction,
+} from "samepage/components/HomeDashboardTab";
 import DefaultErrorBoundary from "~/components/DefaultErrorBoundary";
 import SharedPageTab from "samepage/components/SharedPageTab";
 
@@ -125,14 +128,22 @@ const router = createMemoryRouter(
       <Route
         path={""}
         element={<HomeDashboardTabRoute />}
-        loader={() => {
-          return {
-            auth: !!localStorage.getItem("notebookUuid"),
-          };
-        }}
-        action={({ request }) => {
-          return fetch(request);
-        }}
+        loader={homeMakeLoader({
+          authenticateNotebook: ({ notebookUuid, token }) =>
+            apiClient({
+              method: "authenticate-notebook",
+              notebookUuid,
+              token,
+            }),
+        })}
+        action={homeMakeAction({
+          authenticateUser: ({ email, password }) =>
+            apiClient({
+              method: "authenticate-user",
+              email,
+              password,
+            }),
+        })}
       />
       <Route
         path={"shared-pages"}

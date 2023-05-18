@@ -1,6 +1,6 @@
 import { LoaderFunction } from "@remix-run/node";
 import { Octokit } from "@octokit/rest";
-import { NotFoundResponse } from "~/data/responses.server";
+import { NotFoundResponse } from "package/utils/responses";
 import mimeTypes from "mime-types";
 import parseRemixContext from "~/data/parseRemixContext.server";
 import decompress from "decompress";
@@ -37,15 +37,15 @@ export const loader: LoaderFunction = async ({ params, request, context }) => {
     artifact_id: artifacts[0].id,
     archive_format: "zip",
   });
-//   console.log("url", url);
+  //   console.log("url", url);
   const zip = await fetch(url).then((r) => r.text());
-//   console.log("zip", zip.length);
+  //   console.log("zip", zip.length);
   const tmp = `/tmp/${parseRemixContext(context).lambdaContext.awsRequestId}`;
   fs.mkdirSync(tmp);
   fs.writeFileSync(`${tmp}/archive.zip`, zip);
-//   const files = 
+  //   const files =
   await decompress(`${tmp}/archive.zip`, `${tmp}/out`);
-//   console.log("depressed", files);
+  //   console.log("depressed", files);
   const body = fs.readFileSync(`${tmp}/out/${file}`);
   return new Response(body, {
     headers: {

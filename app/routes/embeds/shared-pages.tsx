@@ -14,7 +14,7 @@ export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import {
   InternalServerResponse,
   NotFoundResponse,
-} from "~/data/responses.server";
+} from "package/utils/responses";
 import sharePageCommandCalback from "package/internal/sharePageCommandCallback";
 import { apiPost } from "package/internal/apiClient";
 import listSharedPages from "~/data/listSharedPages.server";
