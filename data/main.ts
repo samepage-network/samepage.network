@@ -770,7 +770,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
               filename: dummyFile.outputPath,
               runtime: "nodejs18.x",
               publish: false,
-              timeout: 10,
+              timeout: 60,
               memorySize: 5120,
             }
           ),
