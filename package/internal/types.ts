@@ -495,10 +495,12 @@ export type AuthenticateNotebook = (args: {
   actorId: string;
   app: string;
   workspace: string;
+  userId: string;
 }>;
 export type AuthenticateUser = (args: {
   email: string;
   password: string;
+  origin: string;
   requestId: string;
 }) => Promise<
   | {
@@ -510,6 +512,13 @@ export type AuthenticateUser = (args: {
       userId: string;
     }
 >;
+export type ListUserNotebooks = (args: {
+  userId: string;
+  token: string;
+  requestId: string;
+}) => Promise<{
+  notebooks: { uuid: string; appName: string; workspace: string }[];
+}>;
 
 export type ActorInfo = {
   notebookUuid: string;
@@ -552,14 +561,14 @@ export const zUnauthenticatedBody = z.discriminatedUnion("method", [
   }),
   z.object({
     method: z.literal("list-user-notebooks"),
-    url: z.string().optional(),
-    sessionToken: z.string(),
-    sessionId: z.string(),
+    token: z.string(),
+    userId: z.string(),
   }),
   z.object({
     method: z.literal("authenticate-user"),
     email: z.string(),
     password: z.string(),
+    origin: z.string(),
   }),
   z.object({ method: z.literal("ping") }),
 ]);
@@ -749,6 +758,15 @@ export const zSelection = z.object({
       suffix: z.string().optional(),
       attr: z.string(),
     })
+    .array(),
+  transforms: z
+    .discriminatedUnion("method", [
+      z.object({
+        method: z.literal("cast"),
+        to: z.enum(["date", "string", "number"]),
+      }),
+      z.object({ method: z.literal("access"), key: z.string().or(z.number()) }),
+    ])
     .array(),
 });
 

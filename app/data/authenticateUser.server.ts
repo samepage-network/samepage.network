@@ -7,6 +7,7 @@ import verifyUser from "./verifyUser.server";
 const authenticateUser: AuthenticateUser = async ({
   email,
   password,
+  origin,
   requestId,
 }) => {
   const tokenRecord = await verifyUser({ email, password, requestId });
@@ -20,14 +21,14 @@ const authenticateUser: AuthenticateUser = async ({
   const [record] = !thisApp
     ? await cxn
         .select({
-          notebookUuid: tokenNotebookLinks.uuid,
+          notebookUuid: tokenNotebookLinks.notebookUuid,
         })
         .from(tokenNotebookLinks)
         .where(eq(tokenNotebookLinks.tokenUuid, tokenRecord.uuid))
         .limit(1)
     : await cxn
         .select({
-          notebookUuid: tokenNotebookLinks.uuid,
+          notebookUuid: tokenNotebookLinks.notebookUuid,
         })
         .from(tokenNotebookLinks)
         .innerJoin(

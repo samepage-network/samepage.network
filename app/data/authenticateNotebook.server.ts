@@ -21,6 +21,7 @@ const authenticateNotebook: AuthenticateNotebook = async (args) => {
         workspace: notebooks.label,
         tokenUuid: tokenNotebookLinks.tokenUuid,
         actorId: tokenNotebookLinks.uuid,
+        userId: tokens.userId,
       })
       .from(tokens)
       .innerJoin(
@@ -43,10 +44,12 @@ const authenticateNotebook: AuthenticateNotebook = async (args) => {
       actorId: tokenNotebookLinks.uuid,
       app: apps.name,
       workspace: notebooks.label,
+      userId: tokens.userId,
     })
     .from(tokenNotebookLinks)
     .innerJoin(notebooks, eq(notebooks.uuid, tokenNotebookLinks.notebookUuid))
     .innerJoin(apps, eq(apps.id, notebooks.app))
+    .innerJoin(tokens, eq(tokenNotebookLinks.tokenUuid, tokens.uuid))
     .where(eq(tokenNotebookLinks.notebookUuid, notebookUuid));
   if (!tokenLinks.length) {
     throw new NotFoundError(

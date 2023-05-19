@@ -19,70 +19,41 @@ import DefaultErrorBoundary from "~/components/DefaultErrorBoundary";
 import SharedPageTab from "samepage/components/SharedPageTab";
 
 const SamePageContext = React.createContext<{
-  notebookUuid: string;
-  token: string;
+  // notebookUuid: string;
+  // token: string;
   url: string;
 }>({
-  notebookUuid: "",
-  token: "",
+  // notebookUuid: "",
+  // token: "",
   url: "",
 });
 
 const SamePageProvider = () => {
-  const [notebookUuid, setNotebookUuid] = React.useState("");
-  const [token, setToken] = React.useState("");
   const [url, setUrl] = React.useState("");
   const session = useSession();
   const [loading, setLoading] = React.useState(true);
   React.useEffect(() => {
     if (session.isLoaded) {
-      if (session.isSignedIn) {
-        session.session
-          .getToken()
-          .then(async (sessionToken) => {
-            if (!sessionToken) return;
-            const tabs = await chrome.tabs.query({
-              active: true,
-              lastFocusedWindow: true,
-            });
-            const url = tabs[0].url || "";
-            const r = await apiClient<{
-              notebooks: {
-                notebookUuid: string;
-                appName: string;
-                workspace: string;
-                token: string;
-              }[];
-            }>({
-              method: "list-user-notebooks",
-              url,
-              sessionToken,
-              sessionId: session.session.id,
-            });
-            const { notebookUuid, token } = r.notebooks[0];
-            setNotebookUuid(notebookUuid);
-            setToken(token);
-            setUrl(url);
-            // TODO - look into accessing from shared context https://github.com/remix-run/react-router/discussions/9564
-            localStorage.setItem("notebookUuid", notebookUuid);
-            localStorage.setItem("token", token);
-          })
-          .finally(() => {
-            setLoading(false);
-          });
-      } else {
-        localStorage.removeItem("notebookUuid");
-        localStorage.removeItem("token");
-        setLoading(false);
-      }
+      chrome.tabs
+        .query({
+          active: true,
+          lastFocusedWindow: true,
+        })
+        .then((tabs) => {
+          const url = tabs[0].url || "";
+          setUrl(url);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     }
-  }, [setLoading, setNotebookUuid, session.isSignedIn, session.isLoaded]);
+  }, [setLoading, session.isSignedIn, session.isLoaded]);
   return loading ? (
     <div className="m-auto" style={{ margin: "auto" }}>
       <Spinner size={64} />
     </div>
   ) : (
-    <SamePageContext.Provider value={{ notebookUuid, token, url }}>
+    <SamePageContext.Provider value={{ url }}>
       <RootDashboard root="/" currentTab={window.location.pathname} />
     </SamePageContext.Provider>
   );
@@ -129,19 +100,19 @@ const router = createMemoryRouter(
         path={""}
         element={<HomeDashboardTabRoute />}
         loader={homeMakeLoader({
-          authenticateNotebook: ({ notebookUuid, token }) =>
+          authenticateNotebook: (args) =>
             apiClient({
               method: "authenticate-notebook",
-              notebookUuid,
-              token,
+              ...args,
             }),
+          listUserNotebooks: (args) =>
+            apiClient({ method: "list-user-notebooks", ...args }),
         })}
         action={homeMakeAction({
-          authenticateUser: ({ email, password }) =>
+          authenticateUser: (args) =>
             apiClient({
               method: "authenticate-user",
-              email,
-              password,
+              ...args,
             }),
         })}
       />

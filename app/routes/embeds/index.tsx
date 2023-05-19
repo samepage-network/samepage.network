@@ -6,6 +6,7 @@ import HomeDashboardTab, {
 } from "samepage/components/HomeDashboardTab";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
 import authenticateUser from "~/data/authenticateUser.server";
+import listUserNotebooks from "~/data/listUserNotebooks.server";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const EmbedsIndexPage: React.FC = () => {
@@ -13,13 +14,15 @@ const EmbedsIndexPage: React.FC = () => {
   const [origin, setOrigin] = useState("");
   useEffect(() => {
     if (typeof document !== "undefined") {
-      setOrigin(document.location?.ancestorOrigins?.[0] || "");
+      setOrigin(
+        document.location.ancestorOrigins?.[0] || document.location.origin
+      );
     }
   }, [setOrigin]);
   return <HomeDashboardTab onLogOut={() => navigate("/embeds")} url={origin} />;
 };
 
-export const loader = makeLoader({ authenticateNotebook });
+export const loader = makeLoader({ authenticateNotebook, listUserNotebooks });
 
 export const action = makeAction({ authenticateUser });
 

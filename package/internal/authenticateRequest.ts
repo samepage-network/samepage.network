@@ -1,20 +1,13 @@
 import { LoaderFunctionArgs } from "react-router";
 import parseRequestContext from "./parseRequestContext";
+import { AuthenticateNotebook } from "./types";
 
 const authenticateRequest = async ({
   args: { request, context },
   authenticateNotebook,
 }: {
   args: LoaderFunctionArgs;
-  authenticateNotebook: (args: {
-    notebookUuid: string;
-    token: string;
-    requestId: string;
-  }) => Promise<{
-    tokenUuid: string;
-    app: string;
-    workspace: string;
-  }>;
+  authenticateNotebook: AuthenticateNotebook;
 }) => {
   const searchParams = new URL(request.url).searchParams;
   const { requestId } = parseRequestContext(context);
@@ -28,7 +21,7 @@ const authenticateRequest = async ({
   if (!notebookUuid || !token) {
     return { auth: false as const, requestId };
   }
-  const { tokenUuid, app, workspace } = await authenticateNotebook({
+  const { tokenUuid, app, workspace, userId } = await authenticateNotebook({
     notebookUuid,
     token,
     requestId,
@@ -41,6 +34,7 @@ const authenticateRequest = async ({
     requestId,
     token,
     tokenUuid,
+    userId,
     param: auth,
   };
 };
