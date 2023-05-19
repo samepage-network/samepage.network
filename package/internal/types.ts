@@ -741,7 +741,7 @@ const zCondition = z.object({
   relation: z.string(),
 });
 
-const zSelection = z.object({
+export const zSelection = z.object({
   node: z.string(),
   label: z.string(),
   fields: z
@@ -753,7 +753,7 @@ const zSelection = z.object({
 });
 
 // @deprecated
-const zOldSelection = z.object({
+export const zOldSelection = z.object({
   label: z.string(),
   text: z.string(),
 });

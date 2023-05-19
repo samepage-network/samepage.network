@@ -1011,7 +1011,6 @@ const logic = async (req: Record<string, unknown>) => {
         const { request, targets: _targets, target, label } = args;
         const targets = target ? [target] : _targets || [];
         if (!targets.length) {
-          console.log(req, args);
           throw new NotFoundError("No targets specified");
         }
         return Promise.all(
@@ -1030,17 +1029,6 @@ const logic = async (req: Record<string, unknown>) => {
                     eq(notebookRequests.notebookUuid, notebookUuid)
                   )
                 );
-              const hasAccess = await cxn
-                .select({
-                  uuid: tokenNotebookLinks.uuid,
-                })
-                .from(tokenNotebookLinks)
-                .where(
-                  and(
-                    eq(tokenNotebookLinks.notebookUuid, target),
-                    eq(tokenNotebookLinks.tokenUuid, tokenUuid)
-                  )
-                );
               const messageRequest = (requestUuid: string) =>
                 messageNotebook({
                   source: notebookUuid,
@@ -1054,6 +1042,17 @@ const logic = async (req: Record<string, unknown>) => {
                   requestId,
                 });
               if (!requestRecord) {
+                const hasAccess = await cxn
+                  .select({
+                    uuid: tokenNotebookLinks.uuid,
+                  })
+                  .from(tokenNotebookLinks)
+                  .where(
+                    and(
+                      eq(tokenNotebookLinks.notebookUuid, target),
+                      eq(tokenNotebookLinks.tokenUuid, tokenUuid)
+                    )
+                  );
                 const uuid = v4();
                 await cxn.insert(notebookRequests).values({
                   target,
@@ -1077,12 +1076,18 @@ const logic = async (req: Record<string, unknown>) => {
                       requestId,
                       saveData: true,
                     }));
-                return { target, response: null, requestUuid: uuid };
+                return {
+                  target,
+                  response: null,
+                  requestUuid: uuid,
+                  cacheHit: false,
+                };
               } else if (requestRecord.status === "rejected") {
                 return {
                   target,
                   response: "rejected",
                   requestUuid: requestRecord.uuid,
+                  cacheHit: false,
                 };
               } else if (requestRecord.status === "pending") {
                 await messageRequest(requestRecord.uuid);
@@ -1090,6 +1095,7 @@ const logic = async (req: Record<string, unknown>) => {
                   target,
                   response: "pending",
                   requestUuid: requestRecord.uuid,
+                  cacheHit: false,
                 };
               } else {
                 const data = await downloadFileContent({
@@ -1100,6 +1106,7 @@ const logic = async (req: Record<string, unknown>) => {
                   target,
                   response: data ? JSON.parse(data) : {},
                   requestUuid: requestRecord.uuid,
+                  cacheHit: true,
                 };
               }
             } catch (e) {
@@ -1108,11 +1115,13 @@ const logic = async (req: Record<string, unknown>) => {
                 target,
                 response: { success: false, error: (e as Error).message },
                 requestUuid: "",
+                cacheHit: false,
               };
             }
           })
         )
-          .then((resps) => {
+          .then(async (resps) => {
+            await cxn.end();
             const responses = resps.filter((r) => !!r.requestUuid);
             if (responses.length > 1) {
               return Object.fromEntries(

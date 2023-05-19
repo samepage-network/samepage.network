@@ -44,21 +44,33 @@ const handleRequest = async ({
 };
 
 const sendNotebookRequest: SendNotebookRequest = ({ target, request, label }) =>
-  apiClient<{ response: NotebookResponse; requestUuid: string }>({
+  apiClient<{
+    response: NotebookResponse;
+    requestUuid: string;
+    cacheHit: boolean;
+  }>({
     method: "notebook-request",
     target,
     request,
     label,
   }).then(
     async (r) =>
-      new Promise<NotebookResponse>(async (resolve) => {
-        const timeout = setTimeout(() => {
+      new Promise<NotebookResponse>(async (resolve, reject) => {
+        if (r.cacheHit || r.response === "pending" || r.response === null) {
+          const timeout = setTimeout(() => {
+            resolve(r.response);
+          }, 3000);
+          notebookResponseHandlers[r.requestUuid] = async (response) => {
+            clearTimeout(timeout);
+            resolve(response);
+          };
+        } else if (r.response === "rejected") {
+          reject(
+            new Error(`Request "${label}" was rejected by target notebook.`)
+          );
+        } else {
           resolve(r.response);
-        }, 3000);
-        notebookResponseHandlers[r.requestUuid] = async (response) => {
-          clearTimeout(timeout);
-          resolve(response);
-        };
+        }
       })
   );
 
