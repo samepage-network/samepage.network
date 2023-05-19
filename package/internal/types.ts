@@ -742,6 +742,18 @@ const zCondition = z.object({
 });
 
 const zSelection = z.object({
+  node: z.string(),
+  label: z.string(),
+  fields: z
+    .object({
+      suffix: z.string().optional(),
+      attr: z.string(),
+    })
+    .array(),
+});
+
+// @deprecated
+const zOldSelection = z.object({
   label: z.string(),
   text: z.string(),
 });
@@ -750,7 +762,7 @@ export const notebookRequestNodeQuerySchema = z.object({
   schema: z.literal("node-query"),
   conditions: zCondition.array().optional().default([]),
   returnNode: z.string(),
-  selections: zSelection.array().optional().default([]),
+  selections: zSelection.or(zOldSelection).array().optional().default([]),
 });
 
 export type BackendRequest<T extends ZodType<any, any, any>> = z.infer<T> & {
