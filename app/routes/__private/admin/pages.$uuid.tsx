@@ -112,9 +112,8 @@ const SinglePagePage = () => {
                 <Button
                   name={"link"}
                   value={l.linkUuid}
-                  className={
-                    "rounded-md px-2 text-sm uppercase bg-yellow-500 hover:bg-yellow-700 active:bg-yellow-800 disabled:bg-yellow-500"
-                  }
+                  className={"rounded-md px-2 text-sm uppercase"}
+                  intent={"warning"}
                 >
                   Disconnect
                 </Button>
@@ -140,9 +139,7 @@ const SinglePagePage = () => {
           <Button>Invite</Button>
         </Form>
         <Form method={"delete"}>
-          <Button className="bg-red-500 hover:bg-red-700 active:bg-red-800 disabled:bg-red-500">
-            Delete
-          </Button>
+          <Button intent="danger">Delete</Button>
         </Form>
       </div>
     </div>
@@ -187,13 +184,13 @@ export const loader = (args: LoaderArgs) => {
 export const action: ActionFunction = async (args) => {
   return remixAdminAction(args, {
     DELETE: ({ params, data, context: { requestId } }) => {
-      const link = data["link"];
+      const link = data["link"]?.[0];
       const uuid = params["uuid"] || "";
-      return typeof link === "string"
-        ? disconnectNotebookFromPage({ uuid: link, requestId })
-        : deleteSharedPage(uuid, requestId).then(() =>
-            redirect("/admin/pages")
-          );
+      return (
+        typeof link === "string"
+          ? disconnectNotebookFromPage({ uuid: link, requestId })
+          : deleteSharedPage(uuid, requestId)
+      ).then(() => redirect("/admin/pages"));
     },
     POST: async ({ context: { requestId }, data, params }) => {
       const { app, workspace, notebookPageId, notebookUuid } = z

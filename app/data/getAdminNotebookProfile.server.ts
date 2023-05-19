@@ -6,12 +6,15 @@ import {
   messages,
   notebooks,
   pageNotebookLinks,
+  pageProperties,
   tokenNotebookLinks,
   tokens,
 } from "data/schema";
-import { eq, desc } from "drizzle-orm/expressions";
+import { eq, desc, and } from "drizzle-orm/expressions";
+import { sql } from "drizzle-orm/sql";
+import { zSamePageSchema } from "package/internal/types";
 
-const getNotebookProfile = async ({
+const getAdminNotebookProfile = async ({
   context: { requestId },
   params: { uuid = "" },
 }: {
@@ -41,12 +44,36 @@ const getNotebookProfile = async ({
   const pages = await cxn
     .select({
       uuid: pageNotebookLinks.uuid,
-      title: pageNotebookLinks.notebookPageId,
+      title: pageProperties.value,
+      notebookPageId: pageNotebookLinks.notebookPageId,
     })
     .from(pageNotebookLinks)
+    .leftJoin(
+      pageProperties,
+      and(
+        eq(pageNotebookLinks.uuid, pageProperties.linkUuid),
+        eq(pageProperties.key, "$title")
+      )
+    )
     .where(eq(pageNotebookLinks.notebookUuid, uuid))
     .orderBy(desc(pageNotebookLinks.invitedDate))
-    .limit(10);
+    .limit(10)
+    .then((res) =>
+      res.map((r) => {
+        const titleData = zSamePageSchema.safeParse(r.title);
+
+        return {
+          uuid: r.uuid,
+          title: titleData.success ? titleData.data.content : r.notebookPageId,
+        };
+      })
+    );
+  const [{ count: pageCount }] = await cxn
+    .select({
+      count: sql`COUNT(${pageNotebookLinks.uuid})`,
+    })
+    .from(pageNotebookLinks)
+    .where(eq(pageNotebookLinks.notebookUuid, uuid));
   const outgoingMessages = await cxn
     .select({
       source: messages.source,
@@ -94,7 +121,8 @@ const getNotebookProfile = async ({
     outgoingMessages,
     incomingMessages,
     pages,
+    pageCount,
   };
 };
 
-export default getNotebookProfile;
+export default getAdminNotebookProfile;

@@ -11,7 +11,7 @@ const workflowsLoader = async ({
   requestId: string;
   notebookUuid: string;
 }) => {
-  const cxn = await getMysql(requestId, { logger: true });
+  const cxn = await getMysql(requestId);
   const workflows = await cxn
     .select({
       uuid: pageNotebookLinks.uuid,

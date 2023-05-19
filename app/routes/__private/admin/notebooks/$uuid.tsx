@@ -5,10 +5,11 @@ import Button from "package/components/Button";
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
 import { Form, useLoaderData, Link } from "@remix-run/react";
 import deleteNotebook from "~/data/deleteNotebook.server";
-import getNotebookProfile from "~/data/getNotebookProfile.server";
+import getAdminNotebookProfile from "~/data/getAdminNotebookProfile.server";
 
 const SingleNotebookPage = () => {
-  const data = useLoaderData<Awaited<ReturnType<typeof getNotebookProfile>>>();
+  const data =
+    useLoaderData<Awaited<ReturnType<typeof getAdminNotebookProfile>>>();
   return (
     <div className={"flex gap-4 flex-col h-full"}>
       <div>
@@ -35,20 +36,29 @@ const SingleNotebookPage = () => {
         <span>{data.notebook.workspace}</span>
       </div>
       <div>
-        Shared Pages
-        <ul>
+        <h2 className="font-bold mb-2 text-xl">
+          Shared Pages ({data.pageCount})
+        </h2>
+        <ul className="pl-8">
           {data.pages.map((i) => (
-            <li key={i.uuid}>
-              <Link to={`/admin/pages/${i.uuid}`}>{i.title}</Link>
+            <li key={i.uuid} className={"list-disc"}>
+              <Link
+                to={`/admin/pages/${i.uuid}`}
+                className={
+                  "text-accent underline hover:no-underline hover:text-accent"
+                }
+              >
+                {i.title}
+              </Link>
             </li>
           ))}
         </ul>
       </div>
       <div>
-        Incoming Messages
-        <ul>
+        <h2 className="font-bold mb-2 text-xl">Incoming Messages</h2>
+        <ul className="pl-8">
           {data.incomingMessages.map((i) => (
-            <li key={i.date}>
+            <li key={i.date} className={"list-disc"}>
               Sent to <code>{i.target}</code> at{" "}
               {new Date(i.date).toLocaleString()}
             </li>
@@ -56,10 +66,10 @@ const SingleNotebookPage = () => {
         </ul>
       </div>
       <div>
-        Outgoing Messages
-        <ul>
+        <h2 className="font-bold mb-2 text-xl">Outgoing Messages</h2>
+        <ul className="pl-8">
           {data.outgoingMessages.map((i) => (
-            <li key={i.date}>
+            <li key={i.date} className={"list-disc"}>
               Sent to <code>{i.source}</code> at{" "}
               {new Date(i.date).toLocaleString()}
             </li>
@@ -67,14 +77,14 @@ const SingleNotebookPage = () => {
         </ul>
       </div>
       <Form method={"delete"}>
-        <Button>Delete</Button>
+        <Button intent="danger">Delete</Button>
       </Form>
     </div>
   );
 };
 
 export const loader: LoaderFunction = (args) => {
-  return remixAdminLoader(args, getNotebookProfile);
+  return remixAdminLoader(args, getAdminNotebookProfile);
 };
 
 export const action: ActionFunction = (args) => {

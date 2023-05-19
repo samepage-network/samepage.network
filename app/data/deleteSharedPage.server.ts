@@ -3,7 +3,7 @@ import { S3 } from "@aws-sdk/client-s3";
 import { pageNotebookLinks, pages } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
 
-const s3 = new S3({ region: "us-east-1" });
+const s3 = new S3({ region: "us-east-1", endpoint: process.env.AWS_ENDPOINT });
 
 const deleteSharedPage = async (uuid: string, requestId: string) => {
   const cxn = await getMysql(requestId);

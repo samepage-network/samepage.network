@@ -14,7 +14,7 @@ const DEFAULT_SCHEMA: InitialSchema = {
 };
 
 const getSharedPageByUuid = async (uuid: string, requestId: string) => {
-  const cxn = await getMysqlConnection(requestId, { logger: true });
+  const cxn = await getMysqlConnection(requestId);
   const [page] = await cxn
     .select({ pageUuid: pageNotebookLinks.pageUuid })
     .from(pageNotebookLinks)
@@ -26,7 +26,7 @@ const getSharedPageByUuid = async (uuid: string, requestId: string) => {
   const notebookRecords = await cxn
     .select({
       app: apps.name,
-      workspace: notebooks.workspace,
+      workspace: notebooks.label,
       uuid: notebooks.uuid,
       linkUuid: pageNotebookLinks.uuid,
       cid: pageNotebookLinks.cid,
