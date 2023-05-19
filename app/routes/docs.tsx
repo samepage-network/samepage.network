@@ -13,13 +13,16 @@ import parseRemixContext from "~/data/parseRemixContext.server";
 import getMysql from "~/data/mysql.server";
 import { apps } from "data/schema";
 import { ne } from "drizzle-orm/expressions";
+import path from "path";
 
 const DirectoryLink = ({
   level = 0,
   ...d
 }: DirectoryNode & { level?: number }) => {
   const matches = useMatches();
-  const pathSelected = matches.slice(-1)[0].pathname;
+  const [pathSelected, setPathSelected] = useState(
+    path.normalize(matches.slice(-1)[0].pathname)
+  );
   return d.children ? (
     <div className="w-full py-1 px-4 flex-col flex">
       <span className={"font-semibold text-lg capitalize mb-2"}>{d.name}</span>
@@ -31,9 +34,12 @@ const DirectoryLink = ({
     <Link
       to={d.path.replace(/\/?index$/, "")}
       className={`w-full py-1 px-4 cursor-pointer hover:bg-gray-200 capitalize ${
-        pathSelected.replace(/^docs[\\/]/, "") === d.path ? "bg-gray-100" : ""
+        pathSelected.replace(/^[\\/]docs[\\/]/, "") === d.path
+          ? "bg-gray-100"
+          : ""
       }`}
       key={d.path}
+      onClick={() => setPathSelected(d.path)}
     >
       {d.name}
     </Link>
