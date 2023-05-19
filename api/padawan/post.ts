@@ -40,7 +40,7 @@ const bodySchema = z.discriminatedUnion("method", [
   }),
   z.object({
     method: z.literal("FINISH_MISSION"),
-    finish: z.string(),
+    missionReport: z.string(),
     missionUuid: z.string(),
   }),
 ]);
@@ -102,7 +102,7 @@ const logic = async (args: BackendRequest<typeof bodySchema>) => {
       await cxn.end();
       return { success: true, status: mission?.status };
     } else if (method === "FINISH_MISSION") {
-      const { missionUuid, finish } = args;
+      const { missionUuid, missionReport } = args;
       const eventUuid = v4();
       await cxn.insert(padawanMissionEvents).values({
         uuid: eventUuid,
@@ -113,7 +113,7 @@ const logic = async (args: BackendRequest<typeof bodySchema>) => {
       await uploadFile({
         Key: `data/padawan/events/${eventUuid}.json`,
         Body: JSON.stringify({
-          finish,
+          missionReport,
         }),
       });
     }
