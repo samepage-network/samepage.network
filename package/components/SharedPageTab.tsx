@@ -21,24 +21,26 @@ const SharedPageTab: React.FC = () => {
   };
   const navigate = useNavigateWithSearch();
   return (
-    <div>
-      <LinkWithSearch to={"/embeds/shared-pages"} className="mb-4 inline-block">
+    <div className="flex flex-col items-start h-full">
+      <div className="flex-grow w-full">
+        {!("auth" in data) ? (
+          <>User is not authenticated. Log in to manage this page.</>
+        ) : (
+          <>
+            <h1 className="mb-8 text-3xl">
+              <AtJsonRendered {...data.title} />
+            </h1>
+            <SharedPageStatus
+              notebookPageId={data.notebookPageId}
+              onClose={() => navigate(`../shared-pages`)}
+              credentials={data.credentials}
+            />
+          </>
+        )}
+      </div>
+      <LinkWithSearch to={"../shared-pages"} className="mb-4 inline-block">
         <Button type={"button"}>Back</Button>
       </LinkWithSearch>
-      {!("auth" in data) ? (
-        <div>User is not authenticated. Log in to manage this page.</div>
-      ) : (
-        <div>
-          <h1 className="mb-8 text-3xl mt-4">
-            <AtJsonRendered {...data.title} />
-          </h1>
-          <SharedPageStatus
-            notebookPageId={data.notebookPageId}
-            onClose={() => navigate(`/embeds/shared-pages`)}
-            credentials={data.credentials}
-          />
-        </div>
-      )}
     </div>
   );
 };
