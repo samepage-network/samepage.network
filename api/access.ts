@@ -35,7 +35,7 @@ export const handler: Handler<unknown, GetAccessTokenResponse> = async (
     .select({
       accessToken: accessTokens.value,
       workspace: notebooks.workspace,
-      uuid: notebooks.uuid,
+      notebookUuid: notebooks.uuid,
       token: tokens.value,
     })
     .from(accessTokens)

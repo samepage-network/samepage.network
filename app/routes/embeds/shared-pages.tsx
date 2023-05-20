@@ -46,20 +46,15 @@ export const action = async (args: ActionArgs) => {
   const { requestId, notebookUuid, tokenUuid, token, param } = result;
   const cxn = await getMysql(requestId);
 
-  const [{ actorId, accessToken, app }] = await cxn
+  const [{ actorId, app }] = await cxn
     .select({
       actorId: tokenNotebookLinks.uuid,
-      accessToken: accessTokens.value,
       app: apps.code,
     })
     .from(tokens)
     .innerJoin(
       tokenNotebookLinks,
       eq(tokens.uuid, tokenNotebookLinks.tokenUuid)
-    )
-    .innerJoin(
-      accessTokens,
-      eq(accessTokens.notebookUuid, tokenNotebookLinks.notebookUuid)
     )
     .innerJoin(notebooks, eq(accessTokens.notebookUuid, notebooks.uuid))
     .innerJoin(apps, eq(apps.id, notebooks.app))
@@ -77,7 +72,9 @@ export const action = async (args: ActionArgs) => {
           type: "ENSURE_PAGE_BY_TITLE",
           title: { content: title, annotations: [] },
         },
-        authorization: `Bearer ${accessToken}`,
+        authorization: `Basic ${Buffer.from(
+          `${notebookUuid}:${token}`
+        ).toString("base64")}`,
       }).then((r) => r.notebookPageId),
     encodeState: (notebookPageId) =>
       apiPost({
@@ -87,7 +84,9 @@ export const action = async (args: ActionArgs) => {
           notebookPageId,
           notebookUuid,
         },
-        authorization: `Bearer ${accessToken}`,
+        authorization: `Basic ${Buffer.from(
+          `${notebookUuid}:${token}`
+        ).toString("base64")}`,
       }),
     actorId,
     credentials: {

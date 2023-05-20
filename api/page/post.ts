@@ -1383,7 +1383,9 @@ const logic = async (req: Record<string, unknown>) => {
             text,
             workflowContext,
           },
-          authorization: `Bearer ${targetNotebook.accessToken}`,
+          authorization: `Basic ${Buffer.from(
+            `${notebookUuid}:${args.token}`
+          ).toString("base64")}`,
         });
       }
       default: {

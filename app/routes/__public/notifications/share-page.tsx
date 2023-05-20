@@ -86,10 +86,9 @@ export const loader = async (args: LoaderArgs) => {
     })
     .from(messages)
     .where(eq(messages.uuid, messageUuid));
-  const [{ token, accessToken, app, appName }] = await cxn
+  const [{ token, app, appName }] = await cxn
     .select({
       token: tokens.value,
-      accessToken: accessTokens.value,
       app: apps.code,
       appName: apps.name,
     })
@@ -97,10 +96,6 @@ export const loader = async (args: LoaderArgs) => {
     .innerJoin(
       tokenNotebookLinks,
       eq(tokens.uuid, tokenNotebookLinks.tokenUuid)
-    )
-    .innerJoin(
-      accessTokens,
-      eq(accessTokens.notebookUuid, tokenNotebookLinks.notebookUuid)
     )
     .innerJoin(notebooks, eq(accessTokens.notebookUuid, notebooks.uuid))
     .innerJoin(apps, eq(apps.id, notebooks.app))
@@ -131,7 +126,9 @@ export const loader = async (args: LoaderArgs) => {
           type: "ENSURE_PAGE_BY_TITLE",
           title,
         },
-        authorization: `Bearer ${accessToken}`,
+        authorization: `Basic ${Buffer.from(
+          `${notebookUuid}:${token}`
+        ).toString("base64")}`,
       }),
     initPage: async (notebookPageId) => {
       console.log("initPage", notebookPageId);
@@ -143,26 +140,31 @@ export const loader = async (args: LoaderArgs) => {
           type: "DELETE_PAGE",
           notebookPageId,
         },
-        authorization: `Bearer ${accessToken}`,
+        authorization: `Basic ${Buffer.from(
+          `${notebookUuid}:${token}`
+        ).toString("base64")}`,
       }),
     openPage: (notebookPageId) =>
-      apiPost<{ url: string }>({
+      apiPost<{ url: string; notebookPageId: string }>({
         path: `extensions/${app}/backend`,
         data: {
           type: "OPEN_PAGE",
           notebookPageId,
         },
-        authorization: `Bearer ${accessToken}`,
-      }).then((r) => r.url),
+        authorization: `Basic ${Buffer.from(
+          `${notebookUuid}:${token}`
+        ).toString("base64")}`,
+      }),
     encodeState: (notebookPageId) =>
       apiPost({
         path: `extensions/${app}/backend`,
         data: {
           type: "ENCODE_STATE",
           notebookPageId,
-          notebookUuid,
         },
-        authorization: `Bearer ${accessToken}`,
+        authorization: `Basic ${Buffer.from(
+          `${notebookUuid}:${token}`
+        ).toString("base64")}`,
       }),
     decodeState: (notebookPageId, state) =>
       apiPost({
@@ -172,7 +174,9 @@ export const loader = async (args: LoaderArgs) => {
           notebookPageId,
           state,
         },
-        authorization: `Bearer ${accessToken}`,
+        authorization: `Basic ${Buffer.from(
+          `${notebookUuid}:${token}`
+        ).toString("base64")}`,
       }),
   })(metadata as JSONData);
   return { success: true, url, app: appName };

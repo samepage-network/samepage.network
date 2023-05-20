@@ -16,12 +16,7 @@ import { z } from "zod";
 import debug from "../utils/debugger";
 import getAccessToken from "./getAccessToken";
 import setupCrossNotebookWorkflows from "package/protocols/crossNotebookWorkflows";
-
-// TODO - do we want to align this with Credentials in ./createApiMessageHandler.ts?
-type Credentials = {
-  accessToken: string;
-  workspace: string;
-};
+import { GetAccessTokenResponse } from "./types";
 
 const log = debug("api:backend");
 
@@ -43,7 +38,6 @@ const zMessage = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("ENCODE_STATE"),
     notebookPageId: z.string(),
-    notebookUuid: z.string(),
   }),
   z.object({
     type: z.literal("DECODE_STATE"),
@@ -52,33 +46,42 @@ const zMessage = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("COMMAND_HANDLER"),
-    notebookUuid: z.string(),
     args: zCommandArgs,
     text: z.string(),
     workflowContext: zWorkflowContext,
   }),
   z.object({
     type: z.literal("TRIGGER_WORKFLOW"),
-    notebookUuid: z.string(),
     source: z.string(),
     target: z.string(),
   }),
 ]);
 
 const createApiBackendPostHandler = ({
-  getDecodeState,
-  getEncodeState,
-  getEnsurePageByTitle,
-  getCommandLibrary,
-  getDeletePage,
-  getOpenPage,
+  getDecodeState = () => async () => ({}),
+  getEncodeState = () => async (notebookPageId) => ({
+    $title: { content: notebookPageId, annotations: [] },
+    $body: { content: "", annotations: [] },
+  }),
+  getEnsurePageByTitle = () => async (title) => ({
+    notebookPageId: title.content,
+    preExisting: false,
+  }),
+  getCommandLibrary = () => ({}),
+  getDeletePage = () => async () => {},
+  getOpenPage = () => async (notebookPageId) => ({
+    notebookPageId,
+    url: notebookPageId,
+  }),
 }: {
-  getEnsurePageByTitle: (credentials: Credentials) => EnsurePageByTitle;
-  getEncodeState: (credentials: Credentials) => EncodeState;
-  getDecodeState: (credentials: Credentials) => DecodeState;
-  getCommandLibrary: (credentials: Credentials) => CommandLibrary;
-  getDeletePage: (credentials: Credentials) => DeletePage;
-  getOpenPage: (credentials: Credentials) => OpenPage;
+  getEnsurePageByTitle?: (
+    credentials: GetAccessTokenResponse
+  ) => EnsurePageByTitle;
+  getEncodeState?: (credentials: GetAccessTokenResponse) => EncodeState;
+  getDecodeState?: (credentials: GetAccessTokenResponse) => DecodeState;
+  getCommandLibrary?: (credentials: GetAccessTokenResponse) => CommandLibrary;
+  getDeletePage?: (credentials: GetAccessTokenResponse) => DeletePage;
+  getOpenPage?: (credentials: GetAccessTokenResponse) => OpenPage;
 }) => {
   const logic = async (args: BackendRequest<typeof zMessage>) => {
     const { authorization, ...data } = args;
@@ -87,12 +90,9 @@ const createApiBackendPostHandler = ({
     }
     log("backend post", data.type);
 
-    const accessToken = authorization.startsWith("Basic")
-      ? await getAccessToken({
-          authorization,
-        }).then(({ accessToken }) => accessToken)
-      : // TODO - how to get workspace??
-        authorization.replace(/^Bearer /, "");
+    const credentials = await getAccessToken({
+      authorization,
+    });
     try {
       switch (data.type) {
         case "SETUP": {
@@ -101,44 +101,38 @@ const createApiBackendPostHandler = ({
         }
         case "ENSURE_PAGE_BY_TITLE": {
           const { path = "", title } = data;
-          return getEnsurePageByTitle({ accessToken, workspace: "" })(
-            title,
-            path
-          );
+          return getEnsurePageByTitle(credentials)(title, path);
         }
         case "DELETE_PAGE": {
           const { notebookPageId } = data;
-          await getDeletePage({ accessToken, workspace: "" })(notebookPageId);
+          await getDeletePage(credentials)(notebookPageId);
           return { success: true };
         }
         case "OPEN_PAGE": {
           const { notebookPageId } = data;
-          return getOpenPage({ accessToken, workspace: "" })(notebookPageId);
+          return getOpenPage(credentials)(notebookPageId);
         }
         case "ENCODE_STATE": {
           const { notebookPageId } = data;
-          return getEncodeState({ accessToken, workspace: "" })(notebookPageId);
+          return getEncodeState(credentials)(notebookPageId);
         }
         case "DECODE_STATE": {
           const { notebookPageId, state } = data;
-          await getDecodeState({ accessToken, workspace: "" })(
-            notebookPageId,
-            state
-          );
+          await getDecodeState(credentials)(notebookPageId, state);
           return { success: true };
         }
         case "COMMAND_HANDLER": {
-          const { notebookUuid: _, args, text, workflowContext } = data;
-          const commands = getCommandLibrary({ accessToken, workspace: "" });
+          const { args, text, workflowContext } = data;
+          const commands = getCommandLibrary(credentials);
           const response = await commands[text].handler(args, workflowContext);
           return { response };
         }
         case "TRIGGER_WORKFLOW": {
-          const { notebookUuid: _, source, target } = data;
+          const { source, target } = data;
           const { triggerWorkflow } = setupCrossNotebookWorkflows({
-            decodeState: getDecodeState({ accessToken, workspace: "" }),
-            encodeState: getEncodeState({ accessToken, workspace: "" }),
-            appCommands: getCommandLibrary({ accessToken, workspace: "" }),
+            decodeState: getDecodeState(credentials),
+            encodeState: getEncodeState(credentials),
+            appCommands: getCommandLibrary(credentials),
           });
           await triggerWorkflow({ source, target });
           return { success: true };
