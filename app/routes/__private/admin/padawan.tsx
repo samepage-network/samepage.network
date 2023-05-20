@@ -95,17 +95,18 @@ export const action: ActionFunction = async (args) => {
         startDate: new Date(),
       });
       await cxn.end();
-      await apiPost<{ uuid: string }>(
-        `extensions/padawan/develop?external=true&job=true`,
-        {
+      await apiPost<{ uuid: string }>({
+        domain: "http://localhost:3001",
+        path: `develop`,
+        data: {
           owner,
           repo,
           issue,
           type: "User",
           missionUuid,
           webhookUrl: `${process.env.API_URL}/padawan`,
-        }
-      );
+        },
+      });
       return redirect(`/admin/padawan/${missionUuid}`);
     },
   });

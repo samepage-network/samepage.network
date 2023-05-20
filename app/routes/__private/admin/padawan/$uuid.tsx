@@ -16,23 +16,31 @@ import React, { useEffect, useMemo } from "react";
 import { v4 } from "uuid";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
-const stepSchema = z.object({
-  thought: z.string(),
-  action: z.string(),
-  actionInput: z.string(),
-  generation: z.string(),
-  observation: z.string(),
-  uuid: z.string(),
-  date: z.number(),
-});
+const stepSchema = z
+  .object({
+    thought: z.string(),
+    action: z.string(),
+    actionInput: z.string(),
+    generation: z.string(),
+    observation: z.string(),
+    uuid: z.string(),
+    date: z.number(),
+  })
+  .or(z.literal(false));
 
-const PadawanMissionStep = (
-  step: z.infer<typeof stepSchema> & { index: number }
-) => {
+const PadawanMissionStep = ({
+  step,
+  index,
+}: {
+  step: z.infer<typeof stepSchema>;
+  index: number;
+}) => {
   const [showGeneration, setShowGeneration] = React.useState(false);
-  return (
+  return !step ? (
+    <div>Step {index + 1} Failed to load...</div>
+  ) : (
     <div className="border rounded-2xl shadow-lg bg-slate-100 p-4">
-      <h1 className="font-semibold text-lg mb-4">Step {step.index + 1}</h1>
+      <h1 className="font-semibold text-lg mb-4">Step {index + 1}</h1>
       <p className="text-sm mb-2">{step.thought}</p>
       <p className="mb-2">
         <span className="font-bold text-blue-950">{step.action}:</span>{" "}
@@ -43,7 +51,7 @@ const PadawanMissionStep = (
       </p>
       <p className="text-sm mb-2">{step.observation}</p>
       {showGeneration ? (
-        <pre className="mt-4 rounded-2xl border shadow-lg bg-slate-300 relative p-4">
+        <pre className="mt-4 rounded-2xl border shadow-lg bg-slate-300 relative p-4 overflow-hidden whitespace-break-spaces">
           <span
             className="absolute right-4 top-4 h-8 w-8 bg-red-500 cursor-pointer rounded-full flex items-center justify-center text-white"
             onClick={() => setShowGeneration(false)}
@@ -64,22 +72,31 @@ const PadawanMissionStep = (
   );
 };
 
+const REFRESH_INTERVAL = 1000 * 15;
 const PadawanMissionPage = () => {
   const {
     events,
     mission: { label },
+    missionReport,
     steps,
   } = useLoaderData<typeof loader>();
   const submit = useSubmit();
   const status = useMemo(() => events[0]?.status || "RUNNING", [events]);
+  const [now, setNow] = React.useState(new Date());
+  const [nextRefresh, setNextRefresh] = React.useState(0);
   useEffect(() => {
     // TODO - replace with a websocket
     if (status !== "FINISHED") {
       const interval = setInterval(() => {
+        setNextRefresh(new Date().valueOf() + REFRESH_INTERVAL);
         submit({}, { method: "GET" });
-      }, 1000 * 30);
+      }, REFRESH_INTERVAL);
+      const nowInterval = setInterval(() => {
+        setNow(new Date());
+      }, 500);
       return () => {
         clearInterval(interval);
+        clearInterval(nowInterval);
       };
     }
     return () => {};
@@ -89,11 +106,27 @@ const PadawanMissionPage = () => {
       <h1 className="my-4 text-3xl">
         {label} [{status}]
       </h1>
-      <div className="flex-grow flex flex-col gap-2">
-        {steps.map((step, index) => (
-          <PadawanMissionStep {...step} key={step.uuid} index={index} />
-        ))}
-      </div>
+      <p className="text-sm mb-2">
+        <>
+          Next refresh in{" "}
+          {Math.floor((nextRefresh.valueOf() - now.valueOf()) / 1000)}
+        </>
+      </p>
+      {steps ? (
+        <div className="flex-grow flex flex-col gap-2">
+          {steps.map((step, index) => (
+            <PadawanMissionStep step={step} key={index} index={index} />
+          ))}
+          {missionReport && (
+            <div className="mt-2 rounded-xl bg-slate-700 text-white p-4 whitespace-break-spaces">
+              <h2 className="mb-2 text-xl font-bold">Mission Report</h2>
+              <div>{missionReport}</div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div>Failed to load steps</div>
+      )}
       <div className="flex items-center gap-4">
         <Form method={"post"}>
           <Button name={"status"} value={"interupted"}>
@@ -122,6 +155,7 @@ export const loader = (args: LoaderArgs) => {
       .select({
         status: padawanMissionEvents.status,
         date: padawanMissionEvents.createdDate,
+        uuid: padawanMissionEvents.uuid,
       })
       .from(padawanMissionEvents)
       .where(eq(padawanMissionEvents.missionUuid, missionUuid))
@@ -153,17 +187,33 @@ export const loader = (args: LoaderArgs) => {
           }))
           .then(stepSchema.parse)
           .catch((error) => {
-            console.error(hash, "failed to download");
-            return Promise.reject(error);
+            console.error(hash, "failed to download", error);
+            return false as const;
           })
       )
-    );
+    ).catch(() => false as const);
+    if (!steps) {
+      return { steps: false as const, events: [], missionReport: "", mission };
+    }
+    const missionReport =
+      events[0]?.status === "FINISHED"
+        ? await downloadFileContent({
+            Key: `data/padawan/events/${events[0].uuid}.json`,
+          }).then((s) => {
+            try {
+              return JSON.parse(s).missionReport as string;
+            } catch {
+              return s;
+            }
+          })
+        : "In progress...";
 
     await cxn.end();
     return {
       mission,
       steps,
       events,
+      missionReport,
     };
   });
 };
@@ -177,13 +227,15 @@ export const action: ActionFunction = async (args) => {
         .delete(padawanMissionSteps)
         .where(eq(padawanMissionSteps.missionUuid, missionUuid));
       await cxn
+        .delete(padawanMissionEvents)
+        .where(eq(padawanMissionEvents.missionUuid, missionUuid));
+      await cxn
         .delete(padawanMissions)
         .where(eq(padawanMissions.uuid, missionUuid));
       await cxn.end();
       return redirect(`/admin/padawan`);
     },
-    POST: async ({ context: { requestId }, data, params }) => {
-      console.log(data);
+    POST: async ({ context: { requestId }, params }) => {
       const missionUuid = params.uuid || "";
       const cxn = await getMysql(requestId);
       await cxn.insert(padawanMissionEvents).values({
