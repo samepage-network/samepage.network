@@ -9,7 +9,9 @@ import {
 } from "react-router-dom";
 import { ClerkProvider, useClerk, useSession } from "@clerk/chrome-extension";
 import RootDashboard from "samepage/components/RootDashboard";
-import SharedPagesTab from "samepage/components/SharedPagesTab";
+import SharedPagesTab, {
+  makeLoader as sharedPagesMakeLoader,
+} from "samepage/components/SharedPagesTab";
 import apiClient from "samepage/internal/apiClient";
 import HomeDashboardTab, {
   makeLoader as homeMakeLoader,
@@ -97,15 +99,15 @@ const router = createMemoryRouter(
       errorElement={<DefaultErrorBoundary />}
     >
       <Route
-        path={""}
+        index
         element={<HomeDashboardTabRoute />}
         loader={homeMakeLoader({
-          authenticateNotebook: (args) =>
+          authenticateNotebook: ({ requestId, ...args }) =>
             apiClient({
               method: "authenticate-notebook",
               ...args,
             }),
-          listUserNotebooks: (args) =>
+          listUserNotebooks: ({ requestId, ...args }) =>
             apiClient({ method: "list-user-notebooks", ...args }),
         })}
         action={homeMakeAction({
@@ -119,13 +121,13 @@ const router = createMemoryRouter(
       <Route
         path={"shared-pages"}
         element={<SharedPagesTab />}
-        loader={() => {
-          return apiClient({
-            method: "list-shared-pages",
-            notebookUuid: localStorage.getItem("notebookUuid") || undefined,
-            token: localStorage.getItem("token") || undefined,
-          });
-        }}
+        loader={sharedPagesMakeLoader({
+          listSharedPages: ({ requestId, ...args }) =>
+            apiClient({
+              method: "list-shared-pages",
+              ...args,
+            }),
+        })}
       >
         <Route
           path={":uuid"}

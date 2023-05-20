@@ -6,6 +6,7 @@ import {
   LoaderFunctionArgs,
   useLoaderData,
   redirect,
+  useSearchParams,
 } from "react-router-dom";
 import Button from "./Button";
 import TextInput from "./TextInput";
@@ -18,11 +19,7 @@ import {
 } from "../internal/types";
 import { BadRequestResponse, NotFoundResponse } from "../utils/responses";
 import parseRequestContext from "../internal/parseRequestContext";
-
-const base64 =
-  typeof window !== "undefined"
-    ? (s: string) => window.btoa(s)
-    : (s: string) => Buffer.from(s).toString("base64");
+import base64 from "../internal/base64";
 
 const HomeDashboardTab = ({
   onLogOut,
@@ -34,14 +31,21 @@ const HomeDashboardTab = ({
   const data = useLoaderData() as Awaited<
     ReturnType<ReturnType<typeof makeLoader>>
   >;
+  const [searchParams] = useSearchParams();
   return (
     <div className="flex flex-col h-full">
+      {searchParams.get("warning") === "not-logged-in" && (
+        <div className="mb-4 bg-yellow-300 border-yellow-800 rounded-xl font-semibold p-4 shadow-2xl">
+          Warning: Please first log in to your SamePage account to access the
+          other tabs.
+        </div>
+      )}
       <h1 className="font-bold mb-4 text-xl">SamePage</h1>
       <div className="mb-2">
         This widget helps you manage all your SamePage related resources!
       </div>
       {!data.auth ? (
-        <Form method={"post"}>
+        <Form method={"post"} className="pb-8">
           <div className="mb-2">
             Log into your SamePage account to get started.
           </div>
@@ -165,15 +169,15 @@ export const makeAction =
     });
     if (!("notebookUuid" in authenticatedUser)) {
       return redirect(
-        `/embeds?user_auth=${Buffer.from(
+        `?user_auth=${base64(
           `${authenticatedUser.userId}:${authenticatedUser.token}`
-        ).toString("base64")}`
+        )}`
       );
     }
     return redirect(
-      `/embeds?auth=${Buffer.from(
+      `?auth=${base64(
         `${authenticatedUser.notebookUuid}:${authenticatedUser.token}`
-      ).toString("base64")}`
+      )}`
     );
   };
 

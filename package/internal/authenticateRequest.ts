@@ -1,26 +1,18 @@
 import { LoaderFunctionArgs } from "react-router";
-import parseRequestContext from "./parseRequestContext";
+import parseCredentialsFromRequest from "./parseCredentialsFromRequest";
 import { AuthenticateNotebook } from "./types";
 
+// @deprecated - see SharedPagesTab
 const authenticateRequest = async ({
-  args: { request, context },
+  args,
   authenticateNotebook,
 }: {
   args: LoaderFunctionArgs;
   authenticateNotebook: AuthenticateNotebook;
 }) => {
-  const searchParams = new URL(request.url).searchParams;
-  const { requestId } = parseRequestContext(context);
-  const auth = searchParams.get("auth");
-  if (!auth) {
-    return { auth: false as const, requestId };
-  }
-  const [notebookUuid, token] = Buffer.from(auth, "base64")
-    .toString()
-    .split(":");
-  if (!notebookUuid || !token) {
-    return { auth: false as const, requestId };
-  }
+  const { auth, notebookUuid, token, requestId } =
+    parseCredentialsFromRequest(args);
+  if (!auth) return { auth, requestId };
   const { tokenUuid, app, workspace, userId } = await authenticateNotebook({
     notebookUuid,
     token,
@@ -35,7 +27,6 @@ const authenticateRequest = async ({
     token,
     tokenUuid,
     userId,
-    param: auth,
   };
 };
 

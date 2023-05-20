@@ -42,6 +42,7 @@ const authenticateUser: AuthenticateUser = async ({
           )
         )
         .limit(1);
+  // TODO - I know we hate ending connections within helper methods, but its only two use cases make it hard to justify ending earlier
   await cxn.end();
   return record
     ? { notebookUuid: record.notebookUuid, token: tokenRecord.value }

@@ -1,4 +1,4 @@
-import { ActionArgs, LoaderArgs, redirect } from "@remix-run/node";
+import { ActionArgs, redirect } from "@remix-run/node";
 import authenticateEmbed from "./_authenticateEmbed.server";
 import getMysql from "~/data/mysql.server";
 import {
@@ -18,19 +18,16 @@ import {
 import sharePageCommandCalback from "package/internal/sharePageCommandCallback";
 import { apiPost } from "package/internal/apiClient";
 import listSharedPages from "~/data/listSharedPages.server";
+import { makeLoader } from "package/components/SharedPagesTab";
+import authenticateNotebook from "~/data/authenticateNotebook.server";
 export { default as default } from "package/components/SharedPagesTab";
 
-export const loader = async (args: LoaderArgs) => {
-  const result = await authenticateEmbed(args);
-  if (!result.auth) {
-    await getMysql(result.requestId).then((c) => c.end());
-    return redirect("/embeds");
-  }
-  const cxn = await getMysql(result.requestId);
-  const pagesResult = await listSharedPages(result);
-  await cxn.end();
-  return pagesResult;
-};
+export const loader = makeLoader({
+  listSharedPages: async (credentials) => {
+    await authenticateNotebook(credentials);
+    return listSharedPages(credentials);
+  },
+});
 
 export const action = async (args: ActionArgs) => {
   const result = await authenticateEmbed(args);

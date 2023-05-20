@@ -1,8 +1,8 @@
-import { useFetchers, useTransition } from "@remix-run/react";
+import { useFetchers, useNavigation } from "react-router-dom";
 import { useMemo } from "react";
 
 const useLoading = () => {
-  const transition = useTransition();
+  const transition = useNavigation();
   const fetchers = useFetchers();
   const loading = useMemo(
     () =>

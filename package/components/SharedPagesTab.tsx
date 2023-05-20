@@ -1,10 +1,16 @@
 import React from "react";
-import { Form, useLoaderData } from "react-router-dom";
+import {
+  Form,
+  LoaderFunctionArgs,
+  redirect,
+  useLoaderData,
+} from "react-router-dom";
 import AtJsonRendered from "./AtJsonRendered";
 import LinkWithSearch from "./LinkWithSearch";
 import TextInput from "./TextInput";
 import Button from "./Button";
-import { SamePageSchema } from "../internal/types";
+import { ListSharedPages, SamePageSchema } from "../internal/types";
+import parseCredentialsFromRequest from "package/internal/parseCredentialsFromRequest";
 
 const SharedPagesTab: React.FC = () => {
   const data = useLoaderData() as {
@@ -39,5 +45,20 @@ const SharedPagesTab: React.FC = () => {
     </div>
   );
 };
+
+export const makeLoader =
+  ({ listSharedPages }: { listSharedPages: ListSharedPages }) =>
+  async (args: LoaderFunctionArgs) => {
+    const result = parseCredentialsFromRequest(args);
+    if (!result.auth) {
+      return redirect("..?warning=not-logged-in");
+    }
+    return listSharedPages(result).catch((e) => {
+      if (e.status === 401) {
+        return redirect("..?warning=not-logged-in");
+      }
+      throw e;
+    });
+  };
 
 export default SharedPagesTab;

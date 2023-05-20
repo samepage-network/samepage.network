@@ -211,13 +211,9 @@ const logic = async (req: Record<string, unknown>) => {
       await cxn.end();
       return response;
     } else if (args.method === "authenticate-user") {
-      const user = authenticateUser({ requestId, ...args });
-      await cxn.end();
-      return user;
+      return authenticateUser({ requestId, ...args });
     } else if (args.method === "list-user-notebooks") {
-      const result = await listUserNotebooks({ requestId, ...args });
-      await cxn.end();
-      return result;
+      return listUserNotebooks({ requestId, ...args });
     } else if (args.method === "ping") {
       // uptime checker
       return { success: true };

@@ -520,6 +520,18 @@ export type ListUserNotebooks = (args: {
   notebooks: { uuid: string; appName: string; workspace: string }[];
 }>;
 
+export type ListSharedPages = (args: {
+  notebookUuid: string;
+  token: string;
+  requestId: string;
+}) => Promise<{
+  pages: {
+    linkUuid: string;
+    title: SamePageSchema;
+    notebookPageId: string;
+  }[];
+}>;
+
 export type ActorInfo = {
   notebookUuid: string;
   appName: string;
