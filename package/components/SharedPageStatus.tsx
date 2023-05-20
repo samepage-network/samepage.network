@@ -115,9 +115,7 @@ const HistoryContentEntry = ({
         ))}
         <div className="pl-6 italic text-xs">
           <span>
-            {item.states.length > 1
-              ? `${item.states.length} changes`
-              : item.states[0].change.message}
+            {item.states.length > 1 ? `${item.states.length} changes` : ""}
           </span>
         </div>
       </div>
@@ -139,9 +137,6 @@ const HistoryContentEntry = ({
                   style={{ background: getColor(i.change.actor) }}
                 />
                 <span>{actorMap[i.change.actor]}</span>
-              </div>
-              <div className="pl-6 italic text-xs">
-                <span>{i.change.message}</span>
               </div>
             </div>
           ))}
@@ -358,7 +353,7 @@ const SharedPageStatus = ({
               <div className={Classes.DRAWER_BODY}>
                 <HistoryContent
                   getHistory={() =>
-                    load(notebookPageId).then((doc) =>
+                    load(notebookPageId, credentials).then((doc) =>
                       Automerge.getHistory(doc)
                     )
                   }
