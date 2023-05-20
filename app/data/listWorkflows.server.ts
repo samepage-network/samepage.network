@@ -4,7 +4,7 @@ import { alias } from "drizzle-orm/mysql-core";
 import { zSamePageSchema } from "package/internal/types";
 import getMysql from "~/data/mysql.server";
 
-const workflowsLoader = async ({
+const listWorkflows = async ({
   requestId,
   notebookUuid,
 }: {
@@ -49,4 +49,4 @@ const workflowsLoader = async ({
   };
 };
 
-export default workflowsLoader;
+export default listWorkflows;

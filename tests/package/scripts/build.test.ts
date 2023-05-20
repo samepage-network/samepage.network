@@ -208,7 +208,7 @@ test("build command compiles template", async () => {
 
 test("build command with publish fails without github token", async () => {
   const oldRef = process.env.GITHUB_HEAD_REF;
-  process.env.GITHUB_HEAD_REF = "main";  
+  process.env.GITHUB_HEAD_REF = "main";
   const oldToken = process.env.GITHUB_TOKEN;
   process.env.GITHUB_TOKEN = "";
   const oldWarn = console.warn;
@@ -226,6 +226,7 @@ test("build command with publish fails without github token", async () => {
   expect(Array.from(warnings)).toEqual([
     "Github Release are only created when the GITHUB_TOKEN is set",
     `No functions found in ${root}/out`,
+    "No access to AWS, skipping S3 uploads",
   ]);
 
   process.env.GITHUB_TOKEN = oldToken;

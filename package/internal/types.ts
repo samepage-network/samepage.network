@@ -532,6 +532,26 @@ export type ListSharedPages = (args: {
   }[];
 }>;
 
+export type ListWorkflows = (args: {
+  notebookUuid: string;
+  token: string;
+  requestId: string;
+}) => Promise<{
+  workflows: {
+    uuid: string;
+    title: SamePageSchema;
+    notebookPageId: string;
+  }[];
+}>;
+
+export type AuthenticatedMethod<
+  T extends (args: {
+    notebookUuid: string;
+    token: string;
+    requestId: string;
+  }) => Promise<unknown>
+> = (args: Omit<Parameters<T>[0], "token">) => ReturnType<T>;
+
 export type ActorInfo = {
   notebookUuid: string;
   appName: string;

@@ -11,7 +11,7 @@ export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { useState } from "react";
 import AtJsonRendered from "package/components/AtJsonRendered";
 import TextInput from "package/components/TextInput";
-import Select from "~/components/Select";
+import Select from "package/components/Select";
 import inviteNotebookToPage from "~/data/inviteNotebookToPage.server";
 import getNotebookUuids from "~/data/getNotebookUuids.server";
 import BaseInput from "package/components/BaseInput";

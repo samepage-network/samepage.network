@@ -10,7 +10,7 @@ import { useEffect, useState, useRef } from "react";
 import PencilIcon from "@heroicons/react/outline/PencilIcon";
 import Textarea from "~/components/Textarea";
 import NumberInput from "~/components/NumberInput";
-import Select from "~/components/Select";
+import Select from "package/components/Select";
 import {
   Annotation,
   InitialSchema,

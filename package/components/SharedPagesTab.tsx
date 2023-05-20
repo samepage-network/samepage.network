@@ -9,17 +9,11 @@ import AtJsonRendered from "./AtJsonRendered";
 import LinkWithSearch from "./LinkWithSearch";
 import TextInput from "./TextInput";
 import Button from "./Button";
-import { ListSharedPages, SamePageSchema } from "../internal/types";
+import { ListSharedPages } from "../internal/types";
 import parseCredentialsFromRequest from "package/internal/parseCredentialsFromRequest";
 
 const SharedPagesTab: React.FC = () => {
-  const data = useLoaderData() as {
-    pages: {
-      linkUuid: string;
-      title: SamePageSchema;
-      notebookPageId: string;
-    }[];
-  };
+  const data = useLoaderData() as Awaited<ReturnType<ListSharedPages>>;
   return (
     <div>
       <h1 className="font-bold mb-4 text-xl">Shared Pages</h1>

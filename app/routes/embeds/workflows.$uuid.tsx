@@ -20,7 +20,7 @@ import getMysql from "~/data/mysql.server";
 import Automerge from "automerge";
 import unwrapSchema from "package/utils/unwrapSchema";
 import authenticateEmbed from "./_authenticateEmbed.server";
-import Select from "~/components/Select";
+import Select from "package/components/Select";
 
 const SingleWokflowEmbed = () => {
   const data = useLoaderData<Awaited<ReturnType<typeof loader>>>();

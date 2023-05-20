@@ -1,15 +1,16 @@
 import { pageNotebookLinks, pageProperties } from "data/schema";
 import { eq, and } from "drizzle-orm/expressions";
-import { zSamePageSchema, ListSharedPages } from "package/internal/types";
+import {
+  zSamePageSchema,
+  ListSharedPages,
+  AuthenticatedMethod,
+} from "package/internal/types";
 import getMysql from "./mysql.server";
 
-const listSharedPages = async ({
+const listSharedPages: AuthenticatedMethod<ListSharedPages> = async ({
   requestId,
   notebookUuid,
-}: Omit<
-  Parameters<ListSharedPages>[0],
-  "token"
->): ReturnType<ListSharedPages> => {
+}) => {
   const cxn = await getMysql(requestId);
   const pages = await cxn
     .select({
