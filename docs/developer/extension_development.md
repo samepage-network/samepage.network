@@ -37,15 +37,15 @@ Throughout this guide, we would encourage referencing the extension implementati
 
 All extensions should have the following file structure:
 
-- `.github/workflows` - One action called `main.yaml`, which watches for changes on the `main` branch and publishes the newest version of the extension to SamePage and the relevant tool's extension store. A second called `test.yaml` which runs tests on changes in the `main` branch and on PR branches.
-- `src` - The directory containing all of the source code for the extension
-- `test` - The directory containing all of the tests for the extension
-- `.gitignore` - Standard ignore file
-- `LICENSE` - Must be MIT
-- `README.md` - Docs for using the extension on the relevant tool
-- `package-lock.json` - Auto generated after install
-- `package.json` - Should contain scripts for `start` and `test`, as well as have the latest version of `samepage` as a package dependency.
-- `tsconfig.json` - Configuration for building the extension. We require our extensions to be in TypeScript.
+- `.github/workflows` – One action called `main.yaml`, which watches for changes on the `main` branch and publishes the newest version of the extension to SamePage and the relevant tool's extension store. A second called `test.yaml` which runs tests on changes in the `main` branch and on PR branches.
+- `src` – The directory containing all of the source code for the extension
+- `test` – The directory containing all of the tests for the extension
+- `.gitignore` – Standard ignore file
+- `LICENSE` – Must be MIT
+- `README.md` – Docs for using the extension on the relevant tool
+- `package-lock.json` – Auto generated after install
+- `package.json` – Should contain scripts for `start` and `test`, as well as have the latest version of `samepage` as a package dependency.
+- `tsconfig.json` – Configuration for building the extension. We require our extensions to be in TypeScript.
 
 Extensions are expected to run on the browser or anything that supports browser APIs (e.g. electron).
 
@@ -64,8 +64,8 @@ These four pieces usually take place at the entry point file of the extension. W
 
 Tools for thought typically will designate an area for users to configure their extension's settings. We expose the default list of settings that SamePage extensions are expected to implement:
 
-- `uuid` - The Notebook Universal ID that represents the user's notebook.
-- `token` - The Notebook Token that authenticates the notebook to the network.
+- `uuid` – The Notebook Universal ID that represents the user's notebook.
+- `token` – The Notebook Token that authenticates the notebook to the network.
 
 Extensions are free to configure additional settings on top of this set, but these are the base requirement. These settings must be persisted between sessions so that their value is retained when the user reloads the host app. To ease in configuring these settings, look to import the `defaultSettings` object from the `utils` module:
 
@@ -182,15 +182,15 @@ There are four commands that make up the development environment:
 
 The first three of these commands all support the same set of base arguments, which get forwarded to the SamePage extension compiler. They are all optional.
 
-- `external` - List of modules that should **not** be bundled into the output, in the case the host application is already exposing it. Use `module=window.module` to specify what the replacement could be. **Default:** _None_
-- `include` - List of files to include in the output package. **Default:** _None_
-- `css` - Bundle all the output CSS files into one, denoted by this value. **Default:** _None_
-- `format` - The output format for the generated JavaScript files. See the `esbuild` [docs](https://esbuild.github.io/api/#format) for more. **Default:** _iife_
-- `mirror` - A directory to mirror the output of the compiler. **Default:** _None_
-- `env` - A list of environment variables that should be interpolated into the package's output. **Default:** _None_
-- `analyze` - Set to true to output a metadata file to analyze the extension's bundle size and dependencies. **Default:** _false_
-- `finish` - File path to a file with a custom function default exported that runs at the end of compilation. **Default:** _None_
-- `out` - The filename the extension's entrypoint JavaScript file and CSS file are out as. **Default:** Same as input.
+- `external` – List of modules that should **not** be bundled into the output, in the case the host application is already exposing it. Use `module=window.module` to specify what the replacement could be. **Default:** _None_
+- `include` – List of files to include in the output package. **Default:** _None_
+- `css` – Bundle all the output CSS files into one, denoted by this value. **Default:** _None_
+- `format` – The output format for the generated JavaScript files. See the `esbuild` [docs](https://esbuild.github.io/api/#format) for more. **Default:** _iife_
+- `mirror` – A directory to mirror the output of the compiler. **Default:** _None_
+- `env` – A list of environment variables that should be interpolated into the package's output. **Default:** _None_
+- `analyze` – Set to true to output a metadata file to analyze the extension's bundle size and dependencies. **Default:** _false_
+- `finish` – File path to a file with a custom function default exported that runs at the end of compilation. **Default:** _None_
+- `out` – The filename the extension's entrypoint JavaScript file and CSS file are out as. **Default:** Same as input.
 
 On the command line, all flags are specified with a `--` prefix. A flag with no value after it is treated as a boolean. A flag repeated multiple times is treated as a string array. A flag specified once is streated as a string.
 
@@ -202,7 +202,7 @@ Compiles the extension with a file watcher running to respond to file changes an
 
 Compiles the extension and runs tests using [Playwright](https://playwright.dev). Tests are expected to be in the `tests` directory with a `.test.ts` suffix. There should be at least one full integration test defined. The `process.env.NODE_ENV` variable has a value of `test`. Along with the standard arguments from above, the following two arguments are also supported:
 
-- `forward` - Could be specified multiple times, to forward the arguments to `Playwright` directly.
+- `forward` – Could be specified multiple times, to forward the arguments to `Playwright` directly.
 
 The `samepage` package also exposes a set of testing utilities available in the `testing` module. These utilities are meant to ease the development of tests and provide a consistent SamePage test client to test against.
 
@@ -210,5 +210,5 @@ The `samepage` package also exposes a set of testing utilities available in the 
 
 Compiles the extension with a `process.env.NODE_ENV` value of `production` and publishes the artifacts created as a Github Release. Along with the standard arguments from above, the following two arguments are also supported:
 
-- `dry` - Add this flag to build the extension without publishing the artifacts.
-- `review` - Value should resolve to a javascript file with a callback default exported that will run after publishing as a GitHub Release. Useful for if the company behind the related application requires an extra review process to publish to.
+- `dry` – Add this flag to build the extension without publishing the artifacts.
+- `review` – Value should resolve to a javascript file with a callback default exported that will run after publishing as a GitHub Release. Useful for if the company behind the related application requires an extra review process to publish to.

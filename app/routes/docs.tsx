@@ -19,7 +19,10 @@ const DirectoryLink = ({
   ...d
 }: DirectoryNode & { level?: number }) => {
   const matches = useMatches();
-  const pathSelected = matches.slice(-1)[0].pathname;
+  const pathSelected = matches
+    .slice(-1)[0]
+    .pathname.replace(/\//g, "\\") // For Windows OS
+    .replace(/^[\\/]?docs[\\/]/, "");
   return d.children ? (
     <div className="w-full py-1 px-4 flex-col flex">
       <span className={"font-semibold text-lg capitalize mb-2"}>{d.name}</span>
@@ -32,7 +35,8 @@ const DirectoryLink = ({
       to={d.path.replace(/\/?index$/, "")}
       className={`w-full py-1 px-4 cursor-pointer hover:bg-gray-200 capitalize ${
         pathSelected === d.path ? "bg-gray-100" : ""
-      }`}
+      }
+      `}
       key={d.path}
     >
       {d.name}

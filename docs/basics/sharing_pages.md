@@ -30,10 +30,11 @@ Once a page is initialized on SamePage, a status bar should appear beneath the p
 ![](/images/docs/basics/status.png)
 
 The icons after the SamePage logo from left to right are as follows:
-- `Invite Notebook` - This triggers the same modal from the initialization step for sharing a page with more notebooks.
-- `View History` - This opens a sidebar of all versions of your shared page, with clickable snapshots of the data.
-- `Disconnect Shared Page` - This will disconnect your notebook from the shared page. Note: this **does not delete** the page from being available on the decentralized web. It merely disconnects the page in _your_ notebook from receiving future updates. 
-- `Manual Sync` - In case there are any errors that occur with syncing data across notebooks, this icon is an escape hatch, allowing users to forcibly sync their version of the data
+
+- `Invite Notebook` – This triggers the same modal from the initialization step for sharing a page with more notebooks.
+- `View History` – This opens a sidebar of all versions of your shared page, with clickable snapshots of the data.
+- `Disconnect Shared Page` – This will disconnect your notebook from the shared page. Note: this **does not delete** the page from being available on the decentralized web. It merely disconnects the page in _your_ notebook from receiving future updates.
+- `Manual Sync` – In case there are any errors that occur with syncing data across notebooks, this icon is an escape hatch, allowing users to forcibly sync their version of the data
 
 ## Accepting Shared Pages
 

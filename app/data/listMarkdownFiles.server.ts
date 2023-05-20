@@ -69,7 +69,9 @@ const listMarkdownFiles = async (
               f.name.replace(/\.[a-z]+$/, "").replace(/_/g, " ");
             const order =
               f.name in orderByPath ? orderByPath[f.name] : Number.MAX_VALUE;
-            const path = f.path.replace(/\.[a-z]+$/, "").replace(/^docs\//, "");
+            const path = f.path
+              .replace(/\.[a-z]+$/, "")
+              .replace(/^docs[\\/]/, "");
             return f.type === "dir"
               ? listMarkdownFiles(f.path, customLoaders).then(
                   ({ directory: children }) => ({

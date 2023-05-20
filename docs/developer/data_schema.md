@@ -26,11 +26,11 @@ This is the core idea of our data schema and `AtJson`. Our schema says that all 
 
 Each annotation have the following fields:
 
-- `start` - the index within `content` where this annotation starts.
-- `end` - the index within `content` where this annotation ends.
-- `type` - the type of annotation it is. We go through all of the different annotation types below.
-- `attributes` - the set of properties associated with this annotation. These are universal cross-app properties so they are expected to be implemented by each app's extension. The schema of `attributes` is predefined depending on the `type` of the annotation.
-- `appAttributes` - this field could be used by extensions to store attributes about a given annotation that it's app cares about that no other app does. It's an object that maps the app's identifier with a key value object.
+- `start` – the index within `content` where this annotation starts.
+- `end` – the index within `content` where this annotation ends.
+- `type` – the type of annotation it is. We go through all of the different annotation types below.
+- `attributes` – the set of properties associated with this annotation. These are universal cross-app properties so they are expected to be implemented by each app's extension. The schema of `attributes` is predefined depending on the `type` of the annotation.
+- `appAttributes` – this field could be used by extensions to store attributes about a given annotation that it's app cares about that no other app does. It's an object that maps the app's identifier with a key value object.
 
 Let's use our example to go through each one.
 
@@ -60,59 +60,159 @@ Next, our `type` field should mark what kind of annotation is. It **must** be a 
 - [italics](#italics)
 - [strikethrough](#strikethrough)
 - [highlighting](#highlighting)
+- [inline](#inline)
+- [code](#code)
 - [link](#link)
-- [reference](#reference)
 - [image](#image)
+- [metadata](#metadata)
+- [reference](#reference)
 - [custom](#custom)
 
-Continuing our example:
+Continuing our example with the `bold` type:
 
 ```json
 {
   "start": 6,
   "end": 11,
-  "type": "bold"
+  "type": "bold",
+  "attributes": {
+    "delimiter": "**"
+  }
 }
 ```
 
-Note, that the `bold` type doesn't support any attributes. We go through each of the types and the `attributes` they support below.
+Here are each of the types and the `attributes` they support.
 
 #### block
 
-Coming Soon...
+A `block` refers to a unit of content that can be organized hierarchically and contains various types of information, such as text, images, or media. It serves as a fundamental building block for structuring and managing notes efficiently.
+
+Supported `attributes`:
+
+```typescript
+"level": number,
+"viewType": "bullet" | "numbered" | "document"
+```
 
 #### bold
 
-The `bold` type typically refers to adding font weight to the content it's annotating. There are no supported attributes for this type.
+The `bold` type typically refers to adding font weight to the content it's annotating.
+
+Supported `attributes`:
+
+```typescript
+"open": boolean,
+"delimeter": string
+```
 
 #### italics
 
-Coming Soon...
+The `italics` type is used to emphasize or give emphasis to certain words or phrases in a document.
+
+Supported `attributes`:
+
+```typescript
+"open": boolean,
+"delimeter": string
+```
 
 #### strikethrough
 
-Coming Soon...
+The `strikethrough` type is used to indicate that a certain portion of text should be considered as deleted or no longer valid, while still keeping it visible for reference.
+
+Supported `attributes`:
+
+```typescript
+"open": boolean,
+"delimeter": string
+```
 
 #### highlighting
 
-Coming Soon...
+The `highlighting` type refers to the process of marking or colorizing specific portions of text to draw attention to them.
+
+Supported `attributes`:
+
+```typescript
+"open": boolean,
+"delimeter": string
+```
+
+#### inline
+
+The `inline` type typically refers to a formatting style where specific elements, such as keywords or variables are embedded within the surrounding text, typically distinguished by different typography or highlighting.
+
+Supported `attributes`:
+
+```typescript
+"open": boolean,
+"delimeter": string
+```
+
+#### code
+
+The `code` type refers to the practice of highlighting specific text within backticks (`` ` ``) or other formatting to indicate that it represents code or commands.
+
+Supported `attributes`:
+
+```typescript
+"language": string,
+"ticks": number
+```
 
 #### link
 
-Coming Soon...
+A `link` type is usually a reference or connection between the current document and an external resource.
 
-#### reference
+Supported `attributes`:
 
-Coming Soon...
+```typescript
+"href": string
+```
 
 #### image
 
-Coming Soon...
+An `image` is a visual representation or graphic element that is embedded within a document.
+
+Supported `attributes`:
+
+```typescript
+"src": string
+```
 
 #### custom
 
-The `custom` annotation is an escape hatch for extensions to implement whichever other annotation would be useful for their app that isn't universally supported. This combined with the `appAttributes` field below should be ignored by extensions as updates are made. The `custom` annotation supports the following attributes:
-- `name` - The name assigned to this custom annotation, so that apps could handle accordingly.
+The `custom` annotation is an escape hatch for extensions to implement whichever other annotation would be useful for their app that isn't universally supported. This combined with the `appAttributes` field below should be ignored by extensions as updates are made.
+
+Supported `attributes`:
+
+```typescript
+"name": string
+```
+
+`name` – The name assigned to this custom annotation, so that apps could handle accordingly.
+
+#### metadata
+
+The `metadata` type refers to descriptive information that provides additional context, attributes, or properties about a particular document, file, or piece of content.
+
+Supported `attributes`:
+
+```typescript
+"title": string,
+"parent": string
+```
+
+#### reference
+
+A `reference` type is a SamePage connection that points internally to an app on our network.
+
+Supported `attributes`:
+
+```typescript
+"notebookPageId": string,
+"notebookUuid": string
+```
 
 ### App Attributes
 
@@ -165,7 +265,8 @@ Putting our `Hello &&World&&` example together, it would have the following fina
 ### Differentiating Content Types
 
 There are few important types to become familiar with:
-- `InitialSchema` - An intemediary representation used by extensions to actually calculate and apply the related data. This type only contains the `content` and `annotations` fields.
-- `LatestSchema` - This is the latest version of the schema that is actually stored in IPFS. The data is wrapped by [Automerge](https://automerge.org/docs/types/values/) utilities to assist in conflict resolution and history management.
-- `V*Schema` - Previous versions of `LatestSchema` that can be found stored in IPFS.
-- `Schema` - Conjuction of `LatestSchema` and all `V*Schema`s. This data type represents all of the possibilities stored in IPFS - the `unwrapSchema` utility helps convert this data into the `InitialSchema` intermediate data type.
+
+- `SamePageSchema` – An intemediary representation used by extensions to actually calculate and apply the related data. This type only contains the `content` and `annotations` fields.
+- `LatestSchema` – This is the latest version of the schema that is actually stored in IPFS. The data is wrapped by [Automerge](https://automerge.org/docs/types/values/) utilities to assist in conflict resolution and history management.
+- `V*Schema` – Previous versions of `LatestSchema` that can be found stored in IPFS.
+- `Schema` – Conjuction of `LatestSchema` and all `V*Schema`s. This data type represents all of the possibilities stored in IPFS - the `unwrapSchema` utility helps convert this data into the `SamePageSchema` intermediate data type.

@@ -99,8 +99,9 @@ export const MarkdownComponent = ({ children }: { children: string }) => (
         ),
         p: { props: { className: "mb-4" } },
         pre: CodeBlock,
-        ul: { props: { className: "mb-4" } },
-        li: { props: { className: "list-disc ml-4" } },
+        ul: { props: { className: "list-disc mb-4" } },
+        ol: { props: { className: "list-decimal mb-4" } },
+        li: { props: { className: "ml-4" } },
         code: {
           props: {
             className:
