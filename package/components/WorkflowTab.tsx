@@ -1,3 +1,4 @@
+import React from "react";
 import {
   Form,
 //   LoaderFunctionArgs,
@@ -9,7 +10,7 @@ import AtJsonRendered from "./AtJsonRendered";
 import Button from "./Button";
 import { SamePageSchema } from "../internal/types";
 
-const WorkflowTab = () => {
+const WorkflowTab: React.FC = () => {
   const data = useLoaderData() as {
     title: SamePageSchema;
     destinations: { notebookUuid: string; app: string; workspace: string }[];
