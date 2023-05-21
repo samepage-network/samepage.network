@@ -10,7 +10,8 @@ import {
 import { ClerkProvider, useClerk, useSession } from "@clerk/chrome-extension";
 import RootDashboard from "samepage/components/RootDashboard";
 import SharedPagesTab, {
-  makeLoader as sharedPagesMakeLoader,
+  loader as sharedPagesLoader,
+  action as sharedPagesAction,
 } from "samepage/components/SharedPagesTab";
 import apiClient from "samepage/internal/apiClient";
 import HomeDashboardTab, {
@@ -121,13 +122,8 @@ const router = createMemoryRouter(
       <Route
         path={"shared-pages"}
         element={<SharedPagesTab />}
-        loader={sharedPagesMakeLoader({
-          listSharedPages: ({ requestId, ...args }) =>
-            apiClient({
-              method: "list-shared-pages",
-              ...args,
-            }),
-        })}
+        loader={sharedPagesLoader}
+        action={sharedPagesAction}
       >
         <Route
           path={":uuid"}

@@ -222,9 +222,21 @@ const logic = async (req: Record<string, unknown>) => {
       requestId,
       ...args,
     });
-    const { tokenUuid, notebookUuid } = authenticatedNotebook;
+    const {
+      tokenUuid,
+      notebookUuid,
+      app: appName,
+      appCode,
+      workspaceName,
+      userId,
+      actorId,
+    } = authenticatedNotebook;
 
     switch (args.method) {
+      case "get-app-code": {
+        await cxn.end();
+        return { appCode };
+      }
       case "authenticate-notebook": {
         await cxn.end();
         return authenticatedNotebook;
@@ -311,8 +323,18 @@ const logic = async (req: Record<string, unknown>) => {
         };
       }
       case "get-actor": {
-        const { actorId } = args;
-        return getActorInfo({ requestId, actorId });
+        const { actorId: inputActorId } = args;
+        const info = !inputActorId
+          ? {
+              email: userId,
+              notebookUuid,
+              appName,
+              workspace: workspaceName,
+              actorId,
+            }
+          : await getActorInfo({ requestId, actorId: inputActorId });
+        await cxn.end();
+        return info;
       }
       case "load-message": {
         const { messageUuid } = args;
@@ -357,7 +379,10 @@ const logic = async (req: Record<string, unknown>) => {
       case "init-shared-page": {
         const { notebookPageId, state, properties } = args;
         const [link] = await cxn
-          .select({ page_uuid: pageNotebookLinks.pageUuid })
+          .select({
+            page_uuid: pageNotebookLinks.pageUuid,
+            linkUuid: pageNotebookLinks.uuid,
+          })
           .from(pageNotebookLinks)
           .where(
             and(
@@ -365,7 +390,12 @@ const logic = async (req: Record<string, unknown>) => {
               eq(pageNotebookLinks.notebookPageId, notebookPageId)
             )
           );
-        if (link) return { id: link.page_uuid, created: false };
+        if (link)
+          return {
+            id: link.page_uuid,
+            created: false,
+            linkUuid: link.linkUuid,
+          };
         await validatePageQuota({ requestId, notebookUuid, tokenUuid });
 
         const pageUuid = v4();
@@ -397,7 +427,7 @@ const logic = async (req: Record<string, unknown>) => {
           );
         }
         await cxn.end();
-        return { created: true, id: pageUuid };
+        return { created: true, id: pageUuid, linkUuid };
       }
       case "join-shared-page": {
         const { notebookPageId, pageUuid, title } = args;
@@ -628,7 +658,19 @@ const logic = async (req: Record<string, unknown>) => {
         };
       }
       case "request-page-update": {
-        const { target, notebookPageId, seq = 0 } = args;
+        const { target: _target, notebookPageId, seq = 0, actor = "" } = args;
+        if (!_target && !actor)
+          throw new BadRequestError("Must include actor to request");
+        const target =
+          // @deprecated - use actor instead
+          _target ||
+          (await cxn
+            .select({ notebookUuid: tokenNotebookLinks.notebookUuid })
+            .from(tokenNotebookLinks)
+            .where(eq(tokenNotebookLinks.uuid, actor))
+            .then(([{ notebookUuid }]) => notebookUuid));
+        if (!target)
+          throw new BadRequestError("Must include a valid actor to request");
         await messageNotebook({
           source: notebookUuid,
           operation: "REQUEST_PAGE_UPDATE",

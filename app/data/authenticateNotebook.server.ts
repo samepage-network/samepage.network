@@ -18,7 +18,9 @@ const authenticateNotebook: AuthenticateNotebook = async (args) => {
       .select({
         notebookUuid: notebooks.uuid,
         app: apps.name,
-        workspace: notebooks.label,
+        appCode: apps.code,
+        workspace: notebooks.workspace,
+        workspaceName: notebooks.label,
         tokenUuid: tokenNotebookLinks.tokenUuid,
         actorId: tokenNotebookLinks.uuid,
         userId: tokens.userId,
@@ -43,7 +45,9 @@ const authenticateNotebook: AuthenticateNotebook = async (args) => {
       tokenUuid: tokenNotebookLinks.tokenUuid,
       actorId: tokenNotebookLinks.uuid,
       app: apps.name,
-      workspace: notebooks.label,
+      appCode: apps.code,
+      workspace: notebooks.workspace,
+      workspaceName: notebooks.label,
       userId: tokens.userId,
     })
     .from(tokenNotebookLinks)

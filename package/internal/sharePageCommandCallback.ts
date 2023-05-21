@@ -5,16 +5,15 @@ import { deleteId, set } from "../utils/localAutomergeDb";
 import apiClient from "./apiClient";
 import binaryToBase64 from "./binaryToBase64";
 import dispatchAppEvent from "./dispatchAppEvent";
+import parseActorId from "./parseActorId";
 
 const sharePageCommandCalback = ({
-  actorId,
   getNotebookPageId,
   encodeState,
   credentials,
 }: {
   getNotebookPageId: () => Promise<string>;
   encodeState: EncodeState;
-  actorId: string;
   credentials?: { notebookUuid: string; token: string };
 }) => {
   return getNotebookPageId()
@@ -24,12 +23,13 @@ const sharePageCommandCalback = ({
       const { $body: docInit, ...properties } = await encodeState(
         notebookPageId
       );
+      const { actorId } = await parseActorId();
       const doc = Automerge.from<Schema>(wrapSchema(docInit), {
         actorId: actorId.replace(/-/g, ""),
       });
       set(notebookPageId, doc);
       const state = Automerge.save(doc);
-      return apiClient<{ id: string; created: boolean }>({
+      return apiClient<{ id: string; created: boolean; linkUuid: string }>({
         method: "init-shared-page",
         notebookPageId,
         state: binaryToBase64(state),
@@ -55,6 +55,7 @@ const sharePageCommandCalback = ({
           return {
             notebookPageId,
             created: r.created,
+            linkUuid: r.linkUuid,
             success: true as const,
           };
         })

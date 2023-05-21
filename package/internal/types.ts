@@ -494,7 +494,9 @@ export type AuthenticateNotebook = (args: {
   tokenUuid: string;
   actorId: string;
   app: string;
+  appCode: string;
   workspace: string;
+  workspaceName: string;
   userId: string;
 }>;
 export type AuthenticateUser = (args: {
@@ -557,6 +559,7 @@ export type ActorInfo = {
   appName: string;
   workspace: string;
   email: string;
+  actorId: string;
 };
 
 export type SendNotebookRequest = (
@@ -611,6 +614,7 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
   }),
   z.object({ method: z.literal("usage") }),
   z.object({ method: z.literal("get-actor"), actorId: z.string() }),
+  z.object({ method: z.literal("get-app-code") }),
   z.object({ method: z.literal("load-message"), messageUuid: z.string() }),
   z.object({
     method: z.literal("init-shared-page"),
@@ -644,7 +648,8 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     method: z.literal("request-page-update"),
     notebookPageId: z.string(),
     seq: z.number().optional(),
-    target: z.string(),
+    target: z.string().optional(),
+    actor: z.string().optional(),
   }),
   z.object({
     method: z.literal("page-update-response"),

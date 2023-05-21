@@ -5,7 +5,6 @@ import Automerge from "automerge";
 import dispatchAppEvent from "./dispatchAppEvent";
 import { HandlerError } from "./setupMessageHandlers";
 import binaryToBase64 from "./binaryToBase64";
-import parseActorId from "./parseActorId";
 import { has, load, set } from "../utils/localAutomergeDb";
 import apiClient from "./apiClient";
 import saveAndApply from "./saveAndApply";
@@ -88,14 +87,12 @@ const handleSharePageUpdateOperation = async (
             } else {
               await Promise.all(
                 actorsToRequest.map(([actor]) =>
-                  parseActorId(actor).then(({ notebookUuid: target }) =>
-                    apiClient({
-                      method: "request-page-update",
-                      notebookPageId,
-                      seq: patch.clock[actor],
-                      target,
-                    })
-                  )
+                  apiClient({
+                    method: "request-page-update",
+                    notebookPageId,
+                    seq: patch.clock[actor],
+                    actor,
+                  })
                 )
               );
             }

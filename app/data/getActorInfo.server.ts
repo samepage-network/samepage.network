@@ -18,6 +18,7 @@ const getActorInfo = async ({
         appName: apps.name,
         workspace: notebooks.workspace,
         email: tokens.userId,
+        actorId: tokenNotebookLinks.uuid,
       })
       .from(tokenNotebookLinks)
       .innerJoin(notebooks, eq(notebooks.uuid, tokenNotebookLinks.notebookUuid))
@@ -44,7 +45,7 @@ const getActorInfo = async ({
     )
     .join("")
     .split("/");
-  return { appName: app, workspace, email: "", notebookUuid: "" };
+  return { appName: app, workspace, email: "", notebookUuid: "", actorId };
 };
 
 export default getActorInfo;

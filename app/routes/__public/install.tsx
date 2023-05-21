@@ -118,11 +118,9 @@ const InstallPage = () => {
           </div>
         </>
       ) : (
-        <>
-          <h1 className="font-bold text-3xl mb-8">
-            Invalid app {name}. Please select from the list above
-          </h1>
-        </>
+        <h1 className="font-bold text-3xl mb-8">
+          Invalid app <code>{selectedApp}</code>. Please select from the list above
+        </h1>
       )}
     </div>
   );

@@ -3,7 +3,8 @@ import { ActorInfo } from "./types";
 
 const actorCache: Record<string, ActorInfo> = {};
 
-const parseActorId = async (s: string): Promise<ActorInfo> => {
+// empty string returns the current actor
+const parseActorId = async (s = ""): Promise<ActorInfo> => {
   if (actorCache[s]) return actorCache[s];
   return apiClient<ActorInfo>({ method: "get-actor", actorId: s })
     .then((r) => {
@@ -15,6 +16,7 @@ const parseActorId = async (s: string): Promise<ActorInfo> => {
       workspace: "Not Found",
       email: "",
       notebookUuid: "",
+      actorId: s,
     }));
 };
 

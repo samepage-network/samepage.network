@@ -33,7 +33,7 @@ const recordTransaction = async (
 
   const tx = await stripe.balanceTransactions.retrieve(bt);
   const record = {
-    Date: toSheetsDate(new Date(tx.created * 1000)),
+    Date: new Date(tx.created * 1000),
     Source: "Stripe",
     Description: tx.description || "No description",
     Amount: tx.net / 100,
@@ -65,7 +65,7 @@ const recordTransaction = async (
   const client = sheets({ version: "v4", auth });
   const out = await client.spreadsheets.get({
     spreadsheetId,
-    ranges: [`'2023'!A1:F1`],
+    ranges: [`'${record.Date.getFullYear()}'!A1:F1`],
     includeGridData: true,
   });
   const sheet = out.data.sheets?.[0];
@@ -89,12 +89,16 @@ const recordTransaction = async (
             sheetId: sheet.properties?.sheetId,
             rows: [
               {
-                values: (values as (string | number)[]).map((value) => {
+                values: (values as (string | number | Date)[]).map((value) => {
                   return {
                     userEnteredValue:
                       typeof value === "string"
                         ? {
                             stringValue: value,
+                          }
+                        : value instanceof Date
+                        ? {
+                            numberValue: toSheetsDate(value),
                           }
                         : {
                             numberValue: value,

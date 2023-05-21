@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  ActionFunctionArgs,
   Form,
   LoaderFunctionArgs,
   redirect,
@@ -10,7 +11,12 @@ import LinkWithSearch from "./LinkWithSearch";
 import TextInput from "./TextInput";
 import Button from "./Button";
 import { ListSharedPages } from "../internal/types";
-import parseCredentialsFromRequest from "package/internal/parseCredentialsFromRequest";
+import parseCredentialsFromRequest from "../internal/parseCredentialsFromRequest";
+import { InternalServerResponse, NotFoundResponse } from "../utils/responses";
+import sharePageCommandCalback from "../internal/sharePageCommandCallback";
+import apiClient, { apiPost } from "../internal/apiClient";
+import redirectWithSearch from "../internal/redirectWithSearch";
+import getAppCode from "../internal/getAppCode";
 
 const SharedPagesTab: React.FC = () => {
   const data = useLoaderData() as Awaited<ReturnType<ListSharedPages>>;
@@ -40,19 +46,69 @@ const SharedPagesTab: React.FC = () => {
   );
 };
 
-export const makeLoader =
-  ({ listSharedPages }: { listSharedPages: ListSharedPages }) =>
-  async (args: LoaderFunctionArgs) => {
-    const result = parseCredentialsFromRequest(args);
-    if (!result.auth) {
+export const loader = async (args: LoaderFunctionArgs) => {
+  const result = parseCredentialsFromRequest(args);
+  if (!result.auth) {
+    return redirect("..?warning=not-logged-in");
+  }
+  return apiClient({
+    method: "list-shared-pages",
+    notebookUuid: result.notebookUuid,
+    token: result.token,
+  }).catch((e) => {
+    if (e.status === 401) {
       return redirect("..?warning=not-logged-in");
     }
-    return listSharedPages(result).catch((e) => {
-      if (e.status === 401) {
-        return redirect("..?warning=not-logged-in");
-      }
-      throw e;
-    });
-  };
+    throw e;
+  });
+};
+
+export const action = () => async (args: ActionFunctionArgs) => {
+  const result = parseCredentialsFromRequest(args);
+  if (!result.auth) {
+    return redirect("..?warning=not-logged-in");
+  }
+
+  const { request } = args;
+  if (request.method !== "POST")
+    throw new NotFoundResponse(`Unsupported method ${request.method}`);
+
+  const data = await request.formData();
+  const title = data.get("title") as string;
+  const { notebookUuid, token } = result;
+
+  const app = await getAppCode();
+  const shared = await sharePageCommandCalback({
+    getNotebookPageId: async () =>
+      apiPost<{ notebookPageId: string }>({
+        path: `extensions/${app}/backend`,
+        data: {
+          type: "ENSURE_PAGE_BY_TITLE",
+          title: { content: title, annotations: [] },
+        },
+        authorization: `Basic ${Buffer.from(
+          `${notebookUuid}:${token}`
+        ).toString("base64")}`,
+      }).then((r) => r.notebookPageId),
+    encodeState: (notebookPageId) =>
+      apiPost({
+        path: `extensions/${app}/backend`,
+        data: {
+          type: "ENCODE_STATE",
+          notebookPageId,
+          notebookUuid,
+        },
+        authorization: `Basic ${Buffer.from(
+          `${notebookUuid}:${token}`
+        ).toString("base64")}`,
+      }),
+    credentials: {
+      notebookUuid,
+      token,
+    },
+  });
+  if (!shared.success) throw new InternalServerResponse(shared.error);
+  return redirectWithSearch(shared.linkUuid, request);
+};
 
 export default SharedPagesTab;
