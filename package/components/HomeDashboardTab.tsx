@@ -11,15 +11,11 @@ import {
 import Button from "./Button";
 import TextInput from "./TextInput";
 import BaseInput from "./BaseInput";
-import authenticateRequest from "../internal/authenticateRequest";
-import {
-  AuthenticateNotebook,
-  AuthenticateUser,
-  ListUserNotebooks,
-} from "../internal/types";
+import { ListUserNotebooks } from "../internal/types";
 import { BadRequestResponse, NotFoundResponse } from "../utils/responses";
-import parseRequestContext from "../internal/parseRequestContext";
 import base64 from "../internal/base64";
+import parseCredentialsFromRequest from "../internal/parseCredentialsFromRequest";
+import apiClient from "../internal/apiClient";
 
 const HomeDashboardTab = ({
   onLogOut,
@@ -28,9 +24,7 @@ const HomeDashboardTab = ({
   onLogOut: () => void;
   url: string;
 }): React.ReactElement => {
-  const data = useLoaderData() as Awaited<
-    ReturnType<ReturnType<typeof makeLoader>>
-  >;
+  const data = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   const [searchParams] = useSearchParams();
   return (
     <div className="flex flex-col h-full">
@@ -114,71 +108,64 @@ const HomeDashboardTab = ({
   );
 };
 
-export const makeLoader =
-  ({
-    authenticateNotebook,
-    listUserNotebooks,
-  }: {
-    authenticateNotebook: AuthenticateNotebook;
-    listUserNotebooks: ListUserNotebooks;
-  }) =>
-  async (args: LoaderFunctionArgs) => {
-    const result = await authenticateRequest({ args, authenticateNotebook });
-    if (!result.auth) {
-      return {
-        auth: false as const,
-      };
-    }
-    const { notebooks } = await listUserNotebooks({
-      requestId: result.requestId,
-      userId: result.userId,
-      token: result.token,
-    });
+export const loader = async (args: LoaderFunctionArgs) => {
+  const result = parseCredentialsFromRequest(args);
+  if (!result.auth) {
     return {
-      auth: true as const,
-      notebookUuid: result.notebookUuid,
-      token: result.token,
-      notebooks,
+      auth: false as const,
     };
+  }
+  const { notebooks } = await apiClient<Awaited<ReturnType<ListUserNotebooks>>>(
+    {
+      method: "list-user-notebooks",
+      // TODO - get from clerk
+      // userId: result.notebookUuid,
+      userId: "",
+      token: result.token,
+    }
+  );
+  return {
+    auth: true as const,
+    notebookUuid: result.notebookUuid,
+    token: result.token,
+    notebooks,
   };
+};
 
-export const makeAction =
-  ({ authenticateUser }: { authenticateUser: AuthenticateUser }) =>
-  async (args: ActionFunctionArgs) => {
-    if (args.request.method !== "POST")
-      throw new NotFoundResponse(`Unsupported method ${args.request.method}`);
-    const data = await args.request.formData();
-    const email = data.get("email");
-    const password = data.get("password");
-    const origin = data.get("origin");
-    if (typeof email !== "string" || !email) {
-      throw new BadRequestResponse("Missing email");
-    }
-    if (typeof password !== "string" || !password) {
-      throw new BadRequestResponse("Missing password");
-    }
-    if (typeof origin !== "string" || !origin) {
-      throw new BadRequestResponse("Missing origin");
-    }
-    const { requestId } = parseRequestContext(args.context);
-    const authenticatedUser = await authenticateUser({
-      email,
-      password,
-      requestId,
-      origin,
-    });
-    if (!("notebookUuid" in authenticatedUser)) {
-      return redirect(
-        `?user_auth=${base64(
-          `${authenticatedUser.userId}:${authenticatedUser.token}`
-        )}`
-      );
-    }
+export const action = async (args: ActionFunctionArgs) => {
+  if (args.request.method !== "POST")
+    throw new NotFoundResponse(`Unsupported method ${args.request.method}`);
+  const data = await args.request.formData();
+  const email = data.get("email");
+  const password = data.get("password");
+  const origin = data.get("origin");
+  if (typeof email !== "string" || !email) {
+    throw new BadRequestResponse("Missing email");
+  }
+  if (typeof password !== "string" || !password) {
+    throw new BadRequestResponse("Missing password");
+  }
+  if (typeof origin !== "string" || !origin) {
+    throw new BadRequestResponse("Missing origin");
+  }
+  const authenticatedUser = await apiClient({
+    method: "authenticate-user",
+    email,
+    password,
+    origin,
+  });
+  if (!("notebookUuid" in authenticatedUser)) {
     return redirect(
-      `?auth=${base64(
-        `${authenticatedUser.notebookUuid}:${authenticatedUser.token}`
+      `?user_auth=${base64(
+        `${authenticatedUser.userId}:${authenticatedUser.token}`
       )}`
     );
-  };
+  }
+  return redirect(
+    `?auth=${base64(
+      `${authenticatedUser.notebookUuid}:${authenticatedUser.token}`
+    )}`
+  );
+};
 
 export default HomeDashboardTab;

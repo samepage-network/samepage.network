@@ -13,10 +13,9 @@ import SharedPagesTab, {
   loader as sharedPagesLoader,
   action as sharedPagesAction,
 } from "samepage/components/SharedPagesTab";
-import apiClient from "samepage/internal/apiClient";
 import HomeDashboardTab, {
-  makeLoader as homeMakeLoader,
-  makeAction as homeMakeAction,
+  loader as homeLoader,
+  action as homeAction,
 } from "samepage/components/HomeDashboardTab";
 import DefaultErrorBoundary from "~/components/DefaultErrorBoundary";
 import SharedPageTab from "samepage/components/SharedPageTab";
@@ -102,22 +101,8 @@ const router = createMemoryRouter(
       <Route
         index
         element={<HomeDashboardTabRoute />}
-        loader={homeMakeLoader({
-          authenticateNotebook: ({ requestId, ...args }) =>
-            apiClient({
-              method: "authenticate-notebook",
-              ...args,
-            }),
-          listUserNotebooks: ({ requestId, ...args }) =>
-            apiClient({ method: "list-user-notebooks", ...args }),
-        })}
-        action={homeMakeAction({
-          authenticateUser: (args) =>
-            apiClient({
-              method: "authenticate-user",
-              ...args,
-            }),
-        })}
+        loader={homeLoader}
+        action={homeAction}
       />
       <Route
         path={"shared-pages"}

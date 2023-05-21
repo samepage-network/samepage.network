@@ -1,13 +1,11 @@
 import { useNavigate } from "@remix-run/react";
 import React, { useEffect, useState } from "react";
 import HomeDashboardTab, {
-  makeAction,
-  makeLoader,
+  action,
+  loader,
 } from "samepage/components/HomeDashboardTab";
-import authenticateNotebook from "~/data/authenticateNotebook.server";
-import authenticateUser from "~/data/authenticateUser.server";
-import listUserNotebooks from "~/data/listUserNotebooks.server";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
+export { action, loader };
 
 const EmbedsIndexPage: React.FC = () => {
   const navigate = useNavigate();
@@ -21,9 +19,5 @@ const EmbedsIndexPage: React.FC = () => {
   }, [setOrigin]);
   return <HomeDashboardTab onLogOut={() => navigate("/embeds")} url={origin} />;
 };
-
-export const loader = makeLoader({ authenticateNotebook, listUserNotebooks });
-
-export const action = makeAction({ authenticateUser });
 
 export default EmbedsIndexPage;
