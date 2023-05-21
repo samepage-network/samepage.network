@@ -8,11 +8,22 @@ import { users } from "@clerk/clerk-sdk-node";
 import emailError from "package/backend/emailError.server";
 import randomString from "~/data/randomString.server";
 import WelcomeClientEmail from "~/components/WelcomeClientEmail";
+import { sheets } from "@googleapis/sheets";
+import { GoogleAuth } from "googleapis-common";
+import type { CredentialBody } from "google-auth-library/build/src/auth/credentials";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
   maxNetworkRetries: 3,
   apiVersion: "2022-11-15",
 });
+
+const toSheetsDate = (date: Date) => {
+  const ms = date.valueOf();
+  const msInDay = 24 * 60 * 60 * 1000;
+  const days = ms / msInDay;
+  const googleSheetsEpochOffset = 25569;
+  return days + googleSheetsEpochOffset;
+};
 
 const recordTransaction = async (
   bt: Stripe.BalanceTransaction | string | null
@@ -22,9 +33,9 @@ const recordTransaction = async (
 
   const tx = await stripe.balanceTransactions.retrieve(bt);
   const record = {
-    Date: new Date(tx.created * 1000).toJSON(),
+    Date: toSheetsDate(new Date(tx.created * 1000)),
     Source: "Stripe",
-    Description: tx.description,
+    Description: tx.description || "No description",
     Amount: tx.net / 100,
     Code:
       tx.type === "adjustment"
@@ -38,11 +49,71 @@ const recordTransaction = async (
         : 9999,
     ID: tx.id,
   };
-  // TODO - replace with direct insert to SP Financial Transactions sheet
+  // TODO - replace with Accessing API via SamePage
+  const [adminUser] = await users.getUserList({
+    emailAddress: ["vargas@samepage.network"],
+  });
+  if (!adminUser) throw new Error(`No admin user found`);
+  const { privateKeyFile, spreadsheetId } = adminUser.privateMetadata as {
+    privateKeyFile: CredentialBody;
+    spreadsheetId: string;
+  };
+  const auth = new GoogleAuth({
+    credentials: privateKeyFile,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  });
+  const client = sheets({ version: "v4", auth });
+  const out = await client.spreadsheets.get({
+    spreadsheetId,
+    ranges: [`'2023'!A1:F1`],
+    includeGridData: true,
+  });
+  const sheet = out.data.sheets?.[0];
+  if (!sheet) throw new Error(`No sheet found`);
+  const header = sheet.data?.[0]?.rowData?.[0];
+  if (!header) throw new Error(`No header found`);
+  const values = (header.values || []).map((v) => {
+    const key = v.userEnteredValue?.stringValue;
+    if (!key) return null;
+    if (!(key in record)) return null;
+    return record[key as keyof typeof record];
+  });
+  if (values.some((v) => v === null)) throw new Error(`Missing values`);
+
+  await client.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          appendCells: {
+            sheetId: sheet.properties?.sheetId,
+            rows: [
+              {
+                values: (values as (string | number)[]).map((value) => {
+                  return {
+                    userEnteredValue:
+                      typeof value === "string"
+                        ? {
+                            stringValue: value,
+                          }
+                        : {
+                            numberValue: value,
+                          },
+                  };
+                }),
+              },
+            ],
+            fields: "userEnteredValue",
+          },
+        },
+      ],
+    },
+  });
+
   await sendEmail({
     to: "support@samepage.network",
     subject: "SamePage Transaction Recorded",
-    body: `Add transaction to Google Sheet: ${record.Date}\t${record.Source}\t${record.Description}\t${record.Amount}\t${record.Code}\t${record.ID}`,
+    body: `You can verify the transaction at ${out.data.spreadsheetUrl}`,
   });
 };
 
