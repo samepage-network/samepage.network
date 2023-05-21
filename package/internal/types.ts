@@ -782,24 +782,51 @@ const zCondition = z.object({
   relation: z.string(),
 });
 
+const zSelectionFieldBase = z.object({
+  suffix: z.string().optional(),
+  attr: z.string(),
+});
+
+type SelectionField = z.infer<typeof zSelectionFieldBase> & {
+  fields?: SelectionField[];
+};
+
+export const zSelectionField: z.ZodType<SelectionField> =
+  zSelectionFieldBase.extend({
+    fields: z.lazy(() => zSelectionField.array().optional()),
+  });
+
+export const zSelectionTransform = z.discriminatedUnion("method", [
+  z.object({
+    method: z.literal("find"),
+    set: z.string(),
+    find: z.string(),
+    key: z.string(),
+    value: z.string(),
+  }),
+  z.object({
+    method: z.literal("access"),
+    set: z.string(),
+    access: z.string(),
+    key: z.string(),
+  }),
+  z.object({
+    method: z.literal("set"),
+    set: z.string(),
+    value: z.string(),
+  }),
+  z.object({
+    method: z.literal("date"),
+    set: z.string(),
+    date: z.string(),
+  }),
+]);
+
 export const zSelection = z.object({
   node: z.string(),
-  label: z.string(),
-  fields: z
-    .object({
-      suffix: z.string().optional(),
-      attr: z.string(),
-    })
-    .array(),
-  transforms: z
-    .discriminatedUnion("method", [
-      z.object({
-        method: z.literal("cast"),
-        to: z.enum(["date", "string", "number"]),
-      }),
-      z.object({ method: z.literal("access"), key: z.string().or(z.number()) }),
-    ])
-    .array(),
+  label: z.string().optional(),
+  fields: zSelectionField.array().optional(),
+  transforms: zSelectionTransform.array().optional(),
 });
 
 // @deprecated
