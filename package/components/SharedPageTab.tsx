@@ -44,22 +44,29 @@ const SharedPageTab: React.FC = () => {
 export const loader = async (args: LoaderFunctionArgs) => {
   const result = parseCredentialsFromRequest(args);
   if (!result.auth) {
-    return redirect("../..");
+    return redirect("../..?warning=not-logged-in");
   }
   const linkUuid = args.params.uuid || "";
-  const info = await apiClient<{}>({
+  return apiClient({
+    // TODO - rename to get-shared-page, move existing get-shared-page to load-shared-page
     method: "head-shared-page",
     linkUuid,
     notebookUuid: result.notebookUuid,
     token: result.token,
-  });
-  return {
-    ...info,
-    credentials: {
-      notebookUuid: result.notebookUuid,
-      token: result.token,
-    },
-  };
+  })
+    .then((info) => ({
+      ...info,
+      credentials: {
+        notebookUuid: result.notebookUuid,
+        token: result.token,
+      },
+    }))
+    .catch((e) => {
+      if (e.status === 401) {
+        return redirect("../..?warning=not-logged-in");
+      }
+      throw e;
+    });
 };
 
 export default SharedPageTab;

@@ -21,6 +21,13 @@ import DefaultErrorBoundary from "~/components/DefaultErrorBoundary";
 import SharedPageTab, {
   loader as sharedPageLoader,
 } from "samepage/components/SharedPageTab";
+import WorkflowsTab, {
+  loader as workflowsLoader,
+} from "samepage/components/WorkflowsTab";
+import WorkflowTab, {
+  loader as workflowLoader,
+  action as workflowAction,
+} from "package/components/WorkflowTab";
 
 const SamePageContext = React.createContext<{
   // notebookUuid: string;
@@ -118,7 +125,20 @@ const router = createMemoryRouter(
           loader={sharedPageLoader}
         />
       </Route>
-      <Route path={"workflows"} element={<div />}></Route>
+      <Route
+        path={"workflows"}
+        element={<WorkflowsTab />}
+        loader={workflowsLoader}
+      >
+        <Route
+          path={":uuid"}
+          element={<WorkflowTab />}
+          loader={workflowLoader}
+          action={workflowAction}
+        />
+      </Route>
+      <Route path={"requests"} element={<div />}></Route>
+      <Route path={"overlays"} element={<div />}></Route>
     </Route>
   )
 );

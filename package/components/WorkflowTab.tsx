@@ -1,19 +1,31 @@
 import React from "react";
 import {
+  ActionFunction,
   Form,
-//   LoaderFunctionArgs,
+  LoaderFunctionArgs,
   useLoaderData,
-//   redirect,
+  redirect,
 } from "react-router-dom";
 import Select from "./Select";
 import AtJsonRendered from "./AtJsonRendered";
 import Button from "./Button";
 import { SamePageSchema } from "../internal/types";
+import parseCredentialsFromRequest from "../internal/parseCredentialsFromRequest";
+import apiClient, { apiPost } from "../internal/apiClient";
+import unwrapSchema from "../utils/unwrapSchema";
+import Automerge from "automerge";
+import getAppCode from "../internal/getAppCode";
+import base64 from "package/internal/base64";
+import base64ToBinary from "package/internal/base64ToBinary";
 
 const WorkflowTab: React.FC = () => {
   const data = useLoaderData() as {
     title: SamePageSchema;
-    destinations: { notebookUuid: string; app: string; workspace: string }[];
+    destinations: {
+      notebookUuid: string;
+      appName: string;
+      workspaceName: string;
+    }[];
   };
   return (
     <Form method={"post"}>
@@ -28,12 +40,77 @@ const WorkflowTab: React.FC = () => {
         label="Destination"
         options={data.destinations.map((d) => ({
           id: d.notebookUuid,
-          label: `${d.app} ${d.workspace}`,
+          label: `${d.appName} ${d.workspaceName}`,
         }))}
       />
       <Button>Trigger</Button>
     </Form>
   );
+};
+
+export const loader = async (args: LoaderFunctionArgs) => {
+  const result = parseCredentialsFromRequest(args);
+  if (!result.auth) {
+    return redirect("../..?warning=not-logged-in");
+  }
+  const { notebookUuid, token } = result;
+  const uuid = args.params.uuid || "";
+  return apiClient({
+    method: "get-workflow",
+    notebookUuid,
+    token,
+    workflowUuid: uuid,
+  }).catch((e) => {
+    if (e.status === 401) {
+      return redirect("../..?warning=not-logged-in");
+    }
+    throw e;
+  });
+};
+
+// TODO - FIX THIS IS BROKE
+export const action: ActionFunction = async (args) => {
+  const result = parseCredentialsFromRequest(args);
+  if (!result.auth) {
+    return redirect("../..?warning=not-logged-in");
+  }
+  const { notebookUuid, token } = result;
+  const workflowUuid = args.params.uuid || "";
+  const page = await apiClient({
+    method: "head-shared-page",
+    notebookUuid,
+    token,
+    linkUuid: workflowUuid,
+  });
+  const { notebookPageId } = page;
+  const app = await getAppCode(result);
+  const { body } = await apiClient({
+    method: "get-shared-page",
+    notebookUuid,
+    token,
+    notebookPageId: page.notebookPageId as string,
+  });
+  const { notebookPageId: newNotebookPageId } = await apiPost({
+    path: `extensions/${app}/backend`,
+    data: {
+      type: "ENSURE_PAGE_BY_TITLE",
+      title: notebookPageId,
+    },
+    authorization: `Basic ${base64(`${notebookUuid}:${token}`)}`,
+  });
+  const state = unwrapSchema(
+    Automerge.load(base64ToBinary(body as string) as Automerge.BinaryDocument)
+  );
+  await apiPost({
+    path: `extensions/${app}/backend`,
+    data: {
+      type: "DECODE_STATE",
+      notebookPageId: newNotebookPageId,
+      state,
+    },
+    authorization: `Basic ${base64(`${notebookUuid}:${token}`)}`,
+  });
+  return { success: true };
 };
 
 export default WorkflowTab;

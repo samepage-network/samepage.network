@@ -34,7 +34,6 @@ const listWorkflows = async ({
       )
     )
     .where(and(eq(pageNotebookLinks.notebookUuid, notebookUuid)));
-  await cxn.end();
   return {
     workflows: workflows.map((w) => {
       const result = zSamePageSchema.safeParse(w.title);

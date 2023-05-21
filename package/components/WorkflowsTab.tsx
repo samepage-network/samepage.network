@@ -4,6 +4,7 @@ import { ListWorkflows } from "../internal/types";
 import { LoaderFunctionArgs, useLoaderData, redirect } from "react-router-dom";
 import AtJsonRendered from "./AtJsonRendered";
 import LinkWithSearch from "./LinkWithSearch";
+import apiClient from "package/internal/apiClient";
 
 const WorkflowsTab: React.FC = () => {
   const data = useLoaderData() as Awaited<ReturnType<ListWorkflows>>;
@@ -26,19 +27,21 @@ const WorkflowsTab: React.FC = () => {
   );
 };
 
-export const makeLoader =
-  ({ listWorkflows }: { listWorkflows: ListWorkflows }) =>
-  async (args: LoaderFunctionArgs) => {
-    const result = parseCredentialsFromRequest(args);
-    if (!result.auth) {
+export const loader = async (args: LoaderFunctionArgs) => {
+  const result = parseCredentialsFromRequest(args);
+  if (!result.auth) {
+    return redirect("..?warning=not-logged-in");
+  }
+  return apiClient({
+    method: "list-workflows",
+    notebookUuid: result.notebookUuid,
+    token: result.token,
+  }).catch((e) => {
+    if (e.status === 401) {
       return redirect("..?warning=not-logged-in");
     }
-    return listWorkflows(result).catch((e) => {
-      if (e.status === 401) {
-        return redirect("..?warning=not-logged-in");
-      }
-      throw e;
-    });
-  };
+    throw e;
+  });
+};
 
 export default WorkflowsTab;

@@ -698,6 +698,19 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     method: z.literal("list-shared-pages"),
   }),
   z.object({
+    method: z.literal("list-workflows"),
+  }),
+  z.object({
+    method: z.literal("get-workflow"),
+    workflowUuid: z.string(),
+  }),
+  z.object({
+    method: z.literal("list-requests"),
+  }),
+  z.object({
+    method: z.literal("list-overlays"),
+  }),
+  z.object({
     method: z.literal("disconnect-shared-page"),
     notebookPageId: z.string(),
   }),

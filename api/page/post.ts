@@ -61,6 +61,8 @@ import onboardNotebook from "~/data/onboardNotebook.server";
 import { apiPost } from "package/internal/apiClient";
 import authenticateUser from "~/data/authenticateUser.server";
 import listUserNotebooks from "~/data/listUserNotebooks.server";
+import listWorkflows from "~/data/listWorkflows.server";
+import getTitleState from "~/data/getTitleState.server";
 
 const log = debug("api:page");
 const zhandlerBody = zUnauthenticatedBody.or(
@@ -919,7 +921,7 @@ const logic = async (req: Record<string, unknown>) => {
         };
       }
       case "list-shared-pages": {
-        // @DEPRECATED
+        // @DEPRECATED - listSharedPages used instead below
         const notebookPageIds = await cxn
           .select({ notebookPageId: pageNotebookLinks.notebookPageId })
           .from(pageNotebookLinks)
@@ -937,6 +939,58 @@ const logic = async (req: Record<string, unknown>) => {
         });
         await cxn.end();
         return { notebookPageIds, ...result };
+      }
+      case "list-workflows": {
+        const result = await listWorkflows({ requestId, notebookUuid });
+        await cxn.end();
+        return result;
+      }
+      case "get-workflow": {
+        const { workflowUuid } = args;
+        const [page] = await cxn
+          .select({
+            notebookPageId: pageNotebookLinks.notebookPageId,
+          })
+          .from(pageNotebookLinks)
+          .where(
+            and(
+              eq(pageNotebookLinks.uuid, workflowUuid),
+              eq(pageNotebookLinks.notebookUuid, notebookUuid)
+            )
+          );
+        if (!page) {
+          await cxn.end();
+          throw new NotFoundError(`No page found for uuid "${workflowUuid}"`);
+        }
+        const { notebookPageId } = page;
+        const title = await getTitleState({
+          notebookUuid,
+          notebookPageId,
+          requestId,
+        });
+        const destinations = await cxn
+          .select({
+            notebookUuid: notebooks.uuid,
+            appName: apps.name,
+            workspaceName: notebooks.label,
+          })
+          .from(notebooks)
+          .innerJoin(
+            tokenNotebookLinks,
+            eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
+          )
+          .innerJoin(apps, eq(apps.id, notebooks.app))
+          .where(eq(tokenNotebookLinks.tokenUuid, tokenUuid));
+        await cxn.end();
+        return { title, destinations };
+      }
+      case "list-overlays": {
+        // TODO
+        return { overlays: [] };
+      }
+      case "list-requests": {
+        // TODO
+        return { requests: [] };
       }
       case "disconnect-shared-page": {
         const { notebookPageId } = args;

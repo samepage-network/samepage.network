@@ -22,6 +22,7 @@ import {
   InternalServerResponse,
 } from "package/utils/responses";
 import { JSONData } from "package/internal/types";
+import base64 from "package/internal/base64";
 
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
@@ -126,9 +127,7 @@ export const loader = async (args: LoaderArgs) => {
           type: "ENSURE_PAGE_BY_TITLE",
           title,
         },
-        authorization: `Basic ${Buffer.from(
-          `${notebookUuid}:${token}`
-        ).toString("base64")}`,
+        authorization: `Basic ${base64(`${notebookUuid}:${token}`)}`,
       }),
     initPage: async (notebookPageId) => {
       console.log("initPage", notebookPageId);
@@ -140,9 +139,7 @@ export const loader = async (args: LoaderArgs) => {
           type: "DELETE_PAGE",
           notebookPageId,
         },
-        authorization: `Basic ${Buffer.from(
-          `${notebookUuid}:${token}`
-        ).toString("base64")}`,
+        authorization: `Basic ${base64(`${notebookUuid}:${token}`)}`,
       }),
     openPage: (notebookPageId) =>
       apiPost<{ url: string; notebookPageId: string }>({
@@ -151,9 +148,7 @@ export const loader = async (args: LoaderArgs) => {
           type: "OPEN_PAGE",
           notebookPageId,
         },
-        authorization: `Basic ${Buffer.from(
-          `${notebookUuid}:${token}`
-        ).toString("base64")}`,
+        authorization: `Basic ${base64(`${notebookUuid}:${token}`)}`,
       }),
     encodeState: (notebookPageId) =>
       apiPost({
@@ -162,9 +157,7 @@ export const loader = async (args: LoaderArgs) => {
           type: "ENCODE_STATE",
           notebookPageId,
         },
-        authorization: `Basic ${Buffer.from(
-          `${notebookUuid}:${token}`
-        ).toString("base64")}`,
+        authorization: `Basic ${base64(`${notebookUuid}:${token}`)}`,
       }),
     decodeState: (notebookPageId, state) =>
       apiPost({
@@ -174,9 +167,7 @@ export const loader = async (args: LoaderArgs) => {
           notebookPageId,
           state,
         },
-        authorization: `Basic ${Buffer.from(
-          `${notebookUuid}:${token}`
-        ).toString("base64")}`,
+        authorization: `Basic ${base64(`${notebookUuid}:${token}`)}`,
       }),
   })(metadata as JSONData);
   return { success: true, url, app: appName };

@@ -17,6 +17,7 @@ import sharePageCommandCalback from "../internal/sharePageCommandCallback";
 import apiClient, { apiPost } from "../internal/apiClient";
 import redirectWithSearch from "../internal/redirectWithSearch";
 import getAppCode from "../internal/getAppCode";
+import base64 from "package/internal/base64";
 
 const SharedPagesTab: React.FC = () => {
   const data = useLoaderData() as Awaited<ReturnType<ListSharedPages>>;
@@ -86,9 +87,7 @@ export const action = () => async (args: ActionFunctionArgs) => {
           type: "ENSURE_PAGE_BY_TITLE",
           title: { content: title, annotations: [] },
         },
-        authorization: `Basic ${Buffer.from(
-          `${notebookUuid}:${token}`
-        ).toString("base64")}`,
+        authorization: `Basic ${base64(`${notebookUuid}:${token}`)}`,
       }).then((r) => r.notebookPageId),
     encodeState: (notebookPageId) =>
       apiPost({
@@ -98,9 +97,7 @@ export const action = () => async (args: ActionFunctionArgs) => {
           notebookPageId,
           notebookUuid,
         },
-        authorization: `Basic ${Buffer.from(
-          `${notebookUuid}:${token}`
-        ).toString("base64")}`,
+        authorization: `Basic ${base64(`${notebookUuid}:${token}`)}`,
       }),
     credentials: {
       notebookUuid,
