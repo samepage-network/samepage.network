@@ -18,7 +18,9 @@ import HomeDashboardTab, {
   action as homeAction,
 } from "samepage/components/HomeDashboardTab";
 import DefaultErrorBoundary from "~/components/DefaultErrorBoundary";
-import SharedPageTab from "samepage/components/SharedPageTab";
+import SharedPageTab, {
+  loader as sharedPageLoader,
+} from "samepage/components/SharedPageTab";
 
 const SamePageContext = React.createContext<{
   // notebookUuid: string;
@@ -113,21 +115,10 @@ const router = createMemoryRouter(
         <Route
           path={":uuid"}
           element={<SharedPageTab />}
-          loader={({ params }) => {
-            const credentials = {
-              notebookUuid: localStorage.getItem("notebookUuid") || undefined,
-              token: localStorage.getItem("token") || undefined,
-            };
-            // TODO - proper loader here
-            return {
-              notebookPageId: params.uuid,
-              credentials,
-              title: { content: params.uuid, annotations: [] },
-            };
-          }}
+          loader={sharedPageLoader}
         />
       </Route>
-      <Route path={"workflows"} element={<div />} />
+      <Route path={"workflows"} element={<div />}></Route>
     </Route>
   )
 );

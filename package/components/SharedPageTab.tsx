@@ -5,44 +5,61 @@ import Button from "./Button";
 import LinkWithSearch from "./LinkWithSearch";
 import SharedPageStatus from "./SharedPageStatus";
 import useNavigateWithSearch from "./useNavigateWithSearch";
-import { useLoaderData } from "react-router-dom";
+import { LoaderFunctionArgs, redirect, useLoaderData } from "react-router-dom";
+import parseCredentialsFromRequest from "package/internal/parseCredentialsFromRequest";
+import apiClient from "package/internal/apiClient";
+
+type HeadSharedPageResponse = {
+  notebookPageId: string;
+  title: SamePageSchema;
+};
 
 const SharedPageTab: React.FC = () => {
-  const data = useLoaderData() as {
-    auth: true;
-    notebookPageId: string;
-    title: SamePageSchema;
-    credentials?:
-      | {
-          notebookUuid: string;
-          token: string;
-        }
-      | undefined;
+  const data = useLoaderData() as HeadSharedPageResponse & {
+    credentials: {
+      notebookUuid: string;
+      token: string;
+    };
   };
   const navigate = useNavigateWithSearch();
   return (
     <div className="flex flex-col items-start h-full">
       <div className="flex-grow w-full">
-        {!("auth" in data) ? (
-          <>User is not authenticated. Log in to manage this page.</>
-        ) : (
-          <>
-            <h1 className="mb-8 text-3xl">
-              <AtJsonRendered {...data.title} />
-            </h1>
-            <SharedPageStatus
-              notebookPageId={data.notebookPageId}
-              onClose={() => navigate(`../shared-pages`)}
-              credentials={data.credentials}
-            />
-          </>
-        )}
+        <h1 className="mb-8 text-3xl">
+          <AtJsonRendered {...data.title} />
+        </h1>
+        <SharedPageStatus
+          notebookPageId={data.notebookPageId}
+          onClose={() => navigate(`../shared-pages`)}
+          credentials={data.credentials}
+        />
       </div>
       <LinkWithSearch to={"../shared-pages"} className="mb-4 inline-block">
         <Button type={"button"}>Back</Button>
       </LinkWithSearch>
     </div>
   );
+};
+
+export const loader = async (args: LoaderFunctionArgs) => {
+  const result = parseCredentialsFromRequest(args);
+  if (!result.auth) {
+    return redirect("../..");
+  }
+  const linkUuid = args.params.uuid || "";
+  const info = await apiClient<{}>({
+    method: "head-shared-page",
+    linkUuid,
+    notebookUuid: result.notebookUuid,
+    token: result.token,
+  });
+  return {
+    ...info,
+    credentials: {
+      notebookUuid: result.notebookUuid,
+      token: result.token,
+    },
+  };
 };
 
 export default SharedPageTab;

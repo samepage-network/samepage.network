@@ -664,6 +664,10 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     target: z.string(),
   }),
   z.object({
+    method: z.literal("head-shared-page"),
+    linkUuid: z.string(),
+  }),
+  z.object({
     method: z.literal("get-shared-page"),
     notebookPageId: z.string(),
   }),

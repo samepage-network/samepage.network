@@ -5,6 +5,7 @@ import {
   zUnauthenticatedBody,
   zBaseHeaders,
   JSONData,
+  zSamePageSchema,
 } from "package/internal/types";
 import parseZodError from "package/utils/parseZodError";
 import {
@@ -1275,6 +1276,37 @@ const logic = async (req: Record<string, unknown>) => {
           .where(eq(pageNotebookLinks.uuid, linkUuid));
         await cxn.end();
         return { uuid: linkUuid };
+      }
+      case "head-shared-page": {
+        const { linkUuid } = args;
+        const [page] = await cxn
+          .select({
+            notebookPageId: pageNotebookLinks.notebookPageId,
+            title: pageProperties.value,
+          })
+          .from(pageNotebookLinks)
+          .innerJoin(
+            pageProperties,
+            eq(pageProperties.linkUuid, pageNotebookLinks.uuid)
+          )
+          .where(
+            and(
+              eq(pageNotebookLinks.uuid, linkUuid),
+              eq(pageNotebookLinks.notebookUuid, notebookUuid),
+              eq(pageNotebookLinks.open, 0),
+              eq(pageProperties.key, "$title")
+            )
+          );
+        await cxn.end();
+        if (!page) {
+          throw new NotFoundError(
+            `User is authenticated, but does not have access to page ${linkUuid}`
+          );
+        }
+        return {
+          notebookPageId: page.notebookPageId,
+          title: zSamePageSchema.parse(page.title),
+        };
       }
       case "get-shared-page": {
         const { notebookPageId } = args;
