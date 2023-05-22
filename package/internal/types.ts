@@ -732,6 +732,11 @@ export const zAuthenticatedBody = z.discriminatedUnion("method", [
     state: z.string(),
   }),
   z.object({
+    method: z.literal("restore-page-version"),
+    notebookPageId: z.string(),
+    state: z.string(),
+  }),
+  z.object({
     method: z.literal("get-ipfs-cid"),
     notebookPageId: z.string(),
   }),

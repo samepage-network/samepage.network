@@ -6,7 +6,6 @@ import {
   DrawerSize,
   Icon,
   IconName,
-  IconSize,
   Tooltip,
 } from "@blueprintjs/core";
 import React, { useEffect } from "react";
@@ -20,6 +19,7 @@ import AtJsonRendered from "./AtJsonRendered";
 import { load, deleteId, get } from "../utils/localAutomergeDb";
 import binaryToBase64 from "../internal/binaryToBase64";
 import unwrapSchema from "../utils/unwrapSchema";
+import DialogFooter from "./DialogFooter";
 
 type GetLocalHistory = (
   notebookPageId: string
@@ -62,17 +62,70 @@ const COLORS = [
   "rgb(167 139 250)",
 ];
 
+const RestoreHistoryDialog = ({
+  isOpen,
+  onClose,
+  portalContainer,
+  time,
+  notebookPageId,
+  state,
+  credentials,
+}: {
+  onClose: () => void;
+  portalContainer?: HTMLElement;
+  isOpen?: boolean;
+  credentials?: {
+    notebookUuid: string;
+    token: string;
+  };
+  notebookPageId: string;
+  state: Automerge.State<Schema>;
+  time: string;
+}) => {
+  return (
+    <Dialog
+      title={`Restore this version?`}
+      isOpen={isOpen}
+      onClose={onClose}
+      enforceFocus={false}
+      autoFocus={false}
+      portalContainer={portalContainer}
+    >
+      <div
+        className={`${Classes.DIALOG_BODY} text-black`}
+        onKeyDown={(e) => e.stopPropagation()}
+        onPaste={(e) => e.stopPropagation()}
+      >
+        <p>Your current document will revert to the version from {time}</p>
+      </div>
+      <DialogFooter
+        onClose={onClose}
+        onSubmit={() =>
+          apiClient({
+            method: "restore-page-version",
+            notebookPageId,
+            state: binaryToBase64(Automerge.save(state)),
+            ...credentials,
+          })
+        }
+      />
+    </Dialog>
+  );
+};
+
 const HistoryContentEntry = ({
+  notebookPageId,
   item,
   setSelectedChange,
   actorMap,
 }: {
+  notebookPageId: string;
   item: SamePageHistory[number];
   setSelectedChange: (c: Automerge.State<Schema>) => void;
   actorMap: Record<string, string>;
 }) => {
-  const colors = React.useRef<Record<string, string>>({});
   const [collapsed, setCollapsed] = React.useState(true);
+  const colors = React.useRef<Record<string, string>>({});
   const actors = React.useMemo(
     () => Array.from(new Set(item.states.map((s) => s.change.actor))),
     [item]
@@ -83,27 +136,49 @@ const HistoryContentEntry = ({
       (colors.current[actor] = COLORS[Object.keys(colors.current).length]),
     [colors]
   );
-  return (
-    <div
-      className={"px-4 relative cursor-pointer"}
-      onClick={() => {
-        if (item.states.length > 1) setCollapsed(!collapsed);
-        else setSelectedChange(item.states[0]);
-      }}
-    >
-      {item.states.length > 1 && (
-        <Icon
-          icon={collapsed ? "caret-right" : "caret-down"}
-          className="absolute top-8 left-2 text-2xl text-black"
-          size={IconSize.LARGE}
-        />
-      )}
+  const Entry = ({
+    state,
+    actors,
+    children,
+  }: {
+    state?: Automerge.State<Schema>;
+    actors: string[];
+    children?: React.ReactNode;
+  }) => {
+    const [hovered, setHovered] = React.useState(false);
+    const parsedTime = parseTime(state?.change?.time || item.date);
+    return (
       <div
-        className={
-          "px-6 pb-2 pt-4 border-b border-b-gray-400 border-b-opacity-50"
-        }
+        className={`p-4 cursor-pointer relative border-b border-b-gray-400 border-b-opacity-50 ${
+          hovered ? "bg-gray-100" : ""
+        }`}
+        onClick={(e) => {
+          if (state) setSelectedChange(state);
+          else setCollapsed(!collapsed);
+          e.stopPropagation();
+        }}
+        onMouseOver={() => setHovered(true)}
+        onMouseOut={() => setHovered(false)}
       >
-        <h3 className="font-bold mb-2">{parseTime(item.date)}</h3>
+        {hovered && (
+          <div className="absolute top-2 right-2">
+            <TooltipButtonOverlay
+              tooltipContent="Restore this version"
+              icon={"history"}
+              Overlay={(props) => (
+                <RestoreHistoryDialog
+                  {...props}
+                  time={parsedTime}
+                  notebookPageId={notebookPageId}
+                  state={state || item.states[0]}
+                />
+              )}
+            />
+          </div>
+        )}
+        <h3 className="font-bold mb-2">
+          {parseTime(state?.change?.time || item.date)}
+        </h3>
         {actors.map((actor) => (
           <div className="my-1 text-sm flex items-center gap-2" key={actor}>
             <span
@@ -113,36 +188,33 @@ const HistoryContentEntry = ({
             <span>{actorMap[actor]}</span>
           </div>
         ))}
-        <div className="pl-6 italic text-xs">
-          <span>
-            {item.states.length > 1 ? `${item.states.length} changes` : ""}
-          </span>
-        </div>
+        {!state && (
+          <div className="pl-6 italic text-xs">
+            <Icon icon={collapsed ? "caret-right" : "caret-down"} size={12} />
+            <span> {item.states.length} changes</span>
+          </div>
+        )}
+        {children}
       </div>
+    );
+  };
+  return (
+    <Entry
+      state={item.states.length > 1 ? undefined : item.states[0]}
+      actors={actors}
+    >
       {!collapsed && (
         <div className="pl-8">
-          {item.states.map((i) => (
-            <div
-              className="cursor-pointer border-b border-b-gray-400 border-b-opacity-50 py-4"
-              onClick={(e) => {
-                setSelectedChange(i);
-                e.stopPropagation();
-              }}
-              key={i.change.hash}
-            >
-              <h3 className="font-bold mb-2">{parseTime(i.change.time)}</h3>
-              <div className="my-1 text-sm flex items-center gap-2">
-                <span
-                  className="h-3 w-3 rounded-full inline-block"
-                  style={{ background: getColor(i.change.actor) }}
-                />
-                <span>{actorMap[i.change.actor]}</span>
-              </div>
-            </div>
+          {item.states.map((state) => (
+            <Entry
+              state={state}
+              key={state.change.hash}
+              actors={[state.change.actor]}
+            />
           ))}
         </div>
       )}
-    </div>
+    </Entry>
   );
 };
 
@@ -151,9 +223,11 @@ const THRESHOLD_IN_MS = 30 * 60;
 const HistoryContent = ({
   getHistory,
   portalContainer,
+  notebookPageId,
 }: {
   getHistory: () => ReturnType<GetLocalHistory>;
   portalContainer?: HTMLElement;
+  notebookPageId: string;
 }) => {
   const [history, setHistory] = React.useState<SamePageHistory>([]);
   const [actorMap, setActorMap] = React.useState<Record<string, string>>({});
@@ -191,6 +265,7 @@ const HistoryContent = ({
           item={l}
           setSelectedChange={setSelectedChange}
           actorMap={actorMap}
+          notebookPageId={notebookPageId}
         />
       ))}
       <Dialog
@@ -248,8 +323,9 @@ const TooltipButtonOverlay = ({
           icon={icon}
           minimal
           disabled={isOpen}
-          onClick={() => {
+          onClick={(e) => {
             setIsOpen(true);
+            e.stopPropagation();
           }}
         />
       </Tooltip>
@@ -358,6 +434,7 @@ const SharedPageStatus = ({
                     )
                   }
                   portalContainer={portalContainer}
+                  notebookPageId={notebookPageId}
                 />
               </div>
             </Drawer>

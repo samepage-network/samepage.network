@@ -1307,6 +1307,9 @@ const logic = async (req: Record<string, unknown>) => {
         await cxn.end();
         return { success: true };
       }
+      case "restore-page-version": {
+        return Promise.reject(new Error("Coming Soon!"));
+      }
       case "get-ipfs-cid": {
         const { notebookPageId } = args;
         const { cid, linkUuid } = await getSharedPage({
