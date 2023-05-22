@@ -186,21 +186,11 @@ export type InitialSchema = SamePageSchema;
 // TODO - here's how ZOD recommends it. But I need to investigate toJSON(), and Uint8Array usages.
 const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 type Literal = z.infer<typeof literalSchema>;
-type Json = Literal | { [key: string]: Json } | Json[];
+export type Json = Literal | { [key: string]: Json } | Json[];
 const zJson: z.ZodType<Json> = z.lazy(() =>
   z.union([literalSchema, z.array(zJson), z.record(zJson)])
 );
 export const zJsonData = z.record(zJson);
-// TODO - @deprecated
-export type json =
-  | string
-  | number
-  | boolean
-  | null
-  | { toJSON: () => string }
-  | json[]
-  | { [key: string]: json }
-  | Uint8Array;
 export type JSONData = z.infer<typeof zJsonData>;
 
 export type AddCommand = (args: {
@@ -465,11 +455,11 @@ export type RemoveNotebookListener = (args: { operation: string }) => void;
 export type SendToNotebook = (args: {
   target: string;
   operation: Operation | string;
-  data?: { [k: string]: json };
+  data?: JSONData;
 }) => void;
 export type SendToBackend = (args: {
   operation: string;
-  data?: { [key: string]: json };
+  data?: JSONData;
   unauthenticated?: boolean;
 }) => void;
 export type Memo = {

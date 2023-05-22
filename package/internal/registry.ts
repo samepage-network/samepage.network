@@ -1,7 +1,12 @@
 import type { default as defaultSettings } from "../utils/defaultSettings";
 import React from "react";
 import { v4 } from "uuid";
-import type { AddCommand, ConnectionStatus, RemoveCommand, RenderOverlay } from "./types";
+import type {
+  AddCommand,
+  ConnectionStatus,
+  RemoveCommand,
+  RenderOverlay,
+} from "./types";
 import defaultGetSetting from "../utils/defaultGetSetting";
 import defaultSetSetting from "../utils/defaultSetSetting";
 
@@ -76,6 +81,7 @@ export const samePageBackend: {
   status: ConnectionStatus;
 } = { status: "DISCONNECTED" };
 
+// I think it's time to start replacing this registry with separate methods, like in `parseActorId`
 const setupRegistry = ({
   app: _app,
   workspace: _workspace,
@@ -85,7 +91,6 @@ const setupRegistry = ({
   appRoot: _appRoot,
   getSetting: _getSetting,
   setSetting: _setSetting,
-  actorId: _actorId,
 }: {
   app?: string;
   workspace?: string;
@@ -93,9 +98,8 @@ const setupRegistry = ({
   removeCommand?: RemoveCommand;
   renderOverlay?: RenderOverlay;
   appRoot?: HTMLElement;
-  getSetting?: (s: typeof defaultSettings[number]["id"]) => string;
-  setSetting?: (s: typeof defaultSettings[number]["id"], v: string) => void;
-  actorId?: string;
+  getSetting?: (s: (typeof defaultSettings)[number]["id"]) => string;
+  setSetting?: (s: (typeof defaultSettings)[number]["id"], v: string) => void;
 }) => {
   if (_app) app = _app;
   if (_workspace) workspace = _workspace;
@@ -105,7 +109,6 @@ const setupRegistry = ({
   if (_getSetting) getSetting = _getSetting;
   if (_setSetting) setSetting = _setSetting;
   if (_appRoot) appRoot = _appRoot;
-  if (_actorId) actorId = _actorId;
 };
 
 export default setupRegistry;

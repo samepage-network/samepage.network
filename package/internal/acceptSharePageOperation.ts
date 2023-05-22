@@ -84,7 +84,7 @@ const acceptSharePageOperation =
                 notebookPageId,
               }).then(() => Promise.reject(e));
             });
-        const doc = loadAutomergeFromBase64(res.state);
+        const doc = await loadAutomergeFromBase64(res.state);
         set(notebookPageId, doc);
         if (preExisting) {
           const { $body: preExistingDoc, ...preExistingProperties } =

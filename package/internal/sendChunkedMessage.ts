@@ -1,4 +1,4 @@
-import { json } from "./types";
+import { JSONData } from "./types";
 import { v4 } from "uuid";
 
 const MESSAGE_LIMIT = 15750; // 16KB minus 250b buffer for metadata
@@ -6,8 +6,8 @@ const sendChunkedMessage = ({
   data,
   sender,
 }: {
-  data: { [k: string]: json };
-  sender: (data: { [k: string]: json }) => void;
+  data: JSONData;
+  sender: (data: JSONData) => void;
 }) => {
   const fullMessage = JSON.stringify(data);
   const uuid = v4();

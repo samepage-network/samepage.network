@@ -74,12 +74,10 @@ const setupCrossNotebookWorkflows = ({
         const {
           $command,
           $context = { content: "samepage", annotations: [] },
-          // $returns = { content: "text", annotations: [] },
           ...$args
         } = command;
         const text = $command.content.trim();
         const commandContext = $context.content.trim();
-        // const returns = atJsonToRoam($returns);
         const args = Object.fromEntries(
           Object.entries($args).map(([k, v]) => [k, v.content.trim()])
         );

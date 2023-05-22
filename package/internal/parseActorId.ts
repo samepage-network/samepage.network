@@ -4,6 +4,8 @@ import { ActorInfo } from "./types";
 const actorCache: Record<string, ActorInfo> = {};
 
 // empty string returns the current actor
+export const saveActorInfo = (info: ActorInfo) => (actorCache[""] = info);
+
 const parseActorId = async (s = ""): Promise<ActorInfo> => {
   if (actorCache[s]) return actorCache[s];
   return apiClient<ActorInfo>({ method: "get-actor", actorId: s })

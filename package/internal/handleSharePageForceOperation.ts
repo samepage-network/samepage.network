@@ -8,7 +8,7 @@ const handleSharePageForceOperation = async (
   { notebookPageId, state }: z.infer<typeof zSharePageForceWebsocketMessage>,
   decodeState: DecodeState
 ) => {
-  const newDoc = loadAutomergeFromBase64(state);
+  const newDoc = await loadAutomergeFromBase64(state);
   set(notebookPageId, newDoc);
   saveAndApply({
     notebookPageId,

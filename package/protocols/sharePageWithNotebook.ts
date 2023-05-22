@@ -1,3 +1,4 @@
+// this page should be called crossNotebookSharedPages.ts
 import apiClient from "../internal/apiClient";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import {
@@ -5,7 +6,6 @@ import {
   removeCommand,
   renderOverlay,
   appRoot,
-  actorId,
 } from "../internal/registry";
 import {
   zSamePageSchema,
@@ -338,7 +338,6 @@ const setupSharePageWithNotebook = ({
           sharePageCommandCalback({
             getNotebookPageId: getCurrentNotebookPageId,
             encodeState,
-            actorId,
           }).then((result) =>
             result.success ? initPage(result) : Promise.reject(result.error)
           ),

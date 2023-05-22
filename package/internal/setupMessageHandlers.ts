@@ -6,15 +6,15 @@ import type {
   AddNotebookListener,
   MessageHandlers,
   RemoveNotebookListener,
-  json,
   MessageSource,
+  JSONData,
 } from "./types";
 
 const messageHandlers: MessageHandlers = {};
 
 export class HandlerError extends Error {
-  data: Record<string, json>;
-  constructor(message: string, data: Record<string, json>) {
+  data: JSONData;
+  constructor(message: string, data: JSONData) {
     super(message);
     this.data = data;
   }

@@ -12,7 +12,7 @@ import apiClient, { apiGet } from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
 import getNodeEnv from "./getNodeEnv";
 import { onAppEvent } from "./registerAppEventListener";
-import setupRegistry, {
+import {
   addCommand,
   app,
   appRoot,
@@ -34,6 +34,7 @@ import MESSAGES, { Operation } from "./messages";
 import NotificationContainer from "../components/NotificationContainer";
 import debug from "../utils/debugger";
 import handleErrorOperation from "./handleErrorOperation";
+import { saveActorInfo } from "./parseActorId";
 const log = debug("ws");
 
 const USAGE_LABEL = "View SamePage Usage";
@@ -293,7 +294,14 @@ const setupWsFeatures = ({
             actorId: string;
           };
       if (props.success) {
-        setupRegistry({ actorId: props.actorId });
+        saveActorInfo({
+          actorId: props.actorId,
+          // TODO - get these from the backend or consolidate with the backend/registry
+          appName: app,
+          workspace,
+          email: "",
+          notebookUuid: getSetting("uuid"),
+        });
         samePageBackend.status = "CONNECTED";
         dispatchAppEvent({
           type: "connection",

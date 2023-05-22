@@ -2,7 +2,7 @@ import apiClient from "../internal/apiClient";
 import { Schema } from "../internal/types";
 import Automerge from "automerge";
 import base64ToBinary from "../internal/base64ToBinary";
-import { actorId } from "../internal/registry";
+import parseActorId from "../internal/parseActorId";
 
 const notebookPageIds: Record<string, Automerge.FreezeObject<Schema> | null> =
   {};
@@ -19,7 +19,8 @@ export const load = async (
       method: "get-shared-page",
       notebookPageId: id,
       ...credentials,
-    }).then(({ state }) => {
+    }).then(async ({ state }) => {
+      const { actorId } = await parseActorId();
       const remoteDoc = Automerge.load<Schema>(
         base64ToBinary(state) as Automerge.BinaryDocument,
         {
