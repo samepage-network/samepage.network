@@ -15,8 +15,9 @@ import apiClient, { apiPost } from "../internal/apiClient";
 import unwrapSchema from "../utils/unwrapSchema";
 import Automerge from "automerge";
 import getAppCode from "../internal/getAppCode";
-import base64 from "package/internal/base64";
-import base64ToBinary from "package/internal/base64ToBinary";
+import base64 from "../internal/base64";
+import base64ToBinary from "../internal/base64ToBinary";
+import { setSetting } from "package/internal/registry";
 
 const WorkflowTab: React.FC = () => {
   const data = useLoaderData() as {
@@ -75,6 +76,9 @@ export const action: ActionFunction = async (args) => {
     return redirect("../..?warning=not-logged-in");
   }
   const { notebookUuid, token } = result;
+  setSetting("uuid", notebookUuid);
+  setSetting("token", token);
+
   const workflowUuid = args.params.uuid || "";
   const page = await apiClient({
     method: "head-shared-page",
@@ -83,7 +87,7 @@ export const action: ActionFunction = async (args) => {
     linkUuid: workflowUuid,
   });
   const { notebookPageId } = page;
-  const app = await getAppCode(result);
+  const app = await getAppCode();
   const { body } = await apiClient({
     method: "get-shared-page",
     notebookUuid,
