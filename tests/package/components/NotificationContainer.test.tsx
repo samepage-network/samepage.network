@@ -8,7 +8,7 @@ import dispatchAppEvent from "../../../package/internal/dispatchAppEvent";
 import { v4 } from "uuid";
 import setupRegistry from "../../../package/internal/registry";
 import { Response } from "@remix-run/node";
-import defaultGetSetting from "../../../package/utils/defaultGetSetting";
+import { defaultGetSetting } from "../../../package/utils/defaultSettings";
 import { registerNotificationActions } from "../../../package/internal/notificationActions";
 
 test.afterEach(cleanup);
