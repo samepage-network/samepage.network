@@ -142,7 +142,7 @@ test("Shared Page Status Disconnect failed", async () => {
   expect(events[0]).toHaveProperty("intent", "error");
   expect(events[0]).toHaveProperty(
     "content",
-    `Failed to disconnect page ${notebookPageId}: POST request to http://localhost:3003/ (404): Not found`
+    `Failed to disconnect page ${notebookPageId}: POST request to http://localhost:3003/page failed (404): Not found`
   );
 });
 

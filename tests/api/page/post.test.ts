@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import clerk, { users } from "@clerk/clerk-sdk-node";
+import { users } from "@clerk/clerk-sdk-node";
 import { handler, HandlerBody } from "../../../api/page/post";
 import { globalContext } from "../../../app/data/getQuota.server";
 import { handler as wsHandler } from "../../../api/ws/sendmessage";
@@ -139,7 +139,7 @@ test.beforeAll(() => {
     }
   > = {};
   // @ts-ignore
-  clerk.request = (async (opts) => {
+  users.request = (async (opts) => {
     if (opts.path === "/users" && opts.method === "GET") {
       return Object.values(users).filter((u) =>
         u.emailAddresses.some((e) =>
@@ -190,7 +190,7 @@ test.beforeAll(() => {
       throw new Error(`Unknown opts: ${opts.method} ${opts.path}`);
     }
     // @ts-ignore
-  }) as typeof clerk.request;
+  }) as typeof users.request;
 });
 
 test("Connect Notebook with same app/workspace returns same notebook uuid", async () => {
