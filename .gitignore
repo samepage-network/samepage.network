@@ -15,5 +15,3 @@ api/clerk
 api/car
 test-results
 clients
-.vscode/*
-!.vscode/launch.json
