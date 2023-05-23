@@ -476,7 +476,7 @@ const SharedPageStatus = ({
                 notebookPageId,
                 encodeState,
                 label: "manual sync",
-              });
+              }).catch(() => undefined);
               if (!result) {
                 setLoading(false);
                 return;

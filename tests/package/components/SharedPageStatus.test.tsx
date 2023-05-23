@@ -21,6 +21,8 @@ import setupRegistry from "../../../package/internal/registry";
 import getRandomWorkspace from "../../utils/getRandomWorkspace";
 import getRandomNotebookPageId from "../../utils/getRandomNotebookPageId";
 import getRandomEmail from "../../utils/getRandomEmail";
+import Automerge from "automerge";
+import wrapSchema from "package/utils/wrapSchema";
 
 test.afterEach(cleanup);
 
@@ -46,7 +48,7 @@ const setupSharedPageStatus = async ({
     }
   );
   expect(home).toBeTruthy();
-  return { user, screen };
+  return { user, screen, notebookPageId };
 };
 
 test("Shared Page Status Invite notebooks onclick", async () => {
@@ -147,7 +149,11 @@ test("Shared Page Status Disconnect failed", async () => {
 });
 
 test("Shared Page Status Manual sync pages", async () => {
-  const { user, screen } = await setupSharedPageStatus();
+  const { user, screen, notebookPageId } = await setupSharedPageStatus();
+  set(
+    notebookPageId,
+    Automerge.from(wrapSchema({ content: "test", annotations: [] }))
+  );
 
   global.fetch = (_) =>
     Promise.resolve(
@@ -163,7 +169,11 @@ test("Shared Page Status Manual sync pages", async () => {
 });
 
 test("Shared Page Status Manual sync failed", async () => {
-  const { user, screen } = await setupSharedPageStatus();
+  const { user, screen, notebookPageId } = await setupSharedPageStatus();
+  set(
+    notebookPageId,
+    Automerge.from(wrapSchema({ content: "test", annotations: [] }))
+  );
 
   global.fetch = (_) =>
     Promise.resolve(new Response("Not found", { status: 404 }));
