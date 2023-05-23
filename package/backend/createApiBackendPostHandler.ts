@@ -5,6 +5,7 @@ import {
   DeletePage,
   EncodeState,
   EnsurePageByTitle,
+  ListWorkflows,
   OpenPage,
   zCommandArgs,
   zSamePageSchema,
@@ -55,6 +56,9 @@ const zMessage = z.discriminatedUnion("type", [
     source: z.string(),
     target: z.string(),
   }),
+  z.object({
+    type: z.literal("LIST_WORKFLOWS"),
+  }),
 ]);
 
 const createApiBackendPostHandler = ({
@@ -79,9 +83,12 @@ const createApiBackendPostHandler = ({
   ) => EnsurePageByTitle;
   getEncodeState?: (credentials: GetAccessTokenResponse) => EncodeState;
   getDecodeState?: (credentials: GetAccessTokenResponse) => DecodeState;
-  getCommandLibrary?: (credentials: GetAccessTokenResponse) => CommandLibrary;
   getDeletePage?: (credentials: GetAccessTokenResponse) => DeletePage;
   getOpenPage?: (credentials: GetAccessTokenResponse) => OpenPage;
+  getCommandLibrary?: (credentials: GetAccessTokenResponse) => CommandLibrary;
+  getListWorkflows?: (
+    credentials: GetAccessTokenResponse
+  ) => ReturnType<ListWorkflows>;
 }) => {
   const logic = async (args: BackendRequest<typeof zMessage>) => {
     const { authorization, ...data } = args;

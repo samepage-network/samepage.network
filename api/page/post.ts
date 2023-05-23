@@ -6,6 +6,7 @@ import {
   zBaseHeaders,
   JSONData,
   zSamePageSchema,
+  ListWorkflows,
 } from "package/internal/types";
 import parseZodError from "package/utils/parseZodError";
 import {
@@ -63,6 +64,7 @@ import authenticateUser from "~/data/authenticateUser.server";
 import listUserNotebooks from "~/data/listUserNotebooks.server";
 import listWorkflows from "~/data/listWorkflows.server";
 import getTitleState from "~/data/getTitleState.server";
+import postToAppBackend from "package/internal/postToAppBackend";
 
 const log = debug("api:page");
 const zhandlerBody = zUnauthenticatedBody.or(
@@ -933,17 +935,28 @@ const logic = async (req: Record<string, unknown>) => {
             )
           )
           .then((r) => r.map(({ notebookPageId }) => notebookPageId));
-        const result = await listSharedPages({
+        const sharedPages = await listSharedPages({
           requestId,
           notebookUuid,
         });
         await cxn.end();
-        return { notebookPageIds, ...result };
+        return { notebookPageIds, ...sharedPages };
       }
       case "list-workflows": {
-        const result = await listWorkflows({ requestId, notebookUuid });
+        const sharedWorkflows = await listWorkflows({
+          requestId,
+          notebookUuid,
+        });
+        const privateWorkflows = await (postToAppBackend("backend", {
+          type: "LIST_WORKFLOWS",
+        }) as ReturnType<ListWorkflows>);
         await cxn.end();
-        return result;
+        return {
+          workflows: [
+            ...sharedWorkflows.workflows,
+            ...privateWorkflows.workflows,
+          ],
+        };
       }
       case "get-workflow": {
         const { workflowUuid } = args;
