@@ -10,7 +10,7 @@ index c2930db..66ba13e 100644
 +          try {
 +              console.error(`Error received without a response body. Output: ${JSON.stringify(output)}, errorCode: ${errorCode}`);
 +          } catch (e) {
-+              console.error(`Error received without a response body. Output: ${output}, errorCode: ${errorCode}`);
++              console.error(`Error received without a response body. Output: ${typeof output === "object" ? Object.keys(output) : output}, errorCode: ${errorCode}`);
 +          }
 +      }
      const response = new exceptionCtor({
