@@ -1,4 +1,4 @@
-import { setSetting } from "package/internal/registry";
+import { setSetting } from "../internal/registry";
 import { useSearchParams } from "react-router-dom";
 import unbase64 from "../internal/unbase64";
 

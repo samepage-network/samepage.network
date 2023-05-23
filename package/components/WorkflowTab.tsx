@@ -15,14 +15,9 @@ import apiClient, { apiPost } from "../internal/apiClient";
 import unwrapSchema from "../utils/unwrapSchema";
 import Automerge from "automerge";
 import getAppCode from "../internal/getAppCode";
-<<<<<<< HEAD
 import base64 from "../internal/base64";
 import base64ToBinary from "../internal/base64ToBinary";
-=======
-import base64 from "package/internal/base64";
-import base64ToBinary from "package/internal/base64ToBinary";
->>>>>>> fbcdee9 (Unit tests should now pass)
-import { setSetting } from "package/internal/registry";
+import { setSetting } from "../internal/registry";
 
 const WorkflowTab: React.FC = () => {
   const data = useLoaderData() as {

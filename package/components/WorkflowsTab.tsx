@@ -4,7 +4,7 @@ import { ListWorkflows } from "../internal/types";
 import { LoaderFunctionArgs, useLoaderData, redirect } from "react-router-dom";
 import AtJsonRendered from "./AtJsonRendered";
 import LinkWithSearch from "./LinkWithSearch";
-import apiClient from "package/internal/apiClient";
+import apiClient from "../internal/apiClient";
 
 const WorkflowsTab: React.FC = () => {
   const data = useLoaderData() as Awaited<ReturnType<ListWorkflows>>;
