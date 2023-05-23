@@ -1,4 +1,4 @@
-import type { default as defaultSettings } from "../utils/defaultSettings";
+import { default as defaultSettings, defaultGetSetting, defaultSetSetting } from "../utils/defaultSettings";
 import React from "react";
 import { v4 } from "uuid";
 import type {
@@ -7,8 +7,6 @@ import type {
   RemoveCommand,
   RenderOverlay,
 } from "./types";
-import defaultGetSetting from "../utils/defaultGetSetting";
-import defaultSetSetting from "../utils/defaultSetSetting";
 
 const defaultCommands: Record<string, () => void> = {};
 const defaultAddCommand: AddCommand = ({ label, callback }) => {

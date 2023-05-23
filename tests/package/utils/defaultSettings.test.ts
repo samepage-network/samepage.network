@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { getSetting } from "package/internal/registry";
-import defaultSetSetting from "../../../package/utils/defaultSetSetting";
+import { defaultSetSetting } from "../../../package/utils/defaultSettings";
 
 test("default set setting", () => {
   const ls = global.localStorage;

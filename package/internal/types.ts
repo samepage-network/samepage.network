@@ -569,7 +569,11 @@ export type SendNotebookRequest = (
 
 export type PostToAppBackend<
   T extends Record<string, unknown> = Record<string, object>
-> = (path: string, data: Record<string, unknown>) => Promise<T>;
+> = (args: {
+  path?: string;
+  data?: Record<string, unknown>;
+  app?: string;
+}) => Promise<T>;
 
 export const zCommandArgs = z.record(z.string());
 export const zWorkflowContext = z.object({

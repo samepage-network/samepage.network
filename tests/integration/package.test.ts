@@ -481,7 +481,6 @@ test("Full integration test of extensions", async () => {
     expect
       .poll(() =>
         client2Read().then((html) => {
-          console.log("html", html);
           return new JSDOM(html).window.document
             .querySelector("a")
             ?.getAttribute("title");

@@ -10,6 +10,7 @@ import {
   GetAccessTokenResponse,
   zGetAccessTokenPayload,
 } from "package/backend/types";
+import unbase64 from "package/internal/unbase64";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
 import getMysql from "~/data/mysql.server";
 
@@ -20,12 +21,9 @@ export const handler: Handler<unknown, GetAccessTokenResponse> = async (
   const { authorization } = zGetAccessTokenPayload.parse(event);
   const requestId = context.awsRequestId;
   const cxn = await getMysql(requestId);
-  const [uuid, token] = Buffer.from(
-    authorization.replace(/^Basic /, ""),
-    "base64"
-  )
-    .toString()
-    .split(":");
+  const [uuid, token] = unbase64(authorization.replace(/^Basic /, "")).split(
+    ":"
+  );
   const { notebookUuid, tokenUuid } = await authenticateNotebook({
     requestId,
     notebookUuid: uuid,
