@@ -1,3 +1,4 @@
+import { v4 } from "uuid";
 import { apiPost } from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
 import { getSetting } from "./registry";
@@ -22,13 +23,14 @@ const sendExtensionError = ({
       stack: error.stack,
       version: process.env.VERSION,
     },
-  }).catch((e) =>
+  }).catch((e) => {
     dispatchAppEvent({
       type: "log",
       intent: "error",
       content: `Failed to send \`${type}\` extension error to SamePage team: ${e.message}\n\nContact support@samepage.network directly if you need assistance.`,
       id: "send-extension-error",
-    })
-  );
+    });
+    return { messageId: v4() };
+  });
 
 export default sendExtensionError;
