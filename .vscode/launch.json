@@ -1,0 +1,11 @@
+{
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Samepage Network Debug",
+      "runtimeArgs": ["-r", "ts-node/register"],
+      "args": ["${workspaceFolder}/scripts/cli.ts", "start"]
+    }
+  ]
+}
