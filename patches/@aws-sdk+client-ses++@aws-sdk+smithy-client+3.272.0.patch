@@ -1,14 +1,18 @@
 diff --git a/node_modules/@aws-sdk/client-ses/node_modules/@aws-sdk/smithy-client/dist-cjs/default-error-handler.js b/node_modules/@aws-sdk/client-ses/node_modules/@aws-sdk/smithy-client/dist-cjs/default-error-handler.js
-index c2930db..fc7fa3c 100644
+index c2930db..66ba13e 100644
 --- a/node_modules/@aws-sdk/client-ses/node_modules/@aws-sdk/smithy-client/dist-cjs/default-error-handler.js
 +++ b/node_modules/@aws-sdk/client-ses/node_modules/@aws-sdk/smithy-client/dist-cjs/default-error-handler.js
-@@ -5,8 +5,11 @@ const exceptions_1 = require("./exceptions");
+@@ -5,8 +5,15 @@ const exceptions_1 = require("./exceptions");
  const throwDefaultError = ({ output, parsedBody, exceptionCtor, errorCode }) => {
      const $metadata = deserializeMetadata(output);
      const statusCode = $metadata.httpStatusCode ? $metadata.httpStatusCode + "" : undefined;
-+    if (!parsedBody) {
-+        console.error(`Error received without a response body. Output: ${JSON.stringify(output)}, errorCode: ${errorCode}`);
-+    }
++  if (!parsedBody) {
++          try {
++              console.error(`Error received without a response body. Output: ${JSON.stringify(output)}, errorCode: ${errorCode}`);
++          } catch (e) {
++              console.error(`Error received without a response body. Output: ${typeof output === "object" ? output.body : output}, errorCode: ${errorCode}`);
++          }
++      }
      const response = new exceptionCtor({
 -        name: parsedBody.code || parsedBody.Code || errorCode || statusCode || "UnknownError",
 +        name: parsedBody?.code || parsedBody?.Code || errorCode || statusCode || "UnknownError",

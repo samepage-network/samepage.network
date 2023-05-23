@@ -21,6 +21,8 @@ import setupRegistry from "../../../package/internal/registry";
 import getRandomWorkspace from "../../utils/getRandomWorkspace";
 import getRandomNotebookPageId from "../../utils/getRandomNotebookPageId";
 import getRandomEmail from "../../utils/getRandomEmail";
+import Automerge from "automerge";
+import wrapSchema from "package/utils/wrapSchema";
 
 test.afterEach(cleanup);
 
@@ -35,7 +37,7 @@ const setupSharedPageStatus = async ({
         isOpen={true}
         onClose={onClose}
         notebookPageId={notebookPageId}
-        encodeState={async () => ({})}
+        encodeState={async () => ({ $body: { content: "", annotations: [] } })}
       />
     ) as React.ReactElement // this case is just so that we could keep the react import
   );
@@ -46,7 +48,7 @@ const setupSharedPageStatus = async ({
     }
   );
   expect(home).toBeTruthy();
-  return { user, screen };
+  return { user, screen, notebookPageId };
 };
 
 test("Shared Page Status Invite notebooks onclick", async () => {
@@ -142,12 +144,16 @@ test("Shared Page Status Disconnect failed", async () => {
   expect(events[0]).toHaveProperty("intent", "error");
   expect(events[0]).toHaveProperty(
     "content",
-    `Failed to disconnect page ${notebookPageId}: POST request to http://localhost:3003/page failed: Not found`
+    `Failed to disconnect page ${notebookPageId}: POST request to http://localhost:3003/page failed (404): Not found`
   );
 });
 
 test("Shared Page Status Manual sync pages", async () => {
-  const { user, screen } = await setupSharedPageStatus();
+  const { user, screen, notebookPageId } = await setupSharedPageStatus();
+  set(
+    notebookPageId,
+    Automerge.from(wrapSchema({ content: "test", annotations: [] }))
+  );
 
   global.fetch = (_) =>
     Promise.resolve(
@@ -163,7 +169,11 @@ test("Shared Page Status Manual sync pages", async () => {
 });
 
 test("Shared Page Status Manual sync failed", async () => {
-  const { user, screen } = await setupSharedPageStatus();
+  const { user, screen, notebookPageId } = await setupSharedPageStatus();
+  set(
+    notebookPageId,
+    Automerge.from(wrapSchema({ content: "test", annotations: [] }))
+  );
 
   global.fetch = (_) =>
     Promise.resolve(new Response("Not found", { status: 404 }));
@@ -175,7 +185,7 @@ test("Shared Page Status Manual sync failed", async () => {
   expect(events[0]).toHaveProperty("intent", "error");
   expect(events[0]).toHaveProperty(
     "content",
-    `Failed to pushed page state to other notebooks: POST request to http://localhost:3003/page failed: Not found`
+    `Failed to pushed page state to other notebooks: POST request to http://localhost:3003/page failed (404): Not found`
   );
 });
 

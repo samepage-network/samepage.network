@@ -3,11 +3,11 @@ import base64ToBinary from "./base64ToBinary";
 import { DecodeState, zSharePageUpdateWebsocketMessage } from "./types";
 import Automerge from "automerge";
 import dispatchAppEvent from "./dispatchAppEvent";
-import { HandlerError } from "./setupMessageHandlers";
 import binaryToBase64 from "./binaryToBase64";
 import { has, load, set } from "../utils/localAutomergeDb";
 import apiClient from "./apiClient";
 import saveAndApply from "./saveAndApply";
+import ExtensionError from "./ExtensionError";
 
 // TODO - have this map to raw data instead of a function for serializability
 const pendingUpdates: Record<string, (() => Promise<unknown>)[]> = {};
@@ -76,7 +76,7 @@ const handleSharePageUpdateOperation = async (
                 .map((c) => Automerge.decodeChange(c))
                 .flatMap((c) => c.deps)
                 .filter((c) => !storedHashes.has(c));
-              throw new HandlerError(
+              throw new ExtensionError(
                 "No actors to request and still waiting for changes",
                 {
                   missingDependencies,

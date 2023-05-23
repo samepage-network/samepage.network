@@ -45,7 +45,7 @@ import acceptSharePageOperation from "../internal/acceptSharePageOperation";
 import ImportSharedPage from "../components/ImportSharedPage";
 import base64ToBinary from "../internal/base64ToBinary";
 import unwrapSchema from "../utils/unwrapSchema";
-import changeState from "package/utils/changeState";
+import changeState from "../utils/changeState";
 
 const SHARE_PAGE_COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";

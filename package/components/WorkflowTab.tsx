@@ -17,7 +17,7 @@ import Automerge from "automerge";
 import getAppCode from "../internal/getAppCode";
 import base64 from "../internal/base64";
 import base64ToBinary from "../internal/base64ToBinary";
-import { setSetting } from "package/internal/registry";
+import { setSetting } from "../internal/registry";
 
 const WorkflowTab: React.FC = () => {
   const data = useLoaderData() as {

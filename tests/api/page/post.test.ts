@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import clerk, { users } from "@clerk/clerk-sdk-node";
+import { users } from "@clerk/clerk-sdk-node";
 import { handler, HandlerBody } from "../../../api/page/post";
 import { globalContext } from "../../../app/data/getQuota.server";
 import { handler as wsHandler } from "../../../api/ws/sendmessage";
@@ -129,7 +129,7 @@ const mockRandomNotebook = async (userId = v4()) => {
 
 test.beforeAll(() => {
   // TODO - import methods directly from api/clerk/v1/*
-  const users: Record<
+  const usersStore: Record<
     string,
     {
       id: string;
@@ -139,9 +139,9 @@ test.beforeAll(() => {
     }
   > = {};
   // @ts-ignore
-  clerk.request = (async (opts) => {
+  users.request = (async (opts) => {
     if (opts.path === "/users" && opts.method === "GET") {
-      return Object.values(users).filter((u) =>
+      return Object.values(usersStore).filter((u) =>
         u.emailAddresses.some((e) =>
           (opts.queryParams?.["emailAddress"] as string[])?.includes(
             e.emailAddress
@@ -150,13 +150,13 @@ test.beforeAll(() => {
       );
     } else if (opts.path?.startsWith("/users") && opts.method === "GET") {
       const userId = /\/users\/([^/]+)$/.exec(opts.path)?.[1];
-      if (!userId || !users[userId])
+      if (!userId || !usersStore[userId])
         return Promise.reject(new Error(`User Id not found: ${opts.path}`));
-      return users[userId];
+      return usersStore[userId];
     } else if (opts.path?.startsWith("/users") && opts.method === "DELETE") {
       const userId = /\/users\/([^/]+)$/.exec(opts.path)?.[1];
       if (!userId) throw new Error(`User Id not found: ${opts.path}`);
-      delete users[userId];
+      delete usersStore[userId];
       return { success: true };
     } else if (
       opts.path === "/users" &&
@@ -174,7 +174,7 @@ test.beforeAll(() => {
         id,
         privateMetadata: {},
       };
-      return (users[id] = user);
+      return (usersStore[id] = user);
     } else if (
       opts.path?.endsWith("verify_password") &&
       opts.method === "POST"
@@ -183,14 +183,14 @@ test.beforeAll(() => {
         /\/users\/([^/]+)\/verify_password$/.exec(opts.path)?.[1] || "";
       return {
         verified:
-          users[userId]?.password ===
+          usersStore[userId]?.password ===
           (opts.bodyParams as { password: string })?.password,
       };
     } else {
       throw new Error(`Unknown opts: ${opts.method} ${opts.path}`);
     }
     // @ts-ignore
-  }) as typeof clerk.request;
+  }) as typeof users.request;
 });
 
 test("Connect Notebook with same app/workspace returns same notebook uuid", async () => {

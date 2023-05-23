@@ -74,7 +74,9 @@ const logic = async (body: Record<string, unknown>) => {
                 file: r.data.assets.find((a) => /\.js$/.test(a.name))?.name,
               }))
               .catch((e) => ({
-                latest: `failed: ${JSON.stringify(e)}`,
+                latest: `failed: ${JSON.stringify(
+                  e.response?.data || "unknown error"
+                )}`,
                 file: undefined,
               }));
       const uuid = v4();

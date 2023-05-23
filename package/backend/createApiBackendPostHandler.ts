@@ -16,7 +16,7 @@ import createAPIGatewayProxyHandler from "./createAPIGatewayProxyHandler";
 import { z } from "zod";
 import debug from "../utils/debugger";
 import getAccessToken from "./getAccessToken";
-import setupCrossNotebookWorkflows from "package/protocols/crossNotebookWorkflows";
+import setupCrossNotebookWorkflows from "../protocols/crossNotebookWorkflows";
 import { GetAccessTokenResponse } from "./types";
 
 const log = debug("api:backend");

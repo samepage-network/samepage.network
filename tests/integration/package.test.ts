@@ -46,7 +46,7 @@ const forkSamePageClient = ({
     string,
     (data: Record<string, unknown>) => void
   > = {};
-  const log = debug(`Client ${workspace}`);
+  const log = debug(`client:${workspace}`);
   const send = (m: MessageSchema) => {
     const uuid = v4();
     log(`Sending ${m.type} request (${uuid})`);
@@ -109,7 +109,7 @@ const forkSamePageClient = ({
       resolveDisconnect();
     });
     client.stdout?.on("data", (s) => log(s.toString()));
-    client.stderr?.on("data", (s) => log(s.toString()));
+    client.stderr?.on("data", (s) => console.error(s.toString()));
   });
 };
 

@@ -44,7 +44,7 @@ const SingleUserPage = () => {
         </ul>
       </div>
       <Form method={"delete"}>
-        <Button>Delete</Button>
+        <Button intent="danger">Delete</Button>
       </Form>
     </div>
   );

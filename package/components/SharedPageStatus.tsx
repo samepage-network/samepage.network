@@ -20,7 +20,7 @@ import { load, deleteId } from "../utils/localAutomergeDb";
 import binaryToBase64 from "../internal/binaryToBase64";
 import unwrapSchema from "../utils/unwrapSchema";
 import DialogFooter from "./DialogFooter";
-import changeState from "package/utils/changeState";
+import changeState from "../utils/changeState";
 
 type GetLocalHistory = (
   notebookPageId: string
@@ -476,7 +476,7 @@ const SharedPageStatus = ({
                 notebookPageId,
                 encodeState,
                 label: "manual sync",
-              });
+              }).catch(() => undefined);
               if (!result) {
                 setLoading(false);
                 return;
