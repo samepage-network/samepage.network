@@ -35,7 +35,7 @@ const setupSharedPageStatus = async ({
         isOpen={true}
         onClose={onClose}
         notebookPageId={notebookPageId}
-        encodeState={async () => ({ content: "", annotations: [] })}
+        encodeState={async () => ({ $body: { content: "", annotations: [] } })}
       />
     ) as React.ReactElement // this case is just so that we could keep the react import
   );
