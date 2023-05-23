@@ -44,14 +44,18 @@ The following directories also exist but are expected to be temporary:
    - Grant Privileges: `GRANT ALL PRIVILEGES ON samepage_network.* TO 'samepage_network'@'localhost';`
 1. Apply the SamePage database schema to your local `mysql` instance by running `npx ts-node scripts/cli.ts plan --sql`, followed by `npx ts-node scripts/cli.ts apply --sql --bare`.
 1. `npm start` to run the app.
-1. Debugging: we use `debug` to help with debugging. See its [NPM package documentation](https://www.npmjs.com/package/debug) for usage details.
+
+### Debugging
+
+- To launch a debug session within VSCode press `F5` or navigate to the `Run and Debug` view and select `Launch Samepage Network Debug`. This will launch VSCode's [Built in Debugger](https://code.visualstudio.com/docs/editor/debugging).
+- Additionally, we utilize the `debug` package to assist with debugging. For detailed usage instructions, please refer to its [NPM package documentation](https://www.npmjs.com/package/debug).
 
 ### Contributing
 
-1. Create a new branch locally
-1. Ensure to either add tests or steps to existing tests that protects against regression of your changes
-1. When ready, create a pull request that targets the `main` branch of the original repository
-1. When ready, tag `@dvargas92495` for review
+1. Create a new branch locally.
+1. Ensure to either add tests or steps to existing tests that protects against regression of your changes.
+1. When ready, create a pull request that targets the `main` branch of the original repository.
+1. When ready, tag `@dvargas92495` for review.
 
 ## `[tool]`
 
@@ -70,7 +74,7 @@ For each tool for thought that we support, we have a separate repository hosting
 
 ### Contributing
 
-1. Create a new branch locally
-1. Ensure to either add tests or steps to existing tests that protects against regression of your changes
-1. When ready, create a pull request that targets the `main` branch of the original repository
-1. When ready, tag `@dvargas92495` for review
+1. Create a new branch locally.
+1. Ensure to either add tests or steps to existing tests that protects against regression of your changes.
+1. When ready, create a pull request that targets the `main` branch of the original repository.
+1. When ready, tag `@dvargas92495` for review.
