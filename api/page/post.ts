@@ -65,6 +65,7 @@ import listUserNotebooks from "~/data/listUserNotebooks.server";
 import listWorkflows from "~/data/listWorkflows.server";
 import getTitleState from "~/data/getTitleState.server";
 import postToAppBackend from "package/internal/postToAppBackend";
+import { setSetting } from "package/internal/registry";
 
 const log = debug("api:page");
 const zhandlerBody = zUnauthenticatedBody.or(
@@ -947,8 +948,13 @@ const logic = async (req: Record<string, unknown>) => {
           requestId,
           notebookUuid,
         });
-        const privateWorkflows = await (postToAppBackend("backend", {
-          type: "LIST_WORKFLOWS",
+        setSetting("uuid", notebookUuid);
+        setSetting("token", args.token);
+        const privateWorkflows = await (postToAppBackend({
+          app: appCode,
+          data: {
+            type: "LIST_WORKFLOWS",
+          },
         }) as ReturnType<ListWorkflows>);
         await cxn.end();
         return {
@@ -995,6 +1001,7 @@ const logic = async (req: Record<string, unknown>) => {
           .innerJoin(apps, eq(apps.id, notebooks.app))
           .where(eq(tokenNotebookLinks.tokenUuid, tokenUuid));
         await cxn.end();
+        console.log("destinations", destinations, "title", title);
         return { title, destinations };
       }
       case "list-overlays": {

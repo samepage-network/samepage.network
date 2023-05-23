@@ -31,9 +31,11 @@ const SharedPageTab: React.FC = () => {
           onClose={() => navigate(`../shared-pages`)}
           encodeState={
             async (notebookPageId) =>
-              postToAppBackend("backend", {
-                type: "ENCODE_STATE",
-                notebookPageId,
+              postToAppBackend({
+                data: {
+                  type: "ENCODE_STATE",
+                  notebookPageId,
+                },
               }) as Promise<SamePageState> // TODO - Parameterize
           }
         />

@@ -54,18 +54,15 @@ export const loader = async (args: LoaderFunctionArgs) => {
   if (!result.auth) {
     return redirect("../..?warning=not-logged-in");
   }
-  const { notebookUuid, token } = result;
   const uuid = args.params.uuid || "";
   return apiClient({
     method: "get-workflow",
-    notebookUuid,
-    token,
     workflowUuid: uuid,
   }).catch((e) => {
     if (e.status === 401) {
       return redirect("../..?warning=not-logged-in");
     }
-    throw e;
+    throw new Response(e.message, { status: e.status });
   });
 };
 
