@@ -77,6 +77,7 @@ const createApiBackendPostHandler = ({
     notebookPageId,
     url: notebookPageId,
   }),
+  getListWorkflows = async () => ({ workflows: [] }),
 }: {
   getEnsurePageByTitle?: (
     credentials: GetAccessTokenResponse
@@ -143,6 +144,10 @@ const createApiBackendPostHandler = ({
           });
           await triggerWorkflow({ source, target });
           return { success: true };
+        }
+        case "LIST_WORKFLOWS": {
+          const { workflows } = await getListWorkflows(credentials);
+          return { workflows };
         }
         default:
           throw new Error(`Unknown type ${data["type"]}`);
