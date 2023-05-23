@@ -1,11 +1,9 @@
 import parseZodError from "../utils/parseZodError";
 import unwrapSchema from "../utils/unwrapSchema";
-import apiClient, { apiPost } from "./apiClient";
+import apiClient from "./apiClient";
 import binaryToBase64 from "./binaryToBase64";
 import dispatchAppEvent from "./dispatchAppEvent";
-import { getSetting } from "./registry";
 import sendExtensionError from "./sendExtensionError";
-import { HandlerError } from "./setupMessageHandlers";
 import {
   Schema,
   ApplyState,
@@ -79,34 +77,15 @@ const saveAndApply = ({
         intent: "debug",
       });
     })
-    .catch((e) => {
-      apiPost({
-        path: "errors",
-        data: {
-          method: "extension-error",
-          type: "Failed to Apply Change",
-          notebookUuid: getSetting("uuid"),
-          data:
-            e instanceof HandlerError
-              ? e.data
-              : e instanceof Error
-              ? { message: e.message }
-              : typeof e !== "object"
-              ? { message: e }
-              : e === null
-              ? {}
-              : e,
-          message: e instanceof Error ? e.message : "Unknown data thrown",
-          stack: e instanceof Error ? e.stack : "Unknown stacktrace",
-          version: process.env.VERSION,
-        },
+    .catch(async (e) => {
+      const data = await sendExtensionError({
+        type: `Failed to apply change`,
+        error: e,
       });
       dispatchAppEvent({
         type: "log",
         id: "update-failure",
-        content: `Failed to apply new change: ${e.message.slice(0, 50)}${
-          e.message.length > 50 ? "..." : ""
-        }`,
+        content: `Failed to apply new change - Error report ${data.messageId} has been sent to support@samepage.network`,
         intent: "warning",
       });
     });

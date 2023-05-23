@@ -1,15 +1,22 @@
 import { v4 } from "uuid";
 import { apiPost } from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
+import ExtensionError from "./ExtensionError";
 import { getSetting } from "./registry";
 
 const sendExtensionError = ({
   type,
   error = new Error(type),
-  data,
+  data = error instanceof ExtensionError
+    ? error.data
+    : error instanceof Error
+    ? { message: error.message }
+    : typeof error !== "object"
+    ? { message: error }
+    : {},
 }: {
   type: string;
-  data: Record<string, unknown>;
+  data?: Record<string, unknown>;
   error?: Error;
 }) =>
   apiPost({
