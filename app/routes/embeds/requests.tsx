@@ -1,18 +1,2 @@
-import { LoaderArgs, redirect } from "@remix-run/node";
-import getMysql from "~/data/mysql.server";
-import authenticateEmbed from "./_authenticateEmbed.server";
-
-const RequestsEmbed = () => {
-  return <div>Coming Soon...</div>;
-};
-
-export const loader = async (args: LoaderArgs) => {
-  const result = await authenticateEmbed(args);
-  if (!result.auth) {
-    await getMysql(result.requestId).then((c) => c.end());
-    return redirect("/embeds");
-  }
-  return { auth: true };
-};
-
-export default RequestsEmbed;
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
+export { default as default, loader } from "package/components/RequestsTab";

@@ -535,6 +535,18 @@ export type ListWorkflows = (args: {
   }[];
 }>;
 
+export type ListRequests = (args: {
+  notebookUuid: string;
+  token: string;
+  requestId: string;
+}) => Promise<{
+  requests: {
+    uuid: string;
+    label: string;
+    notebookPageId: string;
+  }[];
+}>;
+
 export type AuthenticatedMethod<
   T extends (args: {
     notebookUuid: string;

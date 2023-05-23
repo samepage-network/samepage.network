@@ -2,7 +2,7 @@ import React from "react";
 import { Outlet, useMatches } from "react-router";
 import LinkWithSearch from "./LinkWithSearch";
 
-const TABS = ["", "Shared Pages", "Workflows"];
+const TABS = ["", "Shared Pages", "Workflows", "Requests"];
 
 const RootDashboard: React.FC<{
   currentTab?: string;

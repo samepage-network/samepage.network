@@ -1,7 +1,9 @@
 import { LoaderFunctionArgs } from "react-router";
 import parseRequestContext from "./parseRequestContext";
+import { setSetting } from "./registry";
 import unbase64 from "./unbase64";
 
+// TODO - could probably consolidate with `useCredentials`
 const parseCredentialsFromRequest = ({
   request,
   context,
@@ -16,6 +18,8 @@ const parseCredentialsFromRequest = ({
   if (!notebookUuid || !token) {
     return { auth: false as const, requestId };
   }
+  setSetting("uuid", notebookUuid);
+  setSetting("token", token);
   return { auth: true as const, notebookUuid, token, requestId };
 };
 
