@@ -7,8 +7,8 @@ export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 const ViewErrorPage = () => {
   const { json } = useLoaderData<{ json: string }>();
   return (
-    <pre>
-      <code>{json}</code>
+    <pre className="overflow-hidden whitespace-break-spaces">
+      <code>{JSON.stringify(JSON.parse(json), null, 2)}</code>
     </pre>
   );
 };
