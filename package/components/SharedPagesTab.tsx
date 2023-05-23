@@ -17,7 +17,8 @@ import sharePageCommandCalback from "../internal/sharePageCommandCallback";
 import apiClient, { apiPost } from "../internal/apiClient";
 import redirectWithSearch from "../internal/redirectWithSearch";
 import getAppCode from "../internal/getAppCode";
-import base64 from "package/internal/base64";
+import base64 from "../internal/base64";
+import { setSetting } from "../internal/registry";
 
 const SharedPagesTab: React.FC = () => {
   const data = useLoaderData() as Awaited<ReturnType<ListSharedPages>>;
@@ -77,6 +78,8 @@ export const action = () => async (args: ActionFunctionArgs) => {
   const data = await request.formData();
   const title = data.get("title") as string;
   const { notebookUuid, token } = result;
+  setSetting("uuid", notebookUuid);
+  setSetting("token", token);
 
   const app = await getAppCode();
   const shared = await sharePageCommandCalback({
@@ -99,10 +102,6 @@ export const action = () => async (args: ActionFunctionArgs) => {
         },
         authorization: `Basic ${base64(`${notebookUuid}:${token}`)}`,
       }),
-    credentials: {
-      notebookUuid,
-      token,
-    },
   });
   if (!shared.success) throw new InternalServerResponse(shared.error);
   return redirectWithSearch(shared.linkUuid, request);

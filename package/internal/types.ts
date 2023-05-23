@@ -2,7 +2,6 @@ import type Automerge from "automerge";
 import type React from "react";
 import { z, ZodType } from "zod";
 import type { CID } from "multiformats";
-import type { default as defaultSettings } from "../utils/defaultSettings";
 import { Operation } from "./messages";
 
 // TODO - remove
@@ -208,7 +207,7 @@ export type RenderOverlay = <T extends Record<string, unknown>>(args: {
   props?: T;
   path?: string | HTMLElement | null;
 }) => (() => void) | undefined;
-type SettingId = (typeof defaultSettings)[number]["id"];
+export type SettingId = "uuid" | "token";
 export type GetSetting = (s: SettingId) => string;
 export type SetSetting = (s: SettingId, v: string) => void;
 // TODO - @deprecated - use `DecodeState` instead

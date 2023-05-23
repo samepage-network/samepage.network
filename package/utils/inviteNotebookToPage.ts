@@ -5,12 +5,10 @@ const inviteNotebookToPage = ({
   notebookPageId,
   notebookUuid,
   email,
-  credentials,
 }: {
   notebookPageId: string;
   notebookUuid: string;
   email?: string;
-  credentials?: { token: string; notebookUuid: string };
 }) =>
   apiClient<{
     success: boolean;
@@ -20,7 +18,6 @@ const inviteNotebookToPage = ({
     notebookPageId,
     targetUuid: notebookUuid,
     targetEmail: email,
-    ...credentials,
   })
     .then((response) => {
       dispatchAppEvent({

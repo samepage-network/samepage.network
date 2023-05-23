@@ -1,4 +1,14 @@
-const defaultSettings = [
+import type { GetSetting, SetSetting, SettingId } from "../internal/types";
+
+export type DefaultSetting = {
+  id: SettingId;
+  name: string;
+  type: "string";
+  default: string;
+  description: string;
+};
+
+const defaultSettings: DefaultSetting[] = [
   {
     id: "uuid",
     name: "Notebook Universal Id",
@@ -13,8 +23,27 @@ const defaultSettings = [
     default: "",
     description: "Token assigned to this Notebook by SamePage.",
   },
-] as const;
+];
 
-export type DefaultSetting = typeof defaultSettings[number];
+const nodeSettings: Record<SettingId, string> = { token: "", uuid: "" };
+
+export const defaultSetSetting: SetSetting = (s, v) => {
+  if (typeof localStorage !== "undefined") {
+    const settings = localStorage.getItem("samepage:settings");
+    localStorage.setItem(
+      "samepage:settings",
+      JSON.stringify({ ...(settings ? JSON.parse(settings) : {}), [s]: v })
+    );
+  } else {
+    nodeSettings[s] = v;
+  }
+};
+
+export const defaultGetSetting: GetSetting = (s: SettingId) => {
+  if (typeof localStorage === "undefined") return nodeSettings[s] || "";
+  const settings = localStorage.getItem("samepage:settings");
+  if (!settings) return "";
+  return JSON.parse(settings)?.[s];
+};
 
 export default defaultSettings;

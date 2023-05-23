@@ -1,13 +1,15 @@
 import React from "react";
-import { SamePageSchema } from "../internal/types";
+import { SamePageSchema, SamePageState } from "../internal/types";
 import AtJsonRendered from "./AtJsonRendered";
 import Button from "./Button";
 import LinkWithSearch from "./LinkWithSearch";
 import SharedPageStatus from "./SharedPageStatus";
 import useNavigateWithSearch from "./useNavigateWithSearch";
 import { LoaderFunctionArgs, redirect, useLoaderData } from "react-router-dom";
-import parseCredentialsFromRequest from "package/internal/parseCredentialsFromRequest";
-import apiClient from "package/internal/apiClient";
+import parseCredentialsFromRequest from "../internal/parseCredentialsFromRequest";
+import apiClient from "../internal/apiClient";
+import postToAppBackend from "../internal/postToAppBackend";
+import useCredentials from "./useCredentials";
 
 type HeadSharedPageResponse = {
   notebookPageId: string;
@@ -15,12 +17,8 @@ type HeadSharedPageResponse = {
 };
 
 const SharedPageTab: React.FC = () => {
-  const data = useLoaderData() as HeadSharedPageResponse & {
-    credentials: {
-      notebookUuid: string;
-      token: string;
-    };
-  };
+  const data = useLoaderData() as HeadSharedPageResponse;
+  useCredentials();
   const navigate = useNavigateWithSearch();
   return (
     <div className="flex flex-col items-start h-full">
@@ -31,7 +29,13 @@ const SharedPageTab: React.FC = () => {
         <SharedPageStatus
           notebookPageId={data.notebookPageId}
           onClose={() => navigate(`../shared-pages`)}
-          credentials={data.credentials}
+          encodeState={
+            async (notebookPageId) =>
+              postToAppBackend("backend", {
+                type: "ENCODE_STATE",
+                notebookPageId,
+              }) as Promise<SamePageState> // TODO - Parameterize
+          }
         />
       </div>
       <LinkWithSearch to={"../shared-pages"} className="mb-4 inline-block">
@@ -53,20 +57,12 @@ export const loader = async (args: LoaderFunctionArgs) => {
     linkUuid,
     notebookUuid: result.notebookUuid,
     token: result.token,
-  })
-    .then((info) => ({
-      ...info,
-      credentials: {
-        notebookUuid: result.notebookUuid,
-        token: result.token,
-      },
-    }))
-    .catch((e) => {
-      if (e.status === 401) {
-        return redirect("../..?warning=not-logged-in");
-      }
-      throw e;
-    });
+  }).catch((e) => {
+    if (e.status === 401) {
+      return redirect("../..?warning=not-logged-in");
+    }
+    throw e;
+  });
 };
 
 export default SharedPageTab;

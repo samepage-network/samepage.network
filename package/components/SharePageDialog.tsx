@@ -21,10 +21,6 @@ export type Props = {
   portalContainer?: HTMLElement;
   isOpen?: boolean;
   notebookPageId: string;
-  credentials?: {
-    notebookUuid: string;
-    token: string;
-  }
 };
 
 type ConnectedNotebooks = {
@@ -50,7 +46,6 @@ const SharePageDialog = ({
   isOpen = true,
   portalContainer,
   notebookPageId,
-  credentials,
 }: Props) => {
   const [notebooks, setNotebooks] = React.useState<ConnectedNotebooks>([]);
   const [recents, setRecents] = React.useState<RecentNotebook[]>([]);
@@ -76,7 +71,6 @@ const SharePageDialog = ({
             notebookPageId,
             notebookUuid: n.uuid,
             email: n.email,
-            credentials,
           })
             .then((notebook): ConnectedNotebooks[number] => {
               return {
@@ -116,7 +110,6 @@ const SharePageDialog = ({
       }>({
         method: "list-page-notebooks",
         notebookPageId,
-        ...credentials,
       })
         .then((r) => {
           setNotebooks(r.notebooks || []);
@@ -125,7 +118,7 @@ const SharePageDialog = ({
         .catch((e) => setError(e.message))
         .finally(() => setLoading(false));
     }
-  }, [setLoading, setError, isOpen, credentials]);
+  }, [setLoading, setError, isOpen]);
 
   return (
     <Dialog
@@ -175,7 +168,6 @@ const SharePageDialog = ({
                       method: "remove-page-invite",
                       notebookPageId,
                       target: g.uuid,
-                      ...credentials,
                     })
                       .then(() => {
                         setNotebooks(

@@ -10,11 +10,9 @@ import parseActorId from "./parseActorId";
 const sharePageCommandCalback = ({
   getNotebookPageId,
   encodeState,
-  credentials,
 }: {
   getNotebookPageId: () => Promise<string>;
   encodeState: EncodeState;
-  credentials?: { notebookUuid: string; token: string };
 }) => {
   return getNotebookPageId()
     .then(async (notebookPageId) => {
@@ -34,7 +32,6 @@ const sharePageCommandCalback = ({
         notebookPageId,
         state: binaryToBase64(state),
         properties,
-        ...credentials,
       })
         .then(async (r) => {
           if (r.created) {

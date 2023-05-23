@@ -8,7 +8,6 @@ import {
   appRoot,
 } from "../internal/registry";
 import {
-  zSamePageSchema,
   zRequestPageUpdateWebsocketMessage,
   zSharePageForceWebsocketMessage,
   zSharePageResponseWebsocketMessage,
@@ -33,11 +32,8 @@ import SharedPageStatus, {
 } from "../components/SharedPageStatus";
 import createHTMLObserver from "../utils/createHTMLObserver";
 import { onAppEvent } from "../internal/registerAppEventListener";
-import binaryToBase64 from "../internal/binaryToBase64";
 import { clear, has, deleteId, load, set } from "../utils/localAutomergeDb";
-import changeAutomergeDoc from "../utils/changeAutomergeDoc";
 import sharePageCommandCalback from "../internal/sharePageCommandCallback";
-import parseZodError from "../utils/parseZodError";
 import sendExtensionError from "../internal/sendExtensionError";
 import { registerNotificationActions } from "../internal/notificationActions";
 import handleSharePageOperation from "../internal/handleSharePageOperation";
@@ -49,6 +45,7 @@ import acceptSharePageOperation from "../internal/acceptSharePageOperation";
 import ImportSharedPage from "../components/ImportSharedPage";
 import base64ToBinary from "../internal/base64ToBinary";
 import unwrapSchema from "../utils/unwrapSchema";
+import changeState from "package/utils/changeState";
 
 const SHARE_PAGE_COMMAND_PALETTE_LABEL = "Share Page on SamePage";
 const VIEW_COMMAND_PALETTE_LABEL = "View Shared Pages";
@@ -109,6 +106,7 @@ const setupSharePageWithNotebook = ({
       Overlay: SharedPageStatus,
       props: {
         notebookPageId,
+        encodeState,
         defaultOpenInviteDialog: created,
         portalContainer: appRoot,
         onCopy: sharedPageStatusProps?.onCopy,
@@ -402,38 +400,13 @@ const setupSharePageWithNotebook = ({
     label?: string;
     notebookPageId: string;
   }): Promise<void> => {
-    return encodeState(notebookPageId)
-      .then(async ({ $body: doc, ...properties }) => {
-        const zResult = await zSamePageSchema.safeParseAsync(doc);
-        if (zResult.success) {
-          const oldDoc = await load(notebookPageId);
-          const doc = Automerge.change(oldDoc, label, (_oldDoc) => {
-            changeAutomergeDoc(_oldDoc, zResult.data);
-          });
-          set(notebookPageId, doc);
+    return changeState({ notebookPageId, encodeState, label })
+      .then(async (result) => {
+        if (result) {
           await apiClient({
             method: "update-shared-page",
-            changes: Automerge.getChanges(oldDoc, doc).map(binaryToBase64),
             notebookPageId,
-            state: binaryToBase64(Automerge.save(doc)),
-            properties,
-          });
-        } else {
-          // For now, just email error and run updatePage as normal. Should result in pairs of emails being sent I think.
-          const data = await sendExtensionError({
-            type: "Failed to encode valid document",
-            data: {
-              notebookPageId,
-              doc,
-              errors: zResult.error,
-              message: parseZodError(zResult.error),
-            },
-          });
-          dispatchAppEvent({
-            type: "log",
-            intent: "error",
-            content: `Failed to parse document. Error report ${data.messageId} has been sent to support@samepage.network`,
-            id: `encode-parse-error`,
+            ...result,
           });
         }
       })

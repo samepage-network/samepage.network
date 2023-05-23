@@ -28,6 +28,7 @@ const getAnnotationChildren = ({
         const splitIndex = p.findIndex(
           (pp) => pp.start <= c.start && c.end <= pp.end
         );
+        if (splitIndex === -1) return p;
         return [
           ...p.slice(0, splitIndex),
           ...[

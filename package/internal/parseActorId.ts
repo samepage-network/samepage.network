@@ -8,7 +8,10 @@ export const saveActorInfo = (info: ActorInfo) => (actorCache[""] = info);
 
 const parseActorId = async (s = ""): Promise<ActorInfo> => {
   if (actorCache[s]) return actorCache[s];
-  return apiClient<ActorInfo>({ method: "get-actor", actorId: s })
+  return apiClient<ActorInfo>({
+    method: "get-actor",
+    actorId: s,
+  })
     .then((r) => {
       actorCache[s] = r;
       return r;

@@ -10,17 +10,15 @@ const notebookPageIds: Record<string, Automerge.FreezeObject<Schema> | null> =
 export const get = (id: string) => notebookPageIds[id];
 
 export const load = async (
-  id: string,
-  credentials?: { notebookUuid: string; token: string }
+  id: string
 ): Promise<Automerge.FreezeObject<Schema>> => {
   return (
     notebookPageIds[id] ||
     apiClient<{ state: string }>({
       method: "get-shared-page",
       notebookPageId: id,
-      ...credentials,
     }).then(async ({ state }) => {
-      const { actorId } = await parseActorId();
+      const { actorId } = await parseActorId("");
       const remoteDoc = Automerge.load<Schema>(
         base64ToBinary(state) as Automerge.BinaryDocument,
         {

@@ -10,16 +10,17 @@ import {
 } from "@blueprintjs/core";
 import React, { useEffect } from "react";
 import SharePageDialog from "./SharePageDialog";
-import { OverlayProps, Schema } from "../internal/types";
+import { EncodeState, OverlayProps, Schema } from "../internal/types";
 import Automerge from "automerge";
 import apiClient from "../internal/apiClient";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { parseAndFormatActorId } from "../internal/parseActorId";
 import AtJsonRendered from "./AtJsonRendered";
-import { load, deleteId, get } from "../utils/localAutomergeDb";
+import { load, deleteId } from "../utils/localAutomergeDb";
 import binaryToBase64 from "../internal/binaryToBase64";
 import unwrapSchema from "../utils/unwrapSchema";
 import DialogFooter from "./DialogFooter";
+import changeState from "package/utils/changeState";
 
 type GetLocalHistory = (
   notebookPageId: string
@@ -29,11 +30,8 @@ export type SharedPageStatusProps = {
   notebookPageId: string;
   portalContainer?: HTMLElement;
   defaultOpenInviteDialog?: boolean;
+  encodeState: EncodeState;
   onCopy?: (s: string) => void;
-  credentials?: {
-    notebookUuid: string;
-    token: string;
-  };
 };
 
 type SamePageHistory = {
@@ -69,15 +67,10 @@ const RestoreHistoryDialog = ({
   time,
   notebookPageId,
   state,
-  credentials,
 }: {
   onClose: () => void;
   portalContainer?: HTMLElement;
   isOpen?: boolean;
-  credentials?: {
-    notebookUuid: string;
-    token: string;
-  };
   notebookPageId: string;
   state: Automerge.State<Schema>;
   time: string;
@@ -105,7 +98,6 @@ const RestoreHistoryDialog = ({
             method: "restore-page-version",
             notebookPageId,
             state: binaryToBase64(Automerge.save(state)),
-            ...credentials,
           })
         }
       />
@@ -341,9 +333,9 @@ const TooltipButtonOverlay = ({
 const SharedPageStatus = ({
   onClose,
   notebookPageId,
+  encodeState,
   portalContainer,
   defaultOpenInviteDialog,
-  credentials,
   onCopy = (s) => window.navigator.clipboard.writeText(s),
 }: OverlayProps<SharedPageStatusProps>) => {
   const [loading, setLoading] = React.useState(false);
@@ -374,7 +366,6 @@ const SharedPageStatus = ({
               return apiClient<{ uuid: string }>({
                 method: "create-public-link",
                 notebookPageId,
-                ...credentials,
               })
                 .then(({ uuid }) => {
                   onCopy(`${process.env.ORIGIN}/pages/${uuid}`);
@@ -404,11 +395,7 @@ const SharedPageStatus = ({
           portalContainer={portalContainer}
           icon={"share"}
           Overlay={(props) => (
-            <SharePageDialog
-              {...props}
-              notebookPageId={notebookPageId}
-              credentials={credentials}
-            />
+            <SharePageDialog {...props} notebookPageId={notebookPageId} />
           )}
         />
         <TooltipButtonOverlay
@@ -429,7 +416,7 @@ const SharedPageStatus = ({
               <div className={Classes.DRAWER_BODY}>
                 <HistoryContent
                   getHistory={() =>
-                    load(notebookPageId, credentials).then((doc) =>
+                    load(notebookPageId).then((doc) =>
                       Automerge.getHistory(doc)
                     )
                   }
@@ -454,7 +441,6 @@ const SharedPageStatus = ({
               return apiClient({
                 method: "disconnect-shared-page",
                 notebookPageId,
-                ...credentials,
               })
                 .then(() => {
                   deleteId(notebookPageId);
@@ -484,14 +470,22 @@ const SharedPageStatus = ({
             disabled={loading}
             icon={"warning-sign"}
             minimal
-            onClick={() => {
+            onClick={async () => {
               setLoading(true);
-              const doc = get(notebookPageId);
+              const result = await changeState({
+                notebookPageId,
+                encodeState,
+                label: "manual sync",
+              });
+              if (!result) {
+                setLoading(false);
+                return;
+              }
+              const { state } = result;
               apiClient({
                 method: "force-push-page",
                 notebookPageId,
-                state: doc ? binaryToBase64(Automerge.save(doc)) : undefined,
-                ...credentials,
+                state,
               })
                 .then(() =>
                   dispatchAppEvent({

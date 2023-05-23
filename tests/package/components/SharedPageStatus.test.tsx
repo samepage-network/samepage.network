@@ -35,6 +35,7 @@ const setupSharedPageStatus = async ({
         isOpen={true}
         onClose={onClose}
         notebookPageId={notebookPageId}
+        encodeState={async () => ({})}
       />
     ) as React.ReactElement // this case is just so that we could keep the react import
   );
