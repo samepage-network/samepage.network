@@ -9,7 +9,7 @@ import remixAdminAction from "~/data/remixAdminAction.server";
 import getMysql from "~/data/mysql.server";
 import { notebooks, tokens, tokenNotebookLinks } from "data/schema";
 import { sql } from "drizzle-orm/sql";
-import { eq } from "drizzle-orm/expressions";
+import { eq, isNotNull, and } from "drizzle-orm/expressions";
 import deleteUser from "~/data/deleteUser.server";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
@@ -63,13 +63,16 @@ export const action: ActionFunction = (args) => {
         users.data.map((user) =>
           cxn
             .select({ total: sql`COUNT(${notebooks.uuid})` })
-            .from(notebooks)
-            .innerJoin(
+            .from(tokens)
+            .leftJoin(
               tokenNotebookLinks,
+              eq(tokens.uuid, tokenNotebookLinks.tokenUuid)
+            )
+            .leftJoin(
+              notebooks,
               eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
             )
-            .innerJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
-            .where(eq(tokens.userId, user.id))
+            .where(and(eq(tokens.userId, user.id), isNotNull(notebooks.uuid)))
             .then(([{ total }]) => ({ total, user }))
         )
       );

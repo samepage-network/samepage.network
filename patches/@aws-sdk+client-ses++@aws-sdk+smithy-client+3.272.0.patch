@@ -7,7 +7,11 @@ index c2930db..fc7fa3c 100644
      const $metadata = deserializeMetadata(output);
      const statusCode = $metadata.httpStatusCode ? $metadata.httpStatusCode + "" : undefined;
 +    if (!parsedBody) {
-+        console.error(`Error received without a response body. Output: ${JSON.stringify(output)}, errorCode: ${errorCode}`);
++        try {
++            console.error(`Error received without a response body. Output: ${JSON.stringify(output)}, errorCode: ${errorCode}`);
++        } catch (e) {
++            console.error(`Error received without a response body. Output: ${output}, errorCode: ${errorCode}`);
++        }
 +    }
      const response = new exceptionCtor({
 -        name: parsedBody.code || parsedBody.Code || errorCode || statusCode || "UnknownError",
