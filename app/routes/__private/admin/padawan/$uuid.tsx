@@ -83,7 +83,9 @@ const PadawanMissionPage = () => {
   const submit = useSubmit();
   const status = useMemo(() => events[0]?.status || "RUNNING", [events]);
   const [now, setNow] = React.useState(new Date());
-  const [nextRefresh, setNextRefresh] = React.useState(0);
+  const [nextRefresh, setNextRefresh] = React.useState(
+    now.valueOf() + REFRESH_INTERVAL
+  );
   useEffect(() => {
     // TODO - replace with a websocket
     if (status !== "FINISHED") {
