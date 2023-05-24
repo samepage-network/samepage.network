@@ -33,10 +33,12 @@ export const handler = async (
     uuid,
     type,
     dry,
+    force,
   }: {
     uuid: string;
     type: "pages";
     dry?: boolean;
+    force?: boolean;
   },
   context: Pick<Context, "awsRequestId">
 ) => {
@@ -101,7 +103,7 @@ export const handler = async (
           const doc = Automerge.load<Schema>(decoded.body);
           const newHistory = Automerge.getHistory(doc);
           const newVersion = newHistory.length;
-          if (newVersion > storedVersion) {
+          if (force || newVersion > storedVersion) {
             await cxn
               .update(pageNotebookLinks)
               .set({ cid, version: newHistory.slice(-1)[0]?.change?.time })

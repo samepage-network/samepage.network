@@ -604,25 +604,20 @@ const logic = async (req: Record<string, unknown>) => {
       }
       case "force-push-page": {
         const { notebookPageId, state: inputState } = args;
-        const { uuid: pageUuid, cid } = await getSharedPage({
+        const {
+          uuid: pageUuid,
+          cid,
+          linkUuid,
+        } = await getSharedPage({
           notebookUuid,
           notebookPageId,
           requestId,
         });
-        const [result] = await cxn
-          .select({ uuid: pageNotebookLinks.uuid })
-          .from(pageNotebookLinks)
-          .where(
-            and(
-              eq(pageNotebookLinks.notebookPageId, notebookPageId),
-              eq(pageNotebookLinks.notebookUuid, notebookUuid)
-            )
-          );
         const state = await (inputState
           ? saveSharedPage({
               doc: inputState,
               cid,
-              uuid: result.uuid,
+              uuid: linkUuid,
             }).then(() => inputState)
           : downloadSharedPage({ cid }).then((b) =>
               Buffer.from(b.body).toString("base64")
@@ -1033,7 +1028,7 @@ const logic = async (req: Record<string, unknown>) => {
         await cxn.end();
         return { success: true };
       }
-      // @deprecated
+      // @deprecated - use notebook-request instead
       case "query": {
         const { request } = args;
         const getTargetsForQuery = () => {
@@ -1068,7 +1063,7 @@ const logic = async (req: Record<string, unknown>) => {
           )
           .catch(catchError("Failed to query across notebooks"));
       }
-      // @deprecated
+      // @deprecated - use notebook-response instead
       case "query-response": {
         const { request, data, target } = args;
         const hash = crypto.createHash("md5").update(request).digest("hex");
@@ -1328,7 +1323,58 @@ const logic = async (req: Record<string, unknown>) => {
         return { success: true };
       }
       case "restore-page-version": {
-        return Promise.reject(new Error("Coming Soon!"));
+        // This method is very similar for force-push-page for now...
+        const { notebookPageId, state } = args;
+        const {
+          uuid: pageUuid,
+          cid,
+          linkUuid,
+        } = await getSharedPage({
+          notebookUuid,
+          notebookPageId,
+          requestId,
+        });
+        await saveSharedPage({
+          doc: state,
+          cid,
+          uuid: linkUuid,
+          force: true,
+        });
+        const notebooks = await cxn
+          .select({
+            notebook_page_id: pageNotebookLinks.notebookPageId,
+            notebook_uuid: pageNotebookLinks.notebookUuid,
+          })
+          .from(pageNotebookLinks)
+          .where(
+            and(
+              eq(pageNotebookLinks.pageUuid, pageUuid),
+              eq(pageNotebookLinks.open, 0)
+            )
+          );
+        await Promise.all(
+          notebooks
+            .filter((item) => {
+              return item.notebook_uuid !== notebookUuid;
+            })
+            .map(({ notebook_page_id, notebook_uuid: target }) =>
+              messageNotebook({
+                source: notebookUuid,
+                target,
+                operation: "SHARE_PAGE_FORCE",
+                data: {
+                  state,
+                  notebookPageId: notebook_page_id,
+                },
+                requestId,
+              })
+            )
+        );
+        await cxn.end();
+
+        return {
+          success: true,
+        };
       }
       case "get-ipfs-cid": {
         const { notebookPageId } = args;
