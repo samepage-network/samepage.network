@@ -1338,6 +1338,7 @@ const logic = async (req: Record<string, unknown>) => {
           doc: state,
           cid,
           uuid: linkUuid,
+          force: true,
         });
         const notebooks = await cxn
           .select({

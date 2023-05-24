@@ -1414,6 +1414,82 @@ test("Shared pages should be receptive to force pushes", async () => {
   // TODO - verify some way that we received the message with the related force push
 });
 
+test("Shared pages should be receptive to version restorations", async () => {
+  const { notebookUuid, token } = await mockRandomNotebook();
+  const notebookPageId = await getRandomNotebookPageId();
+  const doc = Automerge.from<Schema>(
+    wrapSchema({ content: "hello", annotations: [] })
+  );
+  const state = binaryToBase64(Automerge.save(doc));
+  const { created } = await mockLambda({
+    method: "init-shared-page",
+    notebookUuid,
+    token,
+    notebookPageId,
+    state,
+  });
+  expect(created).toEqual(true);
+  await expect
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r) => r.state),
+      { timeout: 20000 }
+    )
+    .toEqual(state);
+
+  const updatedDoc = Automerge.change(doc, "test", (d) =>
+    d.content.insertAt?.(5, " world")
+  );
+  const updatedState = binaryToBase64(Automerge.save(updatedDoc));
+  const r3 = await mockLambda({
+    method: "update-shared-page",
+    notebookPageId,
+    notebookUuid,
+    token,
+    changes: ["asdf"],
+    state: updatedState,
+  });
+  expect(r3).toEqual({ success: true });
+  await expect
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r4) => r4.state),
+      { timeout: 20000 }
+    )
+    .toEqual(updatedState);
+
+  const r4 = await mockLambda({
+    method: "restore-page-version",
+    notebookUuid,
+    token,
+    notebookPageId,
+    state,
+  });
+  expect(r4).toEqual({ success: true });
+  await expect
+    .poll(
+      () =>
+        mockLambda({
+          method: "get-shared-page",
+          notebookUuid,
+          token,
+          notebookPageId,
+        }).then((r4) => r4.state),
+      { timeout: 20000 }
+    )
+    .toEqual(state);
+});
+
 test("Joining a page without an invite should return found false", async () => {
   const { notebookUuid, token } = await mockRandomNotebook();
   const notebookPageId = await getRandomNotebookPageId();

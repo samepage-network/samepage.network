@@ -9,10 +9,12 @@ const saveSharedPage = async ({
   uuid,
   cid,
   doc,
+  force,
 }: {
   uuid: string;
   cid?: string;
   doc: string | Automerge.BinaryDocument;
+  force?: boolean;
 }) => {
   const body =
     typeof doc === "string"
@@ -34,6 +36,7 @@ const saveSharedPage = async ({
     data: {
       uuid,
       type: "pages",
+      force,
       // TODO: upload to ipfs via E2EE using wnfs or noosphere
       dry: true,
     },
