@@ -12,10 +12,17 @@ const shell = os.platform() === "win32";
 const zTestArgs = z.object({
   forward: z.string().or(z.string().array()).optional(),
   path: z.string().optional(),
+  unit: z.boolean().optional(),
+  integration: z.boolean().optional(),
 });
 
 const test = (args: CliOpts) => {
-  const { forward, path = getPackageName() } = zTestArgs.parse(args);
+  const {
+    forward,
+    path = getPackageName(),
+    unit,
+    integration,
+  } = zTestArgs.parse(args);
   process.env.NODE_ENV = process.env.NODE_ENV || "test";
   const isDebug = !!(process.env.DEBUG || process.env.PWDEBUG);
   if (isDebug) process.env.DEBUG = process.env.DEBUG || process.env.PWDEBUG;
@@ -43,7 +50,9 @@ const test = (args: CliOpts) => {
         "test",
         ...config
           .concat(typeof forward === "string" ? [forward] : forward || [])
-          .concat(isDebug && !process.env.CI ? ["--debug"] : []),
+          .concat(isDebug && !process.env.CI ? ["--debug"] : [])
+          .concat(unit ? ["--project=unit"] : [])
+          .concat(integration ? ["--project=integration"] : []),
       ];
       const options = {
         stdio: "inherit" as const,
