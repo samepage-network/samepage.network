@@ -50,7 +50,7 @@ const AboutPage: React.FunctionComponent = () => (
     <div className="flex gap-8 items-center mb-8">
       <div className="flex flex-col items-center gap-2">
         <img
-          src="https://pbs.twimg.com/profile_images/1272885092545896450/VaEFChlf_400x400.jpg"
+          src="/images/authors/vargas.png"
           className="rounded-full w-40 inline-grid mr-4 float-left"
         />
         <div className="font-semibold">David Vargas</div>
