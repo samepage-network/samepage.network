@@ -54,7 +54,15 @@ const AboutPage: React.FunctionComponent = () => (
           className="rounded-full w-40 inline-grid mr-4 float-left"
         />
         <div className="font-semibold">David Vargas</div>
-        <div className="text-opacity-75 italic">CEO/CTO</div>
+        <div className="text-opacity-75 italic">Founder</div>
+      </div>
+      <div className="flex flex-col items-center gap-2">
+        <img
+          src="/images/authors/gartner.jpg"
+          className="rounded-full w-40 inline-grid mr-4 float-left"
+        />
+        <div className="font-semibold">Michael Gartner</div>
+        <div className="text-opacity-75 italic">Wildcard Person</div>
       </div>
     </div>
     <div>
