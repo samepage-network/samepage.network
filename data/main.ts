@@ -54,8 +54,6 @@ import { SesEmailIdentity } from "@cdktf/provider-aws/lib/ses-email-identity";
 import { AwsWebsocket } from "@dvargas92495/aws-websocket";
 // TODO @deprecated
 import { AwsClerk } from "@dvargas92495/aws-clerk";
-// TODO @deprecated
-import { AwsEmail } from "@dvargas92495/aws-email";
 import dotenv from "dotenv";
 import { Octokit } from "@octokit/rest";
 import readDir from "../package/scripts/internal/readDir";
@@ -1044,12 +1042,6 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
       new AwsClerk(this, "aws_clerk", {
         zoneId,
         clerkId: clerkDnsId,
-      });
-
-      new AwsEmail(this, "aws_email", {
-        zoneId,
-        domain: projectName,
-        inbound: false,
       });
 
       new ActionsSecret(this, "tf_aws_access_key", {
