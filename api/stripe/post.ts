@@ -54,9 +54,13 @@ const recordTransaction = async (
     emailAddress: ["vargas@samepage.network"],
   });
   if (!adminUser) throw new Error(`No admin user found`);
-  const { privateKeyFile, spreadsheetId } = adminUser.privateMetadata as {
-    privateKeyFile: CredentialBody;
-    spreadsheetId: string;
+  const {
+    google: { privateKeyFile, spreadsheetId },
+  } = adminUser.privateMetadata as {
+    google: {
+      privateKeyFile: CredentialBody;
+      spreadsheetId: string;
+    };
   };
   const auth = new GoogleAuth({
     credentials: privateKeyFile,
