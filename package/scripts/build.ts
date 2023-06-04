@@ -114,6 +114,7 @@ const publish = async ({
               )
               .catch((e) => {
                 if (
+                  e.response &&
                   Array.isArray(e.response.data?.errors) &&
                   e.response.data?.errors[0]?.code === "already_exists"
                 ) {
@@ -121,7 +122,7 @@ const publish = async ({
                 } else {
                   console.error(
                     `Failed to upload ${asset}:\n${JSON.stringify(
-                      e.response.data?.errors ||
+                      e.response?.data?.errors ||
                         e.response?.data ||
                         e.message ||
                         "{}",

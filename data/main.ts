@@ -46,6 +46,10 @@ import { DataAwsCloudfrontOriginRequestPolicy } from "@cdktf/provider-aws/lib/da
 import { CloudfrontDistribution } from "@cdktf/provider-aws/lib/cloudfront-distribution";
 import { CloudfrontOriginAccessIdentity } from "@cdktf/provider-aws/lib/cloudfront-origin-access-identity";
 import { IamRolePolicyAttachment } from "@cdktf/provider-aws/lib/iam-role-policy-attachment";
+import { SesDomainIdentity } from "@cdktf/provider-aws/lib/ses-domain-identity";
+import { SesDomainDkim } from "@cdktf/provider-aws/lib/ses-domain-dkim";
+import { SesDomainMailFrom } from "@cdktf/provider-aws/lib/ses-domain-mail-from";
+import { SesEmailIdentity } from "@cdktf/provider-aws/lib/ses-email-identity";
 // TODO @deprecated
 import { AwsWebsocket } from "@dvargas92495/aws-websocket";
 // TODO @deprecated
@@ -1171,6 +1175,64 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         ttl: 300,
       });
 
+      const domainIdentity = new SesDomainIdentity(
+        this,
+        `ses_domain_identity`,
+        {
+          domain: projectName,
+        }
+      );
+
+      const domainDkim = new SesDomainDkim(this, `ses_domain_dkim`, {
+        domain: domainIdentity.domain,
+      });
+
+      const mailFromDomain = `admin.${projectName}`;
+
+      new SesDomainMailFrom(this, `ses_domain_mail_from`, {
+        domain: projectName,
+        mailFromDomain,
+      });
+
+      new Route53Record(this, `ses_verification_record`, {
+        zoneId,
+        name: `_amazonses.${domainIdentity.domain}`,
+        type: "TXT",
+        ttl: 1800,
+        records: [domainIdentity.verificationToken],
+      });
+
+      domainDkim.dkimTokens.forEach(
+        (token, index) =>
+          new Route53Record(this, `dkim_record_${index}`, {
+            zoneId,
+            name: `${token}._domainkey.${domainIdentity.domain}`,
+            type: "CNAME",
+            ttl: 1800,
+            records: [`${token}.dkim.amazonses.com`],
+          })
+      );
+
+      new Route53Record(this, `mail_from_txt_record`, {
+        zoneId,
+        name: mailFromDomain,
+        type: "TXT",
+        ttl: 300,
+        records: ["v=spf1 include:amazonses.com ~all"],
+      });
+
+      new Route53Record(this, `mail_from_mx_record`, {
+        zoneId,
+        name: mailFromDomain,
+        type: "MX",
+        ttl: 1800,
+        records: ["10 feedback-smtp.us-east-1.amazonaws.com"],
+      });
+
+      new SesEmailIdentity(this, "identity", {
+        email: `support@${projectName}`,
+      });
+
       // TODO migrate google verification route53 record
       // - standard TXT record
       // - google._domainkey TXT record
@@ -1334,6 +1396,46 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
     {
       from: "module.aws_static_site.aws_route53_record.AAAA[1]",
       to: "aws_route53_record.AAAA_www",
+    },
+    {
+      from: "module.aws_email.aws_ses_domain_identity.domain",
+      to: "aws_ses_domain_identity.ses_domain_identity",
+    },
+    {
+      from: "module.aws_email.aws_ses_domain_dkim.domain",
+      to: "aws_ses_domain_dkim.ses_domain_dkim",
+    },
+    {
+      from: "module.aws_email.aws_ses_domain_mail_from.domain",
+      to: "aws_ses_domain_mail_from.ses_domain_mail_from",
+    },
+    {
+      from: "module.aws_email.aws_route53_record.ses_verification_record",
+      to: "aws_route53_record.ses_verification_record",
+    },
+    {
+      from: "module.aws_email.aws_route53_record.dkim_record[0]",
+      to: "aws_route53_record.dkim_record_0",
+    },
+    {
+      from: "module.aws_email.aws_route53_record.dkim_record[1]",
+      to: "aws_route53_record.dkim_record_1",
+    },
+    {
+      from: "module.aws_email.aws_route53_record.dkim_record[2]",
+      to: "aws_route53_record.dkim_record_2",
+    },
+    {
+      from: "module.aws_email.aws_route53_record.mail_from_txt_record",
+      to: "aws_route53_record.mail_from_txt_record",
+    },
+    {
+      from: "module.aws_email.aws_route53_record.mail_from_mx_record",
+      to: "aws_route53_record.mail_from_mx_record",
+    },
+    {
+      from: "module.aws_email.aws_ses_email_identity.identity",
+      to: "aws_ses_email_identity.identity",
     },
   ]);
 
