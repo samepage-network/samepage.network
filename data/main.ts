@@ -1203,13 +1203,17 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
       });
 
       domainDkim.dkimTokens.forEach(
-        (token, index) =>
+        (_, index) =>
           new Route53Record(this, `dkim_record_${index}`, {
             zoneId,
-            name: `${token}._domainkey.${domainIdentity.domain}`,
+            name: `${Fn.element(domainDkim.dkimTokens, index)}._domainkey.${
+              domainIdentity.domain
+            }`,
             type: "CNAME",
             ttl: 1800,
-            records: [`${token}.dkim.amazonses.com`],
+            records: [
+              `${Fn.element(domainDkim.dkimTokens, index)}.dkim.amazonses.com`,
+            ],
           })
       );
 
