@@ -1194,20 +1194,25 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         records: [domainIdentity.verificationToken],
       });
 
-      domainDkim.dkimTokens.forEach(
-        (_, index) =>
-          new Route53Record(this, `dkim_record_${index}`, {
-            zoneId,
-            name: `${Fn.element(domainDkim.dkimTokens, index)}._domainkey.${
-              domainIdentity.domain
-            }`,
-            type: "CNAME",
-            ttl: 1800,
-            records: [
-              `${Fn.element(domainDkim.dkimTokens, index)}.dkim.amazonses.com`,
-            ],
-          })
-      );
+      Array(3)
+        .fill(null)
+        .forEach(
+          (_, index) =>
+            new Route53Record(this, `dkim_record_${index}`, {
+              zoneId,
+              name: `${Fn.element(domainDkim.dkimTokens, index)}._domainkey.${
+                domainIdentity.domain
+              }`,
+              type: "CNAME",
+              ttl: 1800,
+              records: [
+                `${Fn.element(
+                  domainDkim.dkimTokens,
+                  index
+                )}.dkim.amazonses.com`,
+              ],
+            })
+        );
 
       new Route53Record(this, `mail_from_txt_record`, {
         zoneId,
