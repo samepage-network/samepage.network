@@ -53,7 +53,7 @@ const logic = async (body: Record<string, unknown>) => {
     case "extension-error": {
       const { notebookUuid, data, stack, version, type } = args;
       const cxn = await getMysql();
-      const [notebook = { app: "unknown", workspace: "unknown" }] = await cxn
+      const [notebook = { app: "samepage", workspace: "unknown" }] = await cxn
         .select({ app: apps.code, workspace: notebooks.workspace })
         .from(notebooks)
         .innerJoin(apps, eq(apps.id, notebooks.app))
