@@ -2,12 +2,7 @@ import { Spinner, SpinnerSize } from "@blueprintjs/core";
 import React from "react";
 import Onboarding from "../components/Onboarding";
 import UsageChart, { UsageChartProps } from "../components/UsageChart";
-import {
-  SendToBackend,
-  Notification,
-  MessageSource,
-  zErrorWebsocketMessage,
-} from "./types";
+import { SendToBackend, zErrorWebsocketMessage } from "./types";
 import apiClient, { apiGet } from "./apiClient";
 import dispatchAppEvent from "./dispatchAppEvent";
 import getNodeEnv from "./getNodeEnv";
@@ -26,11 +21,9 @@ import {
 import sendChunkedMessage from "./sendChunkedMessage";
 import {
   addNotebookListener,
-  handleMessage,
   receiveChunkedMessage,
   removeNotebookListener,
 } from "./setupMessageHandlers";
-import MESSAGES, { Operation } from "./messages";
 import NotificationContainer from "../components/NotificationContainer";
 import debug from "../utils/debugger";
 import handleErrorOperation from "./handleErrorOperation";
@@ -182,15 +175,16 @@ const removeConnectCommand = () => {
   });
 };
 
+const disconnect = () => {
+  // https://www.rfc-editor.org/rfc/rfc6455.html#section-7.4.1
+  // websocket closure codes
+  samePageBackend.channel?.close(1000, "User Command");
+};
+
 const addDisconnectCommand = () => {
   addCommand({
     label: "Disconnect from SamePage Network",
-    callback: () => {
-      // https://www.rfc-editor.org/rfc/rfc6455.html#section-7.4.1
-      // websocket closure codes
-      if (samePageBackend.channel)
-        samePageBackend.channel.close(1000, "User Command");
-    },
+    callback: disconnect,
   });
 };
 
@@ -264,6 +258,13 @@ const setupWsFeatures = ({
         id: "samepage-notification-container",
         Overlay: NotificationContainer,
         path: notificationContainerPath,
+        props: {
+          onLogOut: () => {
+            disconnect();
+            setSetting("uuid", "");
+            setSetting("token", "");
+          },
+        },
       })
     : undefined;
 
@@ -331,54 +332,24 @@ const setupWsFeatures = ({
                 })
               ),
         });
-        // TODO - Problems to solve with this:
-        // 1. 2N + 1 API calls. Might as well do it all in `get-unmarked-messages` and remove the metadata column
-        // 2. Weird dependency between buttons.length being nonzero and auto marking as read
-        await apiClient<{ messages: Notification[] }>({
-          method: "get-unmarked-messages",
-        }).then(async (r) => {
-          await Promise.all(
-            r.messages.map((msg) =>
-              apiClient<{
-                data: string;
-                source: MessageSource;
-                operation: Operation;
-              }>({
-                method: "load-message",
-                messageUuid: msg.uuid,
-              }).then((r) => {
-                handleMessage({
-                  content: r.data,
-                  source: r.source,
-                  uuid: msg.uuid,
-                });
-                if (!MESSAGES[r.operation]?.buttons?.length)
-                  return apiClient({
-                    messageUuid: msg.uuid,
-                    method: "mark-message-read",
-                  }).then(() => undefined);
-                else return msg;
-              })
-            )
-          );
-          unloads["samepage-connection-loading"]?.();
-          const pingInterval = setInterval(
-            () => sendToBackend({ operation: "PING" }),
-            1000 * 60 * 5
-          );
-          unloads["ping-interval"] = () => {
-            delete unloads["ping-interval"];
-            clearInterval(pingInterval);
-          };
-          if (lastDisconnectedReason !== "Going away") {
-            dispatchAppEvent({
-              type: "log",
-              id: "samepage-success",
-              content: "Successfully connected to SamePage Network!",
-              intent: "success",
-            });
-          }
-        });
+
+        unloads["samepage-connection-loading"]?.();
+        const pingInterval = setInterval(
+          () => sendToBackend({ operation: "PING" }),
+          1000 * 60 * 5
+        );
+        unloads["ping-interval"] = () => {
+          delete unloads["ping-interval"];
+          clearInterval(pingInterval);
+        };
+        if (lastDisconnectedReason !== "Going away") {
+          dispatchAppEvent({
+            type: "log",
+            id: "samepage-success",
+            content: "Successfully connected to SamePage Network!",
+            intent: "success",
+          });
+        }
       } else {
         samePageBackend.status = "DISCONNECTED";
         dispatchAppEvent({
