@@ -808,11 +808,28 @@ export const zOauthResponse = z.object({
   redirectUrl: z.string().optional(),
 });
 
-const zCondition = z.object({
+const zConditionBase = z.object({
   source: z.string(),
   target: z.string(),
   relation: z.string(),
 });
+
+type Condition =
+  | ({ type: "and" } & z.infer<typeof zConditionBase>)
+  | { type: "or"; conditions: Condition[] }
+  | { type: "not"; conditions: Condition[] };
+
+const zCondition: z.ZodType<Condition> = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("not"),
+    conditions: z.lazy(() => zCondition.array()),
+  }),
+  z.object({
+    type: z.literal("or"),
+    conditions: z.lazy(() => zCondition.array()),
+  }),
+  zConditionBase.extend({ type: z.literal("and") }),
+]);
 
 const zSelectionFieldBase = z.object({
   suffix: z.string().optional(),
