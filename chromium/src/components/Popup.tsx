@@ -8,7 +8,9 @@ import {
   RouterProvider,
 } from "react-router-dom";
 import { ClerkProvider, useClerk, useSession } from "@clerk/chrome-extension";
-import RootDashboard from "samepage/components/RootDashboard";
+import RootDashboard, {
+  loader as rootLoader,
+} from "samepage/components/RootDashboard";
 import SharedPagesTab, {
   loader as sharedPagesLoader,
   action as sharedPagesAction,
@@ -42,6 +44,7 @@ const SamePageContext = React.createContext<{
 const SamePageProvider = () => {
   const [url, setUrl] = React.useState("");
   const session = useSession();
+  const clerk = useClerk();
   const [loading, setLoading] = React.useState(true);
   React.useEffect(() => {
     if (session.isLoaded) {
@@ -65,7 +68,13 @@ const SamePageProvider = () => {
     </div>
   ) : (
     <SamePageContext.Provider value={{ url }}>
-      <RootDashboard root="/" currentTab={window.location.pathname} />
+      <RootDashboard
+        root="/"
+        currentTab={window.location.pathname}
+        onLogOut={() => {
+          clerk.signOut();
+        }}
+      />
     </SamePageContext.Provider>
   );
 };
@@ -86,18 +95,8 @@ const PopupMain = () => {
 };
 
 const HomeDashboardTabRoute = () => {
-  const clerk = useClerk();
   const url = useContext(SamePageContext).url;
-  return (
-    <HomeDashboardTab
-      onLogOut={() => {
-        localStorage.removeItem("notebookUuid");
-        localStorage.removeItem("token");
-        clerk.signOut();
-      }}
-      url={url}
-    />
-  );
+  return <HomeDashboardTab url={url} />;
 };
 
 const router = createMemoryRouter(
@@ -106,6 +105,7 @@ const router = createMemoryRouter(
       path={"/"}
       element={<PopupMain />}
       errorElement={<DefaultErrorBoundary />}
+      loader={rootLoader}
     >
       <Route
         index

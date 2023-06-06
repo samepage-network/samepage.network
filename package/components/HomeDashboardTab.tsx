@@ -17,13 +17,7 @@ import base64 from "../internal/base64";
 import parseCredentialsFromRequest from "../internal/parseCredentialsFromRequest";
 import apiClient from "../internal/apiClient";
 
-const HomeDashboardTab = ({
-  onLogOut,
-  url,
-}: {
-  onLogOut: () => void;
-  url: string;
-}): React.ReactElement => {
+const HomeDashboardTab = ({ url }: { url: string }): React.ReactElement => {
   const data = useLoaderData() as Awaited<ReturnType<typeof loader>>;
   const [searchParams] = useSearchParams();
   return (
@@ -99,9 +93,6 @@ const HomeDashboardTab = ({
                 ))}
             </ul>
           </div>
-          <Button type={"button"} onClick={onLogOut}>
-            Log Out
-          </Button>
         </div>
       )}
     </div>
