@@ -29,6 +29,7 @@ const messageNotebook = ({
   messageUuid = v4(),
   operation = "PING",
   requestId = v4(),
+  connectionId,
   saveData = false,
 }: {
   source: string;
@@ -37,6 +38,8 @@ const messageNotebook = ({
   operation?: Operation;
   data?: JSONData;
   requestId?: string;
+  // A connectionId of "$samepage" will always message the notebook through the samepage app backend.
+  connectionId?: string | null;
   saveData?: boolean;
 }) => {
   return getMysql(requestId).then(async (cxn) => {
@@ -51,25 +54,27 @@ const messageNotebook = ({
       },
       operation,
     };
-    const ConnectionId = await cxn
-      .select({ id: onlineClients.id })
-      .from(onlineClients)
-      .leftJoin(
-        tokenNotebookLinks,
-        eq(tokenNotebookLinks.uuid, onlineClients.actorUuid)
-      )
-      .where(
-        or(
-          eq(onlineClients.notebookUuid, target),
-          eq(tokenNotebookLinks.notebookUuid, target)
+    const ConnectionId =
+      connectionId ||
+      (await cxn
+        .select({ id: onlineClients.id })
+        .from(onlineClients)
+        .leftJoin(
+          tokenNotebookLinks,
+          eq(tokenNotebookLinks.uuid, onlineClients.actorUuid)
         )
-      )
-      .orderBy(desc(onlineClients.createdDate))
-      .limit(1)
-      .then((res) => res[0]?.id);
+        .where(
+          or(
+            eq(onlineClients.notebookUuid, target),
+            eq(tokenNotebookLinks.notebookUuid, target)
+          )
+        )
+        .orderBy(desc(onlineClients.createdDate))
+        .limit(1)
+        .then((res) => res[0]?.id));
     let online = false;
     log("Found connection", ConnectionId, "for", target);
-    if (ConnectionId) {
+    if (ConnectionId && ConnectionId !== "$samepage") {
       online = await postToConnection({
         ConnectionId,
         Data,

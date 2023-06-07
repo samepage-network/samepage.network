@@ -1085,7 +1085,13 @@ const logic = async (req: Record<string, unknown>) => {
           .catch(catchError("Failed to respond to query"));
       }
       case "notebook-request": {
-        const { request, targets: _targets, target, label } = args;
+        const {
+          request,
+          targets: _targets,
+          target,
+          label,
+          connectionId = "$samepage",
+        } = args;
         const targets = target ? [target] : _targets || [];
         if (!targets.length) {
           throw new NotFoundError("No targets specified");
@@ -1138,6 +1144,7 @@ const logic = async (req: Record<string, unknown>) => {
                   uuid,
                   label,
                   status: hasAccess.length ? "accepted" : "pending",
+                  connectionId,
                 });
                 await (hasAccess.length
                   ? messageRequest(target)
@@ -1216,8 +1223,18 @@ const logic = async (req: Record<string, unknown>) => {
           .catch(catchError("Failed to request across notebooks"));
       }
       case "notebook-response": {
-        const { request, response, target } = args;
-        const hash = hashNotebookRequest({ request, target: notebookUuid });
+        const { requestUuid, response, target } = args;
+
+        const [notebookRequest] = await cxn
+          .select({
+            hash: notebookRequests.hash,
+            connectionId: notebookRequests.connectionId,
+          })
+          .from(notebookRequests)
+          .where(eq(notebookRequests.uuid, requestUuid));
+        if (!notebookRequest)
+          throw new NotFoundError(`Couldn't find request ${requestUuid}`);
+        const { hash, connectionId } = notebookRequest;
         await uploadFile({
           Body: JSON.stringify(response),
           Key: `data/requests/${hash}.json`,
@@ -1227,10 +1244,11 @@ const logic = async (req: Record<string, unknown>) => {
           source: notebookUuid,
           operation: `RESPONSE`,
           data: {
-            request,
+            requestUuid,
             response,
           },
-          requestId: requestId,
+          requestId,
+          connectionId,
         })
           .then(() => ({ success: true }))
           .catch(catchError("Failed to respond to request"));

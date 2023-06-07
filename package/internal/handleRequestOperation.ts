@@ -8,7 +8,10 @@ import {
 } from "./types";
 
 const handleRequestOperation = async (
-  { request }: Pick<z.infer<typeof zRequestWebsocketMessage>, "request">,
+  {
+    request,
+    requestUuid,
+  }: Pick<z.infer<typeof zRequestWebsocketMessage>, "request" | "requestUuid">,
   source: Pick<MessageSource, "uuid">,
   notebookRequestHandlers: NotebookRequestHandler[]
 ) => {
@@ -19,9 +22,9 @@ const handleRequestOperation = async (
   if (response) {
     await apiClient({
       method: "notebook-response",
-      request,
       response,
       target: source.uuid,
+      requestUuid,
     });
   }
 };

@@ -12,7 +12,7 @@ import setupWsFeatures from "../internal/setupWsFeatures";
 import { onAppEvent } from "../internal/registerAppEventListener";
 import postToAppBackend from "../internal/postToAppBackend";
 import setupCrossNotebookRequests from "./crossNotebookRequests";
-import listNotebooks from "package/utils/listNotebooks";
+import listNotebooks from "../utils/listNotebooks";
 
 const setupSamePageClient = ({
   app,

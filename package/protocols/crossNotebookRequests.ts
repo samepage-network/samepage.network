@@ -1,4 +1,3 @@
-import { encode } from "@ipld/dag-cbor";
 import { addNotebookListener } from "../internal/setupMessageHandlers";
 import apiClient from "../internal/apiClient";
 import {
@@ -18,30 +17,6 @@ import { z } from "zod";
 
 const notebookRequestHandlers: NotebookRequestHandler[] = [];
 const notebookResponseHandlers: Record<string, NotebookResponseHandler> = {};
-const hashRequest = async (request: JSONData) =>
-  typeof window !== "undefined"
-    ? Array.from(
-        new Uint8Array(await crypto.subtle.digest("SHA-256", encode(request)))
-      )
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("")
-    : import("crypto").then((mod) =>
-        mod.createHash("sha256").update(encode(request)).digest("hex")
-      );
-
-const handleRequest = async ({
-  request,
-  target,
-}: {
-  request: JSONData;
-  target: string;
-}) => {
-  handleRequestOperation(
-    { request },
-    { uuid: target },
-    notebookRequestHandlers
-  );
-};
 
 const sendNotebookRequest: SendNotebookRequest = ({ target, request, label }) =>
   apiClient<{
@@ -87,10 +62,15 @@ const setupCrossNotebookRequests = () => {
     operation: "REQUEST_DATA",
     actions: {
       accept: async ({ requestUuid, request, source }) => {
-        await handleRequest({
-          request: typeof request === "string" ? JSON.parse(request) : request,
-          target: z.string().parse(source),
-        });
+        await handleRequestOperation(
+          {
+            request:
+              typeof request === "string" ? JSON.parse(request) : request,
+            requestUuid: z.string().parse(requestUuid),
+          },
+          { uuid: z.string().parse(source) },
+          notebookRequestHandlers
+        );
         await apiClient({
           method: "accept-request",
           requestUuid: z.string().parse(requestUuid),
@@ -124,11 +104,11 @@ const setupCrossNotebookRequests = () => {
   const removeResponseListener = addNotebookListener({
     operation: "RESPONSE",
     handler: async (e, sender) => {
-      const { request, response } = e as {
+      const { response, requestUuid } = e as {
         response: JSONData;
-        request: JSONData;
+        requestUuid: string;
       };
-      notebookResponseHandlers[await hashRequest(request)]?.({
+      notebookResponseHandlers[requestUuid]?.({
         [sender.uuid]: response,
       });
     },

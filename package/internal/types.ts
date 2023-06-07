@@ -294,6 +294,7 @@ const zNotebookRequestApi = z.object({
   label: z.string().optional().default("Unlabelled Request"),
   targets: z.string().array().optional(),
   target: z.string().optional(),
+  connectionId: z.string().optional(),
 });
 export type NotebookRequest = z.infer<typeof zNotebookRequestApi>;
 const zNotebookResponse = zJsonData
@@ -302,7 +303,7 @@ const zNotebookResponse = zJsonData
   .or(z.null());
 const zNotebookResponseApi = z.object({
   method: z.literal("notebook-response"),
-  request: zJsonData,
+  requestUuid: z.string(),
   response: zNotebookResponse,
   target: z.string(),
 });
@@ -369,7 +370,7 @@ export const zRequestWebsocketMessage = z.object({
 });
 export const zResponseWebsocketMessage = z.object({
   operation: z.literal("RESPONSE"),
-  request: zJsonData,
+  requestUuid: z.string(),
   response: zNotebookResponse,
 });
 

@@ -167,6 +167,7 @@ export const notebookRequests = mysqlTable(
       .notNull()
       .default("pending"),
     createdDate: date("created"),
+    connectionId: varchar("connection_id", { length: 128 })
   },
   (requests) => ({
     notebookHashIndex: uniqueIndex("UC_notebook_uuid_hash").on(
