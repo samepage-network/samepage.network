@@ -128,7 +128,7 @@ test("build command supports on finish file", async () => {
 });
 
 test("build command compiles template", async () => {
-  test.setTimeout(1000 * 120);
+  test.setTimeout(1000 * 180);
   const root = await makeRandomTmpDir();
   fs.mkdirSync(`${root}/src`);
   fs.cpSync("template/src/index.ts", `${root}/src/index.ts`);

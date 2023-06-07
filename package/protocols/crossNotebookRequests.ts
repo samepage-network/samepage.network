@@ -103,14 +103,12 @@ const setupCrossNotebookRequests = () => {
   });
   const removeResponseListener = addNotebookListener({
     operation: "RESPONSE",
-    handler: async (e, sender) => {
+    handler: async (e) => {
       const { response, requestUuid } = e as {
         response: JSONData;
         requestUuid: string;
       };
-      notebookResponseHandlers[requestUuid]?.({
-        [sender.uuid]: response,
-      });
+      notebookResponseHandlers[requestUuid]?.(response);
     },
   });
   return {

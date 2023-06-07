@@ -94,7 +94,10 @@ const createApiMessageHandler =
           getNotebookRequestHandler(credentials),
         ]);
       } else if (data.operation === "RESPONSE") {
+        // const response = 
         await getNotebookResponseHandler(credentials)(data.response);
+        // Need an equivalent to:
+        // notebookResponseHandlers[data.requestUuid]?.(response);
       }
       return { success: true };
     } catch (e) {

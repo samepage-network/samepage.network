@@ -1109,7 +1109,8 @@ const logic = async (req: Record<string, unknown>) => {
                 .where(
                   and(
                     eq(notebookRequests.hash, hash),
-                    eq(notebookRequests.notebookUuid, notebookUuid)
+                    eq(notebookRequests.notebookUuid, notebookUuid),
+                    eq(notebookRequests.connectionId, connectionId)
                   )
                 );
               const messageRequest = (requestUuid: string) =>
@@ -1137,15 +1138,19 @@ const logic = async (req: Record<string, unknown>) => {
                     )
                   );
                 const uuid = v4();
-                await cxn.insert(notebookRequests).values({
-                  target,
-                  notebookUuid,
-                  hash,
-                  uuid,
-                  label,
-                  status: hasAccess.length ? "accepted" : "pending",
-                  connectionId,
-                });
+                await cxn
+                  .insert(notebookRequests)
+                  .values({
+                    target,
+                    notebookUuid,
+                    hash,
+                    uuid,
+                    label,
+                    status: hasAccess.length ? "accepted" : "pending",
+                    connectionId,
+                  })
+                  // TODO - once other clients start sending connectionId, we will need to handle this better
+                  .onDuplicateKeyUpdate({ set: { connectionId } });
                 await (hasAccess.length
                   ? messageRequest(target)
                   : messageNotebook({

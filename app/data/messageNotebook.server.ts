@@ -20,7 +20,7 @@ import debug from "package/utils/debugger";
 import getPrimaryUserEmail from "./getPrimaryUserEmail.server";
 import { JSONData } from "package/internal/types";
 
-const log = debug("message-notebook");
+const log = debug("api:message-notebook");
 
 const messageNotebook = ({
   source,
@@ -110,7 +110,7 @@ const messageNotebook = ({
         .innerJoin(tokens, eq(tokenNotebookLinks.tokenUuid, tokens.uuid))
         .where(eq(accessTokens.notebookUuid, target))
         .limit(1);
-      log("sending message to endpoint", endpoint);
+      log("sending message", operation, "to endpoint", endpoint);
       if (endpoint) {
         const { path, accessToken, token } = endpoint;
         Data["credentials"] = {
