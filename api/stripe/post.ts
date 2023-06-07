@@ -260,6 +260,14 @@ export const handler: APIGatewayProxyHandler = async (event) => {
       case "payout.paid":
         const payout = object as Stripe.Payout;
         await recordTransaction(payout.balance_transaction);
+        const recentTransactions = await stripe.balanceTransactions.list({
+          limit: 4,
+        });
+        await Promise.all([
+          recentTransactions.data.filter(
+            (tx) => tx.type === "stripe_fee" || tx.type === "adjustment"
+          ).map((tx) => recordTransaction(tx.id)),
+        ]);
         return {
           statusCode: 200,
           body: JSON.stringify({ success: true }),
