@@ -90,7 +90,7 @@ const createApiBackendPostHandler = ({
   getListWorkflows?: (
     credentials: GetAccessTokenResponse
   ) => ReturnType<ListWorkflows>;
-}) => {
+} = {}) => {
   const logic = async (args: BackendRequest<typeof zMessage>) => {
     const { authorization, ...data } = args;
     if (!authorization) {
