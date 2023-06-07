@@ -21,7 +21,17 @@ test("Intro onboarding flow", async () => {
   const home = await waitFor(() => screen.getByRole("img"));
   expect(home).toBeTruthy();
 
-  global.fetch = () => Promise.resolve(new Response("{}", { status: 200 }));
+  global.fetch = (input, init) => {
+    const body =
+      init?.body ||
+      (typeof input === "object" && "body" in input ? input.body : "{}");
+    const parsedBody = JSON.parse(body as string);
+    if (parsedBody.method === "get-unmarked-messages")
+      return Promise.resolve(
+        new Response(JSON.stringify({ messages: [] }), { status: 200 })
+      );
+    return Promise.resolve(new Response("{}", { status: 200 }));
+  };
   setupRegistry({ getSetting: () => v4() });
   dispatchAppEvent({ type: "connection", status: "CONNECTED" });
   let accepted = false;

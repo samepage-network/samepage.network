@@ -2,12 +2,18 @@ import { Button, Spinner } from "@blueprintjs/core";
 import React from "react";
 import dispatchAppEvent from "../internal/dispatchAppEvent";
 import { onAppEvent } from "../internal/registerAppEventListener";
-import { ConnectionStatus, Notification } from "../internal/types";
+import {
+  ConnectionStatus,
+  MessageSource,
+  Notification,
+} from "../internal/types";
 import Markdown from "markdown-to-jsx";
 import { callNotificationAction } from "../internal/notificationActions";
 import apiClient from "../internal/apiClient";
 import sendExtensionError from "../internal/sendExtensionError";
 import { getSetting, samePageBackend } from "../internal/registry";
+import MESSAGES, { Operation } from "../internal/messages";
+import { handleMessage } from "../internal/setupMessageHandlers";
 
 const ActionButtons = ({
   notification,
@@ -66,7 +72,7 @@ const ActionButtons = ({
   );
 };
 
-const NotificationContainer = () => {
+const NotificationContainer = ({ onLogOut }: { onLogOut?: () => void }) => {
   const [notifications, setNotifications] = React.useState<Notification[]>([]);
   const notificationsRef = React.useRef<Notification[]>(notifications);
   const [isOpen, setIsOpen] = React.useState(false);
@@ -85,7 +91,7 @@ const NotificationContainer = () => {
   );
 
   React.useEffect(() => {
-    const offAppEvent = onAppEvent("notification", (evt) => {
+    const offNotificationEvent = onAppEvent("notification", (evt) => {
       if (
         notificationsRef.current.every((n) => n.uuid !== evt.notification.uuid)
       ) {
@@ -93,8 +99,46 @@ const NotificationContainer = () => {
         setNotifications([...notificationsRef.current]);
       }
     });
-    onAppEvent("connection", (evt) => setStatus(evt.status));
-    return offAppEvent;
+    const offConnectionEvent = onAppEvent("connection", (evt) => {
+      setStatus(evt.status);
+      if (evt.status !== "CONNECTED") return;
+
+      // TODO - Problems to solve with this:
+      // 1. 2N + 1 API calls. Might as well do it all in `get-unmarked-messages` and remove the metadata column
+      // 2. Weird dependency between buttons.length being nonzero and auto marking as read
+      apiClient<{ messages: Notification[] }>({
+        method: "get-unmarked-messages",
+      }).then(async (r) =>
+        Promise.all(
+          r.messages.map((msg) =>
+            apiClient<{
+              data: string;
+              source: MessageSource;
+              operation: Operation;
+            }>({
+              method: "load-message",
+              messageUuid: msg.uuid,
+            }).then((r) => {
+              handleMessage({
+                content: r.data,
+                source: r.source,
+                uuid: msg.uuid,
+              });
+              if (!MESSAGES[r.operation]?.buttons?.length)
+                return apiClient({
+                  messageUuid: msg.uuid,
+                  method: "mark-message-read",
+                }).then(() => undefined);
+              else return msg;
+            })
+          )
+        )
+      );
+    });
+    return () => {
+      offNotificationEvent();
+      offConnectionEvent();
+    };
   }, [setNotifications, notificationsRef]);
   return (
     <div
@@ -179,6 +223,11 @@ const NotificationContainer = () => {
               ))
             )}
           </div>
+          {status === "CONNECTED" && (
+            <div className="my-4 px-4">
+              <Button text={"Log out"} onClick={onLogOut} intent={"warning"} />
+            </div>
+          )}
         </div>
       )}
       <img
