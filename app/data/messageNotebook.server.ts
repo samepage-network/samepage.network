@@ -14,7 +14,7 @@ import {
   tokenNotebookLinks,
   tokens,
 } from "data/schema";
-import { eq, desc } from "drizzle-orm/expressions";
+import { eq, desc, or } from "drizzle-orm/expressions";
 import { Lambda } from "@aws-sdk/client-lambda";
 import debug from "package/utils/debugger";
 import getPrimaryUserEmail from "./getPrimaryUserEmail.server";
@@ -54,7 +54,16 @@ const messageNotebook = ({
     const ConnectionId = await cxn
       .select({ id: onlineClients.id })
       .from(onlineClients)
-      .where(eq(onlineClients.notebookUuid, target))
+      .leftJoin(
+        tokenNotebookLinks,
+        eq(tokenNotebookLinks.uuid, onlineClients.actorUuid)
+      )
+      .where(
+        or(
+          eq(onlineClients.notebookUuid, target),
+          eq(tokenNotebookLinks.notebookUuid, target)
+        )
+      )
       .orderBy(desc(onlineClients.createdDate))
       .limit(1)
       .then((res) => res[0]?.id);

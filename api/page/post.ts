@@ -264,7 +264,7 @@ const logic = async (req: Record<string, unknown>) => {
               .from(clientSessions)
               .where(
                 and(
-                  eq(clientSessions.notebookUuid, notebookUuid),
+                  eq(clientSessions.actorUuid, actorId),
                   gt(clientSessions.createdDate, startDate)
                 )
               ),

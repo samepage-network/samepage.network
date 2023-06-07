@@ -868,6 +868,17 @@ export const zSelectionTransform = z.discriminatedUnion("method", [
     method: z.literal("date"),
     set: z.string(),
     date: z.string(),
+    format: z.string().optional(),
+  }),
+  z.object({
+    method: z.literal("or"),
+    set: z.string(),
+    or: z.string().array(),
+  }),
+  z.object({
+    method: z.literal("trim"),
+    set: z.string(),
+    trim: z.string(),
   }),
 ]);
 

@@ -10,9 +10,9 @@ import type {
 import setupRegistry from "../internal/registry";
 import setupWsFeatures from "../internal/setupWsFeatures";
 import { onAppEvent } from "../internal/registerAppEventListener";
-import apiClient from "../internal/apiClient";
 import postToAppBackend from "../internal/postToAppBackend";
 import setupCrossNotebookRequests from "./crossNotebookRequests";
+import listNotebooks from "package/utils/listNotebooks";
 
 const setupSamePageClient = ({
   app,
@@ -58,7 +58,7 @@ const setupSamePageClient = ({
   const samepageApi: SamePageAPI = {
     sendNotebookRequest,
     addNotebookRequestListener,
-    listNotebooks: () => apiClient({ method: "list-recent-notebooks" }),
+    listNotebooks,
     postToAppBackend,
   };
   if (typeof window !== "undefined") {

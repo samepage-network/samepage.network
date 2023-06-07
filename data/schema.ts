@@ -74,6 +74,7 @@ export const tokens = mysqlTable("tokens", {
   createdDate: date("created"),
 });
 
+// Synonymous with "Actor"s in the codebase
 export const tokenNotebookLinks = mysqlTable(
   "token_notebook_links",
   {
@@ -189,7 +190,11 @@ export const onlineClients = mysqlTable(
     createdDate: datetime("created_date")
       .notNull()
       .default(sql`(CURRENT_TIMESTAMP)`),
+    // @deprecated - use actorUuid instead
     notebookUuid: varchar("notebook_uuid", { length: 128 }),
+    // this is way better than just notebookUuid. however, eventually, we'll have the issue
+    // where a user is logged into the same notebook on multiple devices.
+    actorUuid: uuid("actor_uuid"),
   },
   (clients) => ({
     notebookIndex: index("IX_notebook_uuid").on(clients.notebookUuid),
@@ -209,7 +214,9 @@ export const clientSessions = mysqlTable(
     disconnectedBy: varchar("disconnected_by", { length: 128 })
       .notNull()
       .default(""),
+    // @deprecated - use actorUuid instead
     notebookUuid: varchar("notebook_uuid", { length: 128 }),
+    actorUuid: uuid("actor_uuid"),
   },
   (sessions) => ({
     notebookIndex: index("IX_notebook_uuid").on(sessions.notebookUuid),

@@ -13,7 +13,11 @@ import type {
 import getNotebookUuids from "~/data/getNotebookUuids.server";
 import authenticateNotebook from "~/data/authenticateNotebook.server";
 import { Operation } from "package/internal/messages";
-import { ongoingMessages, onlineClients } from "data/schema";
+import {
+  ongoingMessages,
+  onlineClients,
+  tokenNotebookLinks,
+} from "data/schema";
 import { eq } from "drizzle-orm/expressions";
 import debugMod from "package/utils/debugger";
 
@@ -51,6 +55,7 @@ const dataHandler = async (
       id: clientId,
       createdDate: new Date(),
       notebookUuid,
+      actorUuid: actorId,
     });
     await postToConnection({
       ConnectionId: clientId,
@@ -73,8 +78,15 @@ const dataHandler = async (
       Record<string, string>;
     const cxn = await getMysql(requestId);
     const [source] = await cxn
-      .select({ notebookUuid: onlineClients.notebookUuid })
+      .select({
+        notebookUuid: onlineClients.notebookUuid,
+        actorNotebookUuid: tokenNotebookLinks.notebookUuid,
+      })
       .from(onlineClients)
+      .leftJoin(
+        tokenNotebookLinks,
+        eq(tokenNotebookLinks.uuid, onlineClients.actorUuid)
+      )
       .where(eq(onlineClients.id, clientId))
       .catch((e) => {
         console.error("Failed to find online client", e.message);

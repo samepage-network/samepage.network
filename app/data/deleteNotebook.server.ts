@@ -9,6 +9,7 @@ import {
 import getMysql from "~/data/mysql.server";
 import { eq, or } from "drizzle-orm/expressions";
 import { MySql2Database } from "drizzle-orm/mysql2";
+import endClient from "./endClient.server";
 
 const deleteNotebook = async ({
   uuid,
@@ -20,6 +21,22 @@ const deleteNotebook = async ({
   try {
     const cxn =
       typeof requestId === "string" ? await getMysql(requestId) : requestId;
+    const clientIds = await cxn
+      .select({ id: onlineClients.id })
+      .from(onlineClients)
+      .leftJoin(
+        tokenNotebookLinks,
+        eq(tokenNotebookLinks.uuid, onlineClients.actorUuid)
+      )
+      .where(
+        or(
+          eq(onlineClients.notebookUuid, uuid),
+          eq(tokenNotebookLinks.notebookUuid, uuid)
+        )
+      );
+    await Promise.all(
+      clientIds.map(({ id }) => endClient(id, "Notebook deleted", requestId))
+    );
     await cxn
       .delete(tokenNotebookLinks)
       .where(eq(tokenNotebookLinks.notebookUuid, uuid));
@@ -29,7 +46,6 @@ const deleteNotebook = async ({
     await cxn
       .delete(messages)
       .where(or(eq(messages.source, uuid), eq(messages.target, uuid)));
-    await cxn.delete(onlineClients).where(eq(onlineClients.notebookUuid, uuid));
     await cxn.delete(accessTokens).where(eq(accessTokens.notebookUuid, uuid));
     await cxn.delete(notebooks).where(eq(notebooks.uuid, uuid));
     if (typeof requestId === "string") await cxn.end();

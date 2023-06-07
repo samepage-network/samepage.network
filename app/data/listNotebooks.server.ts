@@ -38,11 +38,11 @@ const listNotebooks = async (
       token: sql<string>`MAX(${tokens.value})`,
     })
     .from(notebooks)
-    .leftJoin(onlineClients, eq(notebooks.uuid, onlineClients.notebookUuid))
     .leftJoin(
       tokenNotebookLinks,
       eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
     )
+    .leftJoin(onlineClients, eq(tokenNotebookLinks.uuid, onlineClients.actorUuid))
     .leftJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
     .innerJoin(apps, eq(notebooks.app, apps.id))
     // TODO - sql injection
