@@ -815,20 +815,20 @@ const zConditionBase = z.object({
 });
 
 type Condition =
-  | ({ type: "and" } & z.infer<typeof zConditionBase>)
-  | { type: "or"; conditions: Condition[] }
-  | { type: "not"; conditions: Condition[] };
+  | ({ type: "AND" } & z.infer<typeof zConditionBase>)
+  | { type: "OR"; conditions: Condition[] }
+  | { type: "NOT"; conditions: Condition[] };
 
 const zCondition: z.ZodType<Condition> = z.discriminatedUnion("type", [
   z.object({
-    type: z.literal("not"),
+    type: z.literal("NOT"),
     conditions: z.lazy(() => zCondition.array()),
   }),
   z.object({
-    type: z.literal("or"),
+    type: z.literal("OR"),
     conditions: z.lazy(() => zCondition.array()),
   }),
-  zConditionBase.extend({ type: z.literal("and") }),
+  zConditionBase.extend({ type: z.literal("AND") }),
 ]);
 
 const zSelectionFieldBase = z.object({
@@ -879,16 +879,51 @@ export const zSelection = z.object({
 });
 
 // @deprecated
-export const zOldSelection = z.object({
+const zQBSelection = z.object({
   label: z.string(),
   text: z.string(),
 });
 
+// @deprecated
+const zQBBase = z.object({
+  uid: z.string(),
+});
+// @deprecated
+const zQBClauseData = zQBBase.extend({
+  relation: z.string(),
+  source: z.string(),
+  target: z.string(),
+  not: z.boolean().optional(),
+});
+// @deprecated
+const zQBClause = zQBClauseData.extend({ type: z.literal("clause") });
+// @deprecated
+const zQBNot = zQBClauseData.extend({ type: z.literal("not") });
+// @deprecated
+type QBCondition =
+  | ({ type: "clause" } & z.infer<typeof zQBClause>)
+  | ({ type: "not" } & z.infer<typeof zQBNot>)
+  | ({ type: "or"; conditions: QBCondition[] } & z.infer<typeof zQBBase>)
+  | ({ type: "not or"; conditions: QBCondition[] } & z.infer<typeof zQBBase>);
+// @deprecated
+const zQBCondition: z.ZodType<QBCondition> = z.discriminatedUnion("type", [
+  zQBClause,
+  zQBNot,
+  zQBBase.extend({
+    type: z.literal("or"),
+    conditions: z.lazy(() => zQBCondition.array()),
+  }),
+  zQBBase.extend({
+    type: z.literal("not or"),
+    conditions: z.lazy(() => zQBCondition.array()),
+  }),
+]);
+
 export const notebookRequestNodeQuerySchema = z.object({
   schema: z.literal("node-query"),
-  conditions: zCondition.array().optional().default([]),
+  conditions: zCondition.or(zQBCondition).array().optional().default([]),
   returnNode: z.string(),
-  selections: zSelection.or(zOldSelection).array().optional().default([]),
+  selections: zSelection.or(zQBSelection).array().optional().default([]),
 });
 
 export type BackendRequest<T extends ZodType<any, any, any>> = z.infer<T> & {
