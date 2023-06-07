@@ -819,7 +819,7 @@ type Condition =
   | { type: "OR"; conditions: Condition[] }
   | { type: "NOT"; conditions: Condition[] };
 
-const zCondition: z.ZodType<Condition> = z.discriminatedUnion("type", [
+export const zCondition: z.ZodType<Condition> = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("NOT"),
     conditions: z.lazy(() => zCondition.array()),
