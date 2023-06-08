@@ -1,5 +1,5 @@
-import apiClient from "package/internal/apiClient";
-import { ListNotebooks } from "package/internal/types";
+import apiClient from "../internal/apiClient";
+import { ListNotebooks } from "../internal/types";
 
 const listNotebooks: ListNotebooks = () =>
   apiClient({ method: "list-recent-notebooks" });
