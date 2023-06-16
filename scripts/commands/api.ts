@@ -424,7 +424,6 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
     .map((f) =>
       appPath(f.replace(new RegExp(`^${path}`), out).replace(/\.[tj]s$/, ""))
     );
-  // TODO - move this to chokidar loop above somehow
   if (wsEntries.length) {
     app.post("/ws", (req, res) => {
       const { ConnectionId, Data } = JSON.parse(req.body);
