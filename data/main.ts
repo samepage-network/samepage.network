@@ -58,6 +58,7 @@ import dotenv from "dotenv";
 import { Octokit } from "@octokit/rest";
 import readDir from "../package/scripts/internal/readDir";
 import compareSqlSchemas from "./compareSqlSchemas";
+import { Route53 } from "@aws-sdk/client-route-53";
 dotenv.config({ override: true });
 
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
@@ -1235,6 +1236,28 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         email: `support@${projectName}`,
       });
 
+      new Route53Record(this, `google_mx_record`, {
+        zoneId,
+        name: projectName,
+        type: "MX",
+        ttl: 1800,
+        records: [
+          "1 ASPMX.L.GOOGLE.COM.",
+          "5 ALT1.ASPMX.L.GOOGLE.COM.",
+          "5 ALT2.ASPMX.L.GOOGLE.COM.",
+          "10 ALT3.ASPMX.L.GOOGLE.COM.",
+          "10 ALT4.ASPMX.L.GOOGLE.COM.",
+        ],
+      });
+
+      // new Route53Record(this, `inbound_mx_record`, {
+      //   zoneId,
+      //   name: projectName,
+      //   type: "MX",
+      //   ttl: 1800,
+      //   records: ["10 inbound-smtp.us-east-1.amazonaws.com"],
+      // });
+
       // TODO migrate google verification route53 record
       // - standard TXT record
       // - google._domainkey TXT record
@@ -1438,6 +1461,19 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
     {
       from: "module.aws_email.aws_ses_email_identity.identity",
       to: "aws_ses_email_identity.identity",
+    },
+  ]);
+  const zoneId = await new Route53({})
+    .listHostedZones({})
+    .then(
+      (r) =>
+        r.HostedZones?.find((hs) => hs.Name?.includes("samepage.network"))?.Id
+    );
+  if (!zoneId) throw new Error("No zone id found");
+  stack.addOverride("import", [
+    {
+      to: "aws_route53_record.google_mx_record",
+      id: `${zoneId}_samepage.network_MX`,
     },
   ]);
 
