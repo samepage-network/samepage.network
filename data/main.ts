@@ -1240,26 +1240,26 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         zoneId,
         name: projectName,
         type: "MX",
-        ttl: 1800,
+        ttl: 300,
         records: [
           "1 ASPMX.L.GOOGLE.COM.",
           "5 ALT1.ASPMX.L.GOOGLE.COM.",
           "5 ALT2.ASPMX.L.GOOGLE.COM.",
           "10 ALT3.ASPMX.L.GOOGLE.COM.",
           "10 ALT4.ASPMX.L.GOOGLE.COM.",
+          "20 inbound-smtp.us-east-1.amazonaws.com",
         ],
       });
 
-      // new Route53Record(this, `inbound_mx_record`, {
-      //   zoneId,
-      //   name: projectName,
-      //   type: "MX",
-      //   ttl: 1800,
-      //   records: ["10 inbound-smtp.us-east-1.amazonaws.com"],
-      // });
+      new Route53Record(this, `standard_txt_record`, {
+        zoneId,
+        name: projectName,
+        type: "TXT",
+        ttl: 300,
+        records: ["v=spf1 include:_spf.google.com ~all"],
+      });
 
       // TODO migrate google verification route53 record
-      // - standard TXT record
       // - google._domainkey TXT record
       // - _dmarc TXT record
     }
@@ -1465,15 +1465,20 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
   ]);
   const zoneId = await new Route53({})
     .listHostedZones({})
-    .then(
-      (r) =>
-        r.HostedZones?.find((hs) => hs.Name?.includes("samepage.network"))?.Id
+    .then((r) =>
+      r.HostedZones?.find((hs) =>
+        hs.Name?.includes("samepage.network")
+      )?.Id?.replace("/hostedzone/", "")
     );
   if (!zoneId) throw new Error("No zone id found");
   stack.addOverride("import", [
     {
       to: "aws_route53_record.google_mx_record",
       id: `${zoneId}_samepage.network_MX`,
+    },
+    {
+      to: "aws_route53_record.standard_txt_record",
+      id: `${zoneId}_samepage.network_TXT`,
     },
   ]);
 
