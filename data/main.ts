@@ -50,6 +50,9 @@ import { SesDomainIdentity } from "@cdktf/provider-aws/lib/ses-domain-identity";
 import { SesDomainDkim } from "@cdktf/provider-aws/lib/ses-domain-dkim";
 import { SesDomainMailFrom } from "@cdktf/provider-aws/lib/ses-domain-mail-from";
 import { SesEmailIdentity } from "@cdktf/provider-aws/lib/ses-email-identity";
+import { SesReceiptRuleSet } from "@cdktf/provider-aws/lib/ses-receipt-rule-set";
+import { SesActiveReceiptRuleSet } from "@cdktf/provider-aws/lib/ses-active-receipt-rule-set";
+import { SesReceiptRule } from "@cdktf/provider-aws/lib/ses-receipt-rule";
 // TODO @deprecated
 import { AwsWebsocket } from "@dvargas92495/aws-websocket";
 // TODO @deprecated
@@ -160,6 +163,7 @@ const setupInfrastructure = async (): Promise<void> => {
         ],
       });
 
+      const callerIdentity = new DataAwsCallerIdentity(this, "tf_caller", {});
       const mainBucketPolicy = new DataAwsIamPolicyDocument(
         this,
         "main_bucket_policy_doc",
@@ -183,6 +187,26 @@ const setupInfrastructure = async (): Promise<void> => {
                 {
                   type: "AWS",
                   identifiers: ["*"],
+                },
+              ],
+            },
+            {
+              actions: ["s3:PutObject"],
+
+              resources: [`arn:aws:s3:::${buckets[projectName].id}/*`],
+
+              principals: [
+                {
+                  type: "Service",
+                  identifiers: ["ses.amazonaws.com"],
+                },
+              ],
+
+              condition: [
+                {
+                  test: "StringEquals",
+                  variable: "aws:Referer",
+                  values: [callerIdentity.accountId],
                 },
               ],
             },
@@ -496,7 +520,6 @@ const setupInfrastructure = async (): Promise<void> => {
       new CloudfrontOriginAccessIdentity(this, "cdn_identity", {
         comment: "Identity for CloudFront only access",
       });
-      const callerIdentity = new DataAwsCallerIdentity(this, "tf_caller", {});
 
       const appUser = new IamUser(this, "app_deploy_user", {
         name: `${projectName}-deploy`,
@@ -1259,9 +1282,49 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         records: ["v=spf1 include:_spf.google.com ~all"],
       });
 
-      // TODO migrate google verification route53 record
-      // - google._domainkey TXT record
-      // - _dmarc TXT record
+      new Route53Record(this, `google_domain_txt_record`, {
+        zoneId,
+        name: `google._domainkey.${projectName}`,
+        type: "TXT",
+        ttl: 300,
+        records: [
+          "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAisRL3yxr04856dcN7R9bbLqtKrZKK3QbyuwffAzJ8ZDQPYDRa7qjazJeNO4NDGk++lhfySBSn8aJ56KhLDcd+e7BaM0Hx/RezWCQEk0YYZiDeD1C5z+Rt6Hu9w8VVFIogmcNNFNJ2arS4AUUX",
+          "rPnr1RnIaf2C6oj2iNgxiCDCKsXNmwUV7fpHtVA8lxpG/tbn88j5DZdnUPY5qksuW+D+Ct1vQnQEZjntexBUsr6EY2JKQZq/IkACnhbRZdhJBk1eXDyGQ5vQF9O9iYOSzgxtDiwPeZXFxV+fHyaY97amLN8voxyuFMR6CmR2qKfq5HrZFKOalRSOnM+rs7p4Yp91QIDAQAB",
+        ],
+      });
+
+      new Route53Record(this, `dmarc_txt_record`, {
+        zoneId,
+        name: `_dmarc.${projectName}`,
+        type: "TXT",
+        ttl: 300,
+        records: ["v=DMARC1; p=none; rua=mailto:support@samepage.network"],
+      });
+
+      const sesReceiptRuleSet = new SesReceiptRuleSet(
+        this,
+        `receipt_rule_set`,
+        {
+          ruleSetName: "samepage-rules",
+        }
+      );
+      new SesActiveReceiptRuleSet(this, `active_receipt_rule_set`, {
+        ruleSetName: sesReceiptRuleSet.ruleSetName,
+      });
+      new SesReceiptRule(this, `email_s3_rule`, {
+        ruleSetName: sesReceiptRuleSet.ruleSetName,
+        name: "store",
+        recipients: [],
+        enabled: true,
+        scanEnabled: true,
+        s3Action: [
+          {
+            bucketName: buckets[projectName].bucket,
+            position: 1,
+            objectKeyPrefix: "emails/",
+          },
+        ],
+      });
     }
   }
 
@@ -1479,6 +1542,14 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
     {
       to: "aws_route53_record.standard_txt_record",
       id: `${zoneId}_samepage.network_TXT`,
+    },
+    {
+      to: "aws_route53_record.dmarc_txt_record",
+      id: `${zoneId}__dmarc.samepage.network_TXT`,
+    },
+    {
+      to: "aws_route53_record.google_domain_txt_record",
+      id: `${zoneId}_google._domainkey.samepage.network_TXT`,
     },
   ]);
 
