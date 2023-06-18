@@ -1288,8 +1288,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         type: "TXT",
         ttl: 300,
         records: [
-          "v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAisRL3yxr04856dcN7R9bbLqtKrZKK3QbyuwffAzJ8ZDQPYDRa7qjazJeNO4NDGk++lhfySBSn8aJ56KhLDcd+e7BaM0Hx/RezWCQEk0YYZiDeD1C5z+Rt6Hu9w8VVFIogmcNNFNJ2arS4AUUX",
-          "rPnr1RnIaf2C6oj2iNgxiCDCKsXNmwUV7fpHtVA8lxpG/tbn88j5DZdnUPY5qksuW+D+Ct1vQnQEZjntexBUsr6EY2JKQZq/IkACnhbRZdhJBk1eXDyGQ5vQF9O9iYOSzgxtDiwPeZXFxV+fHyaY97amLN8voxyuFMR6CmR2qKfq5HrZFKOalRSOnM+rs7p4Yp91QIDAQAB",
+          'v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAisRL3yxr04856dcN7R9bbLqtKrZKK3QbyuwffAzJ8ZDQPYDRa7qjazJeNO4NDGk++lhfySBSn8aJ56KhLDcd+e7BaM0Hx/RezWCQEk0YYZiDeD1C5z+Rt6Hu9w8VVFIogmcNNFNJ2arS4AUUX""rPnr1RnIaf2C6oj2iNgxiCDCKsXNmwUV7fpHtVA8lxpG/tbn88j5DZdnUPY5qksuW+D+Ct1vQnQEZjntexBUsr6EY2JKQZq/IkACnhbRZdhJBk1eXDyGQ5vQF9O9iYOSzgxtDiwPeZXFxV+fHyaY97amLN8voxyuFMR6CmR2qKfq5HrZFKOalRSOnM+rs7p4Yp91QIDAQAB',
         ],
       });
 
