@@ -231,9 +231,10 @@ export type DeletePage = (s: string) => Promise<unknown>;
 export type NotebookRequestHandler = (inner: {
   request: JSONData;
 }) => JSONData | Promise<JSONData> | undefined;
-export type NotebookResponseHandler = (
-  response: NotebookResponse
-) => Promise<unknown>;
+export type NotebookResponseHandler = (data: {
+  response: NotebookResponse;
+  requestUuid: string;
+}) => Promise<unknown>;
 
 export type WorkflowContext = z.infer<typeof zWorkflowContext>;
 export type CommandHandler = (

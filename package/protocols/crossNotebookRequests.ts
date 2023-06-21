@@ -35,7 +35,7 @@ const sendNotebookRequest: SendNotebookRequest = ({ target, request, label }) =>
           const timeout = setTimeout(() => {
             resolve(r.response);
           }, 3000);
-          notebookResponseHandlers[r.requestUuid] = async (response) => {
+          notebookResponseHandlers[r.requestUuid] = async ({ response }) => {
             clearTimeout(timeout);
             resolve(response);
           };
@@ -108,7 +108,8 @@ const setupCrossNotebookRequests = () => {
         response: JSONData;
         requestUuid: string;
       };
-      notebookResponseHandlers[requestUuid]?.(response);
+      // TODO - solve redundancy
+      notebookResponseHandlers[requestUuid]?.({ response, requestUuid });
     },
   });
   return {

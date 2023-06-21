@@ -19,6 +19,7 @@ import sendExtensionError from "../internal/sendExtensionError";
 import setupRegistry from "../internal/registry";
 import OperationNotificationEmail from "../components/OperationNotificationEmail";
 import { z } from "zod";
+import saveResponse from "./saveResponse";
 
 type Credentials = z.infer<typeof zBackendWebSocketMessageCredentials>;
 
@@ -26,13 +27,13 @@ const createApiMessageHandler =
   ({
     getDecodeState,
     getNotebookRequestHandler,
-    getNotebookResponseHandler,
+    getNotebookResponseHandler = () => saveResponse,
   }: {
     getDecodeState: (credentials: Credentials) => DecodeState;
     getNotebookRequestHandler: (
       credentials: Credentials
     ) => NotebookRequestHandler;
-    getNotebookResponseHandler: (
+    getNotebookResponseHandler?: (
       credentials: Credentials
     ) => NotebookResponseHandler;
   }) =>
@@ -95,7 +96,7 @@ const createApiMessageHandler =
         ]);
       } else if (data.operation === "RESPONSE") {
         // const response = 
-        await getNotebookResponseHandler(credentials)(data.response);
+        await getNotebookResponseHandler(credentials)(data);
         // Need an equivalent to:
         // notebookResponseHandlers[data.requestUuid]?.(response);
       }

@@ -5,11 +5,11 @@ import { homedir } from "os";
 import path from "path";
 import fs from "fs";
 import { spawn } from "child_process";
-import debug from "../../package/utils/debugger";
+// import debug from "../../package/utils/debugger";
 import os from "os";
 
 const shell = os.platform() === "win32";
-const log = debug("ngrok");
+// const log = debug("ngrok");
 
 const start = async ({}: {} = {}) => {
   const configPath = path.join(homedir(), ".ngrok2", "ngrok.yml");
@@ -32,7 +32,7 @@ const start = async ({}: {} = {}) => {
   }
   setTimeout(() => {
     const proc = spawn("ngrok", ["start", "--all", "--log=stdout"], { shell });
-    proc.stdout.on("data", (data) => log(data));
+    proc.stdout.on("data", (data) => console.log("ngrok", data.toString()));
     proc.stdout.on("error", (data) => console.error(data));
   }, 3000);
   return Promise.all([api({ local: true }), dev({ local: true })]).then(

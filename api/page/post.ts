@@ -1220,6 +1220,7 @@ const logic = async (req: Record<string, unknown>) => {
               return {
                 response: responses[0].response,
                 requestUuid: responses[0].requestUuid,
+                cacheHit: responses[0].cacheHit,
               };
             } else {
               throw new Error(resps[0].response.error);
