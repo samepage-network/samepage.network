@@ -1221,21 +1221,25 @@ const logic = async (req: Record<string, unknown>) => {
           .catch(catchError("Failed to request across notebooks"));
       }
       case "notebook-response": {
-        const { requestUuid, response, target } = args;
+        const { requestUuid, response, target, messageUuid } = args;
 
         const [notebookRequest] = await cxn
           .select({
             hash: notebookRequests.hash,
-            connectionId: notebookRequests.connectionId,
           })
           .from(notebookRequests)
           .where(eq(notebookRequests.uuid, requestUuid));
         if (!notebookRequest)
           throw new NotFoundError(`Couldn't find request ${requestUuid}`);
-        const { hash, connectionId } = notebookRequest;
+        const { hash } = notebookRequest;
         await uploadFile({
           Body: JSON.stringify(response),
           Key: `data/requests/${hash}.json`,
+        });
+        // TODO: seems redundant to do this here and in the response handler
+        await uploadFile({
+          Body: JSON.stringify(response),
+          Key: `data/responses/${messageUuid}.json`,
         });
         return messageNotebook({
           target,
@@ -1244,9 +1248,9 @@ const logic = async (req: Record<string, unknown>) => {
           data: {
             requestUuid,
             response,
+            messageUuid,
           },
           requestId,
-          connectionId,
         })
           .then(() => ({ success: true }))
           .catch(catchError("Failed to respond to request"));
