@@ -22,7 +22,7 @@ import { JSONData } from "package/internal/types";
 
 const log = debug("api:message-notebook");
 
-const messageNotebook = ({
+const messageNotebook = async ({
   source,
   target,
   data = {},
@@ -42,114 +42,114 @@ const messageNotebook = ({
   connectionId?: string | null;
   saveData?: boolean;
 }) => {
-  return getMysql(requestId).then(async (cxn) => {
-    const sourceNotebook = await getNotebookByUuid({ uuid: source, requestId });
-    const Data: Record<string, unknown> = {
-      ...data,
-      source: {
-        uuid: source,
-        app: sourceNotebook.app,
-        workspace: sourceNotebook.workspace,
-        appName: sourceNotebook.appName,
-      },
-      operation,
-    };
-    const ConnectionId =
-      connectionId ||
-      (await cxn
-        .select({ id: onlineClients.id })
-        .from(onlineClients)
-        .leftJoin(
-          tokenNotebookLinks,
-          eq(tokenNotebookLinks.uuid, onlineClients.actorUuid)
+  const cxn = await getMysql(requestId);
+  const sourceNotebook = await getNotebookByUuid({ uuid: source, requestId });
+  const Data: Record<string, unknown> = {
+    ...data,
+    source: {
+      uuid: source,
+      app: sourceNotebook.app,
+      workspace: sourceNotebook.workspace,
+      appName: sourceNotebook.appName,
+    },
+    operation,
+  };
+  const ConnectionId =
+    connectionId ||
+    (await cxn
+      .select({ id: onlineClients.id })
+      .from(onlineClients)
+      .leftJoin(
+        tokenNotebookLinks,
+        eq(tokenNotebookLinks.uuid, onlineClients.actorUuid)
+      )
+      .where(
+        or(
+          eq(onlineClients.notebookUuid, target),
+          eq(tokenNotebookLinks.notebookUuid, target)
         )
-        .where(
-          or(
-            eq(onlineClients.notebookUuid, target),
-            eq(tokenNotebookLinks.notebookUuid, target)
-          )
+      )
+      .orderBy(desc(onlineClients.createdDate))
+      .limit(1)
+      .then((res) => res[0]?.id));
+  let online = false;
+  log("Found connection", ConnectionId, "for", target);
+  if (ConnectionId && ConnectionId !== "$samepage") {
+    online = await postToConnection({
+      ConnectionId,
+      Data,
+      uuid: messageUuid,
+    })
+      .then(() => true)
+      .catch((e) => {
+        return endClient(
+          ConnectionId,
+          `Missed Message (${e.message})`,
+          requestId
         )
-        .orderBy(desc(onlineClients.createdDate))
-        .limit(1)
-        .then((res) => res[0]?.id));
-    let online = false;
-    log("Found connection", ConnectionId, "for", target);
-    if (ConnectionId && ConnectionId !== "$samepage") {
-      online = await postToConnection({
-        ConnectionId,
-        Data,
-        uuid: messageUuid,
+          .then(() => false)
+          .catch(() => false);
+      });
+    log(source, "messaged", target, "as online", online, "with", operation);
+  } else {
+    const [endpoint] = await cxn
+      .select({
+        accessToken: accessTokens.value,
+        path: apps.code,
+        token: tokens.value,
+        userId: tokens.userId,
+        workspace: notebooks.workspace,
       })
+      .from(accessTokens)
+      .innerJoin(notebooks, eq(accessTokens.notebookUuid, notebooks.uuid))
+      .innerJoin(apps, eq(notebooks.app, apps.id))
+      .innerJoin(
+        tokenNotebookLinks,
+        eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
+      )
+      .innerJoin(tokens, eq(tokenNotebookLinks.tokenUuid, tokens.uuid))
+      .where(eq(accessTokens.notebookUuid, target))
+      .limit(1);
+    log("sending message", operation, "to endpoint", endpoint);
+    if (endpoint) {
+      const { path, accessToken, token } = endpoint;
+      Data["credentials"] = {
+        accessToken,
+        notebookUuid: target,
+        token,
+        email: await getPrimaryUserEmail(endpoint.userId),
+        workspace: endpoint.workspace,
+      };
+      Data["uuid"] = messageUuid;
+      const lambda = new Lambda({
+        endpoint: process.env.AWS_ENDPOINT,
+      });
+      online = await lambda
+        .invoke({
+          FunctionName: `samepage-network_extensions-${path}-message`,
+          Payload: Buffer.from(JSON.stringify(Data)),
+        })
         .then(() => true)
         .catch((e) => {
-          return endClient(
-            ConnectionId,
-            `Missed Message (${e.message})`,
-            requestId
-          )
-            .then(() => false)
-            .catch(() => false);
+          console.error(e);
+          return false;
         });
-      log(source, "messaged", target, "as online", online, "with", operation);
-    } else {
-      const [endpoint] = await cxn
-        .select({
-          accessToken: accessTokens.value,
-          path: apps.code,
-          token: tokens.value,
-          userId: tokens.userId,
-          workspace: notebooks.workspace,
-        })
-        .from(accessTokens)
-        .innerJoin(notebooks, eq(accessTokens.notebookUuid, notebooks.uuid))
-        .innerJoin(apps, eq(notebooks.app, apps.id))
-        .innerJoin(
-          tokenNotebookLinks,
-          eq(tokenNotebookLinks.notebookUuid, notebooks.uuid)
-        )
-        .innerJoin(tokens, eq(tokenNotebookLinks.tokenUuid, tokens.uuid))
-        .where(eq(accessTokens.notebookUuid, target))
-        .limit(1);
-      log("sending message", operation, "to endpoint", endpoint);
-      if (endpoint) {
-        const { path, accessToken, token } = endpoint;
-        Data["credentials"] = {
-          accessToken,
-          notebookUuid: target,
-          token,
-          email: await getPrimaryUserEmail(endpoint.userId),
-          workspace: endpoint.workspace,
-        };
-        Data["uuid"] = messageUuid;
-        const lambda = new Lambda({
-          endpoint: process.env.AWS_ENDPOINT,
-        });
-        online = await lambda
-          .invoke({
-            FunctionName: `samepage-network_extensions-${path}-message`,
-            Payload: Buffer.from(JSON.stringify(Data)),
-          })
-          .then(() => true)
-          .catch((e) => {
-            console.error(e);
-            return false;
-          });
-      }
     }
-    await cxn.insert(messages).values({
-      uuid: messageUuid,
-      createdDate: new Date(),
-      marked: online && !MESSAGES[operation].buttons.length ? 1 : 0,
-      source,
-      target,
-      operation,
-      metadata: saveData ? data : null,
-    });
-    await uploadFile({
-      Key: `data/messages/${messageUuid}.json`,
-      Body: JSON.stringify(Data),
-    });
+  }
+  await cxn.insert(messages).values({
+    uuid: messageUuid,
+    createdDate: new Date(),
+    marked: online && !MESSAGES[operation].buttons.length ? 1 : 0,
+    source,
+    target,
+    operation,
+    metadata: saveData ? data : null,
   });
+  await uploadFile({
+    Key: `data/messages/${messageUuid}.json`,
+    Body: JSON.stringify(Data),
+  });
+  return messageUuid;
 };
 
 export default messageNotebook;

@@ -91,7 +91,7 @@ const createApiMessageHandler =
       } else if (data.operation === "REQUEST_DATA") {
         handleRequestDataOperation(data, source, uuid);
       } else if (data.operation === "REQUEST") {
-        await handleRequestOperation(data, source, [
+        await handleRequestOperation(data, source, uuid, [
           getNotebookRequestHandler(credentials),
         ]);
       } else if (data.operation === "RESPONSE") {

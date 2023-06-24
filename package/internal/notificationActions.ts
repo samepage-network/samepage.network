@@ -4,7 +4,7 @@ import { JSONData } from "./types";
 
 type NotificationActions = Record<
   string,
-  (args: JSONData) => Promise<unknown>
+  (args: JSONData, messageUuid: string) => Promise<unknown>
 >;
 const notificationActions: {
   [k in Operation]?: NotificationActions;
@@ -30,7 +30,7 @@ export const callNotificationAction = ({
   messageUuid: string;
 }) => {
   const action = notificationActions[operation]?.[label];
-  return (action ? action(data) : Promise.resolve()).then(() =>
+  return (action ? action(data, messageUuid) : Promise.resolve()).then(() =>
     apiClient({
       method: "mark-message-read",
       messageUuid,

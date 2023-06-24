@@ -13,6 +13,7 @@ const handleRequestOperation = async (
     requestUuid,
   }: Pick<z.infer<typeof zRequestWebsocketMessage>, "request" | "requestUuid">,
   source: Pick<MessageSource, "uuid">,
+  messageUuid: string,
   notebookRequestHandlers: NotebookRequestHandler[]
 ) => {
   const response = await notebookRequestHandlers.reduce(
@@ -25,6 +26,7 @@ const handleRequestOperation = async (
       response,
       target: source.uuid,
       requestUuid,
+      messageUuid,
     });
   }
 };

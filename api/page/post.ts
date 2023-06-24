@@ -1085,13 +1085,7 @@ const logic = async (req: Record<string, unknown>) => {
           .catch(catchError("Failed to respond to query"));
       }
       case "notebook-request": {
-        const {
-          request,
-          targets: _targets,
-          target,
-          label,
-          connectionId = "$samepage",
-        } = args;
+        const { request, targets: _targets, target, label } = args;
         const targets = target ? [target] : _targets || [];
         if (!targets.length) {
           throw new NotFoundError("No targets specified");
@@ -1109,8 +1103,7 @@ const logic = async (req: Record<string, unknown>) => {
                 .where(
                   and(
                     eq(notebookRequests.hash, hash),
-                    eq(notebookRequests.notebookUuid, notebookUuid),
-                    eq(notebookRequests.connectionId, connectionId)
+                    eq(notebookRequests.notebookUuid, notebookUuid)
                   )
                 );
               const messageRequest = (requestUuid: string) =>
@@ -1138,21 +1131,16 @@ const logic = async (req: Record<string, unknown>) => {
                     )
                   );
                 const uuid = v4();
-                await cxn
-                  .insert(notebookRequests)
-                  .values({
-                    target,
-                    notebookUuid,
-                    hash,
-                    uuid,
-                    label,
-                    status: hasAccess.length ? "accepted" : "pending",
-                    connectionId,
-                  })
-                  // TODO - once other clients start sending connectionId, we will need to handle this better
-                  .onDuplicateKeyUpdate({ set: { connectionId } });
-                await (hasAccess.length
-                  ? messageRequest(target)
+                await cxn.insert(notebookRequests).values({
+                  target,
+                  notebookUuid,
+                  hash,
+                  uuid,
+                  label,
+                  status: hasAccess.length ? "accepted" : "pending",
+                });
+                const messageUuid = await (hasAccess.length
+                  ? messageRequest(uuid)
                   : messageNotebook({
                       source: notebookUuid,
                       target,
@@ -1169,6 +1157,7 @@ const logic = async (req: Record<string, unknown>) => {
                   target,
                   response: null,
                   requestUuid: uuid,
+                  messageUuid,
                   cacheHit: false,
                 };
               } else if (requestRecord.status === "rejected") {
@@ -1179,23 +1168,25 @@ const logic = async (req: Record<string, unknown>) => {
                   cacheHit: false,
                 };
               } else if (requestRecord.status === "pending") {
-                await messageRequest(requestRecord.uuid);
+                const messageUuid = await messageRequest(requestRecord.uuid);
                 return {
                   target,
                   response: "pending",
                   requestUuid: requestRecord.uuid,
                   cacheHit: false,
+                  messageUuid,
                 };
               } else {
                 const data = await downloadFileContent({
                   Key: `data/requests/${hash}.json`,
                 });
-                await messageRequest(requestRecord.uuid);
+                const messageUuid = await messageRequest(requestRecord.uuid);
                 return {
                   target,
                   response: data ? JSON.parse(data) : {},
                   requestUuid: requestRecord.uuid,
                   cacheHit: true,
+                  messageUuid,
                 };
               }
             } catch (e) {
@@ -1221,6 +1212,7 @@ const logic = async (req: Record<string, unknown>) => {
                 response: responses[0].response,
                 requestUuid: responses[0].requestUuid,
                 cacheHit: responses[0].cacheHit,
+                messageUuid: responses[0].messageUuid,
               };
             } else {
               throw new Error(resps[0].response.error);

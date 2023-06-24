@@ -23,6 +23,7 @@ const sendNotebookRequest: SendNotebookRequest = ({ target, request, label }) =>
     response: NotebookResponse;
     requestUuid: string;
     cacheHit: boolean;
+    messageUuid: string | undefined;
   }>({
     method: "notebook-request",
     target,
@@ -31,11 +32,14 @@ const sendNotebookRequest: SendNotebookRequest = ({ target, request, label }) =>
   }).then(
     async (r) =>
       new Promise<NotebookResponse>(async (resolve, reject) => {
-        if (r.cacheHit || r.response === "pending" || r.response === null) {
+        if (
+          (r.cacheHit || r.response === "pending" || r.response === null) &&
+          r.messageUuid
+        ) {
           const timeout = setTimeout(() => {
             resolve(r.response);
           }, 3000);
-          notebookResponseHandlers[r.requestUuid] = async ({ response }) => {
+          notebookResponseHandlers[r.messageUuid] = async ({ response }) => {
             clearTimeout(timeout);
             resolve(response);
           };
@@ -61,7 +65,7 @@ const setupCrossNotebookRequests = () => {
   registerNotificationActions({
     operation: "REQUEST_DATA",
     actions: {
-      accept: async ({ requestUuid, request, source }) => {
+      accept: async ({ requestUuid, request, source }, messageUuid) => {
         await handleRequestOperation(
           {
             request:
@@ -69,6 +73,7 @@ const setupCrossNotebookRequests = () => {
             requestUuid: z.string().parse(requestUuid),
           },
           { uuid: z.string().parse(source) },
+          messageUuid,
           notebookRequestHandlers
         );
         await apiClient({
@@ -94,10 +99,11 @@ const setupCrossNotebookRequests = () => {
   });
   const removeRequestListener = addNotebookListener({
     operation: "REQUEST",
-    handler: async (e, source) =>
+    handler: async (e, source, messageUuid) =>
       handleRequestOperation(
         zRequestWebsocketMessage.parse(e),
         source,
+        messageUuid,
         notebookRequestHandlers
       ),
   });

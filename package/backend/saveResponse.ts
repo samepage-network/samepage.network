@@ -1,9 +1,9 @@
-import { NotebookResponseHandler } from "package/internal/types";
+import { NotebookResponseHandler } from "../internal/types";
 import uploadFileContent from "./uploadFileContent";
 
-const saveResponse: NotebookResponseHandler = ({ response, requestUuid }) => {
+const saveResponse: NotebookResponseHandler = ({ response, messageUuid }) => {
   return uploadFileContent({
-    Key: `data/responses/${requestUuid}.json`,
+    Key: `data/responses/${messageUuid}.json`,
     Body: JSON.stringify(response),
   });
 };

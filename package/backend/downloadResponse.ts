@@ -1,8 +1,8 @@
 import downloadFileContent from "./downloadFileContent";
 
-const downloadResponse = (requestUuid: string) => {
+const downloadResponse = (messageUuid: string) => {
   return downloadFileContent({
-    Key: `data/responses/${requestUuid}.json`,
+    Key: `data/responses/${messageUuid}.json`,
   });
 };
 

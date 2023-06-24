@@ -234,6 +234,7 @@ export type NotebookRequestHandler = (inner: {
 export type NotebookResponseHandler = (data: {
   response: NotebookResponse;
   requestUuid: string;
+  messageUuid: string;
 }) => Promise<unknown>;
 
 export type WorkflowContext = z.infer<typeof zWorkflowContext>;
@@ -307,6 +308,7 @@ const zNotebookResponseApi = z.object({
   requestUuid: z.string(),
   response: zNotebookResponse,
   target: z.string(),
+  messageUuid: z.string(),
 });
 
 export type NotebookResponse = z.infer<typeof zNotebookResponse>;
@@ -373,6 +375,7 @@ export const zResponseWebsocketMessage = z.object({
   operation: z.literal("RESPONSE"),
   requestUuid: z.string(),
   response: zNotebookResponse,
+  messageUuid: z.string(),
 });
 
 const zWebsocketMessage = z.discriminatedUnion("operation", [
