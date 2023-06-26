@@ -19,7 +19,7 @@ const verifyUser = async ({
 }) => {
   const userId = await users
     .getUserList({ emailAddress: [email] })
-    .then((u) => u[0].id);
+    .then((u) => u[0]?.id);
   if (!userId) {
     throw new NotFoundError("Could not find user");
   }
