@@ -1,5 +1,6 @@
 import { APIGatewayProxyHandler } from "aws-lambda";
 import nodepath from "path";
+import os from "os";
 
 export const handler: APIGatewayProxyHandler = async (event, context) => {
   const { id = "", file = "" } = event.pathParameters || {};
@@ -16,7 +17,14 @@ export const handler: APIGatewayProxyHandler = async (event, context) => {
       delete require.cache[k];
     });
   const rand = Math.random();
-  return import(`${nodepath.join(process.cwd(), "..", filePath)}?bust=${rand}`)
+  const fullPath = `${nodepath.join(
+    process.cwd(),
+    "..",
+    filePath
+  )}?bust=${rand}`;
+  const normalizedPath =
+    os.platform() === "win32" ? `file://${fullPath.normalize()}` : fullPath;
+  return import(normalizedPath)
     .then((module) => {
       if (!job) return module.handler(event, context);
       else module.handler(JSON.parse(event.body || "{}"));
