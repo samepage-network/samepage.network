@@ -5,7 +5,12 @@ import { Link, useLoaderData } from "@remix-run/react";
 import { LoaderArgs, LoaderFunction } from "@remix-run/node";
 import getUserId from "~/data/getUserId.server";
 import getStripePlans from "~/data/getStripePlans.server";
+import parseRequestContext from "samepage/internal/parseRequestContext";
+import PauseNotice from "~/components/PauseNotice";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
+
+const usePricingPageData = () =>
+  useLoaderData<Awaited<ReturnType<typeof loaderFunction>>>();
 
 const Plan = ({
   title,
@@ -20,7 +25,7 @@ const Plan = ({
   features: string[];
   link: string;
 }) => {
-  const data = useLoaderData<Awaited<ReturnType<typeof loaderFunction>>>();
+  const data = usePricingPageData();
   return (
     <div className="bg-sky-100 rounded shadow-md flex-1 flex flex-col">
       <div className="border-b border-b-black border-opacity-75 py-8 px-4 text-center">
@@ -69,36 +74,43 @@ const Plan = ({
 };
 
 const PricingPage = () => {
+  const { paused } = usePricingPageData();
   return (
     <div className="w-full max-w-7xl">
-      <div className="flex gap-8 w-full my-8">
-        <Plan
-          title={"Hobby"}
-          base={0}
-          description={"For individuals curious about SamePage"}
-          features={["3 Notebooks", "100 Shared Pages"]}
-          link={"/install"}
-        />
-        <Plan
-          title={"Professional"}
-          base={10}
-          description={"For professionals managing several personal workspaces"}
-          features={["5 Notebooks", "1K Shared Pages"]}
-          link={"/signup"}
-        />
-        <Plan
-          title={"Client"}
-          base={1000}
-          description={"For organizations partnering with us"}
-          features={[
-            "1K Notebooks",
-            "1M Shared Pages",
-            "Unlimited requests",
-            "Prioritized support",
-          ]}
-          link={"/signup"}
-        />
-      </div>
+      {paused ? (
+        <PauseNotice />
+      ) : (
+        <div className="flex gap-8 w-full my-8">
+          <Plan
+            title={"Hobby"}
+            base={0}
+            description={"For individuals curious about SamePage"}
+            features={["3 Notebooks", "100 Shared Pages"]}
+            link={"/install"}
+          />
+          <Plan
+            title={"Professional"}
+            base={10}
+            description={
+              "For professionals managing several personal workspaces"
+            }
+            features={["5 Notebooks", "1K Shared Pages"]}
+            link={"/signup"}
+          />
+          <Plan
+            title={"Client"}
+            base={1000}
+            description={"For organizations partnering with us"}
+            features={[
+              "1K Notebooks",
+              "1M Shared Pages",
+              "Unlimited requests",
+              "Prioritized support",
+            ]}
+            link={"/signup"}
+          />
+        </div>
+      )}
     </div>
   );
 };
@@ -107,6 +119,7 @@ const loaderFunction = async (args: LoaderArgs) => {
   const isLoggedIn = await getUserId(args).then((id) => !!id);
   const plans = await getStripePlans();
   return {
+    paused: parseRequestContext(args.context).paused,
     isLoggedIn,
     plans,
   };

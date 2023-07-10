@@ -13,22 +13,9 @@ const ContactPage: React.FunctionComponent = () => (
   >
     <Title>Contact Us</Title>
     <p>
-      Best place to reach us is in our{" "}
-      <ExternalLink href={"https://discord.gg/UpKAfUvUPd"}>
-        Discord
-      </ExternalLink>
-      .
-    </p>
-    <p>
-      You can also email us for any bugs, issues, or ideas at{" "}
+      Best place to reach us is at{" "}
       <ExternalLink href={"mailto:support@samepage.network"}>
         support@samepage.network
-      </ExternalLink>
-    </p>
-    <p>
-      Our DMs are also open on Twitter at{" "}
-      <ExternalLink href={"https://twitter.com/samepagenetwork"}>
-        @samepagenetwork
       </ExternalLink>
       .
     </p>

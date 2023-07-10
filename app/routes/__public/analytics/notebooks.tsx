@@ -4,7 +4,7 @@ import { useLoaderData } from "@remix-run/react";
 import loadNotebookAnalytics from "~/data/loadNotebookAnalytics.server";
 import { Chart, ChartOptions } from "react-charts";
 import { useMemo } from "react";
-import parseRemixContext from "~/data/parseRemixContext.server";
+import parseRequestContext from "package/internal/parseRequestContext";
 
 const AnalyticsNotebooksPage = () => {
   const { data } =
@@ -52,8 +52,10 @@ const AnalyticsNotebooksPage = () => {
 };
 
 export const loader: LoaderFunction = ({ context }) => {
+  const { requestId, paused } = parseRequestContext(context);
+  if (paused) return { data: [] };
   return loadNotebookAnalytics({
-    requestId: parseRemixContext(context).lambdaContext.awsRequestId,
+    requestId,
   });
 };
 

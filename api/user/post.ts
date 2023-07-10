@@ -5,7 +5,6 @@ import emailError from "package/backend/emailError.server";
 import sendEmail from "package/backend/sendEmail.server";
 import WelcomeEmail from "~/components/WelcomeEmail";
 import NewUserEmail from "~/components/NewUserEmail";
-import { subscribe } from "~/data/subscribeToConvertkitAction.server";
 import getMysql from "~/data/mysql.server";
 import { v4 } from "uuid";
 import randomString from "~/data/randomString.server";
@@ -53,8 +52,12 @@ export const handler = async (
         last_name,
         email_addresses,
         primary_email_address_id,
+        private_metadata,
         created_at,
       } = data;
+      const source = (private_metadata as unknown as Record<string, unknown>)
+        ?.source;
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const email = email_addresses.find(
         (e: { id: string }) => e.id === primary_email_address_id
@@ -98,37 +101,30 @@ export const handler = async (
                     : first_name || last_name || "",
               })
         )
-        .then((r) =>
-          subscribe({ email, tag: "SignUp", form: "AutoConfirm" })
-            .then((sub) => ({
-              stripeCustomerId: r.id,
-              convertKit: sub.success ? sub.data : undefined,
-            }))
-            .catch((e) => {
-              emailError("Failed to subscribe customer to ConvertKit", e);
-              return {
-                stripeCustomerId: r.id,
-              };
-            })
-        )
+        .then((r) => ({
+          source: source || "app",
+          stripeCustomerId: r.id,
+        }))
         .then((privateMetadata) =>
           users.updateUser(id, {
             privateMetadata,
           })
         )
         .then(() =>
-          Promise.all([
-            sendEmail({
-              to: email,
-              subject: "Welcome to SamePage!",
-              body: WelcomeEmail(),
-            }),
-            sendEmail({
-              to: "vargas@samepage.network",
-              subject: "New SamePage User",
-              body: NewUserEmail({ email }),
-            }),
-          ])
+          source === "migration"
+            ? Promise.resolve(["", ""])
+            : Promise.all([
+                sendEmail({
+                  to: email,
+                  subject: "Welcome to SamePage!",
+                  body: WelcomeEmail(),
+                }),
+                sendEmail({
+                  to: "vargas@samepage.network",
+                  subject: "New SamePage User",
+                  body: NewUserEmail({ email }),
+                }),
+              ])
         )
         .then(() => ({
           statusCode: 200,

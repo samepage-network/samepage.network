@@ -4,6 +4,7 @@ import { useLoaderData } from "@remix-run/react";
 import loadMRRAnalytics from "~/data/loadMRRAnalytics.server";
 import { Chart, ChartOptions } from "react-charts";
 import { useMemo } from "react";
+import parseRequestContext from "package/internal/parseRequestContext";
 
 const AnalyticsMRRPage = () => {
   const { data } =
@@ -51,7 +52,9 @@ const AnalyticsMRRPage = () => {
   );
 };
 
-export const loader: LoaderFunction = () => {
+export const loader: LoaderFunction = ({ context }) => {
+  const { paused } = parseRequestContext(context);
+  if (paused) return { data: [] };
   return loadMRRAnalytics();
 };
 

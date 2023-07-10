@@ -1,51 +1,11 @@
 import React, { useRef, useEffect } from "react";
-import type { ActionFunction } from "@remix-run/node";
-import { useFetcher, useSearchParams } from "@remix-run/react";
-import subscribeToConvertkitAction from "~/data/subscribeToConvertkitAction.server";
+import type { LoaderFunction } from "@remix-run/node";
+import { useFetcher, useLoaderData, useSearchParams } from "@remix-run/react";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
-import TextInput from "package/components/TextInput";
-import Button from "package/components/Button";
-import SuccessfulActionToast from "~/components/SuccessfulActionToast";
-import MailIcon from "@heroicons/react/outline/MailIcon";
 import ButtonLink from "~/components/ButtonLink";
 import ExternalLink from "~/components/ExternalLink";
-
-const Subscribe = ({
-  title,
-  message = "Click the confirmation link in your email to confirm!",
-}: {
-  title: React.ReactNode;
-  message?: string;
-}) => {
-  const fetcher = useFetcher();
-  const formRef = useRef<HTMLFormElement>(null);
-  useEffect(() => {
-    if (
-      fetcher.data?.success &&
-      formRef.current &&
-      fetcher.type === "actionReload"
-    ) {
-      formRef.current.reset();
-    }
-  }, [formRef, fetcher]);
-  return (
-    <fetcher.Form
-      className="flex flex-col gap-8 items-center"
-      method="put"
-      ref={formRef}
-    >
-      {title}
-      <TextInput
-        placeholder="hello@example.com"
-        name={"email"}
-        label={"Email"}
-        className={"max-w-full w-96"}
-      />
-      <Button className={"max-w-full w-96 text-black"}>Subscribe</Button>
-      <SuccessfulActionToast message={message} fetcher={fetcher} />
-    </fetcher.Form>
-  );
-};
+import parseRequestContext from "package/internal/parseRequestContext";
+import PauseNotice from "~/components/PauseNotice";
 
 const Feature = ({
   index,
@@ -102,6 +62,7 @@ const Home: React.FC = () => {
       setSearchParams(searchParams);
     }
   }, [searchParams, setSearchParams]);
+  const { paused } = useLoaderData();
   return (
     <div className={"w-full"}>
       <div
@@ -119,41 +80,20 @@ const Home: React.FC = () => {
               different workspaces all from within the context of your favorite
               app.
             </p>
-            <p className="flex gap-2">
-              <ButtonLink to={"/agency"}>Work with us</ButtonLink>
-            </p>
+            {!paused && (
+              <p className="flex gap-2">
+                <ButtonLink to={"/agency"}>Work with us</ButtonLink>
+              </p>
+            )}
           </div>
           <div className="flex items-center flex-grow w-full h-full overflow-hidden justify-end">
             <img
-              src={`/images/landing/hero.png`}
+              // src={`/images/landing/hero.png`}
+              src={`/images/agency/graphic.png`}
               className={"h-full max-w-none"}
             />
           </div>
         </div>
-        <fetcher.Form
-          className={`bg-primary flex sm:flex-row flex-col gap-2 sm:gap-8 items-left sm:items-center w-full py-2 justify-start px-4 sm:px-8 lg:px-20`}
-          method="put"
-          ref={formRef}
-        >
-          <div className="flex gap-8 items-center">
-            <MailIcon color="white" height={24} width={24} />
-            <span className="text-white font-bold text-2xl">
-              Stay in the loop
-            </span>
-          </div>
-          <div className="flex gap-8 items-center">
-            <TextInput
-              placeholder="hello@example.com"
-              name={"email"}
-              className={"important mb-0 flex-grow max-w-lg"}
-            />
-            <Button>{"Subscribe"}</Button>
-          </div>
-        </fetcher.Form>
-        <SuccessfulActionToast
-          message="Click the confirmation link in your email to confirm!"
-          fetcher={fetcher}
-        />
       </div>
       <div className="h-[100vh] py-20 sm:py-32 lg:py-40 px-4 flex flex-col">
         <div className="mb-8 max-w-4xl flex justify-center items-center flex-col gap-4 mx-auto text-center">
@@ -183,84 +123,75 @@ const Home: React.FC = () => {
           </div>
         </div>
       </div>
-      <div className="py-20 sm:py-32 lg:py-40">
-        <h1 className="text-xl sm:text-3xl lg:text-5xl mb-10 sm:mb-16 lg:mb-20 text-center">
-          A new way of working
-        </h1>
-        <Feature
-          index={1}
-          title={"Bring Your"}
-          accent={"Own Tool"}
-          description={
-            "Before you go off exporting your data to import into another new tool, plug your existing tools to the SamePage Network by installing the SamePage extension."
-          }
-        >
-          <p className="mt-8 font-semibold w-full text-center">
-            Have another tool you'd like to see supported?{" "}
-            <ExternalLink
-              className="text-sky-500 underline hover:no-underline cursor-pointer"
-              href={
-                "https://github.com/samepage-network/samepage.network/issues"
-              }
-            >
-              Let us know!
-            </ExternalLink>
-          </p>
-        </Feature>
-        <Feature
-          index={2}
-          title={"Own"}
-          accent={"Your Data"}
-          description={
-            <>
-              Create Shared pages{" "}
-              <span className="font-bold">across applications</span> and control
-              which notebooks have access to which data.
-            </>
-          }
-        >
-          <p className="mb-6">
-            All while being backed up by the decentralized web so that you don't
-            need SamePage to access your data.
-          </p>
-        </Feature>
-        <Feature
-          index={3}
-          title={"Stay on the"}
-          accent={"SamePage"}
-          description={
-            <>
-              We are bringing collaboration{" "}
-              <span className="font-bold">back</span> to the tools for thought
-              space by letting users connect pages in their second brains to
-              those in others - no matter the tool you each used.
-            </>
-          }
-        ></Feature>
-      </div>
-      <div
-        className={`flex justify-center bg-primary items-center py-20 text-white flex-col gap-6 px-4 sm:px-20`}
-      >
-        <MailIcon color="white" height={24} width={24} />
-        <span className="font-bold text-4xl">Stay in the loop</span>
-        <div className="max-w-5xl w-full">
-          <Subscribe
-            title={
-              <h2 className={`italic`}>
-                Join our email list below to stay up to date on all news
-                surrounding SamePage!
-              </h2>
-            }
-          />
+      {paused ? (
+        <div className="py-20 sm:py-32 lg:py-40">
+          <PauseNotice />
         </div>
-      </div>
+      ) : (
+        <div className="py-20 sm:py-32 lg:py-40">
+          <h1 className="text-xl sm:text-3xl lg:text-5xl mb-10 sm:mb-16 lg:mb-20 text-center">
+            A new way of working
+          </h1>
+          <Feature
+            index={1}
+            title={"Bring Your"}
+            accent={"Own Tool"}
+            description={
+              "Before you go off exporting your data to import into another new tool, plug your existing tools to the SamePage Network by installing the SamePage extension."
+            }
+          >
+            <p className="mt-8 font-semibold w-full text-center">
+              Have another tool you'd like to see supported?{" "}
+              <ExternalLink
+                className="text-sky-500 underline hover:no-underline cursor-pointer"
+                href={
+                  "https://github.com/samepage-network/samepage.network/issues"
+                }
+              >
+                Let us know!
+              </ExternalLink>
+            </p>
+          </Feature>
+          <Feature
+            index={2}
+            title={"Own"}
+            accent={"Your Data"}
+            description={
+              <>
+                Create Shared pages{" "}
+                <span className="font-bold">across applications</span> and
+                control which notebooks have access to which data.
+              </>
+            }
+          >
+            <p className="mb-6">
+              All while being backed up by the decentralized web so that you
+              don't need SamePage to access your data.
+            </p>
+          </Feature>
+          <Feature
+            index={3}
+            title={"Stay on the"}
+            accent={"SamePage"}
+            description={
+              <>
+                We are bringing collaboration{" "}
+                <span className="font-bold">back</span> to the tools for thought
+                space by letting users connect pages in their second brains to
+                those in others - no matter the tool you each used.
+              </>
+            }
+          ></Feature>
+        </div>
+      )}
     </div>
   );
 };
 
-export const action: ActionFunction = async (args) => {
-  if (args.request.method === "PUT") return subscribeToConvertkitAction(args);
-  else return {};
+export const loader: LoaderFunction = async ({ context }) => {
+  return {
+    paused: parseRequestContext(context).paused,
+  };
 };
 
 export default Home;

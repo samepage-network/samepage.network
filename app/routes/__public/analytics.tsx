@@ -5,10 +5,13 @@ export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import type { LoaderFunction } from "@remix-run/node";
 import { Link, Outlet, useLoaderData, useMatches } from "@remix-run/react";
 import Icon from "@heroicons/react/solid/ChartPieIcon";
+import parseRequestContext from "package/internal/parseRequestContext";
+import PauseNotice from "~/components/PauseNotice";
 
 const AnalyticsPage = () => {
-  const { tabs } = useLoaderData<{
+  const { tabs, paused } = useLoaderData<{
     tabs: { path: string; name: string }[];
+    paused: boolean;
   }>();
   const matches = useMatches();
   const pathname = (matches[3]?.pathname || "undefined").replace(/\/$/, "");
@@ -44,14 +47,14 @@ const AnalyticsPage = () => {
           ))}
         </div>
         <div className="bg-white rounded-3xl p-12 flex-grow">
-          <Outlet />
+          {paused ? <PauseNotice /> : <Outlet />}
         </div>
       </div>
     </div>
   );
 };
 
-export const loader: LoaderFunction = () => {
+export const loader: LoaderFunction = (args) => {
   return {
     tabs: [
       { name: "Total Users", path: "/analytics" },
@@ -60,6 +63,7 @@ export const loader: LoaderFunction = () => {
       { name: "MRR", path: "mrr" },
       { name: "Team", path: "team" },
     ],
+    paused: parseRequestContext(args.context).paused,
   };
 };
 

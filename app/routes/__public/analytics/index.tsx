@@ -3,7 +3,7 @@ import type { LoaderFunction } from "@remix-run/node";
 import loadUserAnalytics from "~/data/loadUserAnalytics.server";
 import { useMemo } from "react";
 import { Chart, type ChartOptions } from "react-charts";
-import parseRemixContext from "~/data/parseRemixContext.server";
+import parseRequestContext from "samepage/internal/parseRequestContext";
 
 const AnalyticsIndexPage = () => {
   const { data } =
@@ -51,8 +51,10 @@ const AnalyticsIndexPage = () => {
 };
 
 export const loader: LoaderFunction = ({ context }) => {
+  const { requestId, paused } = parseRequestContext(context);
+  if (paused) return { data: [] };
   return loadUserAnalytics({
-    requestId: parseRemixContext(context).lambdaContext.awsRequestId,
+    requestId,
   });
 };
 

@@ -25,5 +25,6 @@ export const handler = createRequestHandler({
     /^\/videos\/.*/,
     /^\/.well-known\/.*/,
   ],
+  getLoadContext: () => ({ paused: true }),
   onError: (e) => console.log("Send email to me", e),
 });

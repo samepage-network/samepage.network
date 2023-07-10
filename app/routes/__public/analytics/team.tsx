@@ -1,4 +1,5 @@
 import type { LoaderFunction } from "@remix-run/node";
+import parseRequestContext from "package/internal/parseRequestContext";
 import Table from "~/components/Table";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
@@ -21,7 +22,9 @@ const TeamAnalyticsPage = () => {
   );
 };
 
-export const loader: LoaderFunction = () => {
+export const loader: LoaderFunction = ({ context }) => {
+  const { paused } = parseRequestContext(context);
+  if (paused) return { data: [] };
   const data = [
     { name: "David Vargas", share: "50%", cap: "$84,000" },
     { name: "Michael Gartner", share: "25%", cap: "$16,800" },

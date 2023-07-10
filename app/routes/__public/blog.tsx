@@ -1,12 +1,8 @@
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
-import subscribeToConvertkitAction from "~/data/subscribeToConvertkitAction.server";
-import type { ActionFunction, LoaderFunction } from "@remix-run/node";
-import { Link, useLoaderData, useFetcher } from "@remix-run/react";
+import type { LoaderFunction } from "@remix-run/node";
+import { Link, useLoaderData } from "@remix-run/react";
 import listBlogPosts from "~/data/listBlogPosts.server";
 import { useState } from "react";
-import Button from "package/components/Button";
-import TextInput from "package/components/TextInput";
-import SuccessfulActionToast from "~/components/SuccessfulActionToast";
 import getMeta from "~/components/getMeta";
 
 const Twitter = () => (
@@ -85,7 +81,6 @@ const BlogPage = () => {
   const { directory } =
     useLoaderData<Awaited<ReturnType<typeof listBlogPosts>>>();
   const [showFollowUs, setShowFollowUs] = useState(false);
-  const fetcher = useFetcher();
   return (
     <div className="max-w-6xl w-full my-16 px-2">
       <div className="-mt-3 lg:mt-0 flex items-center justify-between pb-2 lg:pb-16 border-b-gray-400 border-b border-opacity-60">
@@ -99,28 +94,11 @@ const BlogPage = () => {
           </span>
           {showFollowUs && (
             <div className="absolute top-full mt-2 rounded-2xl right-0 border border-gray-400 border-opacity-50 text-gray-500 bg-white z-50">
-              <div className="py-6 px-8 flex justify-between border-b border-b-gray-400 border-opacity-50">
+              <div className="py-6 px-8 flex gap-4 justify-between border-b border-b-gray-400 border-opacity-50">
                 <Twitter />
                 <GitHub />
                 <Discord />
               </div>
-              <fetcher.Form method={"put"} className={"py-6 px-8"}>
-                <div className="mb-2">
-                  Subscribe to our newsletter below to stay up to date on
-                  SamePage!
-                </div>
-                <TextInput
-                  placeholder="hello@example.com"
-                  name={"email"}
-                  label={"Email"}
-                  className={"w-56"}
-                />
-                <Button className="text-black">Subscribe</Button>
-              </fetcher.Form>
-              <SuccessfulActionToast
-                message="Click the confirmation link in your email to confirm!"
-                fetcher={fetcher}
-              />
             </div>
           )}
         </div>
@@ -184,11 +162,6 @@ const BlogPage = () => {
 
 export const loader: LoaderFunction = () => {
   return listBlogPosts();
-};
-
-export const action: ActionFunction = async (args) => {
-  if (args.request.method === "PUT") return subscribeToConvertkitAction(args);
-  else return {};
 };
 
 export const meta = getMeta({

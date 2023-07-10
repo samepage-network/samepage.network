@@ -14,12 +14,14 @@ const parseRequestContext = (context: LoaderFunctionArgs["context"]) => {
         })
         .default({}),
       requestId: z.string().default(v4()),
+      paused: z.boolean().default(true),
     })
     .default({})
     .transform(
-      ({ lambdaContext: { awsRequestId, ...lambdaContext }, requestId }) => ({
+      ({ lambdaContext: { awsRequestId, ...lambdaContext }, requestId, ...rest }) => ({
         requestId: requestId || awsRequestId,
         ...lambdaContext,
+        ...rest,
       })
     )
     .parse(context);

@@ -4,6 +4,7 @@ import { useLoaderData } from "@remix-run/react";
 import loadActiveAnalytics from "~/data/loadActiveAnalytics.server";
 import { Chart, ChartOptions } from "react-charts";
 import { useMemo } from "react";
+import parseRequestContext from "package/internal/parseRequestContext";
 
 const AnalyticsActivePage = () => {
   const { data } =
@@ -51,9 +52,10 @@ const AnalyticsActivePage = () => {
 };
 
 export const loader: LoaderFunction = ({ context }) => {
+  const { requestId, paused } = parseRequestContext(context);
+  if (paused) return { data: [] };
   return loadActiveAnalytics({
-    // @ts-ignore TODO move remix*Loader from app.* to samepage
-    requestId: context?.lambdaContext?.awsRequestId as string,
+    requestId,
   });
 };
 

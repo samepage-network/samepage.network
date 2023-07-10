@@ -7,12 +7,24 @@ import CheckIcon from "@heroicons/react/outline/CheckIcon";
 import ArrowRightIcon from "@heroicons/react/outline/ArrowRightIcon";
 import ChevronLeftIcon from "@heroicons/react/solid/ChevronLeftIcon";
 import ChevronRightIcon from "@heroicons/react/solid/ChevronRightIcon";
+import parseRequestContext from "package/internal/parseRequestContext";
+import { LoaderArgs } from "@remix-run/node";
+import PauseNotice from "~/components/PauseNotice";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const AgencyPage = () => {
-  const data = useLoaderData<{ buyLink: string; looms: string[] }>();
+  const data = useLoaderData<typeof loader>();
   const [currentLoom, setCurrentLoom] = React.useState(0);
-  return (
+  return data.paused ? (
+    <div className="my-16 w-full">
+      <div className="max-w-4xl m-auto">
+        <h1 className="font-bold text-7xl w-full text-center mb-8 leading-tight">
+          An engineering agency focused on extensions
+        </h1>
+        <PauseNotice />
+      </div>
+    </div>
+  ) : (
     <div className="my-16 w-full">
       <div className="max-w-4xl m-auto">
         <h1 className="font-bold text-7xl w-full text-center mb-8 leading-tight">
@@ -212,8 +224,9 @@ const BUY_LINKS = {
   production: "https://buy.stripe.com/9AQ9AEeaIdZKfpC001",
 };
 
-export const loader = () => {
+export const loader = (args: LoaderArgs) => {
   return {
+    paused: parseRequestContext(args.context).paused,
     buyLink: BUY_LINKS[process.env.NODE_ENV],
     looms: [
       "9f124d41ca8a47f4b09bc6d268cb36b8",
