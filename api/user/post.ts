@@ -102,6 +102,7 @@ export const handler = async (
               })
         )
         .then((r) => ({
+          ...private_metadata as unknown as Record<string, unknown>,
           source: source || "app",
           stripeCustomerId: r.id,
         }))
