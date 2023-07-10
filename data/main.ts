@@ -1092,33 +1092,22 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         plaintextValue: appKey.secret,
       });
 
-      // TODO - Once these repos are elevated to the SamePage extension, we could remove.
-      const exceptionRepos = [
-        "roamjs-query-builder",
-        "roamjs-smartblocks",
-        "roamjs-workbench",
-        "roamjs-google",
-        "roamjs-developer",
-      ];
-      const personalProvider = new GithubProvider(this, "personal_provider", {
+      const roamjsGithubProvider = new GithubProvider(this, "roamjs_provider", {
         token: process.env.GITHUB_TOKEN,
-        owner: "dvargas92495",
-        alias: "personal",
+        owner: "RoamJS",
+        alias: "roamjs",
       });
-      exceptionRepos.forEach((repo) => {
-        new ActionsSecret(this, `${repo}_aws_access_key`, {
-          provider: personalProvider,
-          repository: repo,
-          secretName: "AWS_ACCESS_KEY_ID",
-          plaintextValue: appKey.id,
-        });
-
-        new ActionsSecret(this, `${repo}_aws_access_secret`, {
-          provider: personalProvider,
-          repository: repo,
-          secretName: "AWS_SECRET_ACCESS_KEY",
-          plaintextValue: appKey.secret,
-        });
+      new ActionsOrganizationSecret(this, "roamjs_aws_access_key", {
+        provider: roamjsGithubProvider,
+        secretName: "AWS_ACCESS_KEY_ID",
+        plaintextValue: appKey.id,
+        visibility: "all",
+      });
+      new ActionsOrganizationSecret(this, "roamjs_aws_access_secret", {
+        provider: roamjsGithubProvider,
+        secretName: "AWS_SECRET_ACCESS_KEY",
+        plaintextValue: appKey.secret,
+        visibility: "all",
       });
 
       new ActionsSecret(this, "lambda_aws_access_key", {
