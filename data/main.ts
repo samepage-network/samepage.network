@@ -1092,6 +1092,11 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         plaintextValue: appKey.secret,
       });
 
+      new GithubProvider(this, "personal_provider", {
+        token: process.env.GITHUB_TOKEN,
+        owner: "dvargas92495",
+        alias: "personal",
+      });
       const roamjsGithubProvider = new GithubProvider(this, "roamjs_provider", {
         token: process.env.GITHUB_TOKEN,
         owner: "RoamJS",
