@@ -81,8 +81,6 @@ const setupInfrastructure = async (): Promise<void> => {
 
       const allVariables = [
         "database_url",
-        "clerk_api_key",
-        "clerk_secret_key",
         "convertkit_api_key",
         "staging_clerk_api_key",
         "staging_clerk_secret_key",
@@ -1157,6 +1155,13 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
           type: "string",
         }
       );
+      const clerkSecretKey = new TerraformVariable(
+        this,
+        "clerk_secret_key",
+        {
+          type: "string",
+        }
+      );
       new ActionsOrganizationSecret(this, `deploy_aws_access_key_secret`, {
         visibility: "all",
         secretName: "SAMEPAGE_AWS_ACCESS_KEY",
@@ -1176,6 +1181,11 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         visibility: "all",
         secretName: "CLERK_PUBLISHABLE_KEY",
         plaintextValue: clerkPublishableKey.value,
+      });
+      new ActionsOrganizationSecret(this, `clerk_secret_key_secret`, {
+        visibility: "all",
+        secretName: "CLERK_SECRET_KEY",
+        plaintextValue: clerkSecretKey.value,
       });
 
       new Route53Record(this, `github_txt_record`, {
