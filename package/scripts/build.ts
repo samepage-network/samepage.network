@@ -170,10 +170,31 @@ const publish = async ({
     const repo = process.env.GITHUB_REPOSITORY || "samepage.network";
     await Promise.all(
       artifacts
-        .map((a) => ({
-          Key: `releases/${repo}/${branch === "main" ? "" : `${branch}/`}${a}`,
-          Path: path.join(distDir, a),
-        }))
+        .flatMap((a) => {
+          const Key = `releases/${repo}/${
+            branch === "main" ? "" : `${branch}/`
+          }${a}`;
+          const Path = path.join(distDir, a);
+          const KeyLower = Key.toLowerCase();
+          // S3 object keys are case insensitive :shakes-fist:
+          return Key === KeyLower
+            ? [
+                {
+                  Key,
+                  Path,
+                },
+              ]
+            : [
+                {
+                  Key,
+                  Path,
+                },
+                {
+                  Key: KeyLower,
+                  Path,
+                },
+              ];
+        })
         .concat(
           branch === "main"
             ? assets.map((a) => ({
