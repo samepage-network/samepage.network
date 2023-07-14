@@ -159,7 +159,7 @@ const createAPIGatewayProxyHandler =
           ? emailError(
               `API Gateway Error (${e.name})`,
               e,
-              JSON.stringify(context)
+              JSON.stringify({ context, body: event.body })
             ).then((id) => ({
               statusCode,
               body: `Unknown error - Message Id ${id}`,
