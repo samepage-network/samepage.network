@@ -99,6 +99,7 @@
     "@testing-library/user-event": "^14.4.3",
     "@types/archiver": "^5.3.2",
     "@types/chrome": "^0.0.235",
+    "@types/crypto-js": "^4.1.1",
     "@types/decompress": "^4.2.4",
     "@types/diff": "^5.0.2",
     "@types/dotenv": "^8.2.0",
