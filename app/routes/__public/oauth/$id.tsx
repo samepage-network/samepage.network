@@ -18,6 +18,7 @@ import randomString from "~/data/randomString.server";
 import { zOauthResponse } from "package/internal/types";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { apiPost } from "package/internal/apiClient";
+import AES from "crypto-js/aes";
 
 const OauthConnectionPage = (): React.ReactElement => {
   const data = useLoaderData<typeof loadData>();
@@ -39,14 +40,20 @@ const OauthConnectionPage = (): React.ReactElement => {
           </a>
         </div>
       )}
-      <div className="mb-2">
-        You can close this window and use SamePage within your newly connected
-        notebook:
-      </div>
-      <div className="mb-8">
-        <span className="text-xl font-bold">{data.body.appName}</span>{" "}
-        <span>{data.body.workspace}</span>
-      </div>
+      {"roamjs" in data ? (
+        <div className="mb-2">You can close this window</div>
+      ) : (
+        <>
+          <div className="mb-2">
+            You can close this window and use SamePage within your newly
+            connected notebook:
+          </div>
+          <div className="mb-8">
+            <span className="text-xl font-bold">{data.body.appName}</span>{" "}
+            <span>{data.body.workspace}</span>
+          </div>
+        </>
+      )}
       {!data.body.postInstallResult.success && (
         <div>
           Our post-install process failed however, with the following reason{" "}
@@ -194,6 +201,29 @@ export const loader = async (args: DataFunctionArgs) => {
     return redirect(
       `${searchParams.client_uri}?code=${code}&state=${searchParams.state}`
     );
+  }
+
+  if (searchParams.roamjs) {
+    const [, otp, key] = searchParams.state.split("_");
+    const cxn = await getMysql(requestId);
+    const [app] = await cxn
+      .select({ id: apps.id })
+      .from(apps)
+      .where(eq(apps.code, params["id"] || ""));
+    await cxn.insert(oauthClients).values({
+      id: otp,
+      appId: app.id,
+      secret: AES.encrypt(
+        JSON.stringify({ code: searchParams.code }),
+        key
+      ).toString(),
+    });
+    await cxn.end();
+
+    return {
+      success: true,
+      roamjs: true,
+    };
   }
 
   // SamePage is using the app as the OAuth provider
