@@ -24,4 +24,4 @@ const logic = async ({
   return { auth: oauth.secret };
 };
 
-export default createAPIGatewayProxyHandler({ logic });
+export default createAPIGatewayProxyHandler({ logic, allowedOrigins: [".*"] });
