@@ -54,7 +54,7 @@ const OauthConnectionPage = (): React.ReactElement => {
           </div>
         </>
       )}
-      {!data.body.postInstallResult.success && (
+      {data.body && !data.body.postInstallResult?.success && (
         <div>
           Our post-install process failed however, with the following reason{" "}
           {data.body.postInstallResult.reason}. Our support team has already
