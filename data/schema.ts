@@ -333,7 +333,7 @@ export const apps = mysqlTable(
 export const oauthClients = mysqlTable("oauth_clients", {
   id: varchar("id", { length: 36 }).primaryKey().default(""),
   appId: int("app_id").notNull().default(0),
-  secret: varchar("secret", { length: 64 }).notNull().default(""),
+  secret: varchar("secret", { length: 1024 }).notNull().default(""),
 });
 
 export const authorizationCodes = mysqlTable("authorization_codes", {
