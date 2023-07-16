@@ -47,8 +47,9 @@ test("Full integration test of web app", async ({ page }) => {
   // await page.locator("[name=password]").fill(password);
   // await page.locator("")
 
-  await page.locator("text=Agency").click();
-  await expect(page.locator("text=See Plan")).toBeVisible();
+  // Agency Paused
+  // await page.locator("text=Agency").click();
+  // await expect(page.locator("text=See Plan")).toBeVisible();
   await new Promise((resolve) => {
     app.on("exit", resolve);
     app.kill();

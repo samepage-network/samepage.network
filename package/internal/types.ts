@@ -197,7 +197,7 @@ export type AddCommand = (args: {
   callback: () => void;
 }) => void;
 export type RemoveCommand = (args: { label: string }) => void;
-export type OverlayProps<T extends Record<string, unknown> = {}> = {
+export type OverlayProps<T extends Record<string, unknown> = Record<string, never>> = {
   onClose: () => void;
   isOpen?: boolean;
 } & T;
@@ -821,7 +821,7 @@ const zConditionBase = z.object({
 
 type Condition =
   | ({ type: "AND" } & z.infer<typeof zConditionBase>)
-  | { type: "OR"; conditions: Condition[] }
+  | { type: "OR"; conditions: Condition[][] }
   | { type: "NOT"; conditions: Condition[] };
 
 export const zCondition: z.ZodType<Condition> = z.discriminatedUnion("type", [
@@ -831,7 +831,7 @@ export const zCondition: z.ZodType<Condition> = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("OR"),
-    conditions: z.lazy(() => zCondition.array()),
+    conditions: z.lazy(() => zCondition.array().array()),
   }),
   zConditionBase.extend({ type: z.literal("AND") }),
 ]);
