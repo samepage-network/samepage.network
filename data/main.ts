@@ -842,8 +842,9 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
             sourceArn: `${restApi.executionArn}/*/*/*`,
           })
       );
+      const distinctResources = Array.from(new Set(Object.values(resources)));
       const mockMethods = Object.fromEntries(
-        Object.values(resources).map((resource) => [
+        distinctResources.map((resource) => [
           resource,
           new ApiGatewayMethod(
             this,
@@ -858,7 +859,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         ])
       );
       const mockIntegrations = Object.fromEntries(
-        Object.values(resources).map((resource) => [
+        distinctResources.map((resource) => [
           resource,
           new ApiGatewayIntegration(
             this,
@@ -877,7 +878,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         ])
       );
       const mockMethodResponses = Object.fromEntries(
-        Object.values(resources).map((resource) => [
+        distinctResources.map((resource) => [
           resource,
           new ApiGatewayMethodResponse(
             this,
@@ -901,7 +902,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
           ),
         ])
       );
-      const mockIntegrationResponses = Object.values(resources).map(
+      const mockIntegrationResponses = distinctResources.map(
         (resource) =>
           new ApiGatewayIntegrationResponse(
             this,
@@ -1155,13 +1156,9 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
           type: "string",
         }
       );
-      const clerkSecretKey = new TerraformVariable(
-        this,
-        "clerk_secret_key",
-        {
-          type: "string",
-        }
-      );
+      const clerkSecretKey = new TerraformVariable(this, "clerk_secret_key", {
+        type: "string",
+      });
       new ActionsOrganizationSecret(this, `deploy_aws_access_key_secret`, {
         visibility: "all",
         secretName: "SAMEPAGE_AWS_ACCESS_KEY",
