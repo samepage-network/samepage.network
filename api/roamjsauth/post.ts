@@ -20,6 +20,7 @@ const logic = async ({
     .from(oauthClients)
     .innerJoin(apps, eq(apps.id, oauthClients.appId))
     .where(and(eq(oauthClients.id, otp), eq(apps.code, service)));
+  await cxn.end();
   if (!oauth) return { code: 204 };
   return { auth: oauth.secret };
 };
