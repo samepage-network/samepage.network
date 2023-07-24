@@ -4,15 +4,14 @@ import createAPIGatewayProxyHandler from "samepage/backend/createAPIGatewayProxy
 import getMysql from "~/data/mysql.server";
 
 const logic = async ({
-  service,
-  otp,
+  state,
   requestId,
 }: {
   requestId: string;
-  service: string;
-  otp: string;
+  state: string;
 }) => {
   const cxn = await getMysql(requestId);
+  const [service, otp] = state.split("_");
   const [oauth] = await cxn
     .select({
       secret: oauthClients.secret,
