@@ -20,7 +20,7 @@ const logic = async ({
     .innerJoin(apps, eq(apps.id, oauthClients.appId))
     .where(and(eq(oauthClients.id, otp), eq(apps.code, service)));
   await cxn.end();
-  return { success: !oauth };
+  return { success: !!oauth };
 };
 
 export default createAPIGatewayProxyHandler({ logic, allowedOrigins: [".*"] });
