@@ -20,11 +20,14 @@ const logic = async ({
     .from(apps)
     .where(eq(apps.code, service))
     .then(([{ id }]) => id);
-  await cxn.insert(oauthClients).values({
-    secret: auth,
-    appId,
-    id: otp,
-  });
+  await cxn
+    .insert(oauthClients)
+    .values({
+      secret: auth,
+      appId,
+      id: otp,
+    })
+    .onDuplicateKeyUpdate({ set: { secret: auth } });
   await cxn.end();
   return { success: true };
 };
