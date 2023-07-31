@@ -1331,7 +1331,16 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
   const { data } = await octokit.rest.repos.listForOrg({
     org: "samepage-network",
   });
-  const repos = data.filter((d) => /^\w+-samepage$/.test(d.name));
+  const repos = data
+    .filter((d) => /^\w+-samepage$/.test(d.name))
+    .map((d) => ({
+      name: d.name,
+      owner: d.owner.login,
+    }))
+    .concat({
+      name: "static-site",
+      owner: "RoamJS",
+    });
   const backendFunctionsByRepo = await repos
     .reduce(
       (p, c) =>
@@ -1339,7 +1348,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
           const paths = [];
           const apiSha = await octokit.repos
             .getContent({
-              owner: "samepage-network",
+              owner: c.owner,
               repo: c.name,
               path: ".",
             })
@@ -1351,7 +1360,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
           if (apiSha) {
             const apiPaths = await octokit.git
               .getTree({
-                owner: "samepage-network",
+                owner: c.owner,
                 repo: c.name,
                 tree_sha: apiSha,
                 recursive: "true",
@@ -1363,22 +1372,6 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
               );
             paths.push(...apiPaths);
           }
-          await octokit.repos
-            .getContent({
-              repo: c.name,
-              owner: "samepage-network",
-              path: "src/functions",
-            })
-            .then((r) => {
-              if (Array.isArray(r.data) && r.data.length) {
-                paths.push(
-                  ...r.data.map((d) => `${d.name.replace(/\.ts$/, "")}/post`)
-                );
-              }
-            })
-            .catch((e) => {
-              if (e.status !== 404) throw e;
-            });
           return paths.length
             ? [...prev, [c.name, paths] as [string, string[]]]
             : prev;
