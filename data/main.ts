@@ -326,10 +326,10 @@ const setupInfrastructure = async (): Promise<void> => {
             content: `module.exports.handler = (event, _, c) => {
               const request = event.Records[0].cf.request;
               const olduri = request.uri;
-              if (/\/$/.test(olduri)) {
+              if (/\\/$/.test(olduri)) {
                 const newuri = olduri + "index.html";
                 request.uri = encodeURI(newuri);
-              } else if (!/\./.test(olduri)) {
+              } else if (!/\\./.test(olduri)) {
                 const newuri = olduri + ".html";
                 request.uri = encodeURI(newuri);
               }
@@ -354,7 +354,7 @@ const setupInfrastructure = async (): Promise<void> => {
         role: edgeLambdaRole.arn,
         handler: "origin-request.handler",
         runtime: "nodejs18.x",
-        publish: true,
+        publish: false,
         filename: "origin-request.zip",
         timeout: 20,
         memorySize: 5120,
@@ -1131,15 +1131,25 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         secretName: "CLOUDFRONT_DISTRIBUTION_ID",
         plaintextValue: distributions[projectName].id,
       });
-      allVariables.map((v) => {
-        const tf_secret = new TerraformVariable(this, v, {
-          type: "string",
-        });
-        new ActionsSecret(this, `${v}_secret`, {
-          repository: projectName,
-          secretName: v.toUpperCase(),
-          plaintextValue: tf_secret.value,
-        });
+      const terraformSecrets = Object.fromEntries(
+        allVariables.map((v) => {
+          const tfVariable = new TerraformVariable(this, v, {
+            type: "string",
+          });
+          const tfSecret = new ActionsSecret(this, `${v}_secret`, {
+            repository: projectName,
+            secretName: v.toUpperCase(),
+            plaintextValue: tfVariable.value,
+          });
+          return [v, { tfVariable, tfSecret }];
+        })
+      );
+ 
+      new ActionsSecret(this, "static_site_database_url", {
+        provider: roamjsGithubProvider,
+        repository: "static-site",
+        secretName: "DATABASE_URL",
+        plaintextValue: terraformSecrets["database_url"].tfVariable.value,
       });
 
       const samePageTestPassword = new TerraformVariable(
