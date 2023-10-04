@@ -69,7 +69,7 @@ const recordTransaction = async (
   const client = sheets({ version: "v4", auth });
   const out = await client.spreadsheets.get({
     spreadsheetId,
-    ranges: [`'${record.Date.getFullYear()}'!A1:F1`],
+    ranges: [`'Transactions'!A1:F1`],
     includeGridData: true,
   });
   const sheet = out.data.sheets?.[0];
@@ -257,23 +257,26 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           headers: {},
         };
       }
-      case "payout.paid":
+      case "payout.paid": {
         const payout = object as Stripe.Payout;
         await recordTransaction(payout.balance_transaction);
         const recentTransactions = await stripe.balanceTransactions.list({
           limit: 4,
         });
         await Promise.all([
-          recentTransactions.data.filter(
-            (tx) => tx.type === "stripe_fee" || tx.type === "adjustment"
-          ).map((tx) => recordTransaction(tx.id)),
+          recentTransactions.data
+            .filter(
+              (tx) => tx.type === "stripe_fee" || tx.type === "adjustment"
+            )
+            .map((tx) => recordTransaction(tx.id)),
         ]);
         return {
           statusCode: 200,
           body: JSON.stringify({ success: true }),
           headers: {},
         };
-      case "charge.succeeded":
+      }
+      case "charge.succeeded": {
         const charge = object as Stripe.Charge;
         await recordTransaction(charge.balance_transaction);
         return {
@@ -281,8 +284,9 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           body: JSON.stringify({ success: true }),
           headers: {},
         };
-      // case "balance transaction"
-      // https://dashboard.stripe.com/balance
+        // case "balance transaction"
+        // https://dashboard.stripe.com/balance
+      }
       default:
         return {
           statusCode: 400,
