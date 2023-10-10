@@ -8,6 +8,8 @@ import {
 } from "react-router-dom";
 import { apiPost } from "package/internal/apiClient";
 
+const IGNORE_ERRORS = ["Failed to insert <font "];
+
 const DefaultErrorBoundary: V2_ErrorBoundaryComponent =
   (): React.ReactElement => {
     const error = useRouteError();
@@ -49,17 +51,19 @@ const DefaultErrorBoundary: V2_ErrorBoundaryComponent =
     }
     const logUrl = (matches[0].data as { logUrl: string }).logUrl;
     useEffect(() => {
-      apiPost({
-        path: "errors",
-        data: {
-          method: "web-app-error",
-          path: matches.slice(-1)[0].pathname,
-          stack,
+      if (IGNORE_ERRORS.some((i) => !stack.includes(i))) {
+        apiPost({
+          path: "errors",
           data: {
-            matches,
+            method: "web-app-error",
+            path: matches.slice(-1)[0].pathname,
+            stack,
+            data: {
+              matches,
+            },
           },
-        },
-      }).catch(() => {});
+        }).catch(Promise.resolve);
+      }
     }, [matches, stack]);
     return (
       <main className={"font-sans p-8 w-full"}>
