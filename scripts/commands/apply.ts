@@ -64,7 +64,10 @@ const apply = async ({
     const appsToMigrate = appsInProd
       .filter((a) => !appsInLocal[a.code])
       .map((a) => async () => {
-        await cxn.insert(apps).values(a);
+        await cxn
+          .insert(apps)
+          .values(a)
+          .onDuplicateKeyUpdate({ set: { originRegex: a.originRegex } });
         await cxn
           .update(apps)
           .set({

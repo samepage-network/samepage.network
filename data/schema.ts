@@ -167,7 +167,7 @@ export const notebookRequests = mysqlTable(
       .notNull()
       .default("pending"),
     createdDate: date("created"),
-    connectionId: varchar("connection_id", { length: 128 })
+    connectionId: varchar("connection_id", { length: 128 }),
   },
   (requests) => ({
     notebookHashIndex: uniqueIndex("UC_notebook_uuid_hash").on(
@@ -345,6 +345,14 @@ export const authorizationCodes = mysqlTable("authorization_codes", {
     .notNull()
     .default(sql`(DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 1 HOUR))`),
   scope: varchar("scope", { length: 256 }).notNull().default(""),
+});
+
+export const websiteSharing = mysqlTable("website_sharing", {
+  uuid: primaryUuid(),
+  websiteUuid: uuid("website_uuid").notNull(),
+  userId: varchar("user_id", { length: 128 }).notNull().default(""),
+  permission: mysqlEnum("status", ["NONE", "DEPLOY"]).notNull().default("NONE"),
+  createdDate: date("created"),
 });
 
 export const padawanMissions = mysqlTable("padawan_missions", {
