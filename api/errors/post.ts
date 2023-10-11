@@ -100,6 +100,14 @@ const logic = async (body: Record<string, unknown>) => {
         Key: `data/errors/${uuid}.json`,
         Body: JSON.stringify(data),
       });
+      if (
+        type === "local-response-error" &&
+        typeof data["headers"] === "string" &&
+        data["headers"].includes("https://chat.openai.com")
+      ) {
+        // Ignore errors coming from `local` for now
+        return { success: true, messageId: uuid };
+      }
       const messageId = await sendEmail({
         to: "support@samepage.network",
         subject: `SamePage Extension Error: ${type}`,
