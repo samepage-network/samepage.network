@@ -197,7 +197,9 @@ export type AddCommand = (args: {
   callback: () => void;
 }) => void;
 export type RemoveCommand = (args: { label: string }) => void;
-export type OverlayProps<T extends Record<string, unknown> = Record<string, never>> = {
+export type OverlayProps<
+  T extends Record<string, unknown> = Record<string, never>
+> = {
   onClose: () => void;
   isOpen?: boolean;
 } & T;
@@ -942,10 +944,12 @@ export const notebookRequestNodeQuerySchema = z.object({
   selections: zSelection.or(zQBSelection).array().optional().default([]),
 });
 
-export type BackendRequest<T extends ZodType<any, any, any>> = z.infer<T> & {
-  requestId: string;
-  authorization?: string;
-};
+const zEmpty = z.object({});
+export type BackendRequest<T extends ZodType<any, any, any> = typeof zEmpty> =
+  z.infer<T> & {
+    requestId: string;
+    authorization?: string;
+  };
 
 export type SamePageAPI = {
   addNotebookRequestListener: AddNotebookRequestListener;

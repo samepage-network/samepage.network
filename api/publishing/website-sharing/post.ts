@@ -1,9 +1,10 @@
 import { v4 } from "uuid";
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
-import { BadRequestError } from "~/data/errors.server";
+import { BadRequestError, UnauthorizedError } from "~/data/errors.server";
 import getMysql from "~/data/mysql.server";
 import { websiteSharing } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
+import getWebsiteUuid from "~/data/getWebsiteUuid.data";
 
 type GetArgs = { method: "GET"; authorization: string; requestId: string };
 type UpdateArgs = {
@@ -29,10 +30,12 @@ type DeleteArgs = {
 };
 type Args = GetArgs | UpdateArgs | CreateArgs | DeleteArgs;
 
-const getWebsiteUuid = async (authorization: string) => authorization;
-
 const logic = async (args: Args) => {
+  console.log(args);
   const websiteUuid = await getWebsiteUuid(args.authorization);
+  if (!websiteUuid) {
+    throw new UnauthorizedError("Website not found");
+  }
   const cxn = await getMysql();
   switch (args.method) {
     case "GET":

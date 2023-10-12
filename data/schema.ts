@@ -347,6 +347,12 @@ export const authorizationCodes = mysqlTable("authorization_codes", {
   scope: varchar("scope", { length: 256 }).notNull().default(""),
 });
 
+export const websites = mysqlTable("websites", {
+  uuid: primaryUuid(),
+  stackName: varchar("stack_name", { length: 128 }).notNull().default(""),
+  createdDate: date("created"),
+});
+
 export const websiteSharing = mysqlTable("website_sharing", {
   uuid: primaryUuid(),
   websiteUuid: uuid("website_uuid").notNull(),

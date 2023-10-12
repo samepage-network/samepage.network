@@ -25,6 +25,7 @@ import { AcmCertificate } from "@cdktf/provider-aws/lib/acm-certificate";
 import { AcmCertificateValidation } from "@cdktf/provider-aws/lib/acm-certificate-validation";
 import { LambdaPermission } from "@cdktf/provider-aws/lib/lambda-permission";
 import { Route53Record } from "@cdktf/provider-aws/lib/route53-record";
+import { Route53Zone } from "@cdktf/provider-aws/lib/route53-zone";
 import { CloudfrontCachePolicy } from "@cdktf/provider-aws/lib/cloudfront-cache-policy";
 import { IamPolicy } from "@cdktf/provider-aws/lib/iam-policy";
 import { IamRole } from "@cdktf/provider-aws/lib/iam-role";
@@ -130,6 +131,10 @@ const setupInfrastructure = async (): Promise<void> => {
 
       const { zoneId } = new DataAwsRoute53Zone(this, "zone", {
         name: "samepage.network.",
+      });
+
+      const { zoneId: roamjsZoneId } = new Route53Zone(this, "roamjs_zone", {
+        name: "roamjs.com.",
       });
 
       const buckets: Record<string, S3Bucket> = {
@@ -1131,25 +1136,22 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         secretName: "CLOUDFRONT_DISTRIBUTION_ID",
         plaintextValue: distributions[projectName].id,
       });
-      const terraformSecrets = Object.fromEntries(
-        allVariables.map((v) => {
-          const tfVariable = new TerraformVariable(this, v, {
-            type: "string",
-          });
-          const tfSecret = new ActionsSecret(this, `${v}_secret`, {
-            repository: projectName,
-            secretName: v.toUpperCase(),
-            plaintextValue: tfVariable.value,
-          });
-          return [v, { tfVariable, tfSecret }];
-        })
-      );
- 
-      new ActionsSecret(this, "static_site_database_url", {
-        provider: roamjsGithubProvider,
-        repository: "static-site",
-        secretName: "DATABASE_URL",
-        plaintextValue: terraformSecrets["database_url"].tfVariable.value,
+      allVariables.map((v) => {
+        const tfVariable = new TerraformVariable(this, v, {
+          type: "string",
+        });
+        const tfSecret = new ActionsSecret(this, `${v}_secret`, {
+          repository: projectName,
+          secretName: v.toUpperCase(),
+          plaintextValue: tfVariable.value,
+        });
+        return [v, { tfVariable, tfSecret }];
+      });
+
+      new ActionsSecret(this, "roamjs_zone_id", {
+        repository: projectName,
+        secretName: "ROAMJS_ZONE_ID",
+        plaintextValue: roamjsZoneId,
       });
 
       const samePageTestPassword = new TerraformVariable(

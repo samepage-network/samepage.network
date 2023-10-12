@@ -34,6 +34,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-apigatewaymanagementapi": "^3.218.0",
+    "@aws-sdk/client-cloudformation": "^3.427.0",
     "@aws-sdk/client-cloudfront": "^3.278.0",
     "@aws-sdk/client-lambda": "^3.278.0",
     "@aws-sdk/client-route-53": "^3.354.0",
