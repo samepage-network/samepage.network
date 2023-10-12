@@ -1,2 +1,2 @@
-const getWebsiteUuid = async (authorization?: string) => authorization;
+const getWebsiteUuid = async (_: { authorization?: string }) => undefined;
 export default getWebsiteUuid;

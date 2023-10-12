@@ -7,5 +7,11 @@
     "plugin:@typescript-eslint/eslint-recommended",
     "plugin:@typescript-eslint/recommended"
   ],
-  "ignorePatterns": ["**/dist/*", "scripts/"]
+  "ignorePatterns": ["**/dist/*", "scripts/"],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { "argsIgnorePattern": "_+" }
+    ]
+  }
 }
