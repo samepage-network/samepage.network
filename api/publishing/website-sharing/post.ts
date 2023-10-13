@@ -4,7 +4,7 @@ import { BadRequestError, UnauthorizedError } from "~/data/errors.server";
 import getMysql from "~/data/mysql.server";
 import { websiteSharing } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
-import getWebsiteUuid from "~/data/getWebsiteUuid.data";
+import getWebsiteUuidByRoamJSToken from "~/data/getWebsiteUuidByRoamJSToken.data";
 
 type GetArgs = { method: "GET"; authorization: string; requestId: string };
 type UpdateArgs = {
@@ -31,8 +31,10 @@ type DeleteArgs = {
 type Args = GetArgs | UpdateArgs | CreateArgs | DeleteArgs;
 
 const logic = async (args: Args) => {
-  console.log(args);
-  const websiteUuid = await getWebsiteUuid(args.authorization);
+  const websiteUuid = await getWebsiteUuidByRoamJSToken({
+    authorization: args.authorization,
+    requestId: args.requestId,
+  });
   if (!websiteUuid) {
     throw new UnauthorizedError("Website not found");
   }

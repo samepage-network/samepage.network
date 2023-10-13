@@ -1,13 +1,16 @@
-import getWebsiteUuid from "~/data/getWebsiteUuid.data";
 import getHostedZoneByWebsiteUuid from "~/data/getHostedZoneByWebsiteUuid.server";
 import { BackendRequest } from "package/internal/types";
 import { Route53 } from "@aws-sdk/client-route-53";
 import createPublicAPIGatewayProxyHandler from "package/backend/createPublicAPIGatewayProxyHandler";
+import getWebsiteUuidByRoamJSToken from "~/data/getWebsiteUuidByRoamJSToken.data";
 
 const route53 = new Route53({});
 
 export const logic = async ({ authorization, requestId }: BackendRequest) => {
-  const websiteUuid = await getWebsiteUuid({ authorization });
+  const websiteUuid = await getWebsiteUuidByRoamJSToken({
+    authorization,
+    requestId,
+  });
   if (!websiteUuid) {
     return { records: [] };
   }
