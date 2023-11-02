@@ -1,6 +1,5 @@
 import { websiteSharing } from "data/schema";
 import { and, eq } from "drizzle-orm/expressions";
-import authenticateNotebook from "./authenticateNotebook.server";
 import authenticateRoamJSToken from "./authenticateRoamJSToken.server";
 import getMysql from "./mysql.server";
 
@@ -11,15 +10,8 @@ const getWebsiteUuidByRoamJSToken = async ({
   authorization?: string;
   requestId: string;
 }) => {
-  const { notebookUuid, token } = await authenticateRoamJSToken({
-    requestId,
+  const userId = await authenticateRoamJSToken({
     authorization,
-  });
-
-  const { userId } = await authenticateNotebook({
-    requestId,
-    token,
-    notebookUuid,
   });
 
   const cxn = await getMysql(requestId);

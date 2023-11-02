@@ -1,12 +1,19 @@
-import { websiteSharing, websites } from "data/schema";
+import {
+  apps,
+  notebooks,
+  tokenNotebookLinks,
+  tokens,
+  websiteNotebookLinks,
+  websiteSharing,
+  websiteStatuses,
+  websites,
+} from "data/schema";
 import createPublicAPIGatewayProxyHandler from "package/backend/createPublicAPIGatewayProxyHandler";
 import { BackendRequest } from "package/internal/types";
 import getMysql from "~/data/mysql.server";
 import { z } from "zod";
 import { and, desc, eq } from "drizzle-orm/expressions";
-import authenticateNotebook from "~/data/authenticateNotebook.server";
-import authenticateRoamJSGraph from "~/data/authenticateRoamJSToken.server";
-import { ForbiddenError } from "~/data/errors.server";
+import authenticateRoamJSToken from "~/data/authenticateRoamJSToken.server";
 
 type WebsiteStatus = {
   uuid: string;
@@ -53,15 +60,8 @@ const logic = async ({
 }: BackendRequest<typeof bodySchema>) => {
   const cxn = await getMysql(requestId);
 
-  const { notebookUuid, token } = await authenticateRoamJSGraph({
-    requestId,
+  const userId = await authenticateRoamJSToken({
     authorization,
-  });
-
-  const { userId } = await authenticateNotebook({
-    requestId,
-    token,
-    notebookUuid,
   });
 
   const userWebsites = await cxn
@@ -83,12 +83,27 @@ const logic = async ({
     };
   }
 
-  // TODO: getWebsiteUuidByWorkspace
-  const requestedWebsiteUuid = graph;
   const requestedWebsite = await cxn
-    .select({ stackName: websites.stackName })
+    .select({ stackName: websites.stackName, uuid: websites.uuid })
     .from(websites)
-    .where(eq(websites.uuid, requestedWebsiteUuid))
+    .innerJoin(
+      websiteNotebookLinks,
+      eq(websites.uuid, websiteNotebookLinks.websiteUuid)
+    )
+    .innerJoin(notebooks, eq(websiteNotebookLinks.notebookUuid, notebooks.uuid))
+    .innerJoin(
+      tokenNotebookLinks,
+      eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
+    )
+    .innerJoin(tokens, eq(tokenNotebookLinks.tokenUuid, tokens.uuid))
+    .innerJoin(apps, eq(notebooks.app, apps.id))
+    .where(
+      and(
+        eq(notebooks.workspace, graph),
+        eq(tokens.userId, userId),
+        eq(apps.name, "roam")
+      )
+    )
     .then((r) => r[0]);
 
   if (!requestedWebsite) {
@@ -100,23 +115,16 @@ const logic = async ({
     };
   }
 
-  if (!userWebsites.some((w) => w.websiteUuid === requestedWebsiteUuid)) {
-    throw new ForbiddenError(
-      `User not authorized to get status of website from graph ${graph}.`
-    );
-  }
-
-  // TODO: make table
-  const websiteStatuses = websiteSharing;
   const statuses = await cxn
     .select({
       uuid: websiteStatuses.uuid,
-      status: websiteStatuses.permission,
-      statusType: websiteStatuses.permission,
+      status: websiteStatuses.status,
+      statusType: websiteStatuses.statusType,
+      props: websiteStatuses.props,
       createdDate: websiteStatuses.createdDate,
     })
     .from(websiteStatuses)
-    .where(eq(websiteStatuses.websiteUuid, requestedWebsiteUuid))
+    .where(eq(websiteStatuses.websiteUuid, requestedWebsite.uuid))
     .orderBy(desc(websiteStatuses.createdDate));
 
   if (!statuses.length) {
@@ -139,7 +147,7 @@ const logic = async ({
   return {
     graph,
     status,
-    // statusProps: statuses.Items ? statuses.Items[0].status_props?.S : "{}",
+    props: first.props,
     deploys: deploys.slice(0, 10).map((d) => ({
       date: d.createdDate,
       status: d.status,

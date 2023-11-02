@@ -1,13 +1,10 @@
-import { v4 } from "uuid";
 import { UnauthorizedError } from "./errors.server";
 import { users } from "@clerk/clerk-sdk-node";
 
 const authenticateRoamJSToken = async ({
   authorization,
-  requestId,
 }: {
   authorization?: string;
-  requestId?: string;
 }) => {
   if (!authorization) {
     throw new UnauthorizedError("No authorization header provided");
@@ -16,12 +13,14 @@ const authenticateRoamJSToken = async ({
   const allUsers = await users.getUserList({
     emailAddress: ["dvargas92495@gmail.com"],
   });
+  if (!allUsers.length)
+    throw new UnauthorizedError("No SamePage user found with RoamJS token");
+
   const user = allUsers[0];
 
-  return {
-    notebookUuid: user.id,
-    token: authorization,
-  };
+  console.log(user.privateMetadata);
+
+  return user.id;
 };
 
 export default authenticateRoamJSToken;

@@ -353,6 +353,36 @@ export const websites = mysqlTable("websites", {
   createdDate: date("created"),
 });
 
+export const websiteNotebookLinks = mysqlTable(
+  "website_notebook_links",
+  {
+    uuid: primaryUuid(),
+    notebookUuid: varchar("notebook_uuid", { length: 36 })
+      .notNull()
+      .default(""),
+    websiteUuid: varchar("token_uuid", { length: 36 }).notNull().default(""),
+  },
+  (links) => ({
+    linkIndex: uniqueIndex("UC_notebook_uuid_website_uuid").on(
+      links.notebookUuid,
+      links.websiteUuid
+    ),
+    notebookIndex: index("IX_notebook_uuid").on(links.notebookUuid),
+    tokenIndex: index("IX_website_uuid").on(links.websiteUuid),
+  })
+);
+
+export const websiteStatuses = mysqlTable("website_statuses", {
+  uuid: primaryUuid(),
+  websiteUuid: uuid("website_uuid").notNull(),
+  status: varchar("status", { length: 256 }).notNull().default(""),
+  statusType: mysqlEnum("status_type", ["SUCCESS", "DEPLOY", "FAILURE", "NONE"])
+    .notNull()
+    .default("NONE"),
+  createdDate: date("created"),
+  props: json("props").notNull().default(JSON.stringify({})),
+});
+
 export const websiteSharing = mysqlTable("website_sharing", {
   uuid: primaryUuid(),
   websiteUuid: uuid("website_uuid").notNull(),
