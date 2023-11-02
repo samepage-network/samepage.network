@@ -373,7 +373,7 @@ export const websiteNotebookLinks = mysqlTable(
   })
 );
 
-const websiteStatusTypes = ["SUCCESS", "DEPLOY", "FAILURE", "NONE"] as const;
+const websiteStatusTypes = ["DEPLOY", "LAUNCH", "NONE"] as const;
 export type WebsiteStatusType = (typeof websiteStatusTypes)[number];
 
 export const websiteStatuses = mysqlTable("website_statuses", {
