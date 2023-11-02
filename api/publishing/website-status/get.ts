@@ -1,32 +1,30 @@
 import {
-  apps,
-  notebooks,
-  tokenNotebookLinks,
-  tokens,
-  websiteNotebookLinks,
   websiteSharing,
   websiteStatuses,
-  websites,
+  WebsiteStatusType,
 } from "data/schema";
 import createPublicAPIGatewayProxyHandler from "package/backend/createPublicAPIGatewayProxyHandler";
-import { BackendRequest } from "package/internal/types";
+import { BackendRequest, JSONData } from "package/internal/types";
 import getMysql from "~/data/mysql.server";
 import { z } from "zod";
 import { and, desc, eq } from "drizzle-orm/expressions";
 import authenticateRoamJSToken from "~/data/authenticateRoamJSToken.server";
+import getWebsiteByNotebookProperties from "~/data/getWebsiteByNotebookProperties.server";
 
 type WebsiteStatus = {
   uuid: string;
   status: string;
-  statusType: string;
+  statusType: WebsiteStatusType;
+  props: JSONData;
   createdDate: Date;
 };
+
 const getProgressProps = (
   items: WebsiteStatus[],
   deployItems: WebsiteStatus[]
 ) => {
   if (!items) {
-    return { progress: 0, progressType: "LAUNCHING" };
+    return { progress: 0, progressType: "LAUNCHING" as const };
   }
   const launchIndex =
     items.findIndex((s) => s.status === "INITIALIZING") + 1 || Number.MAX_VALUE;
@@ -41,13 +39,16 @@ const getProgressProps = (
       ["SUCCESS", "FAILURE"].includes(s.status || "")
     );
     if (deployIndex) {
-      return { progress: deployIndex / 5, progressType: "DEPLOYING" };
+      return { progress: deployIndex / 5, progressType: "DEPLOYING" as const };
     }
-    return { progress: launchIndex / 26, progressType: "LAUNCHING" };
+    return { progress: launchIndex / 26, progressType: "LAUNCHING" as const };
   } else if (updateIndex === minIndex) {
-    return { progress: updateIndex / 20, progressType: "UPDATING" };
+    return { progress: updateIndex / 20, progressType: "UPDATING" as const };
   } else {
-    return { progress: shutdownIndex / 18, progressType: "SHUTTING DOWN" };
+    return {
+      progress: shutdownIndex / 18,
+      progressType: "SHUTTING DOWN" as const,
+    };
   }
 };
 
@@ -74,45 +75,30 @@ const logic = async ({
       )
     );
 
+  const defaultData = {
+    graph,
+    status: "",
+    statusProps: {},
+    deploys: [],
+    progress: 0,
+    progressType: "",
+  };
+
   if (!userWebsites.length) {
-    return {
-      authUser: {
-        authenticated: true,
-        websiteUuid: undefined,
-      },
-    };
+    await cxn.end();
+    return defaultData;
   }
 
-  const requestedWebsite = await cxn
-    .select({ stackName: websites.stackName, uuid: websites.uuid })
-    .from(websites)
-    .innerJoin(
-      websiteNotebookLinks,
-      eq(websites.uuid, websiteNotebookLinks.websiteUuid)
-    )
-    .innerJoin(notebooks, eq(websiteNotebookLinks.notebookUuid, notebooks.uuid))
-    .innerJoin(
-      tokenNotebookLinks,
-      eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
-    )
-    .innerJoin(tokens, eq(tokenNotebookLinks.tokenUuid, tokens.uuid))
-    .innerJoin(apps, eq(notebooks.app, apps.id))
-    .where(
-      and(
-        eq(notebooks.workspace, graph),
-        eq(tokens.userId, userId),
-        eq(apps.name, "roam")
-      )
-    )
-    .then((r) => r[0]);
+  const requestedWebsite = await getWebsiteByNotebookProperties({
+    requestId,
+    userId,
+    workspace: graph,
+    appName: "roam",
+  });
 
   if (!requestedWebsite) {
-    return {
-      authUser: {
-        authenticated: true,
-        websiteUuid: undefined,
-      },
-    };
+    await cxn.end();
+    return defaultData;
   }
 
   const statuses = await cxn
@@ -128,7 +114,8 @@ const logic = async ({
     .orderBy(desc(websiteStatuses.createdDate));
 
   if (!statuses.length) {
-    return {};
+    await cxn.end();
+    return defaultData;
   }
 
   const deployStatuses = statuses.filter((s) => s.statusType === "DEPLOY");
@@ -144,10 +131,11 @@ const logic = async ({
       : [];
   const status = statuses.length ? statuses[0].status : "INITIALIZING";
 
+  await cxn.end();
   return {
     graph,
-    status,
-    props: first.props,
+    websiteStatus: status,
+    statusProps: first.props,
     deploys: deploys.slice(0, 10).map((d) => ({
       date: d.createdDate,
       status: d.status,

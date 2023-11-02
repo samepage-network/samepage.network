@@ -10,15 +10,24 @@ const authenticateRoamJSToken = async ({
     throw new UnauthorizedError("No authorization header provided");
   }
 
+  const [email, roamjsToken] = Buffer.from(
+    authorization.replace(/^Bearer /, ""),
+    "base64"
+  )
+    .toString()
+    .split(":");
+
   const allUsers = await users.getUserList({
-    emailAddress: ["dvargas92495@gmail.com"],
+    emailAddress: [email],
   });
-  if (!allUsers.length)
+
+  const user = allUsers.find(
+    (u) =>
+      (u.privateMetadata.roamjsMetadata as Record<string, string>)?.rawToken ===
+      roamjsToken
+  );
+  if (!user)
     throw new UnauthorizedError("No SamePage user found with RoamJS token");
-
-  const user = allUsers[0];
-
-  console.log(user.privateMetadata);
 
   return user.id;
 };

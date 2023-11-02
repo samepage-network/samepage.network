@@ -19,6 +19,7 @@ import {
   MySqlColumnWithAutoIncrement,
 } from "drizzle-orm/mysql-core/columns/common";
 import { sql } from "drizzle-orm/sql";
+import { JSONData } from "package/internal/types";
 
 class MySqlUnsignedSmallInt<
   TTableName extends string
@@ -372,15 +373,18 @@ export const websiteNotebookLinks = mysqlTable(
   })
 );
 
+const websiteStatusTypes = ["SUCCESS", "DEPLOY", "FAILURE", "NONE"] as const;
+export type WebsiteStatusType = (typeof websiteStatusTypes)[number];
+
 export const websiteStatuses = mysqlTable("website_statuses", {
   uuid: primaryUuid(),
   websiteUuid: uuid("website_uuid").notNull(),
   status: varchar("status", { length: 256 }).notNull().default(""),
-  statusType: mysqlEnum("status_type", ["SUCCESS", "DEPLOY", "FAILURE", "NONE"])
+  statusType: mysqlEnum("status_type", websiteStatusTypes)
     .notNull()
     .default("NONE"),
   createdDate: date("created"),
-  props: json("props").notNull().default(JSON.stringify({})),
+  props: json<JSONData>("props").notNull().default({}),
 });
 
 export const websiteSharing = mysqlTable("website_sharing", {
