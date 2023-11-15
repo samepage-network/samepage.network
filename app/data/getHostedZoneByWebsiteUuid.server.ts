@@ -33,7 +33,7 @@ const getHostedZoneByWebsiteUuid = async ({
       domain,
     }));
   } else if (isCustomDomain === "false") {
-    return { HostedZoneId: process.env.ROAMJS_ZONE_ID, domain };
+    return { HostedZoneId: process.env.SAMEPAGE_HOSTED_ZONE_ID, domain };
   } else {
     return { HostedZoneId: "", domain: "" };
   }
