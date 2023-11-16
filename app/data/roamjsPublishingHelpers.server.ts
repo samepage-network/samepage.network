@@ -3,7 +3,7 @@
 
 // Over time, we should migrate usages of this file to use SamePage native data structures.
 
-import marked from "marked";
+import { marked } from "marked";
 import XRegExp from "xregexp";
 import toHtml from "hast-util-to-html";
 
@@ -29,7 +29,7 @@ export type PublishingContext = {
     parseInline: (s: string) => string;
     lastSrc: string;
     used: boolean;
-    lexInline: typeof marked.marked.Lexer.lexInline;
+    lexInline: typeof marked.Lexer.lexInline;
   };
 };
 
@@ -185,7 +185,7 @@ const context: PublishingContext = {
   },
 };
 
-const opts: marked.marked.MarkedOptions = {
+const opts: marked.MarkedOptions = {
   tokenizer: {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore should accept boolean return value
@@ -632,12 +632,12 @@ export const getParseInline =
     context.blockReferences = ctxt?.blockReferences;
     context.pagesToHrefs = ctxt?.pagesToHrefs;
     context.components = ctxt?.components;
-    context.marked.parseInline = marked.marked.parseInline;
-    context.marked.lexInline = marked.marked.Lexer.lexInline;
+    context.marked.parseInline = marked.parseInline;
+    context.marked.lexInline = marked.Lexer.lexInline;
     context.marked.lastSrc = "";
     if (!context.marked.used) {
-      marked.marked.use(opts);
+      marked.use(opts);
       context.marked.used = true;
     }
-    return marked.marked.parseInline(text);
+    return marked.parseInline(text);
   };

@@ -24,7 +24,13 @@ export const getOpts = ({
   bundle: true,
   outdir,
   platform: "node",
-  external: ["aws-sdk", "canvas", "@aws-sdk/*", "esbuild"].concat(external),
+  external: [
+    "aws-sdk",
+    "canvas",
+    "@aws-sdk/*",
+    "esbuild",
+    "./xhr-sync-worker.js",
+  ].concat(external),
   define,
   entryPoints: Object.fromEntries(
     functions.map((f) => [f, path.join(root, `${f}.ts`)])
