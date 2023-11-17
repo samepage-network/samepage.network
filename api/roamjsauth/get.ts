@@ -2,14 +2,15 @@ import { apps, oauthClients } from "data/schema";
 import { and, eq } from "drizzle-orm/expressions";
 import createAPIGatewayProxyHandler from "samepage/backend/createAPIGatewayProxyHandler";
 import getMysql from "~/data/mysql.server";
+import { z } from "zod";
+import { BackendRequest } from "dist/internal/types";
+
+const bodySchema = z.object({ state: z.string() });
 
 const logic = async ({
   state,
   requestId,
-}: {
-  requestId: string;
-  state: string;
-}) => {
+}: BackendRequest<typeof bodySchema>) => {
   const cxn = await getMysql(requestId);
   const [service, otp] = state.split("_");
   const [oauth] = await cxn
@@ -23,4 +24,8 @@ const logic = async ({
   return { success: !!oauth };
 };
 
-export default createAPIGatewayProxyHandler({ logic, allowedOrigins: [".*"] });
+export default createAPIGatewayProxyHandler({
+  logic,
+  allowedOrigins: [".*"],
+  bodySchema,
+});
