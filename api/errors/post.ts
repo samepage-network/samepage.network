@@ -72,19 +72,17 @@ const logic = async (body: Record<string, unknown>) => {
             .then((r) => ({ ...r[0], owner: "samepage-network" }))
         : parseNotebookUuid(notebookUuid);
       await cxn.end();
+      const repo =
+        notebook.owner === "samepage-network"
+          ? `samepage-network/${notebook.app}-samepage`
+          : `${notebook.owner}/${notebook.app}`;
       const { latest, file = "main.js" } = !notebook.owner
         ? { latest: "*" }
         : await axios
             .get<{
               tag_name: string;
               assets: { name: string }[];
-            }>(
-              `https://api.github.com/repos/${
-                notebook.owner === "samepage-network"
-                  ? `samepage-network/${notebook.app}-samepage`
-                  : `${notebook.owner}/${notebook.app}`
-              }/releases/latest`
-            )
+            }>(`https://api.github.com/repos/${repo}/releases/latest`)
             .then((r) => ({
               latest: r.data.tag_name,
               file: r.data.assets.find((a) => /\.js$/.test(a.name))?.name,
@@ -119,6 +117,7 @@ const logic = async (body: Record<string, unknown>) => {
           type,
           latest,
           file,
+          repo,
         }),
       });
       return { success: true, messageId };

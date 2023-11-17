@@ -10,6 +10,7 @@ const ExtensionErrorEmail = ({
   type,
   latest,
   file,
+  repo,
 }: {
   app: string;
   workspace: string;
@@ -19,6 +20,7 @@ const ExtensionErrorEmail = ({
   type: string;
   latest: string;
   file: string;
+  repo: string;
 }): React.ReactElement => (
   <EmailLayout>
     <h1 style={{ fontSize: 32, marginBottom: 32 }}>{type}</h1>
@@ -35,8 +37,7 @@ const ExtensionErrorEmail = ({
       Workspace: <code>{workspace}</code>
     </div>
     <div>
-      Context:{" "}
-      <a href={`${process.env.ORIGIN}/admin/errors/${data}`}>View.</a>
+      Context: <a href={`${process.env.ORIGIN}/admin/errors/${data}`}>View.</a>
     </div>
     <div>Stack:</div>
     <div>
@@ -47,7 +48,7 @@ const ExtensionErrorEmail = ({
     <div>
       Download extension{" "}
       <a
-        href={`https://github.com/samepage-network/${app}-samepage/releases/download/${version}/${file}`}
+        href={`https://github.com/${repo}/releases/download/${version}/${file}`}
       >
         here.
       </a>
