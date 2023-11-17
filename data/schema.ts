@@ -387,6 +387,14 @@ export const websiteStatuses = mysqlTable("website_statuses", {
   props: json<JSONData>("props").notNull().default({}),
 });
 
+export const websiteRedirects = mysqlTable("website_redirects", {
+  uuid: primaryUuid(),
+  websiteUuid: uuid("website_uuid").notNull(),
+  from: varchar("status", { length: 256 }).notNull().default(""),
+  to: varchar("status", { length: 256 }).notNull().default(""),
+  createdDate: date("created"),
+});
+
 export const websiteSharing = mysqlTable("website_sharing", {
   uuid: primaryUuid(),
   websiteUuid: uuid("website_uuid").notNull(),
