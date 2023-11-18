@@ -38,7 +38,7 @@ const getProgressProps = (
     const deployIndex = deployItems.findIndex((s) =>
       ["SUCCESS", "FAILURE"].includes(s.status || "")
     );
-    if (deployIndex) {
+    if (deployIndex >= 0) {
       return { progress: deployIndex / 5, progressType: "DEPLOYING" as const };
     }
     return { progress: launchIndex / 26, progressType: "LAUNCHING" as const };
@@ -77,7 +77,7 @@ const logic = async ({
 
   const defaultData = {
     graph,
-    status: "",
+    websiteStatus: "SETUP",
     statusProps: {},
     deploys: [],
     progress: 0,
@@ -130,12 +130,13 @@ const logic = async ({
       ? [first, ...successDeployStatuses]
       : [];
   const status = statuses.length ? statuses[0].status : "INITIALIZING";
+  const statusProps = statuses.length ? statuses[0].props : {};
 
   await cxn.end();
   return {
     graph,
     websiteStatus: status,
-    statusProps: first.props,
+    statusProps,
     deploys: deploys.slice(0, 10).map((d) => ({
       date: d.createdDate,
       status: d.status,

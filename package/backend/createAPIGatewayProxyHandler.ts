@@ -1,6 +1,7 @@
 import type {
   APIGatewayProxyHandler,
   APIGatewayProxyEventHeaders,
+  APIGatewayProxyResult,
 } from "aws-lambda";
 import emailError from "./emailError.server";
 import qs from "querystring";
@@ -50,7 +51,7 @@ const createAPIGatewayProxyHandler =
           }) => boolean;
         }
   ): APIGatewayProxyHandler =>
-  (event, context) => {
+  async (event, context): Promise<APIGatewayProxyResult> => {
     const allowedOrigins = (
       typeof args === "function" ? [] : args.allowedOrigins || []
     ).map((s) => (typeof s === "string" ? new RegExp(s) : s));
@@ -74,6 +75,7 @@ const createAPIGatewayProxyHandler =
           )
         : {}),
     });
+    const requestId = context.awsRequestId;
     return new Promise<U | string>((resolve, reject) => {
       try {
         if (validate && !validate(event)) {
@@ -101,7 +103,7 @@ const createAPIGatewayProxyHandler =
           logic({
             ...(event.requestContext.authorizer || {}),
             ...(authorization ? { authorization } : {}),
-            requestId: context.awsRequestId,
+            requestId,
             ...body,
           })
         );
@@ -109,7 +111,7 @@ const createAPIGatewayProxyHandler =
         reject(e);
       }
     })
-      .then((response) => {
+      .then(async (response) => {
         if (typeof response === "object") {
           const { headers, code, ...res } = response;
 
@@ -140,7 +142,7 @@ const createAPIGatewayProxyHandler =
           };
         }
       })
-      .catch((e) => {
+      .catch(async (e) => {
         const statusCode =
           typeof e.code === "number" && e.code >= 400 && e.code < 600
             ? e.code

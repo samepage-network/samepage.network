@@ -2,6 +2,7 @@ import createPublicAPIGatewayProxyHandler from "package/backend/createPublicAPIG
 import { BackendRequest } from "package/internal/types";
 import { z } from "zod";
 import authenticateRoamJSToken from "~/data/authenticateRoamJSToken.server";
+import deleteWebsite from "~/data/deleteWebsite.server";
 import { NotFoundError } from "~/data/errors.server";
 import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
 import getWebsiteByNotebookProperties from "~/data/getWebsiteByNotebookProperties.server";
@@ -39,6 +40,12 @@ const logic = async ({
   }
 
   const websiteUuid = requestedWebsite.uuid;
+  if (!requestedWebsite.live) {
+    await deleteWebsite({ websiteUuid, requestId });
+    await cxn.end();
+    return { success: true };
+  }
+
   await logWebsiteStatus({
     websiteUuid,
     status: "SHUTTING DOWN",

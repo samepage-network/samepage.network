@@ -53,7 +53,7 @@ const apply = async ({
     console.log("No mysql schema queries to run!");
   }
 
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV !== "production" && typeof fetch === "function") {
     const appsInProd = await fetch(`https://api.samepage.network/apps`)
       .then((r) => r.json())
       .then((r) => r.apps as (typeof appsInLocal)[string][]);

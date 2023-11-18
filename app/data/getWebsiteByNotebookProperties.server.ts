@@ -22,7 +22,11 @@ const getWebsiteByNotebookProperties = async ({
 }) => {
   const cxn = await getMysql(requestId);
   return cxn
-    .select({ stackName: websites.stackName, uuid: websites.uuid })
+    .select({
+      stackName: websites.stackName,
+      uuid: websites.uuid,
+      live: websites.live,
+    })
     .from(websites)
     .innerJoin(
       websiteNotebookLinks,

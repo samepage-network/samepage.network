@@ -4,6 +4,7 @@ import {
   int,
   tinyint,
   datetime,
+  timestamp,
   mysqlTable,
   uniqueIndex,
   index,
@@ -352,6 +353,7 @@ export const websites = mysqlTable("websites", {
   uuid: primaryUuid(),
   stackName: varchar("stack_name", { length: 128 }).notNull().default(""),
   createdDate: date("created"),
+  live: boolean("live").notNull().default(false),
 });
 
 export const websiteNotebookLinks = mysqlTable(
@@ -361,7 +363,7 @@ export const websiteNotebookLinks = mysqlTable(
     notebookUuid: varchar("notebook_uuid", { length: 36 })
       .notNull()
       .default(""),
-    websiteUuid: varchar("token_uuid", { length: 36 }).notNull().default(""),
+    websiteUuid: varchar("website_uuid", { length: 36 }).notNull().default(""),
   },
   (links) => ({
     linkIndex: uniqueIndex("UC_notebook_uuid_website_uuid").on(
@@ -383,7 +385,7 @@ export const websiteStatuses = mysqlTable("website_statuses", {
   statusType: mysqlEnum("status_type", websiteStatusTypes)
     .notNull()
     .default("NONE"),
-  createdDate: date("created"),
+  createdDate: timestamp("created_date").notNull().default(sql`(CURRENT_TIMESTAMP)`),
   props: json<JSONData>("props").notNull().default({}),
 });
 

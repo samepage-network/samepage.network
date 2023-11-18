@@ -2,12 +2,12 @@ import {
   apps,
   notebooks,
   tokenNotebookLinks,
+  tokens,
   websiteNotebookLinks,
   websiteSharing,
   websites,
 } from "data/schema";
 import { and, eq } from "drizzle-orm/expressions";
-import { tokens } from "out/migrations/schema";
 import createPublicAPIGatewayProxyHandler from "package/backend/createPublicAPIGatewayProxyHandler";
 import { BackendRequest } from "package/internal/types";
 import { v4 } from "uuid";
@@ -40,6 +40,7 @@ const logic = async ({
       eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
     )
     .innerJoin(tokens, eq(tokenNotebookLinks.tokenUuid, tokens.uuid))
+    .innerJoin(apps, eq(apps.id, notebooks.app))
     .where(
       and(
         eq(notebooks.workspace, graph),
@@ -48,7 +49,6 @@ const logic = async ({
       )
     );
   if (!notebook) {
-    await cxn.end();
     throw new ForbiddenError(
       "Must have a notebook on SamePage in order to launch a website."
     );
@@ -57,15 +57,17 @@ const logic = async ({
   const websiteUuid = v4();
   const createdDate = new Date();
   await cxn.insert(websites).values({
-    stackName: `${graph}-${domain}`,
+    stackName: `samepage-${websiteUuid}`,
     uuid: websiteUuid,
     createdDate,
   });
   await cxn.insert(websiteNotebookLinks).values({
+    uuid: v4(),
     websiteUuid,
     notebookUuid: notebook.notebookUuid,
   });
   await cxn.insert(websiteSharing).values({
+    uuid: v4(),
     websiteUuid,
     userId,
     createdDate,

@@ -4,12 +4,7 @@ import logWebsiteStatus from "~/data/logWebsiteStatus.server";
 import { v4 } from "uuid";
 import { Json } from "package/internal/types";
 import getMysql from "~/data/mysql.server";
-import {
-  websiteNotebookLinks,
-  websiteSharing,
-  websiteStatuses,
-  websites,
-} from "data/schema";
+import { websiteStatuses, websites } from "data/schema";
 import { desc, eq } from "drizzle-orm/expressions";
 import { CloudFormation } from "@aws-sdk/client-cloudformation";
 import { CloudFront } from "@aws-sdk/client-cloudfront";
@@ -21,6 +16,7 @@ import getHostedZoneByDomain from "~/data/getHostedZoneByDomain.server";
 import clearRecords, {
   clearRecordsById,
 } from "~/data/clearRoute53Records.server";
+import deleteWebsite from "~/data/deleteWebsite.server";
 
 const route53 = new Route53({});
 const cf = new CloudFormation({});
@@ -195,14 +191,9 @@ export const handler = async (event: SNSEvent) => {
         const userId = await authenticateRoamJSToken({
           authorization,
         });
-        await cxn
-          .delete(websiteStatuses)
-          .where(eq(websiteStatuses.websiteUuid, websiteUuid));
-        await cxn.delete(websiteSharing).where(eq(websites.uuid, websiteUuid));
-        await cxn
-          .delete(websiteNotebookLinks)
-          .where(eq(websites.uuid, websiteUuid));
-        await cxn.delete(websites).where(eq(websites.uuid, websiteUuid));
+
+        await deleteWebsite({ requestId, websiteUuid });
+
         const email = await getPrimaryUserEmail(userId);
         if (email)
           await ses.sendEmail({

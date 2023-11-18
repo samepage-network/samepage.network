@@ -1,6 +1,7 @@
 import { WebsiteStatusType, websiteStatuses } from "data/schema";
 import getMysql from "./mysql.server";
 import { Json } from "package/internal/types";
+import { v4 } from "uuid";
 
 const logWebsiteStatus = async ({
   websiteUuid,
@@ -17,6 +18,7 @@ const logWebsiteStatus = async ({
 }) => {
   const cxn = await getMysql(requestId);
   await cxn.insert(websiteStatuses).values({
+    uuid: v4(),
     websiteUuid,
     status,
     createdDate: new Date(),
