@@ -8,7 +8,10 @@ import {
 } from "react-router-dom";
 import { apiPost } from "package/internal/apiClient";
 
-const IGNORE_ERRORS = ["Failed to insert <font "];
+const IGNORE_ERRORS = [
+  "Failed to insert <font ",
+  "Failed to execute 'removeChild' on 'Node'",
+];
 
 const DefaultErrorBoundary: V2_ErrorBoundaryComponent =
   (): React.ReactElement => {
