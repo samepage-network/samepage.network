@@ -20,6 +20,7 @@ import { ApiGatewayIntegration } from "@cdktf/provider-aws/lib/api-gateway-integ
 import { ApiGatewayDeployment } from "@cdktf/provider-aws/lib/api-gateway-deployment";
 // import { ApiGatewayStage } from "@cdktf/provider-aws/lib/api-gateway-stage";
 import { ApiGatewayDomainName } from "@cdktf/provider-aws/lib/api-gateway-domain-name";
+import { SnsTopic } from "@cdktf/provider-aws/lib/sns-topic";
 import { ApiGatewayBasePathMapping } from "@cdktf/provider-aws/lib/api-gateway-base-path-mapping";
 import { AcmCertificate } from "@cdktf/provider-aws/lib/acm-certificate";
 import { AcmCertificateValidation } from "@cdktf/provider-aws/lib/acm-certificate-validation";
@@ -139,15 +140,19 @@ const setupInfrastructure = async (): Promise<void> => {
         }),
       };
 
-      new S3BucketWebsiteConfiguration(this, "main_website", {
-        indexDocument: {
-          suffix: "index.html",
-        },
-        errorDocument: {
-          key: "404.html",
-        },
-        bucket: buckets[projectName].id,
-      });
+      const mainWebsite = new S3BucketWebsiteConfiguration(
+        this,
+        "main_website",
+        {
+          indexDocument: {
+            suffix: "index.html",
+          },
+          errorDocument: {
+            key: "404.html",
+          },
+          bucket: buckets[projectName].id,
+        }
+      );
 
       new S3BucketCorsConfiguration(this, "main_cors", {
         bucket: buckets[projectName].id,
@@ -222,12 +227,16 @@ const setupInfrastructure = async (): Promise<void> => {
         forceDestroy: true,
       });
 
-      new S3BucketWebsiteConfiguration(this, "redirect_website", {
-        bucket: buckets[`www.${projectName}`].id,
-        redirectAllRequestsTo: {
-          hostName: projectName,
-        },
-      });
+      const redirectWebsite = new S3BucketWebsiteConfiguration(
+        this,
+        "redirect_website",
+        {
+          bucket: buckets[`www.${projectName}`].id,
+          redirectAllRequestsTo: {
+            hostName: projectName,
+          },
+        }
+      );
 
       const webCert = new AcmCertificate(this, "cert", {
         domainName: projectName,
@@ -396,7 +405,13 @@ const setupInfrastructure = async (): Promise<void> => {
       });
 
       const distributions = Object.fromEntries(
-        [projectName, `www.${projectName}`].map((domain, index) => [
+        [
+          { domain: projectName, domainName: mainWebsite.websiteEndpoint },
+          {
+            domain: `www.${projectName}`,
+            domainName: redirectWebsite.websiteEndpoint,
+          },
+        ].map(({ domain, domainName }, index) => [
           domain,
           new CloudfrontDistribution(this, index === 0 ? "cdn" : "cdn_www", {
             aliases: [domain],
@@ -410,7 +425,7 @@ const setupInfrastructure = async (): Promise<void> => {
                 originId: `S3-${domain}`,
 
                 // START LEGACY
-                domainName: buckets[domain].websiteEndpoint,
+                domainName,
                 customOriginConfig: {
                   originProtocolPolicy: "http-only",
                   httpPort: 80,
@@ -1054,6 +1069,14 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         policy: additionalPolicy.json,
       });
 
+      const websitePublishingTopic = new SnsTopic(
+        this,
+        "website_publishing_topic",
+        {
+          name: "website-publishing-topic",
+        }
+      );
+
       const wsPaths = apiPaths
         .filter((p) => /^ws/.test(p))
         .map((p) => p.replace(/^ws\//, ""));
@@ -1077,6 +1100,12 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         repository: projectName,
         secretName: "TF_AWS_ACCESS_SECRET",
         plaintextValue: aws_secret_token.value,
+      });
+
+      new ActionsSecret(this, "sns_topic_arn_secret", {
+        repository: projectName,
+        secretName: "SNS_TOPIC_ARN",
+        plaintextValue: websitePublishingTopic.arn,
       });
 
       const accessKey = new ActionsSecret(this, "deploy_aws_access_key", {

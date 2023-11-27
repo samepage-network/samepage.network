@@ -24,6 +24,7 @@ env:
   IS_PRODUCTION: 1
   ORIGIN: https://samepage.network
   SAMEPAGE_HOSTED_ZONE_ID: ${{ secrets.SAMEPAGE_HOSTED_ZONE_ID }}
+  SNS_TOPIC_ARN: ${{ secrets.SNS_TOPIC_ARN }}
   STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
   STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
   SVIX_SECRET: ${{ secrets.SVIX_SECRET }}
