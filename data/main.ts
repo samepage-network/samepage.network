@@ -1108,6 +1108,12 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         plaintextValue: websitePublishingTopic.arn,
       });
 
+      new ActionsSecret(this, "remix_cache_policy_id", {
+        repository: projectName,
+        secretName: "REMIX_CACHE_POLICY_ID",
+        plaintextValue: cachePolicy.id,
+      });
+
       const accessKey = new ActionsSecret(this, "deploy_aws_access_key", {
         repository: projectName,
         secretName: "DEPLOY_AWS_ACCESS_KEY",
@@ -1126,7 +1132,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         alias: "personal",
       });
       const roamjsGithubProvider = new GithubProvider(this, "roamjs_provider", {
-        token: process.env.GITHUB_TOKEN,
+        token: process.env.ROAMJS_GITHUB_TOKEN,
         owner: "RoamJS",
         alias: "roamjs",
       });

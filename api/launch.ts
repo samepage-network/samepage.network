@@ -6,8 +6,8 @@ import { Json } from "package/internal/types";
 import logWebsiteStatus from "~/data/logWebsiteStatus.server";
 
 // Remix Cache Policy ID
-const REMIX_CACHE_POLICY_ID = "b66124f0-5072-4fc7-b1c8-805a29798e82";
 const CLOUDFRONT_HOSTED_ZONE_ID = "Z2FDTNDATAQYW2";
+const REMIX_CACHE_POLICY_ID = process.env.REMIX_CACHE_POLICY_ID;
 const SNS_TOPIC_ARN = process.env.SNS_TOPIC_ARN;
 const CLOUDFORMATION_ROLE_ARN = process.env.CLOUDFORMATION_ROLE_ARN;
 const SAMEPAGE_HOSTED_ZONE_ID = process.env.SAMEPAGE_HOSTED_ZONE_ID;
