@@ -1077,6 +1077,29 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         }
       );
 
+      const assumeCloudformationPolicy = new DataAwsIamPolicyDocument(
+        this,
+        "assume_cloudformation_policy",
+        {
+          statement: [
+            {
+              actions: ["sts:AssumeRole"],
+              principals: [
+                {
+                  type: "Service",
+                  identifiers: ["cloudformation.amazonaws.com"],
+                },
+              ],
+            },
+          ],
+        }
+      );
+
+      const cloudformationRole = new IamRole(this, "cloudformation_role", {
+        name: `${safeProjectName}-cloudformation`,
+        assumeRolePolicy: assumeCloudformationPolicy.json,
+      });
+
       const wsPaths = apiPaths
         .filter((p) => /^ws/.test(p))
         .map((p) => p.replace(/^ws\//, ""));
@@ -1112,6 +1135,18 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         repository: projectName,
         secretName: "REMIX_CACHE_POLICY_ID",
         plaintextValue: cachePolicy.id,
+      });
+
+      new ActionsSecret(this, "cloudformation_role_arn", {
+        repository: projectName,
+        secretName: "CLOUDFORMATION_ROLE_ARN",
+        plaintextValue: cloudformationRole.arn,
+      });
+
+      new ActionsSecret(this, "website_publishing_lambda_arn", {
+        repository: projectName,
+        secretName: "WEBSITE_PUBLISHING_LAMBDA_ARN",
+        plaintextValue: lambdaFunctions["origin"].qualifiedArn,
       });
 
       const accessKey = new ActionsSecret(this, "deploy_aws_access_key", {

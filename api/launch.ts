@@ -11,7 +11,7 @@ const REMIX_CACHE_POLICY_ID = process.env.REMIX_CACHE_POLICY_ID;
 const SNS_TOPIC_ARN = process.env.SNS_TOPIC_ARN;
 const CLOUDFORMATION_ROLE_ARN = process.env.CLOUDFORMATION_ROLE_ARN;
 const SAMEPAGE_HOSTED_ZONE_ID = process.env.SAMEPAGE_HOSTED_ZONE_ID;
-const ORIGIN_LAMBDA_ARN = process.env.ORIGIN_LAMBDA_ARN;
+const WEBSITE_PUBLISHING_LAMBDA_ARN = process.env.WEBSITE_PUBLISHING_LAMBDA_ARN;
 const S3_WEBSITE_ENDPOINT = process.env.S3_WEBSITE_ENDPOINT;
 const CLOUDFRONT_SECRET = process.env.CLOUDFRONT_SECRET;
 
@@ -44,8 +44,8 @@ export const handler: Handler<{
       throw new Error("CLOUDFORMATION_ROLE_ARN is not configured");
     }
 
-    if (!ORIGIN_LAMBDA_ARN) {
-      throw new Error("ORIGIN_LAMBDA_ARN is not configured");
+    if (!WEBSITE_PUBLISHING_LAMBDA_ARN) {
+      throw new Error("WEBSITE_PUBLISHING_LAMBDA_ARN is not configured");
     }
 
     if (!S3_WEBSITE_ENDPOINT) {
@@ -218,7 +218,7 @@ export const handler: Handler<{
                     {
                       EventType: "origin-request",
                       IncludeBody: false,
-                      LambdaFunctionARN: ORIGIN_LAMBDA_ARN,
+                      LambdaFunctionARN: WEBSITE_PUBLISHING_LAMBDA_ARN,
                     },
                   ],
                   TargetOriginId: `S3-${domain}`,
@@ -295,7 +295,7 @@ export const handler: Handler<{
                     {
                       EventType: "origin-request",
                       IncludeBody: false,
-                      LambdaFunctionARN: ORIGIN_LAMBDA_ARN,
+                      LambdaFunctionARN: WEBSITE_PUBLISHING_LAMBDA_ARN,
                     },
                   ],
                   TargetOriginId: `S3-${domain}`,
