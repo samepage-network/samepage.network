@@ -6,6 +6,7 @@ import {
   // TerraformIterator,
   TerraformStack,
   TerraformVariable,
+  TerraformOutput,
 } from "cdktf";
 import { DataArchiveFile } from "@cdktf/provider-archive/lib/data-archive-file";
 import { ArchiveProvider } from "@cdktf/provider-archive/lib/provider";
@@ -1148,6 +1149,22 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         secretName: "WEBSITE_PUBLISHING_LAMBDA_ARN",
         plaintextValue: lambdaFunctions["origin"].qualifiedArn,
       });
+
+      new ActionsSecret(this, "s3_website_endpoint", {
+        repository: projectName,
+        secretName: "S3_WEBSITE_ENDPOINT",
+        plaintextValue: mainWebsite.websiteEndpoint,
+      });
+
+      new ActionsSecret(this, "cloudfront_secret", {
+        repository: projectName,
+        secretName: "CLOUDFRONT_SECRET",
+        plaintextValue: secret.value,
+      });
+
+      new TerraformOutput(this, "cloudfront_hosted_zone_id", {
+        value: distributions[projectName].hostedZoneId,
+      })
 
       const accessKey = new ActionsSecret(this, "deploy_aws_access_key", {
         repository: projectName,

@@ -224,7 +224,7 @@ export const handler: Handler<{
                   TargetOriginId: `S3-${domain}`,
                   ViewerProtocolPolicy: "redirect-to-https",
                 },
-                DefaultRootObject: `${websiteUuid}/index.html`,
+                DefaultRootObject: `websites/${websiteUuid}/index.html`,
                 Enabled: true,
                 IPV6Enabled: true,
                 Origins: [
