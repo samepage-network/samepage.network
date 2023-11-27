@@ -8,7 +8,8 @@ import qs from "querystring";
 import xmljs from "xml-js";
 import ServerError from "./ServerError";
 import { BackendRequest } from "../internal/types";
-import { ZodType, z } from "zod";
+import parseZodError from "../utils/parseZodError";
+import { ZodError, ZodType, z } from "zod";
 
 type Logic<T extends ZodType<any, any, any>, U> = (
   e: BackendRequest<T>
@@ -143,11 +144,19 @@ const createAPIGatewayProxyHandler =
         }
       })
       .catch(async (e) => {
+        const headers = makeResponseHeaders(e.headers);
+        if (e instanceof ZodError) {
+          return {
+            statusCode: 400,
+            body: parseZodError(e),
+            headers,
+          };
+        }
+
         const statusCode =
           typeof e.code === "number" && e.code >= 400 && e.code < 600
             ? e.code
             : 500;
-        const headers = makeResponseHeaders(e.headers);
         if (statusCode >= 400 && statusCode < 500) {
           return {
             statusCode,
@@ -155,23 +164,29 @@ const createAPIGatewayProxyHandler =
             headers,
           };
         }
-        return typeof e.name === "string" &&
+
+        if (
+          typeof e.name === "string" &&
           e.name &&
           process.env.NODE_ENV === "production"
-          ? emailError(
-              `API Gateway Error (${e.name})`,
-              e,
-              JSON.stringify({ context, body: event.body })
-            ).then((id) => ({
-              statusCode,
-              body: `Unknown error - Message Id ${id}`,
-              headers,
-            }))
-          : {
-              statusCode,
-              body: e.stack,
-              headers,
-            };
+        ) {
+          const emailId = await emailError(
+            `API Gateway Error (${e.name})`,
+            e,
+            JSON.stringify({ context, body: event.body })
+          );
+          return {
+            statusCode,
+            body: `Unknown error - Message Id ${emailId}`,
+            headers,
+          };
+        }
+
+        return {
+          statusCode,
+          body: e.stack,
+          headers,
+        };
       });
   };
 

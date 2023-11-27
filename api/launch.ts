@@ -1,12 +1,21 @@
-import { CloudFormation } from "@aws-sdk/client-cloudformation";
+import {
+  CloudFormation,
+  CreateStackCommandInput,
+} from "@aws-sdk/client-cloudformation";
 import { users } from "@clerk/clerk-sdk-node";
 import { Handler } from "aws-lambda";
+import { websites } from "data/schema";
+import { eq } from "drizzle-orm/expressions";
 import emailError from "package/backend/emailError.server";
+import uploadFileContent from "package/backend/uploadFileContent";
 import { Json } from "package/internal/types";
+import parseZodError from "package/utils/parseZodError";
+import { z } from "zod";
 import logWebsiteStatus from "~/data/logWebsiteStatus.server";
+import getMysql from "~/data/mysql.server";
 
 // Remix Cache Policy ID
-const CLOUDFRONT_HOSTED_ZONE_ID = "Z2FDTNDATAQYW2";
+const CLOUDFRONT_HOSTED_ZONE_ID = process.env.CLOUDFRONT_HOSTED_ZONE_ID;
 const REMIX_CACHE_POLICY_ID = process.env.REMIX_CACHE_POLICY_ID;
 const SNS_TOPIC_ARN = process.env.SNS_TOPIC_ARN;
 const CLOUDFORMATION_ROLE_ARN = process.env.CLOUDFORMATION_ROLE_ARN;
@@ -16,13 +25,22 @@ const S3_WEBSITE_ENDPOINT = process.env.S3_WEBSITE_ENDPOINT;
 const CLOUDFRONT_SECRET = process.env.CLOUDFRONT_SECRET;
 
 const cf = new CloudFormation({});
+const bodySchema = z.object({
+  websiteUuid: z.string(),
+  domain: z.string(),
+  requestId: z.string(),
+  userId: z.string(),
+});
 
-export const handler: Handler<{
-  websiteUuid: string;
-  domain: string;
-  requestId: string;
-  userId: string;
-}> = async ({ websiteUuid, domain, requestId, userId }) => {
+export const handler: Handler = async (data) => {
+  const parsed = bodySchema.safeParse(data);
+  if (!parsed.success) {
+    const parsedError = new Error(parseZodError(parsed.error));
+    parsedError.name = "ZodError";
+    await emailError("Launch Failed", parsedError);
+    return { success: false };
+  }
+  const { websiteUuid, domain, requestId, userId } = parsed.data;
   const logStatus = (status: string, props?: Record<string, Json>) =>
     logWebsiteStatus({
       websiteUuid,
@@ -56,10 +74,9 @@ export const handler: Handler<{
       throw new Error("CLOUDFRONT_SECRET is not configured");
     }
 
-    await logStatus("ALLOCATING HOST");
+    await logStatus("CREATING WEBSITE");
     const isCustomDomain = !domain.endsWith(".roamjs.com");
 
-    await logStatus("CREATING WEBSITE");
     const Tags = [
       {
         Key: "Application",
@@ -85,7 +102,7 @@ export const handler: Handler<{
       throw new Error(`Could not find email for user: ${email}`);
     }
 
-    await cf.createStack({
+    const stackInput: CreateStackCommandInput = {
       NotificationARNs: [SNS_TOPIC_ARN],
       Parameters: [
         {
@@ -390,7 +407,19 @@ export const handler: Handler<{
           },
         },
       }),
+    };
+    await uploadFileContent({
+      Key: `data/website-stacks/${websiteUuid}.json`,
+      Body: JSON.stringify(stackInput, null, 4),
     });
+    await cf.createStack(stackInput);
+
+    const cxn = await getMysql(requestId);
+    await cxn
+      .update(websites)
+      .set({ live: true })
+      .where(eq(websites.uuid, websiteUuid));
+    await cxn.end();
 
     return { success: true };
   } catch (err) {

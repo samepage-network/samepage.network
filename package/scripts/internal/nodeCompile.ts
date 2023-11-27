@@ -13,6 +13,22 @@ type Args = {
   external?: string[];
 };
 
+const jsdomPatch: esbuild.Plugin = {
+  name: "jsdom-patch",
+  setup: (build) => {
+    build.onLoad({ filter: /XMLHttpRequest-impl\.js$/ }, async (args) => {
+      let contents = await fs.promises.readFile(args.path, "utf8");
+
+      contents = contents.replace(
+        'const syncWorkerFile = require.resolve ? require.resolve("./xhr-sync-worker.js") : null;',
+        `const syncWorkerFile = null;`
+      );
+
+      return { contents, loader: "js" };
+    });
+  },
+};
+
 export const getOpts = ({
   outdir = "build",
   functions,
@@ -24,13 +40,7 @@ export const getOpts = ({
   bundle: true,
   outdir,
   platform: "node",
-  external: [
-    "aws-sdk",
-    "canvas",
-    "@aws-sdk/*",
-    "esbuild",
-    "./xhr-sync-worker.js",
-  ].concat(external),
+  external: ["aws-sdk", "canvas", "@aws-sdk/*", "esbuild"].concat(external),
   define,
   entryPoints: Object.fromEntries(
     functions.map((f) => [f, path.join(root, `${f}.ts`)])
@@ -59,6 +69,7 @@ export const getOpts = ({
         );
       },
     },
+    jsdomPatch,
     ...esbuildPlugins("api"),
   ],
   ...opts,

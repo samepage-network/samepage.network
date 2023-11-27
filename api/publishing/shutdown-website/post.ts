@@ -10,7 +10,7 @@ import invokeAsync from "~/data/invokeAsync.server";
 import logWebsiteStatus from "~/data/logWebsiteStatus.server";
 import getMysql from "~/data/mysql.server";
 
-const bodySchema = z.object({ graph: z.string(), data: z.string() });
+const bodySchema = z.object({ graph: z.string() });
 
 const logic = async ({
   authorization,

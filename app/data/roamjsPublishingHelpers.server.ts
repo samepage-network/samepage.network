@@ -107,7 +107,7 @@ const BUTTON_REGEX =
   /^{{(?:\[\[)?((?:(?!}}[^}])[\w\s-/])*)(?:\]\])?(?::(.*))?}}/;
 const TAG_REGEX = /^#?\[\[(.*?)\]\]/;
 const toAlias = (r: RegExp) =>
-  new RegExp(`^\\[([^\\]]*?)\\]\\(${r.source.substring(1)}\\)`);
+  new RegExp(`^\\[([^\\]]*?)\\]\\(${r.source.replace(/^\^/, "")}\\)`);
 const ALIAS_REGEX = toAlias(TAG_REGEX);
 const ALIAS_REF_REGEX = toAlias(BLOCK_REF_REGEX);
 const HASHTAG_REGEX = /^#([^\s]*)/;
