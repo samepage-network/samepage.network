@@ -7,7 +7,6 @@ import {
   getParseInline,
   type PublishingContext,
   type TreeNode,
-  type ViewType,
 } from "~/data/roamjsPublishingHelpers.server";
 import React from "react";
 import ReactDOMServer from "react-dom/server";
@@ -22,6 +21,8 @@ import { downloadFileContent } from "~/data/downloadFile.server";
 import { S3 } from "@aws-sdk/client-s3";
 import emailError from "package/backend/emailError.server";
 import DailyLog from "~/publishing/DailyLog";
+import { z } from "zod";
+import parseZodError from "package/utils/parseZodError";
 
 type PartialRecursive<T> = T extends object
   ? { [K in keyof T]?: PartialRecursive<T[K]> }
@@ -88,32 +89,25 @@ const ensureDirectoryExistence = (filePath: string) => {
   return false;
 };
 
-type Filter = {
-  rule: string;
-  value: string;
-  layout: string;
-  variables: Record<string, string>;
-};
+const zFilter = z.object({
+  rule: z.string(),
+  value: z.string(),
+  layout: z.string(),
+  variables: z.record(z.string()),
+});
 
-type InputConfig = {
-  index?: string;
-  filter?: Filter[];
-  template?: string;
-  referenceTemplate?: string;
-  plugins?: Record<string, Record<string, string[]>>;
-  theme?: { css?: string };
-  files?: Record<string, string>;
-  version?: number;
-};
+const zInputConfig = z.object({
+  index: z.string().optional(),
+  filter: zFilter.array().optional(),
+  template: z.string().optional(),
+  referenceTemplate: z.string().optional(),
+  plugins: z.record(z.record(z.string().array())).optional(),
+  theme: z.object({ css: z.string().optional() }).optional(),
+  files: z.record(z.string()).optional(),
+  version: z.number().optional(),
+});
 
-declare global {
-  interface Window {
-    fixViewType: (t: { c: TreeNode; v: ViewType }) => TreeNode;
-    getTreeByBlockId: (id: number) => TreeNode;
-    getTreeByPageName: (name: string) => TreeNode[];
-    roamjsProps: { [id: string]: Record<string, unknown> };
-  }
-}
+type InputConfig = z.infer<typeof zInputConfig>;
 
 const DEFAULT_TEMPLATE = `<!DOCTYPE html>
 <html>
@@ -531,23 +525,67 @@ const convertContentToHtml = ({
   return `<${containerTag}>${items.join("\n")}</${containerTag}>`;
 };
 
-type PageContent = {
-  content: PartialRecursive<TreeNode>[];
-  viewType: ViewType;
-  uid: string;
-  metadata: Record<string, Json>;
-  layout: number;
-};
+const zViewType = z.enum(["bullet", "document", "numbered"]);
 
-type References = {
-  title: string;
-  uid?: string;
-  text?: string;
-  node?: MinimalRoamNode;
-  refText: string;
-  refTitle: string;
-  refUid: string;
-}[];
+const zTreeNode: z.ZodType<PartialRecursive<TreeNode>> = z.lazy(() =>
+  z.object({
+    text: z.string().optional(),
+    order: z.number().optional(),
+    open: z.boolean().optional(),
+    children: zTreeNode.array().optional(),
+    parents: z.number().array().optional(),
+    uid: z.string().optional(),
+    heading: z.number().optional(),
+    viewType: zViewType.optional(),
+    editTime: z.date().optional(),
+    textAlign: z.enum(["left", "center", "right", "justify"]).optional(),
+    props: z
+      .object({
+        imageResize: z
+          .record(
+            z.object({
+              height: z.number(),
+              width: z.number(),
+            })
+          )
+          .optional(),
+        iframe: z
+          .record(
+            z.object({
+              height: z.number(),
+              width: z.number(),
+            })
+          )
+          .optional(),
+      })
+      .optional(),
+  })
+);
+
+// TODO: Shift to using AtJson data model
+const zPageContent = z.object({
+  content: zTreeNode.array(),
+  viewType: zViewType,
+  uid: z.string(),
+  metadata: z.record(z.unknown()),
+  layout: z.number(),
+});
+
+type PageContent = z.infer<typeof zPageContent>;
+
+const zReferences = z
+  .object({
+    title: z.string(),
+    uid: z.string().optional(),
+    text: z.string().optional(),
+    node: zTreeNode.optional(),
+    refText: z.string(),
+    refTitle: z.string(),
+    refUid: z.string(),
+  })
+  .array();
+
+type References = z.infer<typeof zReferences>;
 
 const PLUGIN_RENDER: {
   [key: string]: RenderFunction;
@@ -956,13 +994,6 @@ const processSiteData = async ({
   return config;
 };
 
-type MinimalRoamNode = Omit<
-  PartialRecursive<TreeNode>,
-  "order" | "children"
-> & {
-  children?: MinimalRoamNode[];
-};
-
 const s3 = new S3({});
 
 export const readDir = (s: string): string[] =>
@@ -971,6 +1002,12 @@ export const readDir = (s: string): string[] =>
     .flatMap((f) =>
       f.isDirectory() ? readDir(path.join(s, f.name)) : [path.join(s, f.name)]
     );
+
+const zPublishingWebsiteContent = z.object({
+  pages: z.record(zPageContent),
+  config: zInputConfig,
+  references: zReferences,
+});
 
 export const handler = async ({
   websiteUuid,
@@ -993,14 +1030,19 @@ export const handler = async ({
   try {
     const outputPath = path.join("/tmp", websiteUuid, key);
 
-    await logStatus("BUILDING SITE");
+    await logStatus("FETCHING SITE CONTENT");
 
     const data = await downloadFileContent({
       Key: `data/publishing/${websiteUuid}/${key}`,
     });
 
-    // TODO: zod
-    const { pages, config, references } = JSON.parse(data);
+    const websiteContent = zPublishingWebsiteContent.safeParse(data);
+    if (!websiteContent.success) {
+      throw new Error(parseZodError(websiteContent.error));
+    }
+
+    const { pages, config, references } = websiteContent.data;
+    await logStatus("BUILDING SITE");
     fs.mkdirSync(outputPath, { recursive: true });
     await processSiteData({
       pages,

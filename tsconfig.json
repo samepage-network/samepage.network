@@ -4,7 +4,11 @@
     "target": "es2019",
     "allowJs": false,
     "baseUrl": ".",
-    "lib": ["esnext", "dom", "dom.iterable"],
+    "lib": [
+      "esnext",
+      "dom",
+      "dom.iterable"
+    ],
     "module": "commonjs",
     "moduleResolution": "node",
     "declaration": true,
@@ -26,13 +30,29 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "paths": {
-      "~/*": ["./app/*"],
-      "app/*": ["./app/*"],
-      "data/*": ["./data/*"],
-      "package/*": ["./package/*"],
-      "samepage/*": ["./package/*"]
+      "~/*": [
+        "./app/*"
+      ],
+      "app/*": [
+        "./app/*"
+      ],
+      "data/*": [
+        "./data/*"
+      ],
+      "package/*": [
+        "./package/*"
+      ],
+      "samepage/*": [
+        "./package/*"
+      ]
     }
   },
-  "include": ["remix.env.d.ts", "**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules"]
+  "include": [
+    "remix.env.d.ts",
+    "**/*.ts",
+    "**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

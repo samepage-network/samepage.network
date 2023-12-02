@@ -385,7 +385,9 @@ export const websiteStatuses = mysqlTable("website_statuses", {
   statusType: mysqlEnum("status_type", websiteStatusTypes)
     .notNull()
     .default("NONE"),
-  createdDate: timestamp("created_date").notNull().default(sql`(CURRENT_TIMESTAMP)`),
+  createdDate: timestamp("created_date", { fsp: 6 })
+    .notNull()
+    .default(sql`(CURRENT_TIMESTAMP)`),
   props: json<JSONData>("props").notNull().default({}),
 });
 

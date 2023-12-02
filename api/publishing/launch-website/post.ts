@@ -87,6 +87,7 @@ const logic = async ({
       websiteUuid,
       requestId,
       domain: domain.toLowerCase(),
+      userId,
     },
   });
 

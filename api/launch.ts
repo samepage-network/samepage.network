@@ -121,6 +121,10 @@ export const handler: Handler = async (data) => {
           ParameterKey: "WebsiteUuid",
           ParameterValue: websiteUuid,
         },
+        {
+          ParameterKey: "Environment",
+          ParameterValue: process.env.NODE_ENV,
+        },
       ],
       RoleARN: CLOUDFORMATION_ROLE_ARN,
       StackName: `samepage-publishing-${websiteUuid}`,
