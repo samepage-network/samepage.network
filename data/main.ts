@@ -707,6 +707,9 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         }
       );
 
+      const cloudformationResourceArn = `arn:aws:cloudformation:${AWS_REGION}:${
+        callerIdentity.accountId
+      }:stack/${getCloudformationStackName("*")}/`;
       const lamdaExecutionPolicyDocument = new DataAwsIamPolicyDocument(
         this,
         "lambda_execution_policy_document",
@@ -717,14 +720,6 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
                 "cloudfront:CreateInvalidation",
                 "cloudfront:GetInvalidation",
                 "cloudfront:ListDistributions",
-                "dynamodb:BatchGetItem",
-                "dynamodb:GetItem",
-                "dynamodb:Query",
-                "dynamodb:Scan",
-                "dynamodb:BatchWriteItem",
-                "dynamodb:PutItem",
-                "dynamodb:UpdateItem",
-                "dynamodb:DeleteItem",
                 "execute-api:Invoke",
                 "execute-api:ManageConnections",
                 "lambda:InvokeFunction",
@@ -745,6 +740,14 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
               resources: [
                 `arn:aws:iam::${callerIdentity.accountId}:role/${safeProjectName}-lambda-execution`,
               ],
+            },
+            {
+              actions: ["cloudformation:CreateStack"],
+              resources: [`${cloudformationResourceArn}/*`],
+            },
+            {
+              actions: ["cloudformation:DescribeStacks"],
+              resources: [cloudformationResourceArn],
             },
           ],
         }
@@ -943,14 +946,6 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
             {
               actions: ["iam:PassRole"],
               resources: [cloudformationRole.arn],
-            },
-            {
-              actions: ["cloudformation:CreateStack"],
-              resources: [
-                `arn:aws:cloudformation:${AWS_REGION}:${
-                  callerIdentity.accountId
-                }:stack/${getCloudformationStackName("*")}/*`,
-              ],
             },
           ],
         }

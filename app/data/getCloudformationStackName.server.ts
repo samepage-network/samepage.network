@@ -1,4 +1,4 @@
 const getCloudformationStackName = (websiteUuid: string) =>
-  `samepage-publishing-${websiteUuid}`;
+  `samepage-${websiteUuid}`;
 
 export default getCloudformationStackName;

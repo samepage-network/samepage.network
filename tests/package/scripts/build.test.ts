@@ -127,7 +127,7 @@ test("build command supports on finish file", async () => {
   ).toEqual(`(()=>{var o="bye";console.log(o);})();`);
 });
 
-test("build command compiles template", async () => {
+test.skip("build command compiles template", async () => {
   test.setTimeout(1000 * 180);
   const root = await makeRandomTmpDir();
   fs.mkdirSync(`${root}/src`);

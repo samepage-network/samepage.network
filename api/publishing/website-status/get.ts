@@ -130,6 +130,9 @@ const logic = async ({
       : firstDeployStatus?.statusType === "DEPLOY"
       ? [firstDeployStatus, ...completeDeployStatuses]
       : [];
+  const isDeployReady =
+    !completeDeployStatuses.length ||
+    completeDeployStatuses[0].uuid === deployStatuses[0].uuid;
 
   const launchStatuses = statuses.filter((s) => s.statusType === "LAUNCH");
   const completeLaunchStatuses = launchStatuses.filter((s) =>
@@ -142,25 +145,32 @@ const logic = async ({
       : firstLaunchStatus?.statusType === "LAUNCH"
       ? [firstLaunchStatus, ...completeLaunchStatuses]
       : [];
+  const isLaunchReady =
+    !completeLaunchStatuses.length ||
+    completeLaunchStatuses[0].uuid === launchStatuses[0].uuid;
 
   const status = statuses.length ? statuses[0].status : "INITIALIZING";
   const statusProps = statuses.length ? statuses[0].props : {};
 
   await cxn.end();
   return {
-    graph,
-    websiteStatus: status,
-    statusProps,
+    isWebsiteReady: isDeployReady && isLaunchReady,
     deploys: deploys.slice(0, 10).map((d) => ({
       date: d.createdDate,
       status: d.status,
       uuid: d.uuid,
+      props: d.props,
     })),
     launches: launches.slice(0, 10).map((d) => ({
       date: d.createdDate,
       status: d.status,
       uuid: d.uuid,
+      props: d.props,
     })),
+
+    // DEPRECATED
+    websiteStatus: status,
+    statusProps,
     ...getProgressProps(statuses, deployStatuses),
   };
 };
