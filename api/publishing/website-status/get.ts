@@ -119,15 +119,15 @@ const logic = async ({
   }
 
   const deployStatuses = statuses.filter((s) => s.statusType === "DEPLOY");
-  const successDeployStatuses = statuses.filter((s) =>
+  const completeDeployStatuses = deployStatuses.filter((s) =>
     ["SUCCESS", "FAILURE"].includes(s.status)
   );
   const first = deployStatuses[0];
   const deploys =
-    successDeployStatuses[0] === first
-      ? successDeployStatuses
-      : first
-      ? [first, ...successDeployStatuses]
+    completeDeployStatuses[0] === first
+      ? completeDeployStatuses
+      : first?.statusType === "DEPLOY"
+      ? [first, ...completeDeployStatuses]
       : [];
   const status = statuses.length ? statuses[0].status : "INITIALIZING";
   const statusProps = statuses.length ? statuses[0].props : {};

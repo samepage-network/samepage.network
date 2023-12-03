@@ -4,7 +4,7 @@ const parseZodError = (e: ZodError, indentation = 0): string => {
   const err = `${"".padStart(indentation * 2, " ")}${e.issues
     .map((i) =>
       i.code === "invalid_type"
-        ? `Expected \`${i.path.join(".")}\` to be of type \`${
+        ? `Expected \`${i.path.join(".") || "[root]"}\` to be of type \`${
             i.expected
           }\` but received type \`${i.received}\``
         : i.code === "invalid_union"

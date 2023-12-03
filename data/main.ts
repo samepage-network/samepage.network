@@ -19,7 +19,6 @@ import { ApiGatewayMethodResponse } from "@cdktf/provider-aws/lib/api-gateway-me
 import { ApiGatewayIntegrationResponse } from "@cdktf/provider-aws/lib/api-gateway-integration-response";
 import { ApiGatewayIntegration } from "@cdktf/provider-aws/lib/api-gateway-integration";
 import { ApiGatewayDeployment } from "@cdktf/provider-aws/lib/api-gateway-deployment";
-// import { ApiGatewayStage } from "@cdktf/provider-aws/lib/api-gateway-stage";
 import { ApiGatewayDomainName } from "@cdktf/provider-aws/lib/api-gateway-domain-name";
 import { SnsTopic } from "@cdktf/provider-aws/lib/sns-topic";
 import { ApiGatewayBasePathMapping } from "@cdktf/provider-aws/lib/api-gateway-base-path-mapping";
@@ -32,8 +31,12 @@ import { IamPolicy } from "@cdktf/provider-aws/lib/iam-policy";
 import { IamRole } from "@cdktf/provider-aws/lib/iam-role";
 import { IamRolePolicy } from "@cdktf/provider-aws/lib/iam-role-policy";
 import { IamUser } from "@cdktf/provider-aws/lib/iam-user";
+import { DataAwsIamUser } from "@cdktf/provider-aws/lib/data-aws-iam-user";
+import { IamGroup } from "@cdktf/provider-aws/lib/iam-group";
 import { IamUserPolicy } from "@cdktf/provider-aws/lib/iam-user-policy";
+import { IamUserGroupMembership } from "@cdktf/provider-aws/lib/iam-user-group-membership";
 import { IamAccessKey } from "@cdktf/provider-aws/lib/iam-access-key";
+import { IamGroupPolicyAttachment } from "@cdktf/provider-aws/lib/iam-group-policy-attachment";
 import { LambdaFunction } from "@cdktf/provider-aws/lib/lambda-function";
 import { DataAwsIamPolicyDocument } from "@cdktf/provider-aws/lib/data-aws-iam-policy-document";
 import { DataAwsCallerIdentity } from "@cdktf/provider-aws/lib/data-aws-caller-identity";
@@ -797,177 +800,6 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
             : p.replace(/\//g, "-"),
         ])
       );
-      const lambdaFunctions = Object.fromEntries(
-        allLambdas.map((lambdaPath) => [
-          lambdaPath,
-          new LambdaFunction(
-            this,
-            `lambda_function_${lambdaPath.replace(/\//g, "_")}`,
-            {
-              functionName: `${safeProjectName}_${functionNames[lambdaPath]}`,
-              role: lambdaRole.arn,
-              handler: `${functionNames[lambdaPath]}.handler`,
-              filename: dummyFile.outputPath,
-              runtime: "nodejs18.x",
-              publish: false,
-              timeout: 60,
-              memorySize: 5120,
-            }
-          ),
-        ])
-      );
-      const gatewayMethods = Object.fromEntries(
-        resourceLambdas.map((p) => [
-          p,
-          new ApiGatewayMethod(
-            this,
-            `gateway_method_${p.replace(/\//g, "_")}`,
-            {
-              restApiId: restApi.id,
-              resourceId: apiResources[resources[p]].id,
-              httpMethod: methods[p].toUpperCase(),
-              authorization: "NONE",
-            }
-          ),
-        ])
-      );
-      const gatewayIntegrations = resourceLambdas.map(
-        (p) =>
-          new ApiGatewayIntegration(
-            this,
-            `integration_${p.replace(/\//g, "_")}`,
-            {
-              restApiId: restApi.id,
-              resourceId: apiResources[resources[p]].id,
-              httpMethod: methods[p].toUpperCase(),
-              type: "AWS_PROXY",
-              integrationHttpMethod: "POST",
-              uri: lambdaFunctions[p].invokeArn,
-              dependsOn: [apiResources[resources[p]], gatewayMethods[p]],
-            }
-          )
-      );
-      resourceLambdas.map(
-        (p) =>
-          new LambdaPermission(this, `apigw_lambda_${p.replace(/\//g, "_")}`, {
-            statementId: "AllowExecutionFromAPIGateway",
-            action: "lambda:InvokeFunction",
-            functionName: lambdaFunctions[p].functionName,
-            principal: "apigateway.amazonaws.com",
-            // TODO: constrain this to the specific API Gateway Resource
-            sourceArn: `${restApi.executionArn}/*/*/*`,
-          })
-      );
-      const distinctResources = Array.from(new Set(Object.values(resources)));
-      const mockMethods = Object.fromEntries(
-        distinctResources.map((resource) => [
-          resource,
-          new ApiGatewayMethod(
-            this,
-            `option_method_${resource.replace(/\//g, "_")}`,
-            {
-              restApiId: restApi.id,
-              resourceId: apiResources[resource].id,
-              httpMethod: "OPTIONS",
-              authorization: "NONE",
-            }
-          ),
-        ])
-      );
-      const mockIntegrations = Object.fromEntries(
-        distinctResources.map((resource) => [
-          resource,
-          new ApiGatewayIntegration(
-            this,
-            `mock_integration_${resource.replace(/\//g, "_")}`,
-            {
-              restApiId: restApi.id,
-              resourceId: apiResources[resource].id,
-              httpMethod: "OPTIONS",
-              type: "MOCK",
-              passthroughBehavior: "WHEN_NO_MATCH",
-              requestTemplates: {
-                "application/json": JSON.stringify({ statusCode: 200 }),
-              },
-            }
-          ),
-        ])
-      );
-      const mockMethodResponses = Object.fromEntries(
-        distinctResources.map((resource) => [
-          resource,
-          new ApiGatewayMethodResponse(
-            this,
-            `mock_method_response_${resource.replace(/\//g, "_")}`,
-            {
-              restApiId: restApi.id,
-              resourceId: apiResources[resource].id,
-              httpMethod: "OPTIONS",
-              statusCode: "200",
-              responseModels: {
-                "application/json": "Empty",
-              },
-              responseParameters: {
-                "method.response.header.Access-Control-Allow-Headers": true,
-                "method.response.header.Access-Control-Allow-Methods": true,
-                "method.response.header.Access-Control-Allow-Origin": true,
-                "method.response.header.Access-Control-Allow-Credentials": true,
-              },
-              dependsOn: [apiResources[resource], mockMethods[resource]],
-            }
-          ),
-        ])
-      );
-      const mockIntegrationResponses = distinctResources.map(
-        (resource) =>
-          new ApiGatewayIntegrationResponse(
-            this,
-            `mock_integration_response_${resource.replace(/\//g, "_")}`,
-            {
-              restApiId: restApi.id,
-              resourceId: apiResources[resource].id,
-              httpMethod: "OPTIONS",
-              statusCode: "200",
-              responseParameters: {
-                "method.response.header.Access-Control-Allow-Headers":
-                  "'Authorization,Content-Type'",
-                "method.response.header.Access-Control-Allow-Methods":
-                  "'GET,OPTIONS,POST,PUT,DELETE'",
-                "method.response.header.Access-Control-Allow-Origin": "'*'",
-                "method.response.header.Access-Control-Allow-Credentials":
-                  "'true'",
-              },
-              dependsOn: [
-                apiResources[resource],
-                mockIntegrations[resource],
-                mockMethodResponses[resource],
-              ],
-            }
-          )
-      );
-      // const deployment =
-      new ApiGatewayDeployment(this, "production", {
-        restApiId: restApi.id,
-        stageName: "production",
-        triggers: {
-          redeployment: Fn.sha1(
-            Fn.jsonencode(
-              (gatewayIntegrations as { id: string }[])
-                .concat(Object.values(apiResources))
-                .concat(Object.values(gatewayMethods))
-                .concat(Object.values(mockMethods))
-                .concat(Object.values(mockIntegrations))
-                .concat(Object.values(mockMethodResponses))
-                .concat(mockIntegrationResponses)
-                .map((t) => t.id)
-            )
-          ),
-        },
-        dependsOn: [...Object.values(gatewayMethods), ...gatewayIntegrations],
-        lifecycle: {
-          createBeforeDestroy: true,
-        },
-      });
       // Needs to tf import the current stage into it
       // new ApiGatewayStage(this, "production_stage", {
       //   deploymentId: deployment.id,
@@ -1101,6 +933,247 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         assumeRolePolicy: assumeCloudformationPolicy.json,
       });
 
+      const launchWebsitePolicyDocument = new DataAwsIamPolicyDocument(
+        this,
+        "launch_website_policy_document",
+        {
+          statement: [
+            {
+              actions: ["iam:PassRole"],
+              resources: [cloudformationRole.arn],
+            },
+          ],
+        }
+      );
+
+      const launchWebsitePolicy = new IamPolicy(this, "launch_website_policy", {
+        name: `${safeProjectName}-launch-website`,
+        policy: launchWebsitePolicyDocument.json,
+      });
+
+      const vargasUser = new DataAwsIamUser(this, "vargas_user", {
+        userName: "vargas",
+      });
+
+      const adminGroup = new IamGroup(this, "admin_user_group", {
+        name: `${safeProjectName}-admin`,
+        path: "/",
+      });
+
+      new IamUserGroupMembership(this, "admin_user_membership", {
+        groups: [adminGroup.name],
+        user: vargasUser.userName,
+      });
+
+      new IamGroupPolicyAttachment(this, "admin_group_website_policy", {
+        group: adminGroup.name,
+        policyArn: launchWebsitePolicy.arn,
+      });
+
+      const launchWebsiteLambdaRole = new IamRole(
+        this,
+        "launch_website_lambda_role",
+        {
+          name: `${safeProjectName}-launch-website-lambda`,
+          assumeRolePolicy: assumeLambdaPolicy.json,
+        }
+      );
+
+      new IamRolePolicyAttachment(
+        this,
+        "launch_website_lambda_role_attachment",
+        {
+          role: launchWebsiteLambdaRole.name,
+          policyArn: launchWebsitePolicy.arn,
+        }
+      );
+
+      new IamRolePolicyAttachment(
+        this,
+        "launch_website_lambda_role_base_attachment",
+        {
+          role: launchWebsiteLambdaRole.name,
+          policyArn: lamdaExecutionPolicy.arn,
+        }
+      );
+
+      const lambdaRoleMapping: Record<string, IamRole> = {
+        launch: launchWebsiteLambdaRole,
+      };
+
+      const lambdaFunctions = Object.fromEntries(
+        allLambdas.map((lambdaPath) => [
+          lambdaPath,
+          new LambdaFunction(
+            this,
+            `lambda_function_${lambdaPath.replace(/\//g, "_")}`,
+            {
+              functionName: `${safeProjectName}_${functionNames[lambdaPath]}`,
+              role: (lambdaRoleMapping[lambdaPath] ?? lambdaRole).arn,
+              handler: `${functionNames[lambdaPath]}.handler`,
+              filename: dummyFile.outputPath,
+              runtime: "nodejs18.x",
+              publish: false,
+              timeout: 60,
+              memorySize: 5120,
+            }
+          ),
+        ])
+      );
+
+      const gatewayIntegrations = resourceLambdas.map(
+        (p) =>
+          new ApiGatewayIntegration(
+            this,
+            `integration_${p.replace(/\//g, "_")}`,
+            {
+              restApiId: restApi.id,
+              resourceId: apiResources[resources[p]].id,
+              httpMethod: methods[p].toUpperCase(),
+              type: "AWS_PROXY",
+              integrationHttpMethod: "POST",
+              uri: lambdaFunctions[p].invokeArn,
+              dependsOn: [apiResources[resources[p]], gatewayMethods[p]],
+            }
+          )
+      );
+      const gatewayMethods = Object.fromEntries(
+        resourceLambdas.map((p) => [
+          p,
+          new ApiGatewayMethod(
+            this,
+            `gateway_method_${p.replace(/\//g, "_")}`,
+            {
+              restApiId: restApi.id,
+              resourceId: apiResources[resources[p]].id,
+              httpMethod: methods[p].toUpperCase(),
+              authorization: "NONE",
+            }
+          ),
+        ])
+      );
+      resourceLambdas.map(
+        (p) =>
+          new LambdaPermission(this, `apigw_lambda_${p.replace(/\//g, "_")}`, {
+            statementId: "AllowExecutionFromAPIGateway",
+            action: "lambda:InvokeFunction",
+            functionName: lambdaFunctions[p].functionName,
+            principal: "apigateway.amazonaws.com",
+            // TODO: constrain this to the specific API Gateway Resource
+            sourceArn: `${restApi.executionArn}/*/*/*`,
+          })
+      );
+      const distinctResources = Array.from(new Set(Object.values(resources)));
+      const mockMethods = Object.fromEntries(
+        distinctResources.map((resource) => [
+          resource,
+          new ApiGatewayMethod(
+            this,
+            `option_method_${resource.replace(/\//g, "_")}`,
+            {
+              restApiId: restApi.id,
+              resourceId: apiResources[resource].id,
+              httpMethod: "OPTIONS",
+              authorization: "NONE",
+            }
+          ),
+        ])
+      );
+      const mockIntegrations = Object.fromEntries(
+        distinctResources.map((resource) => [
+          resource,
+          new ApiGatewayIntegration(
+            this,
+            `mock_integration_${resource.replace(/\//g, "_")}`,
+            {
+              restApiId: restApi.id,
+              resourceId: apiResources[resource].id,
+              httpMethod: "OPTIONS",
+              type: "MOCK",
+              passthroughBehavior: "WHEN_NO_MATCH",
+              requestTemplates: {
+                "application/json": JSON.stringify({ statusCode: 200 }),
+              },
+            }
+          ),
+        ])
+      );
+      const mockMethodResponses = Object.fromEntries(
+        distinctResources.map((resource) => [
+          resource,
+          new ApiGatewayMethodResponse(
+            this,
+            `mock_method_response_${resource.replace(/\//g, "_")}`,
+            {
+              restApiId: restApi.id,
+              resourceId: apiResources[resource].id,
+              httpMethod: "OPTIONS",
+              statusCode: "200",
+              responseModels: {
+                "application/json": "Empty",
+              },
+              responseParameters: {
+                "method.response.header.Access-Control-Allow-Headers": true,
+                "method.response.header.Access-Control-Allow-Methods": true,
+                "method.response.header.Access-Control-Allow-Origin": true,
+                "method.response.header.Access-Control-Allow-Credentials": true,
+              },
+              dependsOn: [apiResources[resource], mockMethods[resource]],
+            }
+          ),
+        ])
+      );
+      const mockIntegrationResponses = distinctResources.map(
+        (resource) =>
+          new ApiGatewayIntegrationResponse(
+            this,
+            `mock_integration_response_${resource.replace(/\//g, "_")}`,
+            {
+              restApiId: restApi.id,
+              resourceId: apiResources[resource].id,
+              httpMethod: "OPTIONS",
+              statusCode: "200",
+              responseParameters: {
+                "method.response.header.Access-Control-Allow-Headers":
+                  "'Authorization,Content-Type'",
+                "method.response.header.Access-Control-Allow-Methods":
+                  "'GET,OPTIONS,POST,PUT,DELETE'",
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Credentials":
+                  "'true'",
+              },
+              dependsOn: [
+                apiResources[resource],
+                mockIntegrations[resource],
+                mockMethodResponses[resource],
+              ],
+            }
+          )
+      );
+      // const deployment =
+      new ApiGatewayDeployment(this, "production", {
+        restApiId: restApi.id,
+        stageName: "production",
+        triggers: {
+          redeployment: Fn.sha1(
+            Fn.jsonencode(
+              (gatewayIntegrations as { id: string }[])
+                .concat(Object.values(apiResources))
+                .concat(Object.values(gatewayMethods))
+                .concat(Object.values(mockMethods))
+                .concat(Object.values(mockIntegrations))
+                .concat(Object.values(mockMethodResponses))
+                .concat(mockIntegrationResponses)
+                .map((t) => t.id)
+            )
+          ),
+        },
+        dependsOn: [...Object.values(gatewayMethods), ...gatewayIntegrations],
+        lifecycle: {
+          createBeforeDestroy: true,
+        },
+      });
+
       const wsPaths = apiPaths
         .filter((p) => /^ws/.test(p))
         .map((p) => p.replace(/^ws\//, ""));
@@ -1164,7 +1237,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
 
       new TerraformOutput(this, "cloudfront_hosted_zone_id", {
         value: distributions[projectName].hostedZoneId,
-      })
+      });
 
       const accessKey = new ActionsSecret(this, "deploy_aws_access_key", {
         repository: projectName,

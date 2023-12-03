@@ -1033,10 +1033,12 @@ export const handler = async ({
     await logStatus("FETCHING SITE CONTENT");
 
     const data = await downloadFileContent({
-      Key: `data/publishing/${websiteUuid}/${key}`,
+      Key: `data/publishing/${websiteUuid}/${key}.json`,
     });
 
-    const websiteContent = zPublishingWebsiteContent.safeParse(data);
+    const websiteContent = zPublishingWebsiteContent.safeParse(
+      JSON.parse(data)
+    );
     if (!websiteContent.success) {
       throw new Error(parseZodError(websiteContent.error));
     }
