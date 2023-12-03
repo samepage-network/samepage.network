@@ -1020,6 +1020,21 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
           ),
         ])
       );
+      const gatewayMethods = Object.fromEntries(
+        resourceLambdas.map((p) => [
+          p,
+          new ApiGatewayMethod(
+            this,
+            `gateway_method_${p.replace(/\//g, "_")}`,
+            {
+              restApiId: restApi.id,
+              resourceId: apiResources[resources[p]].id,
+              httpMethod: methods[p].toUpperCase(),
+              authorization: "NONE",
+            }
+          ),
+        ])
+      );
 
       const gatewayIntegrations = resourceLambdas.map(
         (p) =>
@@ -1036,21 +1051,6 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
               dependsOn: [apiResources[resources[p]], gatewayMethods[p]],
             }
           )
-      );
-      const gatewayMethods = Object.fromEntries(
-        resourceLambdas.map((p) => [
-          p,
-          new ApiGatewayMethod(
-            this,
-            `gateway_method_${p.replace(/\//g, "_")}`,
-            {
-              restApiId: restApi.id,
-              resourceId: apiResources[resources[p]].id,
-              httpMethod: methods[p].toUpperCase(),
-              authorization: "NONE",
-            }
-          ),
-        ])
       );
       resourceLambdas.map(
         (p) =>
