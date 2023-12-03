@@ -3,7 +3,6 @@ import {
   App,
   Fn,
   RemoteBackend,
-  // TerraformIterator,
   TerraformStack,
   TerraformVariable,
   TerraformOutput,
@@ -67,7 +66,7 @@ import { Octokit } from "@octokit/rest";
 import readDir from "../package/scripts/internal/readDir";
 import compareSqlSchemas from "./compareSqlSchemas";
 import { Route53 } from "@aws-sdk/client-route-53";
-import getCloudformationStackName from "~/data/getCloudformationStackName.server";
+import getCloudformationStackName from "../app/data/getCloudformationStackName.server";
 dotenv.config({ override: true });
 
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });

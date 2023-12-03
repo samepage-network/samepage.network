@@ -53,6 +53,7 @@ const getProgressProps = (
 };
 
 const bodySchema = z.object({ graph: z.string() });
+const COMPLETE_STATUSES = ["SUCCESS", "FAILURE"];
 
 const logic = async ({
   authorization,
@@ -120,15 +121,28 @@ const logic = async ({
 
   const deployStatuses = statuses.filter((s) => s.statusType === "DEPLOY");
   const completeDeployStatuses = deployStatuses.filter((s) =>
-    ["SUCCESS", "FAILURE"].includes(s.status)
+    COMPLETE_STATUSES.includes(s.status)
   );
-  const first = deployStatuses[0];
+  const firstDeployStatus = deployStatuses[0];
   const deploys =
-    completeDeployStatuses[0] === first
+    completeDeployStatuses[0] === firstDeployStatus
       ? completeDeployStatuses
-      : first?.statusType === "DEPLOY"
-      ? [first, ...completeDeployStatuses]
+      : firstDeployStatus?.statusType === "DEPLOY"
+      ? [firstDeployStatus, ...completeDeployStatuses]
       : [];
+
+  const launchStatuses = statuses.filter((s) => s.statusType === "LAUNCH");
+  const completeLaunchStatuses = launchStatuses.filter((s) =>
+    COMPLETE_STATUSES.includes(s.status)
+  );
+  const firstLaunchStatus = launchStatuses[0];
+  const launches =
+    completeLaunchStatuses[0] === firstLaunchStatus
+      ? completeLaunchStatuses
+      : firstLaunchStatus?.statusType === "LAUNCH"
+      ? [firstLaunchStatus, ...completeLaunchStatuses]
+      : [];
+
   const status = statuses.length ? statuses[0].status : "INITIALIZING";
   const statusProps = statuses.length ? statuses[0].props : {};
 
@@ -138,6 +152,11 @@ const logic = async ({
     websiteStatus: status,
     statusProps,
     deploys: deploys.slice(0, 10).map((d) => ({
+      date: d.createdDate,
+      status: d.status,
+      uuid: d.uuid,
+    })),
+    launches: launches.slice(0, 10).map((d) => ({
       date: d.createdDate,
       status: d.status,
       uuid: d.uuid,
