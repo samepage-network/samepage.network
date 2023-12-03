@@ -95,6 +95,7 @@ const setupInfrastructure = async (): Promise<void> => {
         "algolia_app_id",
         "algolia_admin_key",
         "ngrok_auth_token",
+        "samepage_development_token",
       ];
       const aws_access_token = new TerraformVariable(this, "aws_access_token", {
         type: "string",
@@ -759,10 +760,6 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
               ],
               resources: [cloudformationResourceArn],
             },
-            {
-              actions: ["SNS:Publish"],
-              resources: [websitePublishingTopic.arn],
-            },
           ],
         }
       );
@@ -942,6 +939,25 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
       const cloudformationRole = new IamRole(this, "cloudformation_role", {
         name: `${safeProjectName}-cloudformation`,
         assumeRolePolicy: assumeCloudformationPolicy.json,
+      });
+
+      const cloudformationRolePolicyDocument = new DataAwsIamPolicyDocument(
+        this,
+        "cloudformation_role_policy_document",
+        {
+          statement: [
+            {
+              actions: ["SNS:Publish"],
+              resources: [websitePublishingTopic.arn],
+            },
+          ],
+        }
+      );
+
+      new IamRolePolicy(this, "cloudformation_role_policy", {
+        name: `${safeProjectName}-cloudformation`,
+        role: cloudformationRole.name,
+        policy: cloudformationRolePolicyDocument.json,
       });
 
       const launchWebsitePolicyDocument = new DataAwsIamPolicyDocument(

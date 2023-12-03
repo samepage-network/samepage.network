@@ -94,6 +94,19 @@ export const handler = async (event: SNSEvent) => {
         [ParameterKey, ParameterValue] as const
     )
   );
+
+  if (originalParameters["Environment"] === "development") {
+    await fetch("https://api.samepage.ngrok.io/publishing/snsubscriber", {
+      method: "POST",
+      body: JSON.stringify({ event }),
+      headers: {
+        Authorization: process.env.SAMEPAGE_DEVELOPMENT_TOKEN ?? "",
+      },
+    });
+    await cxn.end();
+    return;
+  }
+
   const getHostedZoneByStackName = async () => {
     const isCustomDomain = originalParameters["CustomDomain"];
     const domain = originalParameters["DomainName"];

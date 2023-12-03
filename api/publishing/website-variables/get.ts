@@ -35,8 +35,11 @@ const logic = async ({
   const { Stacks } = await cf
     .describeStacks({ StackName: website.stackName })
     .catch((e) => {
-      console.error("Describe Stacks Failed:", e, Object.keys(e));
-      return { Stacks: [] };
+      if (e.message.includes("does not exist"))
+        return {
+          Stacks: [],
+        };
+      throw e;
     });
 
   if (!Stacks?.length) {
