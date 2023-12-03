@@ -32,7 +32,12 @@ const logic = async ({
     return {};
   }
 
-  const { Stacks } = await cf.describeStacks({ StackName: website.stackName });
+  const { Stacks } = await cf
+    .describeStacks({ StackName: website.stackName })
+    .catch((e) => {
+      console.error("Describe Stacks Failed:", e, Object.keys(e));
+      return { Stacks: [] };
+    });
 
   if (!Stacks?.length) {
     await cxn.end();

@@ -710,6 +710,15 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
       const cloudformationResourceArn = `arn:aws:cloudformation:${AWS_REGION}:${
         callerIdentity.accountId
       }:stack/${getCloudformationStackName("*")}/*`;
+
+      const websitePublishingTopic = new SnsTopic(
+        this,
+        "website_publishing_topic",
+        {
+          name: "website-publishing-topic",
+        }
+      );
+
       const lamdaExecutionPolicyDocument = new DataAwsIamPolicyDocument(
         this,
         "lambda_execution_policy_document",
@@ -749,6 +758,10 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
                 "cloudformation:UpdateStack",
               ],
               resources: [cloudformationResourceArn],
+            },
+            {
+              actions: ["SNS:Publish"],
+              resources: [websitePublishingTopic.arn],
             },
           ],
         }
@@ -907,14 +920,6 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         user: "samepage.network-deploy",
         policy: additionalPolicy.json,
       });
-
-      const websitePublishingTopic = new SnsTopic(
-        this,
-        "website_publishing_topic",
-        {
-          name: "website-publishing-topic",
-        }
-      );
 
       const assumeCloudformationPolicy = new DataAwsIamPolicyDocument(
         this,
