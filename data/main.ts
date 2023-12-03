@@ -742,12 +742,13 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
               ],
             },
             {
-              actions: ["cloudformation:CreateStack"],
+              actions: [
+                "cloudformation:CreateStack",
+                "cloudformation:DeleteStack",
+                "cloudformation:DescribeStacks",
+                "cloudformation:UpdateStack",
+              ],
               resources: [`${cloudformationResourceArn}/*`],
-            },
-            {
-              actions: ["cloudformation:DescribeStacks"],
-              resources: [cloudformationResourceArn],
             },
           ],
         }
