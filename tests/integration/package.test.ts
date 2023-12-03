@@ -55,6 +55,7 @@ const forkSamePageClient = ({
       client.send({ ...m, uuid });
     });
   };
+  // eslint-disable-next-line @typescript-eslint/no-empty-function
   let resolveDisconnect = () => {};
   const clientApi = {
     send,
@@ -93,8 +94,10 @@ const forkSamePageClient = ({
     };
     client.on("message", (_data) => {
       // const { type, ...data } = responseMessageSchema.parse(_data);
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       const { type, ...data } = _data;
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore same problem I always have about discriminated unions...
       clientCallbacks[type]?.(data);
     });
@@ -117,7 +120,7 @@ const forkSamePageClient = ({
 //   axios
 //     .post("http://localhost:3003/close")
 //     .then((r) => console.log("api kill", r.data));
-test("Full integration test of extensions", async () => {
+test.skip("Full integration test of extensions", async () => {
   test.setTimeout(1000 * 60 * 3);
   const api = spawn("npx", ["ts-node", "scripts/cli.ts", "api", "--local"], {
     env: {

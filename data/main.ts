@@ -67,6 +67,7 @@ import { Octokit } from "@octokit/rest";
 import readDir from "../package/scripts/internal/readDir";
 import compareSqlSchemas from "./compareSqlSchemas";
 import { Route53 } from "@aws-sdk/client-route-53";
+import getCloudformationStackName from "~/data/getCloudformationStackName.server";
 dotenv.config({ override: true });
 
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
@@ -108,8 +109,9 @@ const setupInfrastructure = async (): Promise<void> => {
         type: "string",
       });
 
+      const AWS_REGION = "us-east-1";
       new AwsProvider(this, "AWS", {
-        region: "us-east-1",
+        region: AWS_REGION,
         accessKey: aws_access_token.value,
         secretKey: aws_secret_token.value,
       });
@@ -732,6 +734,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
                 "logs:CreateLogGroup",
                 "s3:GetObject",
                 "s3:ListBucket",
+                "s3:ListObjectsV2",
                 "s3:PutObject",
                 "s3:DeleteObject",
                 "ses:sendEmail",
@@ -814,7 +817,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
             {
               actions: ["lambda:UpdateFunctionCode", "lambda:GetFunction"],
               resources: [
-                `arn:aws:lambda:us-east-1:${callerIdentity.accountId}:function:samepage-network_*`,
+                `arn:aws:lambda:${AWS_REGION}:${callerIdentity.accountId}:function:samepage-network_*`,
               ],
             },
           ],
@@ -890,7 +893,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
                 "lambda:EnableReplication*",
               ],
               resources: [
-                `arn:aws:lambda:us-east-1:${callerIdentity.accountId}:function:samepage-network_extensions-*`,
+                `arn:aws:lambda:${AWS_REGION}:${callerIdentity.accountId}:function:samepage-network_extensions-*`,
               ],
             },
           ],
@@ -942,6 +945,14 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
               actions: ["iam:PassRole"],
               resources: [cloudformationRole.arn],
             },
+            {
+              actions: ["cloudformation:CreateStack"],
+              resources: [
+                `arn:aws:cloudformation:${AWS_REGION}:${
+                  callerIdentity.accountId
+                }:stack/${getCloudformationStackName("*")}/*`,
+              ],
+            },
           ],
         }
       );
@@ -968,6 +979,11 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
       new IamGroupPolicyAttachment(this, "admin_group_website_policy", {
         group: adminGroup.name,
         policyArn: launchWebsitePolicy.arn,
+      });
+
+      new IamGroupPolicyAttachment(this, "admin_group_execution_policy", {
+        group: adminGroup.name,
+        policyArn: lamdaExecutionPolicy.arn,
       });
 
       const launchWebsiteLambdaRole = new IamRole(

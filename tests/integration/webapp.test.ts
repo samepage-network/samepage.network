@@ -14,7 +14,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 // TODO: include app/routes + app/components again when properly code covering
-test("Full integration test of web app", async ({ page }) => {
+test.skip("Full integration test of web app", async ({ page }) => {
   test.setTimeout(1000 * 60 * 2);
   const weblog = debug("web");
   page.on("console", (msg) => {

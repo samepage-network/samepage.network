@@ -11,6 +11,7 @@ import uploadFileContent from "package/backend/uploadFileContent";
 import { Json } from "package/internal/types";
 import parseZodError from "package/utils/parseZodError";
 import { z } from "zod";
+import getCloudformationStackName from "~/data/getCloudformationStackName.server";
 import logWebsiteStatus from "~/data/logWebsiteStatus.server";
 import getMysql from "~/data/mysql.server";
 
@@ -127,7 +128,7 @@ export const handler: Handler = async (data) => {
         },
       ],
       RoleARN: CLOUDFORMATION_ROLE_ARN,
-      StackName: `samepage-publishing-${websiteUuid}`,
+      StackName: getCloudformationStackName(websiteUuid),
       Tags,
       TemplateBody: JSON.stringify({
         Parameters: {
