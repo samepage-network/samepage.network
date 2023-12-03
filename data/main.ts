@@ -709,7 +709,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
 
       const cloudformationResourceArn = `arn:aws:cloudformation:${AWS_REGION}:${
         callerIdentity.accountId
-      }:stack/${getCloudformationStackName("*")}/`;
+      }:stack/${getCloudformationStackName("*")}/*`;
       const lamdaExecutionPolicyDocument = new DataAwsIamPolicyDocument(
         this,
         "lambda_execution_policy_document",
@@ -748,7 +748,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
                 "cloudformation:DescribeStacks",
                 "cloudformation:UpdateStack",
               ],
-              resources: [`${cloudformationResourceArn}/*`],
+              resources: [cloudformationResourceArn],
             },
           ],
         }
