@@ -141,7 +141,10 @@ export const handler: Handler = async (data) => {
           DomainName: {
             Type: "String",
           },
-          RoamGraph: {
+          WebsiteUuid: {
+            Type: "String",
+          },
+          Environment: {
             Type: "String",
           },
         },

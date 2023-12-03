@@ -77,12 +77,9 @@ const logic = async ({
     );
 
   const defaultData = {
-    graph,
-    websiteStatus: "SETUP",
-    statusProps: {},
+    isWebsiteReady: true,
+    launches: [],
     deploys: [],
-    progress: 0,
-    progressType: "",
   };
 
   if (!userWebsites.length) {
@@ -149,9 +146,6 @@ const logic = async ({
     !completeLaunchStatuses.length ||
     completeLaunchStatuses[0].uuid === launchStatuses[0].uuid;
 
-  const status = statuses.length ? statuses[0].status : "INITIALIZING";
-  const statusProps = statuses.length ? statuses[0].props : {};
-
   await cxn.end();
   return {
     isWebsiteReady: isDeployReady && isLaunchReady,
@@ -168,9 +162,7 @@ const logic = async ({
       props: d.props,
     })),
 
-    // DEPRECATED
-    websiteStatus: status,
-    statusProps,
+    // DEPRECATED - move into above somehow...
     ...getProgressProps(statuses, deployStatuses),
   };
 };
