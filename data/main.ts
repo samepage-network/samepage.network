@@ -764,6 +764,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
                 "cloudformation:DeleteStack",
                 "cloudformation:DescribeStacks",
                 "cloudformation:UpdateStack",
+                "cloudformation:ListStackResources"
               ],
               resources: [cloudformationResourceArn],
             },
