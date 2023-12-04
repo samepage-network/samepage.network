@@ -20,6 +20,7 @@ import { ApiGatewayIntegration } from "@cdktf/provider-aws/lib/api-gateway-integ
 import { ApiGatewayDeployment } from "@cdktf/provider-aws/lib/api-gateway-deployment";
 import { ApiGatewayDomainName } from "@cdktf/provider-aws/lib/api-gateway-domain-name";
 import { SnsTopic } from "@cdktf/provider-aws/lib/sns-topic";
+import { SnsTopicSubscription } from "@cdktf/provider-aws/lib/sns-topic-subscription";
 import { ApiGatewayBasePathMapping } from "@cdktf/provider-aws/lib/api-gateway-base-path-mapping";
 import { AcmCertificate } from "@cdktf/provider-aws/lib/acm-certificate";
 import { AcmCertificateValidation } from "@cdktf/provider-aws/lib/acm-certificate-validation";
@@ -720,6 +721,12 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         }
       );
 
+      new SnsTopicSubscription(this, "website_publishing_topic_subscription", {
+        topicArn: websitePublishingTopic.arn,
+        protocol: "lambda",
+        endpoint: `arn:aws:lambda:${AWS_REGION}:${callerIdentity.accountId}:function:samepage-network_snsubscriber`,
+      });
+
       const lamdaExecutionPolicyDocument = new DataAwsIamPolicyDocument(
         this,
         "lambda_execution_policy_document",
@@ -941,6 +948,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         assumeRolePolicy: assumeCloudformationPolicy.json,
       });
 
+      const originLambdaArn = `arn:aws:lambda:${AWS_REGION}:${callerIdentity.accountId}:function:${safeProjectName}_origin`;
       const cloudformationRolePolicyDocument = new DataAwsIamPolicyDocument(
         this,
         "cloudformation_role_policy_document",
@@ -950,6 +958,14 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
               actions: ["SNS:Publish"],
               resources: [websitePublishingTopic.arn],
             },
+            {
+              actions: ["route53:CreateHostedZone"],
+              resources: ["*"],
+            },
+            {
+              actions: ["lambda:GetFunction", "lambda:EnableReplication*"],
+              resources: [`${originLambdaArn}:*`, originLambdaArn],
+            },
           ],
         }
       );
@@ -958,6 +974,26 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         name: `${safeProjectName}-cloudformation`,
         role: cloudformationRole.name,
         policy: cloudformationRolePolicyDocument.json,
+      });
+
+      new IamRolePolicyAttachment(this, "cloudformation_s3_full_access", {
+        role: cloudformationRole.name,
+        policyArn: "arn:aws:iam::aws:policy/AmazonRoute53FullAccess",
+      });
+
+      new IamRolePolicyAttachment(this, "cloudformation_acm_full_access", {
+        role: cloudformationRole.name,
+        policyArn: "arn:aws:iam::aws:policy/AWSCertificateManagerFullAccess",
+      });
+
+      new IamRolePolicyAttachment(this, "cloudformation_cf_full_access", {
+        role: cloudformationRole.name,
+        policyArn: "arn:aws:iam::aws:policy/CloudFrontFullAccess",
+      });
+
+      new IamRolePolicyAttachment(this, "cloudformation_cw_full_access", {
+        role: cloudformationRole.name,
+        policyArn: "arn:aws:iam::aws:policy/CloudWatchFullAccess",
       });
 
       const launchWebsitePolicyDocument = new DataAwsIamPolicyDocument(
