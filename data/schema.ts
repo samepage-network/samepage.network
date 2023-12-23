@@ -22,6 +22,8 @@ import {
 import { sql } from "drizzle-orm/sql";
 import { JSONData } from "package/internal/types";
 
+// TODO - CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+
 class MySqlUnsignedSmallInt<
   TTableName extends string
 > extends MySqlColumnWithAutoIncrement<
@@ -394,8 +396,8 @@ export const websiteStatuses = mysqlTable("website_statuses", {
 export const websiteRedirects = mysqlTable("website_redirects", {
   uuid: primaryUuid(),
   websiteUuid: uuid("website_uuid").notNull(),
-  from: varchar("status", { length: 256 }).notNull().default(""),
-  to: varchar("status", { length: 256 }).notNull().default(""),
+  from: varchar("from", { length: 256 }).notNull().default(""),
+  to: varchar("to", { length: 256 }).notNull().default(""),
   createdDate: date("created"),
 });
 
