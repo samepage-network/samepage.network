@@ -26,6 +26,8 @@ const plan = async ({
           }
         : { ...process.env },
     });
+    // TODO - when this issue resolves, use ts-node-esm again in cdktf.json
+    // https://github.com/TypeStrong/ts-node/issues/2094
   }
   return 0;
 };
