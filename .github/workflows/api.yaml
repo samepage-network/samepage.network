@@ -9,6 +9,7 @@ on:
       - ".github/workflows/api.yaml"
       - "scripts/commands/compile.ts"
       - "scripts/commands/update.ts"
+      - "scripts/internal/updateLambdaFunctions.ts"
 
 env:
   API_URL: https://api.samepage.network

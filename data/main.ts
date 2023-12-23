@@ -764,7 +764,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
                 "cloudformation:DeleteStack",
                 "cloudformation:DescribeStacks",
                 "cloudformation:UpdateStack",
-                "cloudformation:ListStackResources"
+                "cloudformation:ListStackResources",
               ],
               resources: [cloudformationResourceArn],
             },
@@ -1572,11 +1572,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
     .map((d) => ({
       name: d.name,
       owner: d.owner.login,
-    }))
-    .concat({
-      name: "static-site",
-      owner: "RoamJS",
-    });
+    }));
   const backendFunctionsByRepo = await repos
     .reduce(
       (p, c) =>
