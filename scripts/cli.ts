@@ -10,12 +10,13 @@ import apply from "./commands/apply";
 import plan from "./commands/plan";
 import packageCmd from "./commands/package";
 import publish from "./commands/publish";
+import run from "./commands/run";
 import start from "./commands/start";
 import test from "./commands/test";
 import dotenv from "dotenv";
 dotenv.config();
 
-const run = async (command: string, args: string[]): Promise<number> => {
+const cli = async (command: string, args: string[]): Promise<number> => {
   const opts = args
     .map(
       (a, i) =>
@@ -97,13 +98,15 @@ const run = async (command: string, args: string[]): Promise<number> => {
       return test(opts);
     case "start":
       return start({});
+    case "run":
+      return run(opts);
     default:
       console.error("Command", command, "is unsupported");
       return 1;
   }
 };
 
-run(process.argv[2], process.argv.slice(3))
+cli(process.argv[2], process.argv.slice(3))
   .then((code) => code >= 0 && process.exit(code))
   .catch((err) => {
     console.error(err);
