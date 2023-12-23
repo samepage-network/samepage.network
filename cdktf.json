@@ -1,6 +1,6 @@
 {
   "language": "typescript",
-  "app": "node --loader ts-node/esm data/main.ts",
+  "app": "npx ts-node-esm data/main.ts",
   "projectId": "samepage",
   "sendCrashReports": "false",
   "context": {

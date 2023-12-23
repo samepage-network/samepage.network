@@ -21,16 +21,9 @@ const plan = async ({
   if (sql) {
     await compareSqlSchemas();
   } else {
-    // TODO - when this issue resolves, use ts-node-esm again in cdktf.json
-    // https://github.com/TypeStrong/ts-node/issues/2094
-    patchConfigFile("package", (config) => {
-      config.type = "module";
-    });
-
     // TODO - hack to get plan working in CI - look into madge warnings to see why this is happening
     patchConfigFile("tsconfig", (config) => {
       delete config["ts-node"];
-      config["module"] = "ESNext";
     });
 
     // TODO - make this a non speculative plan

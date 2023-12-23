@@ -29,6 +29,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      # TODO - when this issue resolves, remove
+      # https://github.com/TypeStrong/ts-node/issues/2094
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18.18.2
       - name: install
         run: npm install --force
       - name: plan
