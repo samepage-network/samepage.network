@@ -116,7 +116,7 @@ export const handler = async (event: SNSEvent) => {
         domain,
       }));
     } else if (isCustomDomain === "false") {
-      return { HostedZoneId: process.env.ROAMJS_ZONE_ID, domain };
+      return { HostedZoneId: process.env.SAMEPAGE_HOSTED_ZONE_ID, domain };
     } else {
       return { HostedZoneId: "", domain: "" };
     }
