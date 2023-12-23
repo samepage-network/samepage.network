@@ -41,7 +41,7 @@ const updateLambdaFunctions = async ({
         const functionName = f
           .replace(/\.js$/, "")
           .replace(new RegExp(`^${backendOutdir}/`), "")
-          .replace(/[\\/]/g, "_");
+          .replace(/[\\/]/g, "-");
         zip.file(appPath(f), {
           name: `${prefix}${functionName}.js`,
           ...options,

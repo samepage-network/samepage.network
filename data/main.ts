@@ -820,8 +820,8 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         allLambdas.map((p) => [
           p,
           resources[p]
-            ? `${resources[p].replace(/\//g, "_")}_${methods[p]}`
-            : p.replace(/\//g, "_"),
+            ? `${resources[p].replace(/\//g, "-")}_${methods[p]}`
+            : p.replace(/\//g, "-"),
         ])
       );
       // Needs to tf import the current stage into it
