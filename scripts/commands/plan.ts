@@ -30,6 +30,7 @@ const plan = async ({
     // TODO - hack to get plan working in CI - look into madge warnings to see why this is happening
     patchConfigFile("tsconfig", (config) => {
       delete config["ts-node"];
+      config["module"] = "ESNext";
     });
 
     // TODO - make this a non speculative plan
