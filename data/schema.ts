@@ -20,7 +20,7 @@ import {
   MySqlColumnWithAutoIncrement,
 } from "drizzle-orm/mysql-core/columns/common";
 import { sql } from "drizzle-orm/sql";
-import { JSONData } from "package/internal/types";
+import { JSONData } from "../package/internal/types";
 
 // TODO - CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
 
