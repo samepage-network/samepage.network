@@ -129,7 +129,7 @@ const logic = async ({
       : [];
   const isDeployReady =
     !deployStatuses.length ||
-    completeDeployStatuses[0].uuid === deployStatuses[0].uuid;
+    completeDeployStatuses[0]?.uuid === deployStatuses[0].uuid;
 
   const launchStatuses = statuses.filter((s) => s.statusType === "LAUNCH");
   const completeLaunchStatuses = launchStatuses.filter((s) =>
@@ -144,7 +144,7 @@ const logic = async ({
       : [];
   const isLaunchReady =
     !launchStatuses.length ||
-    completeLaunchStatuses[0].uuid === launchStatuses[0].uuid;
+    completeLaunchStatuses[0]?.uuid === launchStatuses[0].uuid;
 
   await cxn.end();
   return {

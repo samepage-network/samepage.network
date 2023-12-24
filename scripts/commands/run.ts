@@ -7,7 +7,7 @@ dotenv.config();
 const run = async ({ file = "temp" }: { file?: string }): Promise<number> => {
   process.env.DATABASE_URL = process.env.PRODUCTION_DATABASE_URL;
   const runner = await import(`../${file}`).then((r) => r.default);
-  getMysql().then((cxn) =>
+  await getMysql().then((cxn) =>
     runner(cxn)
       .then((data: Record<string, unknown>) => {
         const filename = `/tmp/report-${v4()}.json`;
