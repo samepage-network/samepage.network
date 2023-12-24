@@ -4,18 +4,18 @@ import {
 } from "@aws-sdk/client-cloudformation";
 import { users } from "@clerk/clerk-sdk-node";
 import { Handler } from "aws-lambda";
-import { websites } from "data/schema";
+import { websites } from "../data/schema";
 import { eq } from "drizzle-orm/expressions";
-import emailError from "package/backend/emailError.server";
-import uploadFileContent from "package/backend/uploadFileContent";
-import { Json } from "package/internal/types";
-import parseZodError from "package/utils/parseZodError";
+import emailError from "../package/backend/emailError.server";
+import uploadFileContent from "../package/backend/uploadFileContent";
+import { Json } from "../package/internal/types";
+import parseZodError from "../package/utils/parseZodError";
 import { z } from "zod";
-import getCloudformationStackName from "~/data/getCloudformationStackName.server";
-import getLatestOperation from "~/data/getLatestOperation.server";
-import isSystemDomain from "~/data/isSystemDomain.server";
-import logWebsiteStatus from "~/data/logWebsiteStatus.server";
-import getMysql from "~/data/mysql.server";
+import getCloudformationStackName from "../app/data/getCloudformationStackName.server";
+import getLatestOperation from "../app/data/getLatestOperation.server";
+import isSystemDomain from "../app/data/isSystemDomain.server";
+import logWebsiteStatus from "../app/data/logWebsiteStatus.server";
+import getMysql from "../app/data/mysql.server";
 
 // Remix Cache Policy ID
 const CLOUDFRONT_HOSTED_ZONE_ID = process.env.CLOUDFRONT_HOSTED_ZONE_ID;
@@ -121,7 +121,7 @@ export const handler: Handler = async (data) => {
       Condition,
       Properties: {
         DistributionConfig: {
-          Aliases: [DomainName],
+          Aliases: [],
           Comment: `CloudFront CDN for ${websiteUuid}`,
           CustomErrorResponses: [
             {

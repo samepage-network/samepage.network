@@ -1,6 +1,6 @@
-import { WebsiteStatusType, websiteStatuses } from "data/schema";
+import { WebsiteStatusType, websiteStatuses } from "../../data/schema";
 import getMysql from "./mysql.server";
-import { Json } from "package/internal/types";
+import { Json } from "../../package/internal/types";
 import { v4 } from "uuid";
 
 const logWebsiteStatus = async ({
