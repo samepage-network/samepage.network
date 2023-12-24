@@ -212,7 +212,7 @@ export const handler = async (event: SNSEvent) => {
         await deleteWebsite({ requestId, websiteUuid });
 
         const email = await getPrimaryUserEmail(userId);
-        if (email)
+        if (email && environment === "production")
           await ses.sendEmail({
             Destination: {
               ToAddresses: [email],
@@ -264,28 +264,30 @@ export const handler = async (event: SNSEvent) => {
           (r) => r.Value?.replace(/\.$/, "") ?? ""
         );
         await logStatus("AWAITING VALIDATION", { nameServers });
-        await ses.sendEmail({
-          Destination: {
-            ToAddresses: [email],
-          },
-          Message: {
-            Body: {
-              Text: {
+        if (environment === "production") {
+          await ses.sendEmail({
+            Destination: {
+              ToAddresses: [email],
+            },
+            Message: {
+              Body: {
+                Text: {
+                  Charset: "UTF-8",
+                  Data: `Add the following four nameservers to your domain settings.\n\n${nameServers
+                    .map((ns) => `- ${ns}\n`)
+                    .join(
+                      ""
+                    )}\nIf the domain is not validated in the next 48 hours, the website will fail to launch and a rollback will begin.`,
+                },
+              },
+              Subject: {
                 Charset: "UTF-8",
-                Data: `Add the following four nameservers to your domain settings.\n\n${nameServers
-                  .map((ns) => `- ${ns}\n`)
-                  .join(
-                    ""
-                  )}\nIf the domain is not validated in the next 48 hours, the website will fail to launch and a rollback will begin.`,
+                Data: `Your RoamJS static site is awaiting validation.`,
               },
             },
-            Subject: {
-              Charset: "UTF-8",
-              Data: `Your RoamJS static site is awaiting validation.`,
-            },
-          },
-          Source: "support@samepage.network",
-        });
+            Source: "support@samepage.network",
+          });
+        }
       } else if (domainParts > 2) {
         const set = ResourceRecordSets.find((r) => r.Type === "CNAME");
         const cname = {
@@ -296,24 +298,26 @@ export const handler = async (event: SNSEvent) => {
         await logStatus("AWAITING VALIDATION", {
           cname,
         });
-        await ses.sendEmail({
-          Destination: {
-            ToAddresses: [email],
-          },
-          Message: {
-            Body: {
-              Text: {
+        if (environment === "production") {
+          await ses.sendEmail({
+            Destination: {
+              ToAddresses: [email],
+            },
+            Message: {
+              Body: {
+                Text: {
+                  Charset: "UTF-8",
+                  Data: `Add the following DNS Record in the settings for your domain\n\nType: CNAME\nName: ${cname.name}\nValue: ${cname.value}`,
+                },
+              },
+              Subject: {
                 Charset: "UTF-8",
-                Data: `Add the following DNS Record in the settings for your domain\n\nType: CNAME\nName: ${cname.name}\nValue: ${cname.value}`,
+                Data: `Your RoamJS static site is awaiting validation.`,
               },
             },
-            Subject: {
-              Charset: "UTF-8",
-              Data: `Your RoamJS static site is awaiting validation.`,
-            },
-          },
-          Source: "support@samepage.network",
-        });
+            Source: "support@samepage.network",
+          });
+        }
       }
     } else if (domain === "publishing.samepage.network") {
       await logStatus("AWAITING VALIDATION");
@@ -326,24 +330,26 @@ export const handler = async (event: SNSEvent) => {
     );
   } else if (ResourceStatus === "CREATE_FAILED") {
     await logStatus("CREATE FAILED");
-    await ses.sendEmail({
-      Destination: {
-        ToAddresses: ["support@samepage.network"],
-      },
-      Message: {
-        Body: {
-          Text: {
+    if (environment === "production") {
+      await ses.sendEmail({
+        Destination: {
+          ToAddresses: ["support@samepage.network"],
+        },
+        Message: {
+          Body: {
+            Text: {
+              Charset: "UTF-8",
+              Data: `Stack that failed: ${StackName}\nResource that failed: ${LogicalResourceId}\nReason that it failed: ${ResourceStatusReason}`,
+            },
+          },
+          Subject: {
             Charset: "UTF-8",
-            Data: `Stack that failed: ${StackName}\nResource that failed: ${LogicalResourceId}\nReason that it failed: ${ResourceStatusReason}`,
+            Data: `User's Static Site failed to deploy`,
           },
         },
-        Subject: {
-          Charset: "UTF-8",
-          Data: `User's Static Site failed to deploy`,
-        },
-      },
-      Source: "support@samepage.network",
-    });
+        Source: "support@samepage.network",
+      });
+    }
   } else {
     const loggedStatus =
       STATUSES[LogicalResourceId as keyof typeof STATUSES]?.[
