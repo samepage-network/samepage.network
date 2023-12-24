@@ -1,9 +1,5 @@
-import dotenv from "dotenv";
-import { v4 } from "uuid";
-import fs from "fs";
 import getMysql from "../app/data/mysql.server";
 import { fromIni } from "@aws-sdk/credential-provider-ini";
-import { MySql2Database } from "drizzle-orm/mysql2";
 import { AttributeValue, DynamoDB } from "@aws-sdk/client-dynamodb";
 import {
   notebooks,
@@ -13,9 +9,9 @@ import {
   websites,
 } from "../data/schema";
 import { and, eq } from "drizzle-orm/expressions";
-dotenv.config();
 
-const run = async (cxn: MySql2Database) => {
+const run = async (requestId: string) => {
+  const cxn = await getMysql(requestId);
   const websiteUuidsByGraph = await cxn
     .select({ uuid: websites.uuid, graph: notebooks.workspace })
     .from(websites)
@@ -28,7 +24,29 @@ const run = async (cxn: MySql2Database) => {
     .then((rows) => Object.fromEntries(rows.map((r) => [r.graph, r.uuid])));
 
   const ddb = new DynamoDB({ credentials: fromIni({ profile: "roamjs" }) });
-  const scan = await ddb.scan({ TableName: "RoamJSWebsiteStatuses" });
+
+  const scanAll = async (
+    startKey?: Record<string, AttributeValue>
+  ): Promise<{ Items: Record<string, AttributeValue>[]; Count: number }> => {
+    const {
+      Items = [],
+      Count = 0,
+      LastEvaluatedKey,
+    } = await ddb.scan({
+      TableName: "RoamJSWebsiteStatuses",
+      ExclusiveStartKey: startKey,
+    });
+    if (LastEvaluatedKey) {
+      const next = await scanAll(LastEvaluatedKey);
+      return {
+        Items: [...Items, ...next.Items],
+        Count: next.Count + Count,
+      };
+    } else {
+      return { Items, Count };
+    }
+  };
+  const scan = await scanAll();
   const missingItems = [] as Record<string, AttributeValue>[];
   console.log("There are", scan.Count, "items to migrate.");
 
@@ -125,17 +143,4 @@ const run = async (cxn: MySql2Database) => {
   };
 };
 
-process.env.DATABASE_URL = process.env.PRODUCTION_DATABASE_URL;
-getMysql().then((cxn) =>
-  run(cxn)
-    .then((data) => {
-      const filename = `/tmp/report-${v4()}.json`;
-      fs.writeFileSync(filename, JSON.stringify(data, null, 2));
-      console.log(`Report written to ${filename}`);
-    })
-    .catch((e) => {
-      console.error("Error running migration:");
-      console.error(e);
-    })
-    .finally(() => cxn.end())
-);
+export default run;
