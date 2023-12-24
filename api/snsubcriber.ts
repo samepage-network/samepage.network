@@ -95,7 +95,8 @@ export const handler = async (event: SNSEvent) => {
     )
   );
 
-  if (originalParameters["Environment"] === "development") {
+  const environment = originalParameters["Environment"];
+  if (environment === "development") {
     await fetch("https://api.samepage.ngrok.io/publishing/snsubscriber", {
       method: "POST",
       body: JSON.stringify({ event }),
@@ -131,7 +132,10 @@ export const handler = async (event: SNSEvent) => {
 
       await logStatus("LIVE");
       const email = originalParameters["Email"];
-      if (ResourceStatus === "CREATE_COMPLETE") {
+      if (
+        ResourceStatus === "CREATE_COMPLETE" &&
+        environment === "production"
+      ) {
         if (domain.split(".").length > 2 && !domain.endsWith(".roamjs.com")) {
           const Id = await cf
             .listStackResources({ StackName })

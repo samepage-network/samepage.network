@@ -7,10 +7,11 @@ dotenv.config();
 const run = async ({ file = "temp" }: { file?: string }): Promise<number> => {
   process.env.DATABASE_URL = process.env.PRODUCTION_DATABASE_URL;
   const runner = await import(`../${file}`).then((r) => r.default);
-  await getMysql().then((cxn) =>
-    runner(cxn)
+  const requestId = v4();
+  await getMysql(requestId).then((cxn) =>
+    runner(requestId)
       .then((data: Record<string, unknown>) => {
-        const filename = `/tmp/report-${v4()}.json`;
+        const filename = `/tmp/report-${requestId}.json`;
         fs.writeFileSync(filename, JSON.stringify(data, null, 2));
         console.log(`Report written to ${filename}`);
       })
