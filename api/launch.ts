@@ -104,6 +104,90 @@ export const handler: Handler = async (data) => {
       throw new Error(`Could not find email for user: ${email}`);
     }
 
+    const getCloudfrontSpec = ({
+      Condition,
+      AcmCertificateArnRef,
+    }: {
+      Condition: "HasCustomDomain" | "HasSystemDomain";
+      AcmCertificateArnRef: "AcmCertificate" | "AcmCertificateSystem";
+    }) => ({
+      Type: "AWS::CloudFront::Distribution",
+      Condition,
+      Properties: {
+        DistributionConfig: {
+          Aliases: [DomainName],
+          Comment: `CloudFront CDN for ${websiteUuid}`,
+          CustomErrorResponses: [
+            {
+              ErrorCode: 404,
+              ResponseCode: 200,
+              ResponsePagePath: "/404.html",
+            },
+            {
+              ErrorCode: 403,
+              ResponseCode: 200,
+              ResponsePagePath: "/index.html",
+            },
+          ],
+          DefaultCacheBehavior: {
+            AllowedMethods: ["GET", "HEAD", "OPTIONS"],
+            CachedMethods: ["GET", "HEAD", "OPTIONS"],
+            CachePolicyId: REMIX_CACHE_POLICY_ID,
+            Compress: true,
+            ForwardedValues: {
+              Cookies: {
+                Forward: "none",
+              },
+              QueryString: false,
+            },
+            LambdaFunctionAssociations: [
+              {
+                EventType: "origin-request",
+                IncludeBody: false,
+                LambdaFunctionARN: WEBSITE_PUBLISHING_LAMBDA_ARN,
+              },
+            ],
+            TargetOriginId: `S3-${domain}`,
+            ViewerProtocolPolicy: "redirect-to-https",
+          },
+          DefaultRootObject: `websites/${websiteUuid}/index.html`,
+          Enabled: true,
+          IPV6Enabled: true,
+          Origins: [
+            {
+              CustomOriginConfig: {
+                HTTPPort: 80,
+                HTTPSPort: 443,
+                OriginProtocolPolicy: "http-only",
+                OriginSSLProtocols: ["TLSv1", "TLSv1.2"],
+              },
+              DomainName: S3_WEBSITE_ENDPOINT,
+              Id: `S3-${domain}`,
+              OriginCustomHeaders: [
+                {
+                  HeaderName: "User-Agent",
+                  HeaderValue: CLOUDFRONT_SECRET,
+                },
+                {
+                  HeaderName: "X-Samepage-Website-Uuid",
+                  HeaderValue: websiteUuid,
+                },
+              ],
+            },
+          ],
+          PriceClass: "PriceClass_All",
+          ViewerCertificate: {
+            AcmCertificateArn: {
+              Ref: AcmCertificateArnRef,
+            },
+            MinimumProtocolVersion: "TLSv1_2016",
+            SslSupportMethod: "sni-only",
+          },
+        },
+        Tags,
+      },
+    });
+
     const stackInput: CreateStackCommandInput = {
       NotificationARNs: [SNS_TOPIC_ARN],
       Parameters: [
@@ -210,160 +294,14 @@ export const handler: Handler = async (data) => {
               ],
             },
           },
-          CloudfrontDistribution: {
-            Type: "AWS::CloudFront::Distribution",
+          CloudfrontDistribution: getCloudfrontSpec({
             Condition: "HasCustomDomain",
-            Properties: {
-              DistributionConfig: {
-                Aliases: [DomainName],
-                Comment: `CloudFront CDN for ${websiteUuid}`,
-                CustomErrorResponses: [
-                  {
-                    ErrorCode: 404,
-                    ResponseCode: 200,
-                    ResponsePagePath: "/404.html",
-                  },
-                  {
-                    ErrorCode: 403,
-                    ResponseCode: 200,
-                    ResponsePagePath: "/index.html",
-                  },
-                ],
-                DefaultCacheBehavior: {
-                  AllowedMethods: ["GET", "HEAD", "OPTIONS"],
-                  CachedMethods: ["GET", "HEAD", "OPTIONS"],
-                  CachePolicyId: REMIX_CACHE_POLICY_ID,
-                  Compress: true,
-                  ForwardedValues: {
-                    Cookies: {
-                      Forward: "none",
-                    },
-                    QueryString: false,
-                  },
-                  LambdaFunctionAssociations: [
-                    {
-                      EventType: "origin-request",
-                      IncludeBody: false,
-                      LambdaFunctionARN: WEBSITE_PUBLISHING_LAMBDA_ARN,
-                    },
-                  ],
-                  TargetOriginId: `S3-${domain}`,
-                  ViewerProtocolPolicy: "redirect-to-https",
-                },
-                DefaultRootObject: `websites/${websiteUuid}/index.html`,
-                Enabled: true,
-                IPV6Enabled: true,
-                Origins: [
-                  {
-                    CustomOriginConfig: {
-                      HTTPPort: 80,
-                      HTTPSPort: 443,
-                      OriginProtocolPolicy: "http-only",
-                      OriginSSLProtocols: ["TLSv1", "TLSv1.2"],
-                    },
-                    DomainName: S3_WEBSITE_ENDPOINT,
-                    Id: `S3-${domain}`,
-                    OriginCustomHeaders: [
-                      {
-                        HeaderName: "User-Agent",
-                        HeaderValue: CLOUDFRONT_SECRET,
-                      },
-                      {
-                        HeaderName: "X-Samepage-Website-Uuid",
-                        HeaderValue: websiteUuid,
-                      },
-                    ],
-                  },
-                ],
-                PriceClass: "PriceClass_All",
-                ViewerCertificate: {
-                  AcmCertificateArn: {
-                    Ref: "AcmCertificate",
-                  },
-                  MinimumProtocolVersion: "TLSv1_2016",
-                  SslSupportMethod: "sni-only",
-                },
-              },
-              Tags,
-            },
-          },
-          CloudfrontDistributionSystem: {
-            Type: "AWS::CloudFront::Distribution",
+            AcmCertificateArnRef: "AcmCertificate",
+          }),
+          CloudfrontDistributionSystem: getCloudfrontSpec({
             Condition: "HasSystemDomain",
-            Properties: {
-              DistributionConfig: {
-                Aliases: [DomainName],
-                Comment: `CloudFront CDN for ${domain}`,
-                CustomErrorResponses: [
-                  {
-                    ErrorCode: 404,
-                    ResponseCode: 200,
-                    ResponsePagePath: "/404.html",
-                  },
-                  {
-                    ErrorCode: 403,
-                    ResponseCode: 200,
-                    ResponsePagePath: "/index.html",
-                  },
-                ],
-                DefaultCacheBehavior: {
-                  AllowedMethods: ["GET", "HEAD", "OPTIONS"],
-                  CachedMethods: ["GET", "HEAD", "OPTIONS"],
-                  CachePolicyId: REMIX_CACHE_POLICY_ID,
-                  Compress: true,
-                  ForwardedValues: {
-                    Cookies: {
-                      Forward: "none",
-                    },
-                    QueryString: false,
-                  },
-                  LambdaFunctionAssociations: [
-                    {
-                      EventType: "origin-request",
-                      IncludeBody: false,
-                      LambdaFunctionARN: WEBSITE_PUBLISHING_LAMBDA_ARN,
-                    },
-                  ],
-                  TargetOriginId: `S3-${domain}`,
-                  ViewerProtocolPolicy: "redirect-to-https",
-                },
-                DefaultRootObject: `websites/${websiteUuid}/index.html`,
-                Enabled: true,
-                IPV6Enabled: true,
-                Origins: [
-                  {
-                    CustomOriginConfig: {
-                      HTTPPort: 80,
-                      HTTPSPort: 443,
-                      OriginProtocolPolicy: "http-only",
-                      OriginSSLProtocols: ["TLSv1", "TLSv1.2"],
-                    },
-                    DomainName: S3_WEBSITE_ENDPOINT,
-                    Id: `S3-${domain}`,
-                    OriginCustomHeaders: [
-                      {
-                        HeaderName: "User-Agent",
-                        HeaderValue: CLOUDFRONT_SECRET,
-                      },
-                      {
-                        HeaderName: "X-Samepage-Website-Uuid",
-                        HeaderValue: websiteUuid,
-                      },
-                    ],
-                  },
-                ],
-                PriceClass: "PriceClass_All",
-                ViewerCertificate: {
-                  AcmCertificateArn: {
-                    Ref: "AcmCertificateSystem",
-                  },
-                  MinimumProtocolVersion: "TLSv1_2016",
-                  SslSupportMethod: "sni-only",
-                },
-              },
-              Tags,
-            },
-          },
+            AcmCertificateArnRef: "AcmCertificateSystem",
+          }),
           Route53ARecord: {
             Type: "AWS::Route53::RecordSet",
             Condition: "HasCustomDomain",
