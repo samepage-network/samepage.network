@@ -1070,6 +1070,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
 
       const lambdaRoleMapping: Record<string, IamRole> = {
         launch: launchWebsiteLambdaRole,
+        origin: edgeLambdaRole,
       };
 
       const lambdaFunctions = Object.fromEntries(
