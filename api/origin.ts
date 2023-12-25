@@ -28,6 +28,7 @@ export const handler = async (
       )
     );
   if (mappedUri) {
+    await cxn.end();
     return {
       status: "301",
       statusDescription: "Moved Permanently",
@@ -47,5 +48,6 @@ export const handler = async (
     }`;
     request.uri = encodeURI(newuri);
   }
+  await cxn.end();
   return callback(null, request);
 };

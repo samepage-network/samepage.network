@@ -724,7 +724,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
       new SnsTopicSubscription(this, "website_publishing_topic_subscription", {
         topicArn: websitePublishingTopic.arn,
         protocol: "lambda",
-        endpoint: `arn:aws:lambda:${AWS_REGION}:${callerIdentity.accountId}:function:samepage-network_snsubscriber`,
+        endpoint: `arn:aws:lambda:${AWS_REGION}:${callerIdentity.accountId}:function:samepage-network_snsubcriber`,
       });
 
       const lamdaExecutionPolicyDocument = new DataAwsIamPolicyDocument(
