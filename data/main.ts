@@ -1137,7 +1137,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
       new LambdaPermission(this, `sns_lambda_permission`, {
         statementId: "AllowExecutionFromSNS",
         action: "lambda:InvokeFunction",
-        functionName: lambdaFunctions["origin"].functionName,
+        functionName: lambdaFunctions["snsubscriber"].functionName,
         principal: "sns.amazonaws.com",
         sourceArn: websitePublishingTopic.arn,
       });
@@ -1296,10 +1296,11 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         plaintextValue: cloudformationRole.arn,
       });
 
+      const originQarn = lambdaFunctions["origin"].qualifiedArn;
       new ActionsSecret(this, "website_publishing_lambda_arn", {
         repository: projectName,
         secretName: "WEBSITE_PUBLISHING_LAMBDA_ARN",
-        plaintextValue: lambdaFunctions["origin"].qualifiedArn,
+        plaintextValue: originQarn,
       });
 
       const s3WebsiteEndpoint = mainWebsite.websiteEndpoint.replace(
@@ -1322,8 +1323,8 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         value: distributions[projectName].hostedZoneId,
       });
 
-      new TerraformOutput(this, "s3_website_endpoint_output", {
-        value: s3WebsiteEndpoint,
+      new TerraformOutput(this, "website_publishing_lambda_arn_output", {
+        value: originQarn,
       });
 
       const accessKey = new ActionsSecret(this, "deploy_aws_access_key", {
