@@ -971,6 +971,8 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         }
       );
 
+      const lambdaTimeouts: Record<string, number> = { origin: 30 };
+
       new IamRolePolicy(this, "cloudformation_role_policy", {
         name: `${safeProjectName}-cloudformation`,
         role: cloudformationRole.name,
@@ -1083,7 +1085,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
               filename: dummyFile.outputPath,
               runtime: "nodejs18.x",
               publish: false,
-              timeout: 60,
+              timeout: lambdaTimeouts[lambdaPath] ?? 60,
               memorySize: 5120,
             }
           ),
@@ -1132,6 +1134,14 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
             sourceArn: `${restApi.executionArn}/*/*/*`,
           })
       );
+      new LambdaPermission(this, `sns_lambda_permission`, {
+        statementId: "AllowExecutionFromSNS",
+        action: "lambda:InvokeFunction",
+        functionName: lambdaFunctions["origin"].functionName,
+        principal: "sns.amazonaws.com",
+        sourceArn: websitePublishingTopic.arn,
+      });
+
       const distinctResources = Array.from(new Set(Object.values(resources)));
       const mockMethods = Object.fromEntries(
         distinctResources.map((resource) => [
