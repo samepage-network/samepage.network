@@ -365,6 +365,7 @@ export const handler = async (event: SNSEvent) => {
       ResourceStatus === "DELETE_IN_PROGRESS" &&
       LogicalResourceId === "HostedZone"
     ) {
+      await logStatus("REMOVING DNS RECORDS");
       await clearRecordsById(PhysicalResourceId);
     }
   }

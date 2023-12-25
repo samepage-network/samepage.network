@@ -1292,10 +1292,14 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         plaintextValue: lambdaFunctions["origin"].qualifiedArn,
       });
 
+      const s3WebsiteEndpoint = mainWebsite.websiteEndpoint.replace(
+        /^https:\/\//,
+        ""
+      );
       new ActionsSecret(this, "s3_website_endpoint", {
         repository: projectName,
         secretName: "S3_WEBSITE_ENDPOINT",
-        plaintextValue: mainWebsite.websiteDomain,
+        plaintextValue: s3WebsiteEndpoint,
       });
 
       new ActionsSecret(this, "cloudfront_secret", {
@@ -1309,7 +1313,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
       });
 
       new TerraformOutput(this, "s3_website_endpoint_output", {
-        value: mainWebsite.websiteDomain,
+        value: s3WebsiteEndpoint,
       });
 
       const accessKey = new ActionsSecret(this, "deploy_aws_access_key", {

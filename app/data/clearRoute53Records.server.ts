@@ -20,10 +20,10 @@ export const clearRecordsById = async (HostedZoneId?: string) => {
             Changes: [{ Action: "DELETE", ResourceRecordSet: CNAME }],
           },
         })
-        .then(
-          ({ ChangeInfo }) =>
-            ChangeInfo?.Id && waitForRoute53ChangeToSync({ Id: ChangeInfo.Id })
-        );
+        .then(async ({ ChangeInfo }) => {
+          if (ChangeInfo?.Id)
+            await waitForRoute53ChangeToSync({ Id: ChangeInfo.Id });
+        });
     }
   }
 };
