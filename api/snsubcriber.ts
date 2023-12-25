@@ -17,6 +17,7 @@ import clearRecords, {
   clearRecordsById,
 } from "~/data/clearRoute53Records.server";
 import deleteWebsite from "~/data/deleteWebsite.server";
+import isSystemDomain from "~/data/isSystemDomain.server";
 
 const route53 = new Route53({});
 const cf = new CloudFormation({});
@@ -42,10 +43,10 @@ const STATUSES = {
   CloudfrontDistribution: factory("NETWORK"),
   Route53ARecord: factory("DOMAIN"),
   Route53AAAARecord: factory("ALTERNATE DOMAIN"),
-  AcmCertificateRoamjs: factory("CERTIFICATE"),
-  CloudfrontDistributionRoamjs: factory("NETWORK"),
-  Route53ARecordRoamjs: factory("DOMAIN"),
-  Route53AAAARecordRoamjs: factory("ALTERNATE DOMAIN"),
+  AcmCertificateSystem: factory("CERTIFICATE"),
+  CloudfrontDistributionSystem: factory("NETWORK"),
+  Route53ARecordSystem: factory("DOMAIN"),
+  Route53AAAARecordSystem: factory("ALTERNATE DOMAIN"),
   CloudwatchRule: factory("DEPLOYER"),
 };
 
@@ -136,7 +137,7 @@ export const handler = async (event: SNSEvent) => {
         ResourceStatus === "CREATE_COMPLETE" &&
         environment === "production"
       ) {
-        if (domain.split(".").length > 2 && !domain.endsWith(".roamjs.com")) {
+        if (domain.split(".").length > 2 && !isSystemDomain(".roamjs.com")) {
           const Id = await cf
             .listStackResources({ StackName })
             .then(({ StackResourceSummaries = [] }) => StackResourceSummaries)
@@ -252,7 +253,7 @@ export const handler = async (event: SNSEvent) => {
   } else if (ResourceStatusReason.startsWith(ACM_START_TEXT)) {
     const { HostedZoneId, domain } = await getHostedZoneByStackName();
 
-    if (!domain.endsWith("publishing.samepage.network") && HostedZoneId) {
+    if (!isSystemDomain(domain) && HostedZoneId) {
       const { ResourceRecordSets = [] } = await route53.listResourceRecordSets({
         HostedZoneId,
       });
@@ -319,7 +320,7 @@ export const handler = async (event: SNSEvent) => {
           });
         }
       }
-    } else if (domain === "publishing.samepage.network") {
+    } else if (isSystemDomain(domain)) {
       await logStatus("AWAITING VALIDATION");
     }
   } else if (ResourceStatus === "ROLLBACK_IN_PROGRESS") {

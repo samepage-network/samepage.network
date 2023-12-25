@@ -12,6 +12,7 @@ import { Json } from "package/internal/types";
 import parseZodError from "package/utils/parseZodError";
 import { z } from "zod";
 import getCloudformationStackName from "~/data/getCloudformationStackName.server";
+import isSystemDomain from "~/data/isSystemDomain.server";
 import logWebsiteStatus from "~/data/logWebsiteStatus.server";
 import getMysql from "~/data/mysql.server";
 
@@ -76,7 +77,7 @@ export const handler: Handler = async (data) => {
     }
 
     await logStatus("CREATING WEBSITE");
-    const isCustomDomain = !domain.endsWith(".roamjs.com");
+    const isCustomDomain = !isSystemDomain(domain);
 
     const Tags = [
       {
@@ -157,7 +158,7 @@ export const handler: Handler = async (data) => {
               "true",
             ],
           },
-          HasRoamjsDomain: {
+          HasSystemDomain: {
             "Fn::Equals": [
               {
                 Ref: "CustomDomain",
@@ -193,9 +194,9 @@ export const handler: Handler = async (data) => {
               ],
             },
           },
-          AcmCertificateRoamjs: {
+          AcmCertificateSystem: {
             Type: "AWS::CertificateManager::Certificate",
-            Condition: "HasRoamjsDomain",
+            Condition: "HasSystemDomain",
             Properties: {
               DomainName,
               SubjectAlternativeNames: [],
@@ -286,9 +287,9 @@ export const handler: Handler = async (data) => {
               Tags,
             },
           },
-          CloudfrontDistributionRoamjs: {
+          CloudfrontDistributionSystem: {
             Type: "AWS::CloudFront::Distribution",
-            Condition: "HasRoamjsDomain",
+            Condition: "HasSystemDomain",
             Properties: {
               DistributionConfig: {
                 Aliases: [DomainName],
@@ -326,7 +327,7 @@ export const handler: Handler = async (data) => {
                   TargetOriginId: `S3-${domain}`,
                   ViewerProtocolPolicy: "redirect-to-https",
                 },
-                DefaultRootObject: `${websiteUuid}/index.html`,
+                DefaultRootObject: `websites/${websiteUuid}/index.html`,
                 Enabled: true,
                 IPV6Enabled: true,
                 Origins: [
@@ -354,7 +355,7 @@ export const handler: Handler = async (data) => {
                 PriceClass: "PriceClass_All",
                 ViewerCertificate: {
                   AcmCertificateArn: {
-                    Ref: "AcmCertificateRoamjs",
+                    Ref: "AcmCertificateSystem",
                   },
                   MinimumProtocolVersion: "TLSv1_2016",
                   SslSupportMethod: "sni-only",
@@ -383,14 +384,14 @@ export const handler: Handler = async (data) => {
               Type: "AAAA",
             },
           },
-          Route53ARecordRoamjs: {
+          Route53ARecordSystem: {
             Type: "AWS::Route53::RecordSet",
-            Condition: "HasRoamjsDomain",
+            Condition: "HasSystemDomain",
             Properties: {
               AliasTarget: {
                 HostedZoneId: CLOUDFRONT_HOSTED_ZONE_ID,
                 DNSName: {
-                  "Fn::GetAtt": ["CloudfrontDistributionRoamjs", "DomainName"],
+                  "Fn::GetAtt": ["CloudfrontDistributionSystem", "DomainName"],
                 },
               },
               HostedZoneId: SAMEPAGE_HOSTED_ZONE_ID,
@@ -398,14 +399,14 @@ export const handler: Handler = async (data) => {
               Type: "A",
             },
           },
-          Route53AAAARecordRoamjs: {
+          Route53AAAARecordSystem: {
             Type: "AWS::Route53::RecordSet",
-            Condition: "HasRoamjsDomain",
+            Condition: "HasSystemDomain",
             Properties: {
               AliasTarget: {
                 HostedZoneId: CLOUDFRONT_HOSTED_ZONE_ID,
                 DNSName: {
-                  "Fn::GetAtt": ["CloudfrontDistributionRoamjs", "DomainName"],
+                  "Fn::GetAtt": ["CloudfrontDistributionSystem", "DomainName"],
                 },
               },
               HostedZoneId: SAMEPAGE_HOSTED_ZONE_ID,

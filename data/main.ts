@@ -1295,7 +1295,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
       new ActionsSecret(this, "s3_website_endpoint", {
         repository: projectName,
         secretName: "S3_WEBSITE_ENDPOINT",
-        plaintextValue: mainWebsite.websiteEndpoint,
+        plaintextValue: mainWebsite.websiteDomain,
       });
 
       new ActionsSecret(this, "cloudfront_secret", {
@@ -1306,6 +1306,10 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
 
       new TerraformOutput(this, "cloudfront_hosted_zone_id", {
         value: distributions[projectName].hostedZoneId,
+      });
+
+      new TerraformOutput(this, "s3_website_endpoint_output", {
+        value: mainWebsite.websiteDomain,
       });
 
       const accessKey = new ActionsSecret(this, "deploy_aws_access_key", {
