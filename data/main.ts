@@ -1137,7 +1137,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
       new LambdaPermission(this, `sns_lambda_permission`, {
         statementId: "AllowExecutionFromSNS",
         action: "lambda:InvokeFunction",
-        functionName: lambdaFunctions["snsubscriber"].functionName,
+        functionName: lambdaFunctions["snsubcriber"].functionName,
         principal: "sns.amazonaws.com",
         sourceArn: websitePublishingTopic.arn,
       });
