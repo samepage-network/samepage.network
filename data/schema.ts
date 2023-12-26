@@ -383,6 +383,7 @@ export type WebsiteStatusType = (typeof websiteStatusTypes)[number];
 export const websiteStatuses = mysqlTable("website_statuses", {
   uuid: primaryUuid(),
   websiteUuid: uuid("website_uuid").notNull(),
+  operationUuid: varchar("operation_uuid", { length: 36 }),
   status: varchar("status", { length: 256 }).notNull().default(""),
   statusType: mysqlEnum("status_type", websiteStatusTypes)
     .notNull()

@@ -14,12 +14,13 @@ const logWebsiteStatus = async ({
   status: string;
   requestId: string;
   statusType: WebsiteStatusType;
-  props?: Record<string, Json>
+  props?: Record<string, Json>;
 }) => {
   const cxn = await getMysql(requestId);
   await cxn.insert(websiteStatuses).values({
     uuid: v4(),
     websiteUuid,
+    operationUuid: requestId,
     status,
     createdDate: new Date(),
     statusType,

@@ -50,42 +50,28 @@ const STATUSES = {
   CloudwatchRule: factory("DEPLOYER"),
 };
 
-export const handler = async (event: SNSEvent) => {
-  const message = event.Records[0].Sns.Message;
-  const messageObject = Object.fromEntries(
-    message
-      .split("\n")
-      .map((l) => l.split("="))
-      .map(([key, value]) => [
-        key,
-        value && value.substring(1, value.length - 1),
-      ])
-  );
-  const {
-    StackName,
-    LogicalResourceId,
-    ResourceStatus,
-    ResourceStatusReason,
-    PhysicalResourceId,
-  } = messageObject;
-
-  const requestId = v4();
+const logic = async ({
+  logStatus,
+  StackName,
+  requestId,
+  ResourceStatus,
+  ResourceStatusReason,
+  LogicalResourceId,
+  PhysicalResourceId,
+  websiteUuid,
+  messageObject,
+}: {
+  logStatus: (status: string, props?: Record<string, Json>) => Promise<void>;
+  StackName: string;
+  requestId: string;
+  ResourceStatus: string;
+  ResourceStatusReason: string;
+  LogicalResourceId: string;
+  PhysicalResourceId: string;
+  websiteUuid: string;
+  messageObject: Record<string, string>;
+}) => {
   const cxn = await getMysql(requestId);
-  const websiteUuid = await cxn
-    .select({ uuid: websites.uuid })
-    .from(websites)
-    .where(eq(websites.stackName, StackName))
-    .then(([{ uuid }]) => uuid);
-
-  const logStatus = (status: string, props?: Record<string, Json>) =>
-    logWebsiteStatus({
-      websiteUuid,
-      status,
-      requestId,
-      statusType: "LAUNCH",
-      props,
-    });
-
   const { Stacks = [] } = await cf.describeStacks({
     StackName,
   });
@@ -105,7 +91,6 @@ export const handler = async (event: SNSEvent) => {
         Authorization: process.env.SAMEPAGE_DEVELOPMENT_TOKEN ?? "",
       },
     });
-    await cxn.end();
     return;
   }
 
@@ -243,6 +228,10 @@ export const handler = async (event: SNSEvent) => {
       // TODO set user's site in "rolling back state"
       // TODO email user that rollback is happening, adk RoamJS why
       // TODO support a notification system within the Static Site Dashboard itself
+    } else if (ResourceStatus === "ROLLBACK_FAILED") {
+      await logStatus("ROLLBACK FAILED", {
+        failureReason: ResourceStatusReason,
+      });
     } else if (ResourceStatus === "CREATE_IN_PROGRESS") {
       await logStatus("CREATING RESOURCES");
     } else if (ResourceStatus === "DELETE_IN_PROGRESS") {
@@ -326,11 +315,15 @@ export const handler = async (event: SNSEvent) => {
   } else if (ResourceStatus === "ROLLBACK_IN_PROGRESS") {
     await clearRecords(StackName);
   } else if (ResourceStatus === "ROLLBACK_FAILED") {
-    await logStatus(
-      "ROLLBACK FAILED. MESSAGE support@samepage.network FOR HELP"
-    );
+    await logStatus("ROLLBACK FAILED", {
+      failureReason: ResourceStatusReason,
+      resource: LogicalResourceId,
+    });
   } else if (ResourceStatus === "CREATE_FAILED") {
-    await logStatus("CREATE FAILED");
+    await logStatus("CREATE FAILED", {
+      failureReason: ResourceStatusReason,
+      resource: LogicalResourceId,
+    });
     if (environment === "production") {
       await ses.sendEmail({
         Destination: {
@@ -351,6 +344,11 @@ export const handler = async (event: SNSEvent) => {
         Source: "support@samepage.network",
       });
     }
+  } else if (ResourceStatus === "DELETE_FAILED") {
+    await logStatus("DELETE FAILED", {
+      failureReason: ResourceStatusReason,
+      resource: LogicalResourceId,
+    });
   } else {
     const loggedStatus =
       STATUSES[LogicalResourceId as keyof typeof STATUSES]?.[
@@ -368,5 +366,60 @@ export const handler = async (event: SNSEvent) => {
       await logStatus("REMOVING DNS RECORDS");
       await clearRecordsById(PhysicalResourceId);
     }
+  }
+};
+
+export const handler = async (event: SNSEvent) => {
+  const message = event.Records[0].Sns.Message;
+  const messageObject = Object.fromEntries(
+    message
+      .split("\n")
+      .map((l) => l.split("="))
+      .map(([key, value]) => [
+        key,
+        value && value.substring(1, value.length - 1),
+      ])
+  );
+  const {
+    StackName,
+    LogicalResourceId,
+    ResourceStatus,
+    ResourceStatusReason,
+    PhysicalResourceId,
+  } = messageObject;
+
+  const requestId = v4();
+  const cxn = await getMysql(requestId);
+  const websiteUuid = await cxn
+    .select({ uuid: websites.uuid })
+    .from(websites)
+    .where(eq(websites.stackName, StackName))
+    .then(([{ uuid }]) => uuid);
+
+  const logStatus = (status: string, props?: Record<string, Json>) =>
+    logWebsiteStatus({
+      websiteUuid,
+      status,
+      requestId,
+      statusType: "LAUNCH",
+      props,
+    });
+  try {
+    await logic({
+      StackName,
+      logStatus,
+      requestId,
+      ResourceStatus,
+      ResourceStatusReason,
+      LogicalResourceId,
+      websiteUuid,
+      PhysicalResourceId,
+      messageObject,
+    });
+    await cxn.end();
+  } catch (e) {
+    console.error(e);
+    await logStatus("INTERNAL SERVER ERROR", { error: (e as Error).message });
+    await cxn.end();
   }
 };
