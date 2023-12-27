@@ -23,6 +23,8 @@ import { z } from "zod";
 import parseZodError from "package/utils/parseZodError";
 import { Json } from "package/internal/types";
 import logWebsiteStatus from "~/data/logWebsiteStatus.server";
+import getLatestOperation from "~/data/getLatestOperation.server";
+import completeWebsiteOperation from "~/data/completeWebsiteOperation.server";
 
 type PartialRecursive<T> = T extends object
   ? { [K in keyof T]?: PartialRecursive<T[K]> }
@@ -1018,11 +1020,16 @@ export const handler = async ({
   requestId: string;
   key: string;
 }): Promise<void> => {
+  const operationUuid = await getLatestOperation({
+    websiteUuid,
+    requestId,
+  }).then((o) => o?.uuid);
   const logStatus = (status: string, props?: Record<string, Json>) =>
     logWebsiteStatus({
       websiteUuid,
       status,
       requestId,
+      operationUuid,
       statusType: "DEPLOY",
       props,
     });
@@ -1121,5 +1128,7 @@ export const handler = async ({
     const e = err as Error;
     await logStatus("FAILURE", { message: e.message });
     await emailError("Deploy Failed", e);
+  } finally {
+    await completeWebsiteOperation({ operationUuid, requestId });
   }
 };

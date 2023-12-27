@@ -12,6 +12,7 @@ import { Json } from "package/internal/types";
 import parseZodError from "package/utils/parseZodError";
 import { z } from "zod";
 import getCloudformationStackName from "~/data/getCloudformationStackName.server";
+import getLatestOperation from "~/data/getLatestOperation.server";
 import isSystemDomain from "~/data/isSystemDomain.server";
 import logWebsiteStatus from "~/data/logWebsiteStatus.server";
 import getMysql from "~/data/mysql.server";
@@ -43,12 +44,17 @@ export const handler: Handler = async (data) => {
     return { success: false };
   }
   const { websiteUuid, domain, requestId, userId } = parsed.data;
+  const operationUuid = await getLatestOperation({
+    websiteUuid,
+    requestId,
+  }).then((o) => o?.uuid);
   const logStatus = (status: string, props?: Record<string, Json>) =>
     logWebsiteStatus({
       websiteUuid,
       status,
       requestId,
       statusType: "LAUNCH",
+      operationUuid,
       props,
     });
   try {

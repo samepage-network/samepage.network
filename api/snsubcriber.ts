@@ -18,6 +18,8 @@ import clearRecords, {
 } from "~/data/clearRoute53Records.server";
 import deleteWebsite from "~/data/deleteWebsite.server";
 import isSystemDomain from "~/data/isSystemDomain.server";
+import getLatestOperation from "~/data/getLatestOperation.server";
+import completeWebsiteOperation from "~/data/completeWebsiteOperation.server";
 
 const route53 = new Route53({});
 const cf = new CloudFormation({});
@@ -60,6 +62,7 @@ const logic = async ({
   PhysicalResourceId,
   websiteUuid,
   messageObject,
+  operationUuid,
 }: {
   logStatus: (status: string, props?: Record<string, Json>) => Promise<void>;
   StackName: string;
@@ -70,6 +73,7 @@ const logic = async ({
   PhysicalResourceId: string;
   websiteUuid: string;
   messageObject: Record<string, string>;
+  operationUuid: string;
 }) => {
   const cxn = await getMysql(requestId);
   const { Stacks = [] } = await cf
@@ -119,6 +123,7 @@ const logic = async ({
       const domain = originalParameters["DomainName"];
 
       await logStatus("LIVE");
+      await completeWebsiteOperation({ operationUuid, requestId });
       const email = originalParameters["Email"];
       if (
         ResourceStatus === "CREATE_COMPLETE" &&
@@ -178,6 +183,7 @@ const logic = async ({
       }
     } else if (ResourceStatus === "DELETE_COMPLETE") {
       await logStatus("INACTIVE");
+      await completeWebsiteOperation({ operationUuid, requestId });
       const shutdownCallback = await cxn
         .select({
           props: websiteStatuses.props,
@@ -398,12 +404,17 @@ export const handler = async (event: SNSEvent) => {
     .where(eq(websites.stackName, StackName))
     .then(([{ uuid }]) => uuid);
 
+  const operationUuid = await getLatestOperation({
+    requestId,
+    websiteUuid,
+  }).then(({ uuid }) => uuid);
   const logStatus = (status: string, props?: Record<string, Json>) =>
     logWebsiteStatus({
       websiteUuid,
       status,
       requestId,
       statusType: "LAUNCH",
+      operationUuid,
       props,
     });
   try {
@@ -417,6 +428,7 @@ export const handler = async (event: SNSEvent) => {
       websiteUuid,
       PhysicalResourceId,
       messageObject,
+      operationUuid,
     });
     await cxn.end();
   } catch (e) {
