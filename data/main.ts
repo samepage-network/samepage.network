@@ -752,6 +752,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
                 "route53:ListResourceRecordSets",
                 "route53:ChangeResourceRecordSets",
                 "route53:ListHostedZones",
+                "route53:GetChange",
               ],
               resources: ["*"],
             },

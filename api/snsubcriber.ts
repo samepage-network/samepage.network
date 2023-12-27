@@ -72,9 +72,11 @@ const logic = async ({
   messageObject: Record<string, string>;
 }) => {
   const cxn = await getMysql(requestId);
-  const { Stacks = [] } = await cf.describeStacks({
-    StackName,
-  });
+  const { Stacks = [] } = await cf
+    .describeStacks({
+      StackName,
+    })
+    .catch(() => ({ Stacks: [] }));
   const originalParameters = Object.fromEntries(
     (Stacks[0]?.Parameters ?? []).map(
       ({ ParameterKey = "", ParameterValue = "" }) =>
