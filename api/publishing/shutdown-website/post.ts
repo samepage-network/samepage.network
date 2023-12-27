@@ -7,8 +7,8 @@ import { NotFoundError } from "~/data/errors.server";
 import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
 import getWebsiteByNotebookProperties from "~/data/getWebsiteByNotebookProperties.server";
 import invokeAsync from "~/data/invokeAsync.server";
-import logWebsiteStatus from "~/data/logWebsiteStatus.server";
 import getMysql from "~/data/mysql.server";
+import startWebsiteOperation from "~/data/startWebsiteOperation.server";
 
 const bodySchema = z.object({ graph: z.string() });
 
@@ -46,12 +46,12 @@ const logic = async ({
     return { success: true };
   }
 
-  await logWebsiteStatus({
+  const logStatus = await startWebsiteOperation({
     websiteUuid,
-    status: "SHUTTING DOWN",
     requestId,
     statusType: "LAUNCH",
   });
+  await logStatus("SHUTTING DOWN");
 
   await invokeAsync({
     path: "shutdown",

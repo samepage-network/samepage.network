@@ -380,6 +380,24 @@ export const websiteNotebookLinks = mysqlTable(
 const websiteStatusTypes = ["DEPLOY", "LAUNCH", "NONE"] as const;
 export type WebsiteStatusType = (typeof websiteStatusTypes)[number];
 
+export const websiteOperations = mysqlTable(
+  "website_operations",
+  {
+    uuid: primaryUuid(),
+    websiteUuid: uuid("website_uuid").notNull(),
+    statusType: mysqlEnum("status_type", websiteStatusTypes)
+      .notNull()
+      .default("NONE"),
+    createdDate: timestamp("created_date", { fsp: 6 })
+      .notNull()
+      .default(sql`(CURRENT_TIMESTAMP)`),
+    completedDate: timestamp("completed_date", { fsp: 6 }),
+  },
+  (ops) => ({
+    websiteIndex: index("IX_website_uuid").on(ops.websiteUuid),
+  })
+);
+
 export const websiteStatuses = mysqlTable("website_statuses", {
   uuid: primaryUuid(),
   websiteUuid: uuid("website_uuid").notNull(),

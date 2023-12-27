@@ -769,6 +769,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
                 "cloudformation:DescribeStacks",
                 "cloudformation:UpdateStack",
                 "cloudformation:ListStackResources",
+                "cloudformation:ListStackSetOperations",
               ],
               resources: [cloudformationResourceArn],
             },

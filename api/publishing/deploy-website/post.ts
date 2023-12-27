@@ -6,10 +6,10 @@ import authenticateRoamJSToken from "~/data/authenticateRoamJSToken.server";
 import getWebsiteByNotebookProperties from "~/data/getWebsiteByNotebookProperties.server";
 import { NotFoundError } from "~/data/errors.server";
 import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
-import logWebsiteStatus from "~/data/logWebsiteStatus.server";
 import invokeAsync from "~/data/invokeAsync.server";
 import format from "date-fns/format";
 import uploadFileContent from "package/backend/uploadFileContent";
+import startWebsiteOperation from "~/data/startWebsiteOperation.server";
 
 const bodySchema = z.object({ graph: z.string(), data: z.string() });
 
@@ -43,12 +43,12 @@ const logic = async ({
 
   const date = new Date();
   const websiteUuid = requestedWebsite.uuid;
-  await logWebsiteStatus({
+  const logStatus = await startWebsiteOperation({
     websiteUuid,
-    status: "INITIALIZING",
-    requestId,
     statusType: "DEPLOY",
+    requestId,
   });
+  await logStatus("INITIALIZING");
 
   const key = format(date, "yyyyMMddhhmmss");
   const Key = `data/publishing/${websiteUuid}/${key}.json`;

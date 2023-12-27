@@ -15,8 +15,8 @@ import { z } from "zod";
 import authenticateRoamJSToken from "~/data/authenticateRoamJSToken.server";
 import { ForbiddenError } from "~/data/errors.server";
 import invokeAsync from "~/data/invokeAsync.server";
-import logWebsiteStatus from "~/data/logWebsiteStatus.server";
 import getMysql from "~/data/mysql.server";
+import startWebsiteOperation from "~/data/startWebsiteOperation.server";
 
 const bodySchema = z.object({ graph: z.string(), domain: z.string() });
 
@@ -74,12 +74,12 @@ const logic = async ({
     permission: "DEPLOY",
   });
 
-  await logWebsiteStatus({
+  const logStatus = await startWebsiteOperation({
     websiteUuid,
-    status: "INITIALIZING",
     requestId,
     statusType: "LAUNCH",
   });
+  await logStatus("INITIALIZING");
 
   await invokeAsync({
     path: "launch",

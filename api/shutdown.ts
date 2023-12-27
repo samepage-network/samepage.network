@@ -2,10 +2,9 @@ import { CloudFormation } from "@aws-sdk/client-cloudformation";
 import { S3 } from "@aws-sdk/client-s3";
 import { websites } from "data/schema";
 import { eq } from "drizzle-orm/expressions";
-import { Json } from "package/internal/types";
 import clearRecords from "~/data/clearRoute53Records.server";
-import logWebsiteStatus from "~/data/logWebsiteStatus.server";
 import getMysql from "~/data/mysql.server";
+import startWebsiteOperation from "~/data/startWebsiteOperation.server";
 
 const s3 = new S3({});
 const cf = new CloudFormation({});
@@ -35,14 +34,7 @@ export const handler = async ({
   authorization: string;
   requestId: string;
 }) => {
-  const logStatus = (status: string, props?: Record<string, Json>) =>
-    logWebsiteStatus({
-      websiteUuid,
-      status,
-      requestId,
-      statusType: "LAUNCH",
-      props,
-    });
+  const logStatus = await startWebsiteOperation({ websiteUuid, requestId, statusType: "LAUNCH" });
 
   const Bucket = `samepage.network`;
   const Prefix = `websites/${websiteUuid}/`;

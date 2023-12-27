@@ -6,8 +6,8 @@ import authenticateRoamJSToken from "~/data/authenticateRoamJSToken.server";
 import getWebsiteByNotebookProperties from "~/data/getWebsiteByNotebookProperties.server";
 import { NotFoundError } from "~/data/errors.server";
 import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
-import logWebsiteStatus from "~/data/logWebsiteStatus.server";
 import { CloudFormation } from "@aws-sdk/client-cloudformation";
+import startWebsiteOperation from "~/data/startWebsiteOperation.server";
 
 const cf = new CloudFormation({});
 
@@ -45,12 +45,12 @@ const logic = async ({
   }
 
   const websiteUuid = requestedWebsite.uuid;
-  await logWebsiteStatus({
+  const logStatus = await startWebsiteOperation({
     websiteUuid,
-    status: "UPDATING",
     requestId,
     statusType: "LAUNCH",
   });
+  await logStatus("UPDATING");
 
   const { Stacks = [] } = await cf.describeStacks({
     StackName: requestedWebsite.stackName,
