@@ -27,7 +27,7 @@ export const handler = async (
         eq(websiteRedirects.from, olduri)
       )
     );
-  if (mappedUri) {
+  if (mappedUri.length > 0) {
     await cxn.end();
     return {
       status: "301",
@@ -36,7 +36,7 @@ export const handler = async (
         location: [
           {
             key: "Location",
-            value: mappedUri,
+            value: mappedUri[0].to,
           },
         ],
       },
