@@ -407,7 +407,7 @@ export const handler = async (event: SNSEvent) => {
   const operationUuid = await getLatestOperation({
     requestId,
     websiteUuid,
-  }).then(({ uuid }) => uuid);
+  }).then((op) => op?.uuid);
   const logStatus = (status: string, props?: Record<string, Json>) =>
     logWebsiteStatus({
       websiteUuid,
