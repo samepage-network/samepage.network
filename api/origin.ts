@@ -29,6 +29,9 @@ export const handler = async (
     );
   if (mappedUri.length > 0) {
     await cxn.end();
+    const location = mappedUri[0].to;
+
+    console.log("Redirected", olduri, "to", location);
     return {
       status: "301",
       statusDescription: "Moved Permanently",
@@ -36,7 +39,7 @@ export const handler = async (
         location: [
           {
             key: "Location",
-            value: mappedUri[0].to,
+            value: location,
           },
         ],
       },
@@ -49,5 +52,7 @@ export const handler = async (
     request.uri = encodeURI(newuri);
   }
   await cxn.end();
+
+  console.log("Resolved", olduri, "to", request.uri);
   return callback(null, request);
 };
