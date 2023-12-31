@@ -53,7 +53,7 @@ const getProgressProps = (
 };
 
 const bodySchema = z.object({ graph: z.string() });
-const COMPLETE_STATUSES = ["SUCCESS", "FAILURE"];
+const COMPLETE_STATUSES = ["SUCCESS", "FAILURE", "LIVE"];
 
 const logic = async ({
   authorization,

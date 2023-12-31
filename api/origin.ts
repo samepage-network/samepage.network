@@ -46,7 +46,7 @@ export const handler = async (
     };
   }
   if (olduri !== `/websites/${websiteUuid}/index.html`) {
-    const newuri = `/websites/${websiteUuid}/${olduri}${
+    const newuri = `/websites/${websiteUuid}/${olduri.replace(/^\//, "")}${
       olduri.includes(".") ? "" : ".html"
     }`;
     request.uri = encodeURI(newuri);
