@@ -11,6 +11,7 @@ SamePage.pem
 playwright-report
 coverage
 scripts/debug.ts
+scripts/data.json
 api/clerk
 api/car
 test-results

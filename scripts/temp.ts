@@ -10,9 +10,13 @@ import { and, eq } from "drizzle-orm/expressions";
 import { v4 } from "uuid";
 import getMysql from "../app/data/mysql.server";
 import { handler as launchHandler } from "../api/launch";
-import startWebsiteOperation from "~/data/startWebsiteOperation.server";
+import startWebsiteOperation from "../app/data/startWebsiteOperation.server";
+import fs from "fs";
 
-const ALLOW_LIST = new Set(["roamjs-dvargas92495"]);
+const BLOCK_LIST = new Set(["roamjs-dvargas92495"]);
+const hardcoded: Record<string, string> = JSON.parse(
+  fs.readFileSync("./scripts/data.json", "utf8").toString()
+);
 
 const run = async (requestId: string) => {
   const cxn = await getMysql(requestId);
@@ -37,9 +41,11 @@ const run = async (requestId: string) => {
     credentials: fromIni({ profile: "roamjs" }),
   });
 
-  const { StackSummaries = [] } = await roamjsCfn.listStacks({});
-  const stackNames = StackSummaries.map((s) => s.StackName ?? "").filter((s) =>
-    ALLOW_LIST.has(s)
+  const { StackSummaries = [] } = await roamjsCfn.listStacks({
+    StackStatusFilter: ["CREATE_COMPLETE", "UPDATE_COMPLETE"],
+  });
+  const stackNames = StackSummaries.map((s) => s.StackName ?? "").filter(
+    (s) => !BLOCK_LIST.has(s)
   );
   process.env.CLERK_SECRET_KEY = process.env.PRODUCTION_CLERK_SECRET_KEY;
   const { users } = await import("@clerk/clerk-sdk-node");
@@ -63,7 +69,14 @@ const run = async (requestId: string) => {
           const domainName = parameters["DomainName"];
           const workspace = parameters["RoamGraph"];
 
-          const usersFound = await users.getUserList({ emailAddress: [email] });
+          const usersFound = await users.getUserList({
+            emailAddress: [email],
+          });
+          const userId = usersFound[0]?.id ?? hardcoded[email];
+          if (!userId) {
+            console.log("No user found for", email, "domain", domainName);
+            throw new Error("No user found");
+          }
 
           return {
             StackName,
@@ -71,7 +84,7 @@ const run = async (requestId: string) => {
             customDomain,
             domainName,
             workspace,
-            userId: usersFound[0]?.id,
+            userId,
             website: websiteByGraph[workspace],
           };
         })
