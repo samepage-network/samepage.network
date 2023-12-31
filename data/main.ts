@@ -201,6 +201,27 @@ const setupInfrastructure = async (): Promise<void> => {
               ],
             },
             {
+              actions: ["s3:GetObject"],
+
+              resources: [`${buckets[projectName].arn}/websites/*`],
+
+              condition: [
+                {
+                  test: "StringLike",
+                  variable: "aws:UserAgent",
+
+                  values: [secret.value],
+                },
+              ],
+
+              principals: [
+                {
+                  type: "AWS",
+                  identifiers: ["*"],
+                },
+              ],
+            },
+            {
               actions: ["s3:PutObject"],
 
               resources: [`arn:aws:s3:::${buckets[projectName].id}/*`],
