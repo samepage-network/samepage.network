@@ -10,9 +10,9 @@ import { and, eq } from "drizzle-orm/expressions";
 import { v4 } from "uuid";
 import getMysql from "../app/data/mysql.server";
 import { handler as launchHandler } from "../api/launch";
-import startWebsiteOperation from "~/data/startWebsiteOperation.server";
+import startWebsiteOperation from "../app/data/startWebsiteOperation.server";
 
-const ALLOW_LIST = new Set(["roamjs-dvargas92495"]);
+const BLOCK_LIST = new Set(["roamjs-dvargas92495"]);
 
 const run = async (requestId: string) => {
   const cxn = await getMysql(requestId);
@@ -38,8 +38,8 @@ const run = async (requestId: string) => {
   });
 
   const { StackSummaries = [] } = await roamjsCfn.listStacks({});
-  const stackNames = StackSummaries.map((s) => s.StackName ?? "").filter((s) =>
-    ALLOW_LIST.has(s)
+  const stackNames = StackSummaries.map((s) => s.StackName ?? "").filter(
+    (s) => !BLOCK_LIST.has(s)
   );
   process.env.CLERK_SECRET_KEY = process.env.PRODUCTION_CLERK_SECRET_KEY;
   const { users } = await import("@clerk/clerk-sdk-node");
