@@ -4,7 +4,7 @@ export { default as loader } from "~/data/isAdminLoader.server";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { useUser, UserButton } from "@clerk/remix";
 import { Link, useLoaderData } from "@remix-run/react";
-import Dashboard from "~/components/Dashboard";
+import Dashboard, { Tab } from "~/components/Dashboard";
 
 const UserFooter = () => {
   const user = useUser();
@@ -41,7 +41,10 @@ const UserDashboard = ({
   );
 };
 
-const TABS = [{ id: "notebooks", label: "Notebooks", icon: "book" as const }];
+const TABS: Tab[] = [
+  { id: "notebooks", label: "Notebooks", icon: "book" },
+  { id: "assistants", label: "Assistants", icon: "assistants" },
+];
 
 const UserPage: React.FunctionComponent = () => {
   return <UserDashboard tabs={TABS} title={"Samepage"} />;

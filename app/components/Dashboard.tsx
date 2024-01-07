@@ -2,9 +2,14 @@ import React, { useCallback } from "react";
 import { Link, Outlet, useMatches } from "@remix-run/react";
 import BookIcon from "@heroicons/react/outline/BookOpenIcon";
 import ChevronRightIcon from "@heroicons/react/outline/ChevronRightIcon";
+import UserGroupIcon from "@heroicons/react/outline/UserGroupIcon";
 
-const ICONS = { book: BookIcon, default: ChevronRightIcon };
-type Tab = { id: string; label: string; icon: keyof typeof ICONS };
+const ICONS = {
+  book: BookIcon,
+  default: ChevronRightIcon,
+  assistants: UserGroupIcon,
+};
+export type Tab = { id: string; label: string; icon: keyof typeof ICONS };
 
 const Dashboard = ({
   title = "App",
