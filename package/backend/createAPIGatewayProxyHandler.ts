@@ -85,10 +85,14 @@ const createAPIGatewayProxyHandler =
         }
         const authorization =
           event.headers.Authorization || event.headers.authorization;
+        const contentType =
+          event.headers["content-type"] ||
+          event.headers["Content-Type"] ||
+          "application/json";
         const logic = typeof args === "function" ? args : args.logic;
         const eventBody = !event.body
           ? {}
-          : event.headers["content-type"] === "application/www-form-urlencoded"
+          : /application\/(x-)?www-form-urlencoded/.test(contentType)
           ? qsToJson(event.body)
           : JSON.parse(event.body);
         const rawObject = {
