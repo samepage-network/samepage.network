@@ -50,6 +50,8 @@ jobs:
         run: npm t -- --proj unit
       - name: Upload Unit Test Coverage to Codecov
         uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
       # These are struggling - invest again if this project ever hits $100K MRR
       # - name: Integration Tests
       #   run: npm t -- --proj integration

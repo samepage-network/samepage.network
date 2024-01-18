@@ -19,95 +19,16 @@ import mockState from "../../utils/mockState";
 import getRandomWorkspace from "../../utils/getRandomWorkspace";
 import getRandomAccount from "../../utils/getRandomAccount";
 import { notebooks } from "../../../data/schema";
+import { createMockLambdaStep, mockLambdaContext } from "../fixtures";
 
 // upload to ipfs loses out on a core to run in the background
 // test.describe.configure({ mode: "parallel", });
 
-const mockLambdaContext = ({ requestId = v4(), path = "page" }) => ({
-  awsRequestId: requestId,
-  callbackWaitsForEmptyEventLoop: true,
-  clientContext: undefined,
-  functionName: `${path}-post`,
-  functionVersion: `$LATEST`,
-  identity: undefined,
-  invokedFunctionArn: `offline_invokedFunctionArn_for_page-post`,
-  logGroupName: `offline_logGroupName_for_page-post`,
-  logStreamName: `offline_logStreamName_for_page-post`,
-  memoryLimitInMB: String(128),
-  getRemainingTimeInMillis: () => {
-    return 1000;
-  },
-  // these three are deprecated
-  done: () => ({}),
-  fail: () => ({}),
-  succeed: () => ({}),
+const mockLambda = createMockLambdaStep<HandlerBody>({
+  path: "page",
+  getStep: (b) => b.method,
+  handler,
 });
-
-const mockLambda = async (body: HandlerBody, requestId = v4()) => {
-  const path = "page";
-  return test.step(`Mock Lambda: ${body.method}`, async () => {
-    const res = handler(
-      {
-        headers: {},
-        multiValueHeaders: {},
-        httpMethod: "POST",
-        body: JSON.stringify(body),
-        path,
-        isBase64Encoded: false,
-        pathParameters: {},
-        queryStringParameters: {},
-        multiValueQueryStringParameters: {},
-        stageVariables: {},
-        resource: "",
-        requestContext: {
-          apiId: "",
-          accountId: "",
-          authorizer: {},
-          protocol: "",
-          httpMethod: "POST",
-          stage: "test",
-          requestId,
-          path,
-          resourceId: "",
-          requestTimeEpoch: new Date().valueOf(),
-          resourcePath: "",
-          identity: {
-            accessKey: null,
-            accountId: null,
-            apiKey: null,
-            apiKeyId: null,
-            caller: null,
-            clientCert: null,
-            cognitoAuthenticationProvider: null,
-            cognitoAuthenticationType: null,
-            cognitoIdentityId: null,
-            cognitoIdentityPoolId: null,
-            principalOrgId: null,
-            sourceIp: "",
-            user: null,
-            userAgent: null,
-            userArn: null,
-          },
-        },
-      },
-      mockLambdaContext({ requestId, path }),
-      () => {}
-    );
-    return res
-      ? res.then((r) => {
-          try {
-            if (r.statusCode < 300) {
-              return JSON.parse(r.body);
-            } else {
-              return Promise.reject(r.body);
-            }
-          } catch (e) {
-            throw new Error(`Failed to handle response: ${r.body}`);
-          }
-        })
-      : {};
-  });
-};
 
 const mockedNotebooks = new Set<string>();
 
@@ -135,9 +56,10 @@ test.beforeAll(() => {
       id: string;
       password: string;
       emailAddresses: { emailAddress: string }[];
-      privateMetadata: {};
+      privateMetadata: Record<string, never>;
     }
   > = {};
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   users.request = (async (opts) => {
     if (opts.path === "/users" && opts.method === "GET") {
@@ -189,6 +111,7 @@ test.beforeAll(() => {
     } else {
       throw new Error(`Unknown opts: ${opts.method} ${opts.path}`);
     }
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
   }) as typeof users.request;
 });
@@ -1642,6 +1565,7 @@ test("Ping pong", async () => {
 
 test("Invalid method results in parse error", async () => {
   const r = await mockLambda({
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     method: "invalid",
   })

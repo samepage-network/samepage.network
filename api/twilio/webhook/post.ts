@@ -26,6 +26,8 @@ const bodySchema = z.object({
   ApiVersion: z.string(),
 });
 
+export type HandlerBody = z.infer<typeof bodySchema>;
+
 const logic = async (data: BackendRequest<typeof bodySchema>) => {
   const { response } = await sendMessageToAssistant({
     requestId: data.requestId,
