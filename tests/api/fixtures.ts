@@ -180,24 +180,40 @@ export const mockLambdaContext = ({ requestId = v4(), path = "page" }) => ({
   succeed: () => ({}),
 });
 
+const jsonToQs = (obj: Record<string, unknown>) => {
+  const params =new URLSearchParams();
+  Object.entries(obj).forEach(([k, v]) => {
+    params.append(k, String(v));
+  });
+  return params.toString()
+};
+
 export const createMockLambdaStep =
-  <T>({
+  <T extends Record<string, unknown>>({
     path,
     getStep,
     handler,
+    contentType = "application/json",
   }: {
     path: string;
     getStep: (t: T) => string;
     handler: APIGatewayProxyHandler;
+    contentType?: string;
   }) =>
   async (body: T, requestId = v4()) => {
     return test.step(`Mock Lambda: ${getStep(body)}`, async () => {
+      const serializedBody =
+        contentType === "application/x-www-form-urlencoded"
+          ? jsonToQs(body)
+          : JSON.stringify(body);
       const res = handler(
         {
-          headers: {},
+          headers: {
+            "Content-Type": contentType,
+          },
           multiValueHeaders: {},
           httpMethod: "POST",
-          body: JSON.stringify(body),
+          body: serializedBody,
           path,
           isBase64Encoded: false,
           pathParameters: {},

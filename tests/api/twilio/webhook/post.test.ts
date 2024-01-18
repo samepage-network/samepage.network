@@ -11,6 +11,7 @@ const mockLambda = createMockLambdaStep<HandlerBody>({
   path: "page",
   getStep: (b) => b.MessageSid,
   handler,
+  contentType: "application/x-www-form-urlencoded",
 });
 
 const Sid = `SM${v4().replace(/-/g, "")}`;
