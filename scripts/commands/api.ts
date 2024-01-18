@@ -451,7 +451,8 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
   });
   const appServer = app.listen(port, () => {
     console.log(`API server listening on port ${port}...`);
-    if (!local)
+    if (!local) {
+      console.log("Attempting to start ngrok tunneling...");
       ngrok
         .connect({
           addr: port,
@@ -461,7 +462,13 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
           debug("Started local ngrok tunneling:");
           debug(url);
           return 0;
+        })
+        .catch((e) => {
+          console.error("Failed to start ngrok tunneling:");
+          console.error(e);
+          return 1;
         });
+    }
   });
   const startWebSocketServer = () => {
     const wss = new WebSocketServer({ server: appServer });
