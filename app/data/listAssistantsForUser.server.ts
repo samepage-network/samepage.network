@@ -1,19 +1,19 @@
-const columns = [
-  { Header: "Name", accessor: "name" },
-  { Header: "Phone Number", accessor: "phone" },
-];
-
-// TODO: Implement this function
 const listAssistantsForUser = async () => {
   return {
-    columns,
-    count: 3,
     data: [
-      { name: "John Doe", phone: "555-555-5555" },
-      { name: "Jane Doe", phone: "555-555-5555" },
-      { name: "John Smith", phone: "555-555-5555" },
+      {
+        uuid: "680b2fba-71de-40d2-a300-bc1b5cb9b546",
+        name: "Sparky",
+        username: "sparky",
+        role: "Chief of Staff",
+        pinnedApps: [
+          { code: "email" },
+          { code: "roam" },
+          { code: "slack" },
+          { code: "notion" },
+        ],
+      },
     ],
-    error: "",
   };
 };
 

@@ -1,10 +1,5 @@
 import { LoaderFunction } from "@remix-run/node";
-import {
-  Outlet,
-  useNavigate,
-  useLoaderData,
-} from "@remix-run/react";
-import Table from "~/components/Table";
+import { useNavigate, useLoaderData } from "@remix-run/react";
 import listAssistantsForUser from "~/data/listAssistantsForUser.server";
 import remixAppLoader from "~/data/remixAppLoader.server";
 import ButtonLink from "~/components/ButtonLink";
@@ -12,22 +7,47 @@ export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
 const AssistantsPage = () => {
   const navigate = useNavigate();
-  const { count } =
+  const { data } =
     useLoaderData<Awaited<ReturnType<typeof listAssistantsForUser>>>();
   return (
-    <div className={"flex gap-8 items-start h-full"}>
-      <div className="max-w-3xl w-full flex flex-col h-full gap-4">
-        <Table
-          className={`flex-grow ${count === 0 ? "hidden" : ""}`}
-          onRowClick={(r) => navigate(r.uuid as string)}
-        />
+    <div className={"flex-col gap-8 items-start h-full pb-12"}>
+      <div className="max-w-3xl w-full h-full gap-4">
+        {data.map((a) => (
+          <div
+            key={a.uuid}
+            className="shadow-md rounded-sm active:border-sky-300 active:border hover:shadow-2xl max-w-[16rem] flex-col items-center hover:cursor-pointer py-4 h-fit"
+            onClick={() => navigate(a.uuid)}
+            title={a.name}
+          >
+            <div className="flex justify-center items-center">
+              <div className="flex-shrink-0">
+                <img
+                  src={`/images/assistants/avatars/${a.uuid}.png`}
+                  alt={a.name}
+                  className="w-24 h-24 rounded-full"
+                />
+              </div>
+            </div>
+            <div className="flex-col items-center text-center">
+              <h3 className="text-2xl font-semibold my-6">{a.name}</h3>
+              <p className="text-gray-500 my-4">{a.role}</p>
+              <div className="flex gap-4 justify-center">
+                {a.pinnedApps.map((app) => (
+                  <img
+                    key={app.code}
+                    src={`/images/apps/${app.code}.png`}
+                    alt={app.code}
+                    className="w-8 h-8 rounded-full"
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
       </div>
       <ButtonLink to={"new"} className={"w-fit"}>
         Hire
       </ButtonLink>
-      <div className={"flex-grow-1 overflow-auto"}>
-        <Outlet />
-      </div>
     </div>
   );
 };

@@ -10,12 +10,12 @@ const AssistantsNewPage = () => {
     <Form method={"post"} className={"max-w-lg"}>
       <h3 className="text-3xl font-normal mb-12">Hire a New Assistant!</h3>
       <TextInput name={"name"} label={"Name"} />
-      <TextInput name={"phone"} label={"Phone Number"} />
+      <TextInput name={"email"} label={"Email"} />
       <p className="mb-4">
         I agree to receive notification and response SMS from (833) 659-7438.
         Msg {"&"} data rates may apply. Reply YOU'RE FIRED to opt-out.
       </p>
-      <Button>Create</Button>
+      <Button>Hire</Button>
     </Form>
   );
 };
