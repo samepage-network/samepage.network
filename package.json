@@ -126,7 +126,7 @@
     "@typescript-eslint/eslint-plugin": "^5.33.0",
     "@typescript-eslint/parser": "^5.33.0",
     "cdktf-cli": "^0.14.3",
-    "drizzle-kit": "^0.17.0",
+    "drizzle-kit": "0.17.0",
     "esbuild": "0.17.14",
     "jsdom": "^20.0.0",
     "madge": "^6.0.0",
