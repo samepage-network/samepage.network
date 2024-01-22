@@ -149,7 +149,7 @@ const api = async ({ local }: { local?: boolean } = {}): Promise<number> => {
                 errorType: "HANDLER_NOT_FOUND",
               });
           }
-          const { headers, body: _body, params, url, ip } = req;
+          const { headers, body: _body, params, url, ip = "" } = req;
           const searchParams = Array.from(
             new URL(url || "", "http://example.com").searchParams.entries()
           );

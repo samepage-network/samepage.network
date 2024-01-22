@@ -5,6 +5,7 @@ import { defaultSetSetting } from "../../../package/utils/defaultSettings";
 test("default set setting", () => {
   const ls = global.localStorage;
   const storage: Record<string, string> = {};
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
   // @ts-ignore
   global.localStorage = {
     getItem: (s: string) => storage[s],
