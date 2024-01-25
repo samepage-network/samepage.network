@@ -1,14 +1,14 @@
 import { LoaderFunction } from "@remix-run/node";
 import { useNavigate, useLoaderData } from "@remix-run/react";
-import listAssistantsForUser from "~/data/listAssistantsForUser.server";
+import listEmployeesForUser from "~/data/listEmployeesForUser.server";
 import remixAppLoader from "~/data/remixAppLoader.server";
 import ButtonLink from "~/components/ButtonLink";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 
-const AssistantsPage = () => {
+const EmployeesPage = () => {
   const navigate = useNavigate();
   const { data } =
-    useLoaderData<Awaited<ReturnType<typeof listAssistantsForUser>>>();
+    useLoaderData<Awaited<ReturnType<typeof listEmployeesForUser>>>();
   return (
     <div className={"flex-col gap-8 items-start h-full pb-12"}>
       <div className="max-w-3xl w-full h-full gap-4">
@@ -22,7 +22,7 @@ const AssistantsPage = () => {
             <div className="flex justify-center items-center">
               <div className="flex-shrink-0">
                 <img
-                  src={`/images/assistants/avatars/${a.uuid}.png`}
+                  src={`/images/employees/avatars/${a.uuid}.png`}
                   alt={a.name}
                   className="w-24 h-24 rounded-full"
                 />
@@ -53,11 +53,11 @@ const AssistantsPage = () => {
 };
 
 export const loader: LoaderFunction = (args) => {
-  return remixAppLoader(args, listAssistantsForUser);
+  return remixAppLoader(args, listEmployeesForUser);
 };
 
 export const handle = {
-  Title: "Assistants",
+  Title: "Employees",
 };
 
-export default AssistantsPage;
+export default EmployeesPage;

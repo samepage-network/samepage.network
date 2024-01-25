@@ -1,7 +1,9 @@
+import { users } from "@clerk/clerk-sdk-node";
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
 import { BackendRequest } from "package/internal/types";
+import { NotFoundError } from "vellum-ai/api";
 import { z } from "zod";
-import sendMessageToAssistant from "~/data/sendMessageToAssistant.server";
+import sendMessageToEmployee from "~/data/sendMessageToEmployee.server";
 
 const bodySchema = z.object({
   ToCountry: z.string(),
@@ -29,9 +31,18 @@ const bodySchema = z.object({
 export type HandlerBody = z.infer<typeof bodySchema>;
 
 const logic = async (data: BackendRequest<typeof bodySchema>) => {
-  const { response } = await sendMessageToAssistant({
+  const user = await users
+    .getUserList({ phoneNumber: [data.From] })
+    .then((r) => r[0])
+    .catch(() => null);
+  if (!user) {
+    throw new NotFoundError(`User not found for phone number ${data.From}`);
+  }
+
+  const { response } = await sendMessageToEmployee({
     requestId: data.requestId,
     message: data.Body,
+    user,
   });
   return {
     headers: {
