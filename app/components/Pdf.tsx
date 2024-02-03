@@ -98,8 +98,9 @@ const styles = StyleSheet.create({
   },
   img: {
     marginBottom: MARGIN_BOTTOM,
-    width: 300,
-    height: 300,
+    maxHeight: 250,
+    width: "100%",
+    objectFit: "contain",
   },
   pageNumber: {
     position: "absolute",
@@ -134,8 +135,24 @@ const components: Components = {
   blockquote: ({ children }) => (
     <View style={styles.blockquote}>{children}</View>
   ),
-  p: ({ children }) => <Text style={styles.p}>{children}</Text>,
   img: ({ src }) => <Image style={styles.img} src={src} />,
+  p: ({ children }) => {
+    const renderChildren = (child: React.ReactNode) => {
+      if (typeof child === "string") {
+        return <Text>{child}</Text>;
+      } else if (React.isValidElement(child) && child.type === "img") {
+        return <View style={{ marginBottom: 0 }}>{child}</View>;
+      } else if (Array.isArray(child)) {
+        return child.map((item, index) => (
+          <React.Fragment key={index}>{renderChildren(item)}</React.Fragment>
+        ));
+      } else {
+        return child;
+      }
+    };
+
+    return <View style={styles.p}>{renderChildren(children)}</View>;
+  },
 };
 
 type Props = {
