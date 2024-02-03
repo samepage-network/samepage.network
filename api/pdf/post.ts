@@ -1,5 +1,5 @@
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
-import { createZip } from "../../app/data/Pdf";
+import { createZip } from "~/components/Pdf";
 // import uploadFileContent from "package/backend/uploadFileContent";
 
 type Params = {
