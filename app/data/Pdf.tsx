@@ -83,6 +83,10 @@ const styles = StyleSheet.create({
   code: {
     marginBottom: MARGIN_BOTTOM,
     fontSize: FONT_SIZE,
+    backgroundColor: "#f0f0f0",
+    padding: "10px",
+    margin: "10px 0",
+    border: "1px solid #ddd",
   },
   blockquote: {
     fontSize: FONT_SIZE,
@@ -94,6 +98,8 @@ const styles = StyleSheet.create({
   },
   img: {
     marginBottom: MARGIN_BOTTOM,
+    width: 300,
+    height: 300,
   },
   pageNumber: {
     position: "absolute",
