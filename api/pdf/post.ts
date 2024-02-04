@@ -1,6 +1,6 @@
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
 import { createZip } from "~/components/Pdf";
-// import uploadFileContent from "package/backend/uploadFileContent";
+import uploadFileContent from "package/backend/uploadFileContent";
 
 type Params = {
   files: [
@@ -19,20 +19,19 @@ export const logic = async ({ files, filename }: Params) => {
     const zipString = zipBuffer.toString("base64");
     if (!zipString) throw new Error("Failed to create zip");
 
-    // const path = `data/pdfs/${filename}.zip`;
-    // const uploadResult = await uploadFileContent({
-    //   Body: zipBuffer,
-    //   Key: path,
-    // });
-    // if (!uploadResult) throw new Error("Failed to upload zip file");
+    const path = `pdfs/${filename}.zip`;
+    const uploadResult = await uploadFileContent({
+      Body: zipBuffer,
+      Key: path,
+    });
+    if (!uploadResult) throw new Error("Failed to upload zip file");
 
     return {
       statusCode: 200,
       headers: {
         "Content-Type": "application/zip",
       },
-      // body: JSON.stringify(path),
-      body: zipString,
+      body: JSON.stringify(path),
       isBase64Encoded: true,
     };
   } catch (e) {
