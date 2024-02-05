@@ -7,7 +7,7 @@ import UserGroupIcon from "@heroicons/react/outline/UserGroupIcon";
 const ICONS = {
   book: BookIcon,
   default: ChevronRightIcon,
-  assistants: UserGroupIcon,
+  employees: UserGroupIcon,
 };
 export type Tab = { id: string; label: string; icon: keyof typeof ICONS };
 

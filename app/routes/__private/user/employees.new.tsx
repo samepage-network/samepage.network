@@ -2,13 +2,13 @@ import { ActionFunction, redirect } from "@remix-run/node";
 import { Form } from "@remix-run/react";
 import Button from "package/components/Button";
 import TextInput from "package/components/TextInput";
-import createUserAssistant from "~/data/createUserAssistant.server";
+import createUserEmployee from "~/data/createUserEmployee.server";
 import remixAppAction from "~/data/remixAppAction.server";
 
-const AssistantsNewPage = () => {
+const EmployeesNewPage = () => {
   return (
     <Form method={"post"} className={"max-w-lg"}>
-      <h3 className="text-3xl font-normal mb-12">Hire a New Assistant!</h3>
+      <h3 className="text-3xl font-normal mb-12">Hire a New Employee!</h3>
       <TextInput name={"name"} label={"Name"} />
       <TextInput name={"email"} label={"Email"} />
       <p className="mb-4">
@@ -23,18 +23,18 @@ const AssistantsNewPage = () => {
 export const action: ActionFunction = (args) => {
   return remixAppAction(args, {
     POST: ({ context: { requestId }, data, userId }) =>
-      createUserAssistant({
+      createUserEmployee({
         requestId,
         workspace: data["workspace"]?.[0] || "",
         userId,
-      }).then(({ assistantUuid }) =>
-        redirect(`/user/assistants/${assistantUuid}`)
+      }).then(({ employeeUuid }) =>
+        redirect(`/user/employees/${employeeUuid}`)
       ),
   });
 };
 
 export const handle = {
-  Title: "Assistants",
+  Title: "Employees",
 };
 
-export default AssistantsNewPage;
+export default EmployeesNewPage;

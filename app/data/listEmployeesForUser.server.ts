@@ -1,4 +1,4 @@
-const listAssistantsForUser = async () => {
+const listEmployeesForUser = async () => {
   return {
     data: [
       {
@@ -17,4 +17,4 @@ const listAssistantsForUser = async () => {
   };
 };
 
-export default listAssistantsForUser;
+export default listEmployeesForUser;
