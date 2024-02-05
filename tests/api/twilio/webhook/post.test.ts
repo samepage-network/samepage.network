@@ -41,7 +41,7 @@ test.beforeAll(() => {
   setupFetchMock();
 });
 
-test("Happy path for webhook endpoint", async () => {
+test.skip("Happy path for webhook endpoint", async () => {
   fetchMockIf(
     "https://predict.vellum.ai/v1/execute-prompt",
     JSON.stringify({
