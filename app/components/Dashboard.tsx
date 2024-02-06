@@ -3,11 +3,13 @@ import { Link, Outlet, useMatches } from "@remix-run/react";
 import BookIcon from "@heroicons/react/outline/BookOpenIcon";
 import ChevronRightIcon from "@heroicons/react/outline/ChevronRightIcon";
 import UserGroupIcon from "@heroicons/react/outline/UserGroupIcon";
+import OfficeBuildingIcon from "@heroicons/react/solid/OfficeBuildingIcon";
 
 const ICONS = {
   book: BookIcon,
   default: ChevronRightIcon,
   employees: UserGroupIcon,
+  offices: OfficeBuildingIcon,
 };
 export type Tab = { id: string; label: string; icon: keyof typeof ICONS };
 
