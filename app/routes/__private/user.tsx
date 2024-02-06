@@ -44,6 +44,7 @@ const UserDashboard = ({
 const TABS: Tab[] = [
   { id: "notebooks", label: "Notebooks", icon: "book" },
   { id: "employees", label: "Empoyees", icon: "employees" },
+  { id: "offices", label: "Offices", icon: "offices" },
 ];
 
 const UserPage: React.FunctionComponent = () => {
