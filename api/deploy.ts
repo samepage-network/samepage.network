@@ -94,7 +94,7 @@ const ensureDirectoryExistence = (filePath: string) => {
 const zFilter = z.object({
   rule: z.string(),
   value: z.string(),
-  layout: z.string(),
+  layout: z.string().optional(),
   variables: z.record(z.string()),
 });
 
@@ -581,7 +581,7 @@ const zReferences = z
     uid: z.string().optional(),
     text: z.string().optional(),
     node: zTreeNode.optional(),
-    refText: z.string(),
+    refText: z.string().optional(),
     refTitle: z.string(),
     refUid: z.string(),
   })
@@ -946,7 +946,8 @@ const processSiteData = async ({
   references
     .filter(({ refText }) => !!refText)
     .forEach((node) => {
-      blockInfoCache[node.refUid] = blockInfoCache[node.refUid] || node.refText;
+      blockInfoCache[node.refUid] =
+        (blockInfoCache[node.refUid] || node.refText) ?? "";
     });
   references
     .filter(({ refTitle }) => !!refTitle)
@@ -1068,6 +1069,7 @@ export const handler = async ({
     await logStatus("DELETING STALE FILES");
     const Bucket = `samepage.network`;
     const Prefix = `websites/${websiteUuid}/`;
+    const HistoryPrefix = `data/websites/${websiteUuid}/${operationUuid}`;
     const outputPathRegex = new RegExp(`^${outputPath.replace(/\\/g, "\\\\")}`);
     const filesToUpload = readDir(outputPath).map((s) =>
       s
@@ -1114,6 +1116,7 @@ export const handler = async ({
     await logStatus("UPLOADING");
     for (const key of filesToUpload) {
       const Body = fs.createReadStream(path.join(outputPath, key));
+      const HistoryBody = fs.createReadStream(path.join(outputPath, key));
       const Key = `${Prefix}${key}`;
       const justType = mime.lookup(Key);
       const ContentType =
@@ -1121,11 +1124,18 @@ export const handler = async ({
           ? "text/html;charset=UTF-8"
           : justType || "text/plain";
       await s3.putObject({ Bucket, Key, Body, ContentType });
+      await s3.putObject({
+        Bucket,
+        Key: `${HistoryPrefix}/${key}`,
+        Body: HistoryBody,
+        ContentType,
+      });
     }
 
     await logStatus("SUCCESS");
   } catch (err) {
     const e = err as Error;
+    console.log(e);
     await logStatus("FAILURE", { message: e.message });
     await emailError("Deploy Failed", e);
   } finally {
