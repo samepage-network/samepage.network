@@ -2,7 +2,7 @@ import ExternalLink from "~/components/ExternalLink";
 import CheckIcon from "@heroicons/react/solid/CheckIcon";
 import ArrowRightIcon from "@heroicons/react/outline/ArrowRightIcon";
 import { Link, useLoaderData } from "@remix-run/react";
-import { LoaderArgs, LoaderFunction } from "@remix-run/node";
+import { LoaderArgs, redirect } from "@remix-run/node";
 import getUserId from "~/data/getUserId.server";
 import getStripePlans from "~/data/getStripePlans.server";
 import parseRequestContext from "samepage/internal/parseRequestContext";
@@ -125,6 +125,9 @@ const loaderFunction = async (args: LoaderArgs) => {
   };
 };
 
-export const loader: LoaderFunction = loaderFunction;
+// Keeping the old pricing, to be revisited after 100 customers.
+export const loader = () => {
+  return redirect("/contact");
+};
 
 export default PricingPage;
