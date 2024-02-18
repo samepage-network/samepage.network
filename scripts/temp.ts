@@ -3,10 +3,12 @@ import { fromIni } from "@aws-sdk/credential-provider-ini";
 import {
   notebooks,
   websiteNotebookLinks,
+  websiteOperations,
   websiteSharing,
+  websiteStatuses,
   websites,
 } from "../data/schema";
-import { and, eq } from "drizzle-orm/expressions";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm/expressions";
 import { v4 } from "uuid";
 import getMysql from "../app/data/mysql.server";
 import { handler as launchHandler } from "../api/launch";
@@ -18,7 +20,7 @@ const ALLOW_LIST = new Set(["roamjs-DiH"]);
 //   fs.readFileSync("./scripts/data.json", "utf8").toString()
 // );
 
-const run = async (requestId: string) => {
+const migrateCf = async (requestId: string) => {
   const cxn = await getMysql(requestId);
   const websiteByGraph = await cxn
     .select({
@@ -62,12 +64,12 @@ const run = async (requestId: string) => {
               p.ParameterValue ?? "",
             ]) ?? []
           );
-          const email = "helloreality@pm.me";
+          const email = "vargas@samepage.network";
           const customDomain = parameters["CustomDomain"] === "true";
           const domainName = parameters["DomainName"];
           const workspace = parameters["RoamGraph"];
 
-          const userId = "user_2SPGxUmq239P4QA2fyJvUt5cn4i";
+          const userId = "user_lookup_here";
           if (!userId) {
             console.log("No user found for", email, "domain", domainName);
             throw new Error("No user found");
@@ -124,6 +126,102 @@ const run = async (requestId: string) => {
     )
   );
   return { stacks };
+};
+
+const migrateOperations = async (requestId: string) => {
+  const cxn = await getMysql(requestId);
+  const statuses = await cxn
+    .select({
+      uuid: websiteStatuses.uuid,
+      status: websiteStatuses.status,
+      createdDate: websiteStatuses.createdDate,
+      statusType: websiteStatuses.statusType,
+      websiteUuid: websiteStatuses.websiteUuid,
+    })
+    .from(websiteStatuses)
+    .where(isNull(websiteStatuses.operationUuid))
+    .orderBy(desc(websiteStatuses.createdDate));
+
+  const operations: {
+    statuses: typeof statuses;
+    uuid: string;
+    websiteUuid: string;
+    statusType: "LAUNCH" | "DEPLOY";
+  }[] = [];
+  statuses.forEach((s) => {
+    if (s.statusType === "LAUNCH" && s.status === "LIVE") {
+      operations.push({
+        statuses: [s],
+        uuid: v4(),
+        statusType: "LAUNCH",
+        websiteUuid: s.websiteUuid,
+      });
+    } else if (s.statusType === "LAUNCH" && s.status === "FAILURE") {
+      operations.push({
+        statuses: [s],
+        uuid: v4(),
+        statusType: "LAUNCH",
+        websiteUuid: s.websiteUuid,
+      });
+    } else if (s.statusType === "DEPLOY" && s.status === "SUCCESS") {
+      operations.push({
+        statuses: [s],
+        uuid: v4(),
+        statusType: "DEPLOY",
+        websiteUuid: s.websiteUuid,
+      });
+    } else if (s.statusType === "DEPLOY" && s.status === "FAILURE") {
+      operations.push({
+        statuses: [s],
+        uuid: v4(),
+        statusType: "DEPLOY",
+        websiteUuid: s.websiteUuid,
+      });
+    } else {
+      const statusFilters = operations.filter(
+        (o) => o.statusType == s.statusType
+      );
+      const last = statusFilters[statusFilters.length - 1];
+      if (last) {
+        last.statuses.push(s);
+      }
+    }
+  });
+  console.log("Creating", operations.length, "operations");
+  const failedOperations: unknown[] = [];
+  await operations
+    .map((o, i) => async () => {
+      if (!o.websiteUuid) {
+        failedOperations.push({ operation: o, reason: "No websiteUuid" });
+        console.log("Failed operation", i);
+        return;
+      }
+      const insert = {
+        websiteUuid: o.websiteUuid,
+        uuid: o.uuid,
+        completedDate: o.statuses[0].createdDate,
+        createdDate: o.statuses[o.statuses.length - 1].createdDate,
+        statusType: o.statusType,
+      };
+      await cxn.insert(websiteOperations).values(insert);
+      await cxn
+        .update(websiteStatuses)
+        .set({ operationUuid: o.uuid })
+        .where(
+          inArray(
+            websiteStatuses.uuid,
+            o.statuses.map((s) => s.uuid)
+          )
+        );
+      console.log("Inserted operation", i);
+    })
+    .reduce((p, f) => p.then(f), Promise.resolve());
+  return { operations, failedOperations };
+};
+
+const run = async (requestId: string) => {
+  console.log(typeof migrateCf, typeof migrateOperations);
+  return migrateOperations(requestId);
 };
 
 export default run;
