@@ -582,7 +582,7 @@ const zReferences = z
     text: z.string().optional(),
     node: zTreeNode.optional(),
     refText: z.string().optional(),
-    refTitle: z.string(),
+    refTitle: z.string().optional(),
     refUid: z.string(),
   })
   .array();
@@ -953,16 +953,18 @@ const processSiteData = async ({
     .filter(({ refTitle }) => !!refTitle)
     .forEach((node) => {
       const block = blockInfoCache[(node?.node?.uid || node.uid) ?? ""];
-      linkedReferencesCache[node.refTitle] = [
-        ...(linkedReferencesCache[node.refTitle] || []),
-        {
-          title: node.title,
-          node:
-            typeof block === "string"
-              ? { text: block }
-              : block?.node || node.node || { text: node.text },
-        },
-      ];
+      if (node.refTitle) {
+        linkedReferencesCache[node.refTitle] = [
+          ...(linkedReferencesCache[node.refTitle] || []),
+          {
+            title: node.title,
+            node:
+              typeof block === "string"
+                ? { text: block }
+                : block?.node || node.node || { text: node.text },
+          },
+        ];
+      }
     });
 
   const parseInline = getParseInline();
