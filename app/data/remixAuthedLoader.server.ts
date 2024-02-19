@@ -30,7 +30,7 @@ const remixAuthedLoader: LoaderFunction = async (args) => {
     await cxn.end();
     if (app) {
       const redirectUrl = `/oauth/${app.app}?client_uri=${redirectUri}`;
-      if (!!authData?.userId) return redirect(redirectUrl);
+      if (authData?.userId) return redirect(redirectUrl);
       return {
         redirectUrl: `/oauth/${app.app}?client_uri=${redirectUri}`,
         clerk: true,
@@ -38,7 +38,7 @@ const remixAuthedLoader: LoaderFunction = async (args) => {
     }
   }
   const redirectParam = decodeURIComponent(searchParams.get("redirect") || "");
-  if (!!authData?.userId) {
+  if (authData?.userId) {
     return redirect(redirectParam || `/user`);
   }
   if (redirectParam) {
@@ -48,7 +48,7 @@ const remixAuthedLoader: LoaderFunction = async (args) => {
     };
   }
   return {
-    redirectUrl: "/install?refresh=true",
+    redirectUrl: "/user?refresh=true",
     clerk: true,
   };
 };

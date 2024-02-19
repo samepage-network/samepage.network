@@ -1,16 +1,10 @@
-import React, { useEffect } from "react";
-import { useSearchParams } from "@remix-run/react";
+import React from "react";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import ButtonLink from "~/components/ButtonLink";
+import useClearRefreshParam from "~/components/useClearRefreshParam";
 
 const Home: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  useEffect(() => {
-    if (searchParams.has("refresh")) {
-      searchParams.delete("refresh");
-      setSearchParams(searchParams);
-    }
-  }, [searchParams, setSearchParams]);
+  useClearRefreshParam();
   return (
     <div className={"w-full"}>
       <div

@@ -5,6 +5,7 @@ export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { useUser, UserButton } from "@clerk/remix";
 import { Link, useLoaderData } from "@remix-run/react";
 import Dashboard, { Tab } from "~/components/Dashboard";
+import useClearRefreshParam from "~/components/useClearRefreshParam";
 
 const UserFooter = () => {
   const user = useUser();
@@ -42,17 +43,22 @@ const UserDashboard = ({
 };
 
 const TABS: Tab[] = [
-  { id: "notebooks", label: "Notebooks", icon: "book" },
   { id: "employees", label: "Empoyees", icon: "employees" },
   { id: "offices", label: "Offices", icon: "offices" },
+  { id: "notebooks", label: "Notebooks", icon: "book" },
 ];
 
 const UserPage: React.FunctionComponent = () => {
+  useClearRefreshParam();
   return <UserDashboard tabs={TABS} title={"Samepage"} />;
 };
 
 export const meta = getMeta({
   title: "user",
 });
+
+export const handle = {
+  Title: "Your Dashboard",
+};
 
 export default UserPage;

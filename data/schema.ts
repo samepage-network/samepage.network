@@ -22,7 +22,7 @@ import {
 import { sql } from "drizzle-orm/sql";
 import { JSONData } from "package/internal/types";
 
-// TODO - CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
+// TODO - CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci (after varchar)
 
 class MySqlUnsignedSmallInt<
   TTableName extends string
@@ -378,7 +378,7 @@ export const websiteNotebookLinks = mysqlTable(
 );
 
 const websiteStatusTypes = ["DEPLOY", "LAUNCH", "NONE"] as const;
-export type WebsiteStatusType = (typeof websiteStatusTypes)[number];
+export type WebsiteStatusType = typeof websiteStatusTypes[number];
 
 export const websiteOperations = mysqlTable(
   "website_operations",
@@ -428,22 +428,20 @@ export const websiteSharing = mysqlTable("website_sharing", {
   createdDate: date("created"),
 });
 
-export const padawanMissions = mysqlTable("padawan_missions", {
+export const employees = mysqlTable("employees", {
   uuid: primaryUuid(),
-  label: varchar("label", { length: 256 }).notNull().default(""),
-  startDate: date("start"),
+  userId: varchar("user_id", { length: 128 }).notNull().default(""),
+  name: varchar("name", { length: 128 }).notNull().default(""),
+  title: varchar("title", { length: 128 }).notNull().default(""),
+  hiredDate: date("created"),
 });
 
-export const padawanMissionEvents = mysqlTable("padawan_mission_events", {
+export const employeesHistory = mysqlTable("employees_history", {
   uuid: primaryUuid(),
-  missionUuid: uuid("mission_uuid").notNull(),
-  status: varchar("status", { length: 64 }).notNull().default(""),
-  createdDate: date("created"),
-});
-
-export const padawanMissionSteps = mysqlTable("padawan_mission_steps", {
-  uuid: primaryUuid(),
-  missionUuid: uuid("mission_uuid").notNull(),
-  stepHash: varchar("step_hash", { length: 128 }).notNull().default(""),
-  executionDate: date("execution"),
+  userId: varchar("user_id", { length: 128 }).notNull().default(""),
+  name: varchar("name", { length: 128 }).notNull().default(""),
+  title: varchar("title", { length: 128 }).notNull().default(""),
+  hiredDate: date("created"),
+  historyUser: varchar("history_user", { length: 128 }).notNull().default(""),
+  historyDate: date("history_date"),
 });

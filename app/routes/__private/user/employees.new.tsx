@@ -10,7 +10,8 @@ const EmployeesNewPage = () => {
     <Form method={"post"} className={"max-w-lg"}>
       <h3 className="text-3xl font-normal mb-12">Hire a New Employee!</h3>
       <TextInput name={"name"} label={"Name"} />
-      <TextInput name={"email"} label={"Email"} />
+      <TextInput name={"title"} label={"Title"} />
+      {/* I want an image input here: <ImageInput name={"avatar"} label={"Avatar"} /> */}
       <p className="mb-4">
         I agree to receive notification and response SMS from (833) 659-7438.
         Msg {"&"} data rates may apply. Reply YOU'RE FIRED to opt-out.
@@ -22,10 +23,10 @@ const EmployeesNewPage = () => {
 
 export const action: ActionFunction = (args) => {
   return remixAppAction(args, {
-    POST: ({ context: { requestId }, data, userId }) =>
+    POST: ({ requestId, data, userId }) =>
       createUserEmployee({
         requestId,
-        workspace: data["workspace"]?.[0] || "",
+        data,
         userId,
       }).then(({ employeeUuid }) =>
         redirect(`/user/employees/${employeeUuid}`)
