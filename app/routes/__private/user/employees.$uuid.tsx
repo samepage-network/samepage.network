@@ -8,7 +8,7 @@ const EmployeeProfilePage = () => {
     useLoaderData<Awaited<ReturnType<typeof getUserEmployeeProfile>>>();
   return (
     <div>
-      <h1 className="text-4xl font-bold">{employee.title}</h1>
+      <h1 className="text-3xl font-semibold mb-16">{employee.title}</h1>
       <div>
         <h2 className="text-2xl">Responsibilities</h2>
         {responsibilities.map((r) => (

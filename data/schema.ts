@@ -21,6 +21,7 @@ import {
 } from "drizzle-orm/mysql-core/columns/common";
 import { sql } from "drizzle-orm/sql";
 import { JSONData } from "package/internal/types";
+import { z } from "zod";
 
 // TODO - CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci (after varchar)
 
@@ -428,12 +429,29 @@ export const websiteSharing = mysqlTable("website_sharing", {
   createdDate: date("created"),
 });
 
+const employeeConfigSchema = z.object({
+  responsibilities: z
+    .object({
+      uuid: z.string(),
+      description: z.string(),
+    })
+    .array()
+    .default([]),
+});
+
+const employeeConfigColumn = json<z.infer<typeof employeeConfigSchema>>(
+  "config"
+)
+  .notNull()
+  .default({ responsibilities: [] });
+
 export const employees = mysqlTable("employees", {
   uuid: primaryUuid(),
   userId: varchar("user_id", { length: 128 }).notNull().default(""),
   name: varchar("name", { length: 128 }).notNull().default(""),
   title: varchar("title", { length: 128 }).notNull().default(""),
   hiredDate: date("created"),
+  config: employeeConfigColumn,
 });
 
 export const employeesHistory = mysqlTable("employees_history", {
@@ -442,6 +460,7 @@ export const employeesHistory = mysqlTable("employees_history", {
   name: varchar("name", { length: 128 }).notNull().default(""),
   title: varchar("title", { length: 128 }).notNull().default(""),
   hiredDate: date("created"),
+  config: employeeConfigColumn,
   historyUser: varchar("history_user", { length: 128 }).notNull().default(""),
   historyDate: date("history_date"),
 });
