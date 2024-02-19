@@ -94,7 +94,7 @@ const Dashboard = ({
         <div className="h-12 bg-sky-900 flex items-center px-4">{footer}</div>
       </nav>
       <div className="p-8 flex-grow flex flex-col overflow-auto">
-        <h1 className="capitalize text-4xl font-bold mb-8">
+        <h1 className="capitalize text-4xl font-bold mb-4">
           <CurrentPageTitle />
         </h1>
         <div className="flex-grow">

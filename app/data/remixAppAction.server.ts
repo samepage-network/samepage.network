@@ -12,6 +12,9 @@ type CallbackArgs = {
   data: Record<string, string[]>;
   params: Params<string>;
   searchParams: Record<string, string>;
+  requestId: string;
+
+  // Deprecated, use root requestId instead
   context: { requestId: string };
 };
 
@@ -49,8 +52,10 @@ const remixAppAction = (
         )
       )
       .catch(() => ({}));
+    const requestId =
+      parseRemixContext(remixContext).lambdaContext.awsRequestId;
     const context = {
-      requestId: parseRemixContext(remixContext).lambdaContext.awsRequestId,
+      requestId,
     };
     const method = request.method as ActionMethod;
     if (typeof callback === "function") {
@@ -60,6 +65,7 @@ const remixAppAction = (
         method: request.method as ActionMethod,
         searchParams,
         params,
+        requestId,
         context,
       });
       return handleAsResponse(response, "Unknown Application Action Error");
@@ -71,6 +77,7 @@ const remixAppAction = (
         data,
         searchParams,
         params,
+        requestId,
         context,
       });
       return handleAsResponse(response, `Unknown Application ${method} Error`);

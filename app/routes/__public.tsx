@@ -13,6 +13,32 @@ const PublicPage: React.FC = () => {
     matches.reverse().find((m) => m.handle?.mainClassName)?.handle
       ?.mainClassName || "";
   const authed = useLoaderData<boolean>();
+  const [isSecretPressed, setIsSecretPressed] = React.useState(false);
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "q") {
+        setIsSecretPressed(true);
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "q") {
+        setIsSecretPressed(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
+
+  const startedLink = React.useMemo(() => {
+    if (isSecretPressed) {
+      return "/login";
+    }
+    return "/contact";
+  }, [isSecretPressed]);
   return (
     <div className={`flex flex-col min-h-full`}>
       <header className="sticky bg-transparent shadow-xl z-10 backdrop-blur top-0">
@@ -28,7 +54,12 @@ const PublicPage: React.FC = () => {
                 afterSignOutUrl={"/?refresh=true"}
               />
             ) : (
-              <ButtonLink to={"/contact"}>Get Started</ButtonLink>
+              <ButtonLink
+                to={startedLink}
+                className={isSecretPressed ? "cursor-wait" : "cursor-pointer"}
+              >
+                Get Started
+              </ButtonLink>
             )}
           </div>
         </div>

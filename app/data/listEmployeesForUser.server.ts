@@ -1,19 +1,26 @@
-const listEmployeesForUser = async () => {
+import { employees } from "data/schema";
+import getMysql from "./mysql.server";
+import { eq } from "drizzle-orm/expressions";
+
+const listEmployeesForUser = async ({
+  userId,
+  requestId,
+}: {
+  userId: string;
+  requestId: string;
+}) => {
+  const cxn = await getMysql(requestId);
+  const userEmployees = await cxn
+    .select({
+      uuid: employees.uuid,
+      name: employees.name,
+      title: employees.title,
+    })
+    .from(employees)
+    .where(eq(employees.userId, userId))
+    .orderBy(employees.hiredDate);
   return {
-    data: [
-      {
-        uuid: "680b2fba-71de-40d2-a300-bc1b5cb9b546",
-        name: "Sparky",
-        username: "sparky",
-        role: "Chief of Staff",
-        pinnedApps: [
-          { code: "email" },
-          { code: "roam" },
-          { code: "slack" },
-          { code: "notion" },
-        ],
-      },
-    ],
+    data: userEmployees,
   };
 };
 

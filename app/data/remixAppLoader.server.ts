@@ -8,6 +8,9 @@ export type RemixAppLoaderCallback<T = AppData> = (args: {
   userId: string;
   params: Params<string>;
   searchParams: Record<string, string>;
+  requestId: string;
+
+  // Deprecated, use root requestId instead
   context: { requestId: string };
 }) => Promise<T> | T;
 
@@ -21,11 +24,13 @@ const remixAppLoader = (
       return redirect(`/login?redirect=${encodeURIComponent(request.url)}`);
     }
     const searchParams = Object.fromEntries(new URL(request.url).searchParams);
+    const requestId =
+      parseRemixContext(remixContext).lambdaContext.awsRequestId;
     const context = {
-      requestId: parseRemixContext(remixContext).lambdaContext.awsRequestId,
+      requestId,
     };
     const response = callback
-      ? callback({ userId, params, searchParams, context })
+      ? callback({ userId, params, searchParams, context, requestId })
       : {};
     return handleAsResponse(response, "Unknown Application Loader Error");
   });
