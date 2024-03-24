@@ -18,7 +18,11 @@ const parseRequestContext = (context: LoaderFunctionArgs["context"]) => {
     })
     .default({})
     .transform(
-      ({ lambdaContext: { awsRequestId, ...lambdaContext }, requestId, ...rest }) => ({
+      ({
+        lambdaContext: { awsRequestId, ...lambdaContext },
+        requestId,
+        ...rest
+      }) => ({
         requestId: requestId || awsRequestId,
         ...lambdaContext,
         ...rest,

@@ -9,7 +9,7 @@ const AnalyticsIndexPage = () => {
   const { data } =
     useLoaderData<Awaited<ReturnType<typeof loadUserAnalytics>>>();
   const lineChartOptions = useMemo<
-    Omit<ChartOptions<(typeof data)[number]>, "data">
+    Omit<ChartOptions<typeof data[number]>, "data">
   >(
     () => ({
       primaryAxis: {

@@ -84,7 +84,7 @@ const authenticateNotebook: AuthenticateNotebook = async (args) => {
     })
     .reduce(
       (p, c) => p.then((f) => f || c()),
-      Promise.resolve<(typeof tokenLinks)[number] | undefined>(undefined)
+      Promise.resolve<typeof tokenLinks[number] | undefined>(undefined)
     );
   if (!authenticated)
     throw new UnauthorizedError(`Unauthorized notebook and token`);

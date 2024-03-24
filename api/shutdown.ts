@@ -34,7 +34,11 @@ export const handler = async ({
   authorization: string;
   requestId: string;
 }) => {
-  const logStatus = await startWebsiteOperation({ websiteUuid, requestId, statusType: "LAUNCH" });
+  const logStatus = await startWebsiteOperation({
+    websiteUuid,
+    requestId,
+    statusType: "LAUNCH",
+  });
 
   const Bucket = `samepage.network`;
   const Prefix = `websites/${websiteUuid}/`;

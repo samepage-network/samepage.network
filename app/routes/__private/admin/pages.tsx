@@ -18,7 +18,7 @@ const AdminPagesPage = () => {
     undefined | Awaited<ReturnType<typeof searchPageNotebookLinks>>
   >();
   const barChartOptions = useMemo<
-    Omit<ChartOptions<(typeof pages)[number]>, "data">
+    Omit<ChartOptions<typeof pages[number]>, "data">
   >(
     () => ({
       primaryAxis: { getValue: (data) => data.range },
@@ -27,7 +27,7 @@ const AdminPagesPage = () => {
     []
   );
   const lineChartOptions = useMemo<
-    Omit<ChartOptions<(typeof timeSeries)[number]>, "data">
+    Omit<ChartOptions<typeof timeSeries[number]>, "data">
   >(
     () => ({
       primaryAxis: { getValue: (data) => data.date },

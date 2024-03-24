@@ -32,7 +32,9 @@ const listAllPageNotebookLinks = async (requestId: string) => {
         sql<Date>`DATE_SUB(NOW(), INTERVAL 1 DAY)`
       )
     );
-  const pageRecords = await cxn.select({ created_date: pages.createdDate }).from(pages);
+  const pageRecords = await cxn
+    .select({ created_date: pages.createdDate })
+    .from(pages);
   await cxn.end();
   const amounts = {
     "<10": 0,

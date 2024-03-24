@@ -42,7 +42,10 @@ const listNotebooks = async (
       tokenNotebookLinks,
       eq(notebooks.uuid, tokenNotebookLinks.notebookUuid)
     )
-    .leftJoin(onlineClients, eq(tokenNotebookLinks.uuid, onlineClients.actorUuid))
+    .leftJoin(
+      onlineClients,
+      eq(tokenNotebookLinks.uuid, onlineClients.actorUuid)
+    )
     .leftJoin(tokens, eq(tokens.uuid, tokenNotebookLinks.tokenUuid))
     .innerJoin(apps, eq(notebooks.app, apps.id))
     // TODO - sql injection

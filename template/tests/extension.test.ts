@@ -9,7 +9,5 @@ test.skip('"End to end" {{id}} test', async ({ page }) => {
   await page.goto("https://samepage.network");
 
   // replace this assertion with assertions that test the core app logic
-  expect(await page.title()).toEqual(
-    "Samepage"
-  );
+  expect(await page.title()).toEqual("Samepage");
 });

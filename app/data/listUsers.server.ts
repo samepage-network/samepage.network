@@ -1,9 +1,7 @@
 import { users } from "@clerk/clerk-sdk-node";
 import { getPrimaryEmailFromUser } from "./getPrimaryUserEmail.server";
 
-const listUsers = async (
-  searchParams: Record<string, string> = {}
-) => {
+const listUsers = async (searchParams: Record<string, string> = {}) => {
   const index = Number(searchParams["index"] || "1") - 1;
   const size = Number(searchParams["size"]) || 10;
   const search = searchParams["search"] || "";
@@ -14,7 +12,7 @@ const listUsers = async (
   });
   const count = await users.getCount({
     emailAddress: search ? [search] : undefined,
-  })
+  });
   return {
     columns: [
       { Header: "Email", accessor: "email" },

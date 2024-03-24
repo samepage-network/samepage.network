@@ -4,8 +4,9 @@ type AppEventMap = {
   [k in AppEvent as k["type"]]: k;
 };
 
-export const listeners: { [k in AppEvent["type"]]?: ((e: AppEventMap[k]) => void)[] } =
-  {};
+export const listeners: {
+  [k in AppEvent["type"]]?: ((e: AppEventMap[k]) => void)[];
+} = {};
 
 export const onAppEvent = <T extends AppEvent["type"]>(
   t: T,

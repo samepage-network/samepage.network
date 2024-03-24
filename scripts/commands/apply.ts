@@ -56,7 +56,7 @@ const apply = async ({
   if (process.env.NODE_ENV !== "production" && typeof fetch === "function") {
     const appsInProd = await fetch(`https://api.samepage.network/apps`)
       .then((r) => r.json())
-      .then((r) => r.apps as (typeof appsInLocal)[string][]);
+      .then((r) => r.apps as typeof appsInLocal[string][]);
     const appsInLocal = await cxn
       .select()
       .from(apps)
@@ -77,7 +77,7 @@ const apply = async ({
       });
     const quotasInProd = await fetch(`https://api.samepage.network/quotas`)
       .then((r) => r.json())
-      .then((r) => r.quotas as (typeof quotasInLocal)[string][]);
+      .then((r) => r.quotas as typeof quotasInLocal[string][]);
     const quotasInLocal = await cxn
       .select()
       .from(quotas)

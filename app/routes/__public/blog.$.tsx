@@ -2,7 +2,7 @@ export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import type {
   LoaderFunction,
   LinksFunction,
-  V2_MetaFunction
+  V2_MetaFunction,
 } from "@remix-run/node";
 import { useLoaderData } from "@remix-run/react";
 import loadMarkdownFile from "~/data/loadMarkdownFile.server";

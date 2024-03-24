@@ -78,7 +78,7 @@ const getSharedPageByUuidForUser = async ({
         };
       })
     : {
-      state: DEFAULT_SCHEMA,
+        state: DEFAULT_SCHEMA,
         title: pageData.notebookPageId,
       };
   return data;

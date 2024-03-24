@@ -115,7 +115,11 @@ const setupCrossNotebookRequests = () => {
         requestUuid: string;
       };
       // TODO - solve redundancy
-      notebookResponseHandlers[requestUuid]?.({ response, requestUuid, messageUuid });
+      notebookResponseHandlers[requestUuid]?.({
+        response,
+        requestUuid,
+        messageUuid,
+      });
     },
   });
   return {

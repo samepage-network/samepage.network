@@ -9,9 +9,10 @@
   "license": "MIT",
   "sideEffects": false,
   "scripts": {
-    "format": "prettier --write \"**/*.tsx\"",
+    "format": "prettier --write --ignore-path .gitignore  \"**/*.{ts,tsx}\"",
     "postinstall": "patch-package",
     "prelint": "madge --circular --extensions ts --ts-config tsconfig.json .",
+    "prettier": "prettier --check --ignore-path .gitignore \"**/*.{ts,tsx}\"",
     "lint": "eslint . --ext .ts,.tsx",
     "start": "ts-node scripts/cli.ts start",
     "test": "ts-node scripts/cli.ts test",

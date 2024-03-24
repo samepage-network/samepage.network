@@ -10,7 +10,7 @@ const AnalyticsNotebooksPage = () => {
   const { data } =
     useLoaderData<Awaited<ReturnType<typeof loadNotebookAnalytics>>>();
   const lineChartOptions = useMemo<
-    Omit<ChartOptions<(typeof data)[number]>, "data">
+    Omit<ChartOptions<typeof data[number]>, "data">
   >(
     () => ({
       primaryAxis: {

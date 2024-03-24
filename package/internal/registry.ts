@@ -1,4 +1,8 @@
-import { default as defaultSettings, defaultGetSetting, defaultSetSetting } from "../utils/defaultSettings";
+import {
+  default as defaultSettings,
+  defaultGetSetting,
+  defaultSetSetting,
+} from "../utils/defaultSettings";
 import React from "react";
 import { v4 } from "uuid";
 import type {
@@ -96,8 +100,8 @@ const setupRegistry = ({
   removeCommand?: RemoveCommand;
   renderOverlay?: RenderOverlay;
   appRoot?: HTMLElement;
-  getSetting?: (s: (typeof defaultSettings)[number]["id"]) => string;
-  setSetting?: (s: (typeof defaultSettings)[number]["id"], v: string) => void;
+  getSetting?: (s: typeof defaultSettings[number]["id"]) => string;
+  setSetting?: (s: typeof defaultSettings[number]["id"], v: string) => void;
 }) => {
   if (_app) app = _app;
   if (_workspace) workspace = _workspace;

@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm/expressions";
 import type { Context } from "aws-lambda";
 import { v4 } from "uuid";
 import Automerge from "automerge";
-import { Memo, Schema} from "package/internal/types";
+import { Memo, Schema } from "package/internal/types";
 import { decode } from "@ipld/dag-cbor";
 import { MemoryBlockStore } from "ipfs-car/blockstore/memory";
 import { pack } from "ipfs-car/pack";

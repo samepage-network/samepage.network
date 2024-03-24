@@ -16,7 +16,7 @@ import React, { Fragment, useCallback } from "react";
 import { app, appRoot, workspace } from "../internal/registry";
 
 const PAGES = ["WELCOME", "SETUP", "CONNECT", "START", "COMPLETE"] as const;
-type Page = (typeof PAGES)[number];
+type Page = typeof PAGES[number];
 type OnSuccess = (s: { notebookUuid: string; token: string }) => void;
 
 const ConnectNotebookPage = ({

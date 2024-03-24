@@ -181,11 +181,11 @@ export const mockLambdaContext = ({ requestId = v4(), path = "page" }) => ({
 });
 
 const jsonToQs = (obj: Record<string, unknown>) => {
-  const params =new URLSearchParams();
+  const params = new URLSearchParams();
   Object.entries(obj).forEach(([k, v]) => {
     params.append(k, String(v));
   });
-  return params.toString()
+  return params.toString();
 };
 
 export const createMockLambdaStep =

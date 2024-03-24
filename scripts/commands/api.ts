@@ -19,7 +19,7 @@ import * as dirPath from "path";
 const debug = debugMod("api");
 const METHODS = ["get", "post", "put", "delete", "options"] as const;
 const METHOD_SET = new Set<string>(METHODS);
-type ExpressMethod = (typeof METHODS)[number];
+type ExpressMethod = typeof METHODS[number];
 const generateContext = ({
   functionName,
   executionTimeStarted,

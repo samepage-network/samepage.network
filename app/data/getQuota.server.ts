@@ -7,7 +7,7 @@ import { getPrimaryEmailFromUser } from "./getPrimaryUserEmail.server";
 import stripe from "./stripe.server";
 
 type BackendContext = {
-  quotas: { [p: string]: { [k in (typeof QUOTAS)[number]]?: number } };
+  quotas: { [p: string]: { [k in typeof QUOTAS[number]]?: number } };
 };
 
 export const globalContext: Record<string, BackendContext> = {};
@@ -21,7 +21,7 @@ const getQuota = async ({
   tokenUuid,
 }: {
   requestId: string;
-  field: (typeof QUOTAS)[number];
+  field: typeof QUOTAS[number];
   tokenUuid: string;
 }) => {
   const cxn = await getMysql(requestId);

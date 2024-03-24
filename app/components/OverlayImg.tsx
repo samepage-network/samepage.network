@@ -29,7 +29,9 @@ const OverlayImg = ({
       )}
       <img
         src={src}
-        className={`rounded-md cursor-pointer max-h-full w-fit ${className || ""}`}
+        className={`rounded-md cursor-pointer max-h-full w-fit ${
+          className || ""
+        }`}
         onClick={() => setExpanded(true)}
       />
     </>

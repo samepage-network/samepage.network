@@ -48,7 +48,6 @@ const setupNotebookQuerying = ({
     },
   });
 
-  
   return {
     unload: () => {
       removeNotebookListener({ operation: "QUERY" });
