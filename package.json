@@ -96,7 +96,7 @@
     "tsc-alias": "^1.8.5",
     "twilio": "^4.20.1",
     "typed.js": "^2.0.12",
-    "vellum-ai": "^0.2.2",
+    "vellum-ai": "^0.3.11",
     "web3.storage": "4.4.0",
     "xml-js": "^1.6.11",
     "xregexp": "^5.0.1",

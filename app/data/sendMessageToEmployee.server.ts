@@ -1,7 +1,11 @@
 import { User } from "@clerk/clerk-sdk-node";
 import getMysql from "./mysql.server";
 import { VellumClient } from "vellum-ai";
-import { WorkflowRequestInputRequest, ChatMessageRequest } from "vellum-ai/api";
+import {
+  WorkflowRequestInputRequest,
+  ChatMessageRequest,
+  VellumImage,
+} from "vellum-ai/api";
 
 const vellum = new VellumClient({
   apiKey: process.env.VELLUM_API_KEY ?? "",
@@ -11,16 +15,24 @@ const sendMessageToEmployee = async ({
   requestId,
   message,
   user,
+  attachments = [],
 }: {
   requestId: string;
   message: string;
   user: Pick<User, "firstName" | "lastName">;
-}) => {
+  attachments?: VellumImage[];
+}): Promise<{ response: string }> => {
   await getMysql(requestId);
   const chatHistory: ChatMessageRequest[] = [
     {
       role: "USER",
-      text: message,
+      content: {
+        type: "ARRAY",
+        value: [
+          { type: "STRING", value: message },
+          ...attachments.map((a) => ({ type: "IMAGE" as const, value: a })),
+        ],
+      },
     },
   ];
   const inputs: WorkflowRequestInputRequest[] = [
@@ -47,7 +59,7 @@ const sendMessageToEmployee = async ({
       (o) => o.name === "results"
     );
     const plainOutput = response.data.outputs.find((o) => o.name === "plain");
-    if (plainOutput) {
+    if (plainOutput?.type === "STRING") {
       return {
         response: plainOutput.value,
       };
@@ -73,9 +85,16 @@ const sendMessageToEmployee = async ({
     });
 
     if (secondResponse.data.state === "FULFILLED") {
-      return {
-        response: secondResponse.data.outputs[0].value,
-      };
+      const mainOutput = secondResponse.data.outputs[0];
+      if (mainOutput?.type === "STRING") {
+        return {
+          response: mainOutput.value,
+        };
+      } else {
+        return {
+          response: `Failed to parse main output: ${mainOutput.type}`,
+        };
+      }
     } else {
       return {
         response: `Failed to parse second message: ${secondResponse.data.error.message}`,
