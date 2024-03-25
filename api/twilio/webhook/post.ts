@@ -1,7 +1,7 @@
 import { users } from "@clerk/clerk-sdk-node";
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
 import { BackendRequest } from "package/internal/types";
-import { InternalServerError, NotFoundError, VellumImage } from "vellum-ai/api";
+import { InternalServerError, VellumImage } from "vellum-ai/api";
 import { z } from "zod";
 import sendMessageToEmployee from "~/data/sendMessageToEmployee.server";
 import { Twilio } from "twilio";
@@ -49,7 +49,9 @@ const logic = async (data: BackendRequest<typeof bodySchema>) => {
     .then((r) => r[0])
     .catch(() => null);
   if (!user) {
-    throw new NotFoundError(`User not found for phone number ${data.From}`);
+    return toTwilioResponse(
+      "We did not find a registered user with this phone number. To register, please visit https://samepage.network/signup"
+    );
   }
 
   const attachments: VellumImage[] = [];
