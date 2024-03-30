@@ -122,13 +122,14 @@ type LoaderData = Awaited<ReturnType<typeof loaderCallback>>;
 
 const App = () => {
   const data = useLoaderData<LoaderData>();
+  const isDev = process.env.NODE_ENV === "development";
   return (
     <html lang="en" className="h-full">
       <head>
         <Meta />
         <Links />
       </head>
-      <body className="h-full">
+      <body className="h-full" suppressHydrationWarning={isDev}>
         <Outlet />
         <PageTransition />
         <ScrollRestoration />
