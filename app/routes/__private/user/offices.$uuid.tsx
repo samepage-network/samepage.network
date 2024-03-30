@@ -115,9 +115,6 @@ const SingleOfficePage = () => {
     schema: any;
     setStateCallback: (response: any) => void;
   }) => {
-    console.log("input", input);
-    console.log("systemMessage", systemMessage);
-    console.log("schema", schema);
     const response = await apiPost<Return>({
       path: `llm/structured-output`,
       data: {
