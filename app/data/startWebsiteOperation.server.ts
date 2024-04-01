@@ -29,7 +29,7 @@ const startWebsiteOperation = async ({
       websiteUuid,
       status,
       requestId,
-      statusType: "LAUNCH",
+      statusType,
       operationUuid,
       props,
     });

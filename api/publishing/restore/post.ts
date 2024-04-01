@@ -60,7 +60,7 @@ const logic = async ({
   const Key = `data/publishing/${websiteUuid}/${key}.json`;
   await uploadFileContent({
     Key,
-    Body: JSON.stringify({ type: "revert", operationUuid }),
+    Body: JSON.stringify({ type: "restore", operationUuid }),
   });
 
   // This try/catch would move to a background lambda fcn one day
@@ -85,10 +85,17 @@ const logic = async ({
     const filesToUpload = await listAllFiles({
       Bucket,
       Prefix: SourcePrefix,
-    });
+    })
+      .then((files) => {
+        return Array.from(files).map((f) =>
+          f.substring(SourcePrefix.length + 1)
+        );
+      })
+      .then((files) => new Set(files));
 
     if (!filesToUpload.size) {
       await logStatus("FAILURE");
+      await cxn.end();
       return { success: false };
     }
 
@@ -99,7 +106,7 @@ const logic = async ({
     })
       .then((files) => {
         return Array.from(files).filter(
-          (f) => !filesToUpload.has(f.substring(SourcePrefix.length + 1))
+          (f) => !filesToUpload.has(f.substring(Prefix.length + 1))
         );
       })
       .then((files) => new Set(files));
@@ -121,13 +128,13 @@ const logic = async ({
     for (const key of filesToUpload) {
       await s3.copyObject({
         Bucket,
-        CopySource: `${SourcePrefix}/${key}`,
+        CopySource: `/${Bucket}/${SourcePrefix}/${key}`,
         Key: `${DestinationPrefix}/${key}`,
       });
       await s3.copyObject({
         Bucket,
-        CopySource: `${SourcePrefix}/${key}`,
-        Key: `${DestinationPrefix}/${key}`,
+        CopySource: `/${Bucket}/${SourcePrefix}/${key}`,
+        Key: `${Prefix}/${key}`,
       });
     }
 
@@ -136,13 +143,14 @@ const logic = async ({
     const e = err as Error;
     console.log(e);
     await logStatus("FAILURE", { message: e.message });
-    await emailError("Deploy Failed", e);
+    await emailError("Restore Failed", e);
   } finally {
     await completeWebsiteOperation({
       operationUuid: newOperationUuid,
       requestId,
     });
   }
+  await cxn.end();
 
   return { success: true };
 };
