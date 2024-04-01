@@ -8,13 +8,14 @@ const startWebsiteOperation = async ({
   websiteUuid,
   requestId,
   statusType,
+  operationUuid = v4(),
 }: {
   websiteUuid: string;
   requestId: string;
   statusType: WebsiteStatusType;
+  operationUuid?: string;
 }) => {
   const cxn = await getMysql(requestId);
-  const operationUuid = v4();
 
   await cxn.insert(websiteOperations).values({
     websiteUuid,

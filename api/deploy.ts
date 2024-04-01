@@ -25,6 +25,7 @@ import { Json } from "package/internal/types";
 import logWebsiteStatus from "~/data/logWebsiteStatus.server";
 import getLatestOperation from "~/data/getLatestOperation.server";
 import completeWebsiteOperation from "~/data/completeWebsiteOperation.server";
+import listAllFiles from "~/data/listAllFiles.server";
 
 type PartialRecursive<T> = T extends object
   ? { [K in keyof T]?: PartialRecursive<T[K]> }
@@ -1081,27 +1082,16 @@ export const handler = async ({
     );
 
     const fileSet = new Set(filesToUpload);
-    const eTags: { [key: string]: string } = {};
-    const keysToDelete = new Set<string>();
-    const listObjectsRequest = {
+    const keysToDelete = await listAllFiles({
       Bucket,
       Prefix,
-      ContinuationToken: undefined as string | undefined,
-    };
-    let finished = false;
-    while (!finished) {
-      const { Contents, IsTruncated, NextContinuationToken } =
-        await s3.listObjectsV2(listObjectsRequest);
-      (Contents ?? [])
-        .map(({ Key = "", ETag = "" }) => {
-          eTags[Key.substring(Prefix.length)] = ETag;
-          return Key;
-        })
-        .filter((k) => !fileSet.has(k.substring(Prefix.length)))
-        .forEach((k) => keysToDelete.add(k));
-      finished = !IsTruncated;
-      listObjectsRequest.ContinuationToken = NextContinuationToken;
-    }
+    })
+      .then((files) => {
+        return Array.from(files).filter(
+          (f) => !fileSet.has(f.substring(Prefix.length))
+        );
+      })
+      .then((files) => new Set(files));
 
     if (keysToDelete.size) {
       const DeleteObjects = Array.from(keysToDelete).map((Key) => ({
