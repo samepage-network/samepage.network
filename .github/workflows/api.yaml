@@ -22,6 +22,7 @@ env:
   CLOUDFORMATION_ROLE_ARN: ${{ secrets.CLOUDFORMATION_ROLE_ARN }}
   CLOUDFRONT_HOSTED_ZONE_ID: ${{ secrets.CLOUDFRONT_HOSTED_ZONE_ID }}
   CLOUDFRONT_SECRET: ${{ secrets.CLOUDFRONT_SECRET }}
+  COMPONENTS_URL: https://samepage.network/public/scripts
   CONVERTKIT_API_KEY: ${{ secrets.CONVERTKIT_API_KEY }}
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
   GITHUB_TOKEN: ${{ secrets.TERRAFORM_GITHUB_TOKEN }}
@@ -50,3 +51,6 @@ jobs:
         run: npx ts-node scripts/cli.ts compile
       - name: deploy
         run: npx ts-node scripts/cli.ts update
+      # Temporary
+      - name: update-publishing-scripts
+        run: node scripts/temp/buildPublishingComponents.js
