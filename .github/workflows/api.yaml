@@ -10,6 +10,7 @@ on:
       - "scripts/commands/compile.ts"
       - "scripts/commands/update.ts"
       - "scripts/internal/updateLambdaFunctions.ts"
+      - "scripts/temp/buildPublishingComponents.js"
 
 env:
   API_URL: https://api.samepage.network
