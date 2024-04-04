@@ -18,51 +18,7 @@ import python from "refractor/lang/python";
 import csharp from "refractor/lang/csharp";
 import clojure from "refractor/lang/clojure";
 import hcl from "refractor/lang/hcl";
-
-export type PublishingContext = {
-  pagesToHrefs?: (page: string, uid?: string) => string;
-  components?: (c: string, ac?: string) => string | false;
-  blockReferences?: (
-    ref: string | undefined
-  ) => { text: string | undefined; page: string } | undefined;
-  marked: {
-    parseInline: (s: string) => string;
-    lastSrc: string;
-    used: boolean;
-    lexInline: typeof marked.Lexer.lexInline;
-  };
-};
-
-export type ViewType = "document" | "bullet" | "numbered";
-
-export type TextAlignment = "left" | "center" | "right" | "justify";
-
-export type TreeNode = {
-  text: string;
-  order: number;
-  children: TreeNode[];
-  parents: number[];
-  uid: string;
-  heading: number;
-  open: boolean;
-  viewType: ViewType;
-  editTime: Date;
-  textAlign: TextAlignment;
-  props: {
-    imageResize: {
-      [link: string]: {
-        height: number;
-        width: number;
-      };
-    };
-    iframe: {
-      [link: string]: {
-        height: number;
-        width: number;
-      };
-    };
-  };
-};
+import { PublishingContext } from "~/components/publishing/types";
 
 export const BLOCK_REF_REGEX = /\(\(([\w\d-]{9,10})\)\)/;
 

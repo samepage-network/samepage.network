@@ -5,8 +5,6 @@ import {
   BLOCK_REF_REGEX,
   extractTag,
   getParseInline,
-  type PublishingContext,
-  type TreeNode,
 } from "~/data/roamjsPublishingHelpers.server";
 import React from "react";
 import ReactDOMServer from "react-dom/server";
@@ -26,6 +24,11 @@ import logWebsiteStatus from "~/data/logWebsiteStatus.server";
 import getLatestOperation from "~/data/getLatestOperation.server";
 import completeWebsiteOperation from "~/data/completeWebsiteOperation.server";
 import listAllFiles from "~/data/listAllFiles.server";
+import { render as renderHeader } from "~/components/publishing/Header";
+import { render as renderSidebar } from "~/components/publishing/Sidebar";
+import { render as renderImagePreview } from "~/components/publishing/ImagePreview";
+import { render as renderFooter } from "~/components/publishing/Footer";
+import type { PublishingContext, TreeNode } from "~/components/publishing/types";
 
 type PartialRecursive<T> = T extends object
   ? { [K in keyof T]?: PartialRecursive<T[K]> }
@@ -593,11 +596,10 @@ type References = z.infer<typeof zReferences>;
 const PLUGIN_RENDER: {
   [key: string]: RenderFunction;
 } = {
-  // TODO: add plugins
-  // header: renderHeader,
-  // sidebar: renderSidebar,
-  // "image-preview": renderImagePreview,
-  // footer: renderFooter,
+  header: renderHeader,
+  sidebar: renderSidebar,
+  "image-preview": renderImagePreview,
+  footer: renderFooter,
 };
 
 const inlineTryCatch = <T>(tryFcn: () => T, catchFcn: (e: Error) => T): T => {
