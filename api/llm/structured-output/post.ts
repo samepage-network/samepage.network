@@ -48,7 +48,6 @@ export const logic = async ({ input, systemMessage, schema }: Params) => {
     const outputParser = new JsonOutputFunctionsParser();
     const chain = prompt.pipe(functionCallingModel).pipe(outputParser);
     const result = await chain.invoke({ inputText: input });
-    console.log("result", result);
 
     return {
       statusCode: 200,
