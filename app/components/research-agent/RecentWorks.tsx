@@ -38,7 +38,7 @@ export const RecentWorksGenerator = ({
     setLoadingInfo((prev) => ({ ...prev, [index]: true }));
     try {
       const response = await apiPost({
-        path: `google-books`,
+        path: `apps/google-books`,
         data: { title, author },
       });
       if (response.statusCode !== 200) {
