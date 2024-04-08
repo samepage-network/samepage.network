@@ -55,3 +55,6 @@ jobs:
       # Temporary
       - name: update-publishing-scripts
         run: node scripts/temp/buildPublishingComponents.js
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.DEPLOY_AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DEPLOY_AWS_ACCESS_SECRET }}
