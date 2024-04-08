@@ -10,7 +10,7 @@ const entryPoints = Object.fromEntries(
       .split(/(?=[A-Z])/)
       .map((s) => s.toLowerCase())
       .join("-"),
-    `./app/components/${e}`,
+    `./app/components/publishing/${e}`,
   ])
 );
 
