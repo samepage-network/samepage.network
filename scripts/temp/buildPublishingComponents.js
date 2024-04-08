@@ -6,7 +6,7 @@ const extensions = fs.readdirSync("./app/components/publishing");
 const entryPoints = Object.fromEntries(
   extensions.map((e) => [
     e
-      .substring(0, e.length - 4)
+      .replace(/\.tsx?$/, "")
       .split(/(?=[A-Z])/)
       .map((s) => s.toLowerCase())
       .join("-"),
@@ -19,7 +19,7 @@ esbuild
     entryPoints,
     minify: true,
     bundle: true,
-    outdir: "build/publishing",
+    outdir: "build/publishing/components",
     define: {
       "process.env.CLIENT_SIDE": "true",
       "process.env.BLUEPRINT_NAMESPACE": '"bp3"',
@@ -29,16 +29,16 @@ esbuild
   .then(() => {
     const s3 = new S3({});
     return Promise.all(
-      fs.readdirSync("build/publishing").map((file) => {
+      fs.readdirSync("build/publishing/components").map((file) => {
         return s3
           .putObject({
             Bucket: "samepage.network",
             Key: `public/scripts/${file}`,
-            Body: fs.createReadStream(`build/publishing/${file}`),
+            Body: fs.createReadStream(`build/publishing/components/${file}`),
             ContentType: "application/javascript",
           })
           .then(() => console.log(`Uploaded ${file}`));
       })
     );
   })
-  .then((e) => console.log("Components updated!", e));
+  .then(() => console.log("Components updated!"));
