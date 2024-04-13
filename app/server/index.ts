@@ -22,6 +22,7 @@ export const handler = createRequestHandler({
     /^\/images\/.*/,
     /^\/pdfs\/.*/,
     /^\/releases\/.*/,
+    /^\/scripts\/.*/,
     /^\/svgs\/.*/,
     /^\/videos\/.*/,
     /^\/.well-known\/.*/,

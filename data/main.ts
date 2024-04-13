@@ -42,6 +42,7 @@ import { DataAwsIamPolicyDocument } from "@cdktf/provider-aws/lib/data-aws-iam-p
 import { DataAwsCallerIdentity } from "@cdktf/provider-aws/lib/data-aws-caller-identity";
 import { GithubProvider } from "@cdktf/provider-github/lib/provider";
 import { ActionsSecret } from "@cdktf/provider-github/lib/actions-secret";
+import { S3Object } from "@cdktf/provider-aws/lib/s3-object";
 import { S3Bucket } from "@cdktf/provider-aws/lib/s3-bucket";
 import { S3BucketWebsiteConfiguration } from "@cdktf/provider-aws/lib/s3-bucket-website-configuration";
 import { S3BucketCorsConfiguration } from "@cdktf/provider-aws/lib/s3-bucket-cors-configuration";
@@ -161,6 +162,12 @@ const setupInfrastructure = async (): Promise<void> => {
           bucket: buckets[projectName].id,
         }
       );
+
+      new S3Object(this, "main_boostrap_sh", {
+        bucket: mainWebsite.bucket,
+        key: "scripts/bootstrap.sh",
+        source: "./scripts/bootstrap.sh",
+      });
 
       new S3BucketCorsConfiguration(this, "main_cors", {
         bucket: buckets[projectName].id,
