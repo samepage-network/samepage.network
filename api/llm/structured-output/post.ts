@@ -11,6 +11,8 @@ type Params = {
   input: string;
   systemMessage: string;
   schema: any;
+  langchainProject: string;
+  langchainTracingV2: string;
 };
 /**
  * This handler initializes and calls an OpenAI Functions powered
@@ -18,7 +20,16 @@ type Params = {
  *
  * https://js.langchain.com/docs/modules/chains/popular/structured_output
  */
-export const logic = async ({ input, systemMessage, schema }: Params) => {
+export const logic = async ({
+  input,
+  systemMessage,
+  schema,
+  langchainProject = "SamePage",
+  langchainTracingV2 = "true",
+}: Params) => {
+  process.env.LANGCHAIN_PROJECT = langchainProject;
+  process.env.LANGCHAIN_TRACING_V2 = langchainTracingV2;
+
   try {
     const openAIApiKey = process.env.OPENAI_API_KEY;
     if (!openAIApiKey) throw { message: "OpenAI Key is required", status: 400 };

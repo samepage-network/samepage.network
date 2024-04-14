@@ -121,6 +121,7 @@ const SingleOfficePage = () => {
         input,
         systemMessage,
         schema,
+        langchainProject: "SamePage Agent-Search",
       },
     });
 
