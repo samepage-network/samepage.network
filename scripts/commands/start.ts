@@ -16,6 +16,8 @@ const start = async ({}: {} = {}) => {
   const ngrok = fs.existsSync(configPath);
   if (ngrok) {
     const config = yaml.parse(fs.readFileSync(configPath).toString());
+    config.version = 2;
+    config.authtoken = process.env.NGROK_AUTHTOKEN;
     config.tunnels = {
       dev: {
         proto: "http",
