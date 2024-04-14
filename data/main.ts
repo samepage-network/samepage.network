@@ -163,10 +163,16 @@ const setupInfrastructure = async (): Promise<void> => {
         }
       );
 
+      new S3Object(this, "main_agent_js", {
+        bucket: mainWebsite.bucket,
+        key: "scripts/agent.js",
+        source: "./data/scripts/agent.js",
+      });
+
       new S3Object(this, "main_boostrap_sh", {
         bucket: mainWebsite.bucket,
         key: "scripts/bootstrap.sh",
-        source: "./scripts/bootstrap.sh",
+        source: "./data/scripts/bootstrap.sh",
       });
 
       new S3BucketCorsConfiguration(this, "main_cors", {
