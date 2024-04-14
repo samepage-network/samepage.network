@@ -99,6 +99,7 @@ const setupInfrastructure = async (): Promise<void> => {
         "ngrok_auth_token",
         "samepage_development_token",
         "vellum_api_key",
+        "langchain_api_key",
       ];
       const aws_access_token = new TerraformVariable(this, "aws_access_token", {
         type: "string",
