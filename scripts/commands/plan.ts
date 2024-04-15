@@ -1,6 +1,8 @@
 import child_process from "child_process";
 import compareSqlSchemas from "../../data/compareSqlSchemas";
 import fs from "fs";
+import nodeCompile from "../../package/scripts/internal/nodeCompile";
+import readDir from "../../package/scripts/internal/readDir";
 
 const patchConfigFile = (
   filename: string,
@@ -18,6 +20,13 @@ const plan = async ({
   sql?: boolean;
   tf?: boolean;
 }): Promise<number> => {
+  await nodeCompile({
+    functions: readDir("./data/scripts")
+      .filter((f) => f.endsWith(".ts"))
+      .map((f) => f.replace(/\.ts$/, "")),
+    outdir: ".",
+    root: ".",
+  });
   if (sql) {
     await compareSqlSchemas();
   } else {
