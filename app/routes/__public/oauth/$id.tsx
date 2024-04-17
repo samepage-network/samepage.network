@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { DataFunctionArgs, redirect } from "@remix-run/node";
 import getUserId from "~/data/getUserId.server";
 import { useLoaderData } from "@remix-run/react";
@@ -22,6 +22,17 @@ import AES from "crypto-js/aes";
 
 const OauthConnectionPage = (): React.ReactElement => {
   const data = useLoaderData<typeof loadData>();
+
+  const postMessage = () => {
+    if (window.opener && !window.opener.closed && "body" in data) {
+      window.opener.postMessage(data.body.accessToken, "*");
+    }
+  };
+
+  useEffect(() => {
+    postMessage();
+  }, []);
+
   return "error" in data ? (
     <div className="text-red-800">{data.error}</div>
   ) : data.success ? (
@@ -163,6 +174,7 @@ const loadData = async ({
           process.env.NODE_ENV === "development" &&
           response.body.suggestExtension,
         postInstallResult,
+        accessToken: response.body.accessToken,
       },
     };
   }
