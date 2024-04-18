@@ -27,6 +27,8 @@ env:
   CONVERTKIT_API_KEY: ${{ secrets.CONVERTKIT_API_KEY }}
   DATABASE_URL: ${{ secrets.DATABASE_URL }}
   GITHUB_TOKEN: ${{ secrets.TERRAFORM_GITHUB_TOKEN }}
+  GOOGLE_BOOKS_API_KEY: ${{ secrets.GOOGLE_BOOKS_API_KEY }}
+  LANGCHAIN_API_KEY: ${{ secrets.LANGCHAIN_API_KEY }}
   IS_PRODUCTION: 1
   ORIGIN: https://samepage.network
   OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
