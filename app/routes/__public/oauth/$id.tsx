@@ -24,8 +24,8 @@ const OauthConnectionPage = (): React.ReactElement => {
   const data = useLoaderData<typeof loadData>();
 
   const postMessage = () => {
-    if (window.opener && !window.opener.closed && "body" in data) {
-      window.opener.postMessage(data.body.accessToken, "*");
+    if (window.opener && !window.opener.closed && "accessToken" in data) {
+      window.opener.postMessage(data.accessToken, "*");
     }
   };
 
@@ -174,8 +174,8 @@ const loadData = async ({
           process.env.NODE_ENV === "development" &&
           response.body.suggestExtension,
         postInstallResult,
-        accessToken: response.body.accessToken,
       },
+      accessToken: response.body.accessToken,
     };
   }
   return response;
