@@ -88,11 +88,11 @@ const Footer = ({ links, copyright }: Props): React.ReactElement => {
             Built with
             {` `}
             <a
-              href="https://roamjs.com/extensions/static-site"
+              href="https://samepage.network"
               target="_blank"
               rel="noreferrer"
             >
-              RoamJS
+              SamePage
             </a>
           </span>
           <ul className={"roamjs-footer-social-networks"}>
