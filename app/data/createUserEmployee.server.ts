@@ -2,6 +2,10 @@ import { v4 } from "uuid";
 import getMysql from "./mysql.server";
 import { employees, employeesHistory } from "data/schema";
 import { z } from "zod";
+import { EC2 } from "@aws-sdk/client-ec2";
+
+const ec2 = new EC2({});
+const UBUNTU_SERVER_20_04_LTS = "ami-08116b9957a259459";
 
 const createUserSchema = z.object({
   name: z
@@ -30,6 +34,13 @@ const createUserEmployee = async ({
   const formData = createUserSchema.parse(data);
   const uuid = v4();
   const hiredDate = new Date();
+
+  await ec2.runInstances({
+    ImageId: UBUNTU_SERVER_20_04_LTS,
+    DryRun: true,
+    MaxCount: 1,
+    MinCount: 1,
+  });
 
   await cxn.insert(employees).values({
     uuid,
