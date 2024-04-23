@@ -412,9 +412,9 @@ const setupInfrastructure = async (): Promise<void> => {
         memorySize: 5120,
       });
 
-      const logsPolicyDoc = new DataAwsIamPolicyDocument(
+      const edgeLambdaPolicyDoc = new DataAwsIamPolicyDocument(
         this,
-        "lambda_logs_policy_doc",
+        "edge_lambda_policy_doc",
         {
           statement: [
             {
@@ -436,6 +436,11 @@ const setupInfrastructure = async (): Promise<void> => {
                 "s3:PutObject",
                 "s3:CopyObject",
                 "ses:sendEmail",
+                "ec2:DescribeInstances",
+                "ec2:StartInstances",
+                "ec2:StopInstances",
+                "ec2:TerminateInstances",
+                "ec2:RunInstances",
               ],
             },
           ],
@@ -445,7 +450,7 @@ const setupInfrastructure = async (): Promise<void> => {
       new IamRolePolicy(this, "logs_role_policy", {
         name: `${safeProjectName}-lambda-cloudfront`,
         role: edgeLambdaRole.id,
-        policy: logsPolicyDoc.json,
+        policy: edgeLambdaPolicyDoc.json,
       });
 
       const distributions = Object.fromEntries(
@@ -791,6 +796,11 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
                 "route53:ChangeResourceRecordSets",
                 "route53:ListHostedZones",
                 "route53:GetChange",
+                "ec2:DescribeInstances",
+                "ec2:StartInstances",
+                "ec2:StopInstances",
+                "ec2:TerminateInstances",
+                "ec2:RunInstances",
               ],
               resources: ["*"],
             },
