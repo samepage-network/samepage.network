@@ -452,6 +452,7 @@ export const employees = mysqlTable("employees", {
   title: varchar("title", { length: 128 }).notNull().default(""),
   hiredDate: date("created"),
   config: employeeConfigColumn,
+  instanceId: varchar("instance_id", { length: 128 }).notNull().default(""),
 });
 
 export const employeesHistory = mysqlTable("employees_history", {
@@ -463,4 +464,5 @@ export const employeesHistory = mysqlTable("employees_history", {
   config: employeeConfigColumn,
   historyUser: varchar("history_user", { length: 128 }).notNull().default(""),
   historyDate: date("history_date"),
+  instanceId: varchar("instance_id", { length: 128 }).notNull().default(""),
 });
