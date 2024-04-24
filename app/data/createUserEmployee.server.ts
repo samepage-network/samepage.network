@@ -3,9 +3,10 @@ import getMysql from "./mysql.server";
 import { employees, employeesHistory } from "data/schema";
 import { z } from "zod";
 import { EC2 } from "@aws-sdk/client-ec2";
+import { InternalServerError } from "~/data/errors.server";
 
 const ec2 = new EC2({});
-const UBUNTU_SERVER_20_04_LTS = "ami-08116b9957a259459";
+const UBUNTU_SERVER_22_04_LTS = "ami-080e1f13689e07408";
 
 const createUserSchema = z.object({
   name: z
@@ -35,12 +36,16 @@ const createUserEmployee = async ({
   const uuid = v4();
   const hiredDate = new Date();
 
-  await ec2.runInstances({
-    ImageId: UBUNTU_SERVER_20_04_LTS,
-    DryRun: true,
+  const instance = await ec2.runInstances({
+    ImageId: UBUNTU_SERVER_22_04_LTS,
     MaxCount: 1,
     MinCount: 1,
   });
+
+  const instanceId = instance.Instances?.[0]?.InstanceId;
+  if (!instanceId) {
+    throw new InternalServerError("Failed to create instance");
+  }
 
   await cxn.insert(employees).values({
     uuid,
@@ -48,6 +53,7 @@ const createUserEmployee = async ({
     title: formData.title,
     userId,
     hiredDate,
+    instanceId,
   });
 
   await cxn.insert(employeesHistory).values({
@@ -58,6 +64,7 @@ const createUserEmployee = async ({
     hiredDate,
     historyUser: userId,
     historyDate: hiredDate,
+    instanceId,
   });
 
   await cxn.end();

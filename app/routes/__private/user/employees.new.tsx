@@ -1,3 +1,4 @@
+export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { ActionFunction, redirect } from "@remix-run/node";
 import { Form } from "@remix-run/react";
 import Button from "package/components/Button";
@@ -8,7 +9,6 @@ import remixAppAction from "~/data/remixAppAction.server";
 const EmployeesNewPage = () => {
   return (
     <Form method={"post"} className={"max-w-lg"}>
-      <h3 className="text-3xl font-normal mb-12">Hire a New Employee!</h3>
       <TextInput name={"name"} label={"Name"} />
       <TextInput name={"title"} label={"Title"} />
       {/* I want an image input here: <ImageInput name={"avatar"} label={"Avatar"} /> */}
@@ -35,7 +35,7 @@ export const action: ActionFunction = (args) => {
 };
 
 export const handle = {
-  Title: "Employees",
+  Title: "Hire an Employee",
 };
 
 export default EmployeesNewPage;

@@ -1,7 +1,7 @@
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
 import {
   BadRequestError,
-  InternalServorError,
+  InternalServerError,
   NotFoundError,
 } from "~/data/errors.server";
 import axios from "axios";
@@ -28,7 +28,7 @@ const logic = ({
       } else if (r.response.status === 404) {
         throw new NotFoundError(msg);
       } else {
-        throw new InternalServorError(msg);
+        throw new InternalServerError(msg);
       }
     });
 };

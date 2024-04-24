@@ -23,6 +23,7 @@ const getUserEmployeeProfile = async ({
     .select({
       title: employees.title,
       name: employees.name,
+      instanceId: employees.instanceId,
     })
     .from(employees)
     .where(and(eq(employees.uuid, uuid), eq(employees.userId, userId)));
