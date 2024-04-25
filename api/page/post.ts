@@ -13,7 +13,7 @@ import {
   BadRequestError,
   ConflictError,
   ForbiddenError,
-  InternalServorError,
+  InternalServerError,
   MethodNotAllowedError,
   NotFoundError,
 } from "~/data/errors.server";
@@ -488,7 +488,7 @@ const logic = async (req: Record<string, unknown>) => {
           .where(eq(pageNotebookLinks.uuid, uuid));
         const [{ cid, linkUuid }] = invitedByResults;
         if (!cid)
-          throw new InternalServorError(
+          throw new InternalServerError(
             `Could not find cid for page ${page_uuid} invited by ${invited_by}:\n${JSON.stringify(
               invitedByResults
             )}`

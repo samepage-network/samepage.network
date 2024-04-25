@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm/expressions";
 import {
   NotFoundError,
   UnauthorizedError,
-  InternalServorError,
+  InternalServerError,
 } from "./errors.server";
 import getMysql from "./mysql.server";
 
@@ -36,7 +36,7 @@ const verifyUser = async ({
     .where(eq(tokens.userId, userId));
   if (!tokenRecord) {
     await cxn.end();
-    throw new InternalServorError("No token found");
+    throw new InternalServerError("No token found");
   }
   return tokenRecord;
 };
