@@ -6,6 +6,8 @@ import { v4 } from "uuid";
 import { sql as drizzleSql } from "drizzle-orm/sql";
 import { apps, quotas } from "../../data/schema";
 import stripe from "../../app/data/stripe.server";
+import readDir from "../../package/scripts/internal/readDir";
+import uploadFileContent from "../../package/backend/uploadFileContent";
 
 const PLAN_OUT_FILE = "out/migrations/apply.sql";
 
@@ -29,6 +31,17 @@ const apply = async ({
           }
         : { ...process.env },
     });
+
+    await Promise.all(
+      readDir("./data/scripts")
+        .filter((f) => !f.endsWith(".ts"))
+        .map((f) =>
+          uploadFileContent({
+            Key: `scripts/${f}`,
+            Body: fs.readFileSync(f),
+          })
+        )
+    );
   }
 
   const content = fs.existsSync(PLAN_OUT_FILE)
