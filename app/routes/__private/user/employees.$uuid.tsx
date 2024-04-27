@@ -1,9 +1,10 @@
-import { ActionFunction, LoaderFunction } from "@remix-run/node";
+import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
 import { useLoaderData, useMatches } from "@remix-run/react";
 import Button from "package/components/Button";
 import { useRef } from "react";
 import Dialog, { DialogRef } from "~/components/Dialog";
 import getUserEmployeeProfile from "~/data/getUserEmployeeProfile.server";
+import fireUserEmployee from "~/data/fireUserEmployee.server";
 import remixAppAction from "~/data/remixAppAction.server";
 import remixAppLoader from "~/data/remixAppLoader.server";
 
@@ -12,7 +13,7 @@ const EmployeeProfilePage = () => {
     useLoaderData<Awaited<ReturnType<typeof getUserEmployeeProfile>>>();
   const fireEmployeeRef = useRef<DialogRef>(null);
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col h-full">
       <h1 className="text-3xl font-semibold mb-4">{employee.title}</h1>
       <h3 className="text-md italic mb-16">{employee.instanceId}</h3>
       <div className="flex-grow">
@@ -29,6 +30,7 @@ const EmployeeProfilePage = () => {
           Fire
         </Button>
         <Dialog ref={fireEmployeeRef} title="Fire Employee">
+          <p className="my-8">Are you sure you want to fire {employee.name}?</p>
           <form action="DELETE">
             <Button intent="danger">Fire</Button>
           </form>
@@ -54,7 +56,10 @@ export const loader: LoaderFunction = (args) => {
 
 export const action: ActionFunction = (args) => {
   return remixAppAction(args, {
-    DELETE: () => {},
+    DELETE: ({ userId, params, requestId }) =>
+      fireUserEmployee({ userId, employeeId: params.uuid, requestId }).then(
+        () => redirect("/user/employees")
+      ),
   });
 };
 
