@@ -313,7 +313,7 @@ export const accessTokens = mysqlTable(
     code: varchar("code", { length: 128 }).notNull().default(""),
   },
   (accessTokens) => ({
-    notebookUserIndex: uniqueIndex("UC_notebook_uuid_user_id").on(
+    notebookUserIndex: index("IX_notebook_uuid_user_id").on(
       accessTokens.notebookUuid,
       accessTokens.userId
     ),
