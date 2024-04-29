@@ -6,6 +6,7 @@ import {
 } from "./errors.server";
 import getMysql from "./mysql.server";
 import { eq } from "drizzle-orm/expressions";
+import { EC2 } from "@aws-sdk/client-ec2";
 
 const fireUserEmployee = async ({
   userId,
@@ -22,7 +23,11 @@ const fireUserEmployee = async ({
 
   const cxn = await getMysql(requestId);
   const [employee] = await cxn
-    .select({ uuid: employees.uuid, userId: employees.userId })
+    .select({
+      uuid: employees.uuid,
+      userId: employees.userId,
+      instanceId: employees.instanceId,
+    })
     .from(employees)
     .where(eq(employees.uuid, employeeId));
   if (!employee) {
@@ -35,7 +40,10 @@ const fireUserEmployee = async ({
     );
   }
 
-  // DELETE employee
+  const ec2 = new EC2({});
+  await ec2.terminateInstances({ InstanceIds: [employee.instanceId] });
+
+  await cxn.delete(employees).where(eq(employees.uuid, employeeId));
 
   return { success: true };
 };

@@ -1,5 +1,5 @@
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
-import { useLoaderData, useMatches } from "@remix-run/react";
+import { useLoaderData, useMatches, Form } from "@remix-run/react";
 import Button from "package/components/Button";
 import { useRef } from "react";
 import Dialog, { DialogRef } from "~/components/Dialog";
@@ -31,9 +31,9 @@ const EmployeeProfilePage = () => {
         </Button>
         <Dialog ref={fireEmployeeRef} title="Fire Employee">
           <p className="my-8">Are you sure you want to fire {employee.name}?</p>
-          <form action="DELETE">
+          <Form method="delete">
             <Button intent="danger">Fire</Button>
-          </form>
+          </Form>
         </Dialog>
       </div>
     </div>
@@ -56,10 +56,15 @@ export const loader: LoaderFunction = (args) => {
 
 export const action: ActionFunction = (args) => {
   return remixAppAction(args, {
-    DELETE: ({ userId, params, requestId }) =>
-      fireUserEmployee({ userId, employeeId: params.uuid, requestId }).then(
-        () => redirect("/user/employees")
-      ),
+    DELETE: ({ userId, params, requestId, ...rest }) => {
+      console.log("params", params);
+      console.log("rest", rest);
+      return fireUserEmployee({
+        userId,
+        employeeId: params.uuid,
+        requestId,
+      }).then(() => redirect("/user/employees"));
+    },
   });
 };
 
