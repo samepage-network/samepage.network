@@ -311,12 +311,16 @@ export const accessTokens = mysqlTable(
       .notNull()
       .default(""),
     code: varchar("code", { length: 128 }).notNull().default(""),
+    createdDate: datetime("created_date")
+      .notNull()
+      .default(sql`(CURRENT_TIMESTAMP)`),
   },
   (accessTokens) => ({
     notebookUserIndex: index("IX_notebook_uuid_user_id").on(
       accessTokens.notebookUuid,
       accessTokens.userId
     ),
+    createdDateIndex: index("IX_created_date").on(accessTokens.createdDate),
   })
 );
 
