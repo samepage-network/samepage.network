@@ -28,7 +28,7 @@ import { createRoot } from "react-dom/client";
 import { v4 } from "uuid";
 import { downloadFileContent } from "~/data/downloadFile.server";
 import uploadFile from "~/data/uploadFile.server";
-import Dialog from "~/components/Dialog";
+import Dialog, { DialogRef } from "~/components/Dialog";
 import { z } from "zod";
 import { NotFoundResponse } from "package/utils/responses";
 import deleteNotebook from "~/data/deleteNotebook.server";
@@ -85,12 +85,12 @@ const SingleNotebookPage = () => {
               root.unmount();
               if (!el) parent.remove();
             };
-            root.render(
-              <div id={id}>
-                {/** @ts-ignore */}
-                <Overlay {...props} onClose={onClose} isOpen={true} />
-              </div>
+            const overlayComponent = (
+              //eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              <Overlay {...props} onClose={onClose} isOpen={true} />
             );
+            root.render(<div id={id}>{overlayComponent}</div>);
           }
           return onClose;
         },
@@ -169,12 +169,12 @@ const SingleNotebookPage = () => {
     }
     return undefined;
   }, []);
-  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const commandPaletteRef = useRef<DialogRef>(null);
   useEffect(() => {
     const listener = (e: KeyboardEvent) => {
       if (e.metaKey && e.key === "p") {
         e.preventDefault();
-        setCommandPaletteOpen(true);
+        commandPaletteRef.current?.openDialog();
       }
     };
     document.addEventListener("keydown", listener);
@@ -252,18 +252,14 @@ const SingleNotebookPage = () => {
         />
       </div>
       <div className="absolute top-4 right-4 samepage-notifications" />
-      <Dialog
-        isOpen={commandPaletteOpen}
-        onClose={() => setCommandPaletteOpen(false)}
-        title={"Command Palette"}
-      >
+      <Dialog title={"Command Palette"}>
         {commands.map((c) => (
           <div
             key={c.label}
             className={"border-b border-b-slate-800 cursor-pointer"}
             onClick={() => {
               c.callback();
-              setCommandPaletteOpen(false);
+              commandPaletteRef.current?.closeDialog();
             }}
           >
             {c.label}

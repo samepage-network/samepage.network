@@ -15,7 +15,7 @@ const Button = ({
   return (
     <button
       type="submit"
-      className={`px-6 py-3 font-semibold rounded-full shadow-sm hover:shadow-md active:shadow-none disabled:cursor-not-allowed disabled:bg-opacity-50 disabled:opacity-50 disabled:hover:shadow-none disabled:hover:bg-opacity-50 ${
+      className={`px-6 py-3 font-semibold cursor-pointer rounded-full shadow-sm hover:shadow-md active:shadow-none disabled:cursor-not-allowed disabled:bg-opacity-50 disabled:opacity-50 disabled:hover:shadow-none disabled:hover:bg-opacity-50 ${
         intent === "danger"
           ? "bg-red-500 hover:bg-red-700 active:bg-red-900 disabled:hover:bg-red-500 disabled:active:bg-red-500"
           : intent === "warning"
