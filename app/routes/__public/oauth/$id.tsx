@@ -35,6 +35,8 @@ const OauthConnectionPage = (): React.ReactElement => {
 
   return "error" in data ? (
     <div className="text-red-800">{data.error}</div>
+  ) : "accessToken" in data ? (
+    <div>This page will close.</div>
   ) : data.success ? (
     <div>
       <h1 className="text-3xl font-bold mb-2">Success!</h1>
@@ -175,20 +177,73 @@ const loadData = async ({
           response.body.suggestExtension,
         postInstallResult,
       },
-      accessToken: response.body.accessToken,
     };
   }
   return response;
 };
 
+const getAnonymousAccessToken = async ({
+  requestId,
+  params,
+  searchParams,
+}: {
+  requestId: string;
+  params: Record<string, string | undefined>;
+  searchParams: Record<string, string>;
+}) => {
+  const { id = "" } = params;
+  const { code, ...customParams } = searchParams;
+  const cxn = await getMysql(requestId);
+
+  const accessTokenByCode = await cxn
+    .select({ accessToken: accessTokens.value })
+    .from(accessTokens)
+    .where(eq(accessTokens.code, searchParams.code))
+    .execute();
+
+  if (accessTokenByCode.length)
+    return { accessToken: accessTokenByCode[0].accessToken };
+
+  const response = await apiPost(`extensions/${id}/oauth`, {
+    code,
+    customParams,
+  })
+    .then((r) => ({
+      body: zOauthResponse.parse(r),
+      success: true as const,
+    }))
+    .catch((e) => ({ body: e.message, success: false as const }));
+
+  if (response.success) {
+    await cxn
+      .insert(accessTokens)
+      .values({
+        uuid: sql`UUID()`,
+        value: response.body.accessToken,
+        code,
+        installationId: searchParams.installation_id,
+        userId: searchParams.installation_id,
+      })
+      .onDuplicateKeyUpdate({ set: { value: response.body.accessToken } });
+    return { accessToken: response.body.accessToken };
+  }
+
+  return response;
+};
+
 export const loader = async (args: DataFunctionArgs) => {
   const { request, params, context } = args;
+  const searchParams = Object.fromEntries(new URL(request.url).searchParams);
+  const requestId = parseRemixContext(context).lambdaContext.awsRequestId;
+
+  if (searchParams.anonymous === "true") {
+    return getAnonymousAccessToken({ requestId, params, searchParams });
+  }
+
   const userId = await getUserId(args);
   if (!userId) {
     return redirect(`/login?redirect=${encodeURIComponent(request.url)}`);
   }
-  const requestId = parseRemixContext(context).lambdaContext.awsRequestId;
-  const searchParams = Object.fromEntries(new URL(request.url).searchParams);
 
   // the app is using SamePage as the OAuth provider
   if (searchParams.client_uri) {
@@ -215,7 +270,6 @@ export const loader = async (args: DataFunctionArgs) => {
     );
   }
 
-  console.log(searchParams);
   if (searchParams.roamjs) {
     const [, otp, key] = searchParams.state.split("_");
     const cxn = await getMysql(requestId);

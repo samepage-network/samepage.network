@@ -307,12 +307,20 @@ export const accessTokens = mysqlTable(
       .default(""),
     value: varchar("value", { length: 1024 }).notNull().default(""),
     userId: varchar("user_id", { length: 128 }).notNull().default(""),
+    installationId: varchar("installation_id", { length: 128 })
+      .notNull()
+      .default(""),
+    code: varchar("code", { length: 128 }).notNull().default(""),
+    createdDate: datetime("created_date")
+      .notNull()
+      .default(sql`(CURRENT_TIMESTAMP)`),
   },
   (accessTokens) => ({
-    notebookUserIndex: uniqueIndex("UC_notebook_uuid_user_id").on(
+    notebookUserIndex: index("IX_notebook_uuid_user_id").on(
       accessTokens.notebookUuid,
       accessTokens.userId
     ),
+    createdDateIndex: index("IX_created_date").on(accessTokens.createdDate),
   })
 );
 
