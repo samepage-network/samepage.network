@@ -3,6 +3,7 @@ import getMysql from "./mysql.server";
 import { and, eq } from "drizzle-orm/expressions";
 import { NotFoundError } from "./errors.server";
 import { z } from "zod";
+import { EC2 } from "@aws-sdk/client-ec2";
 
 const getUserEmployeeProfileSchema = z.object({
   uuid: z.string(),
@@ -19,7 +20,7 @@ const getUserEmployeeProfile = async ({
 }) => {
   const { uuid } = getUserEmployeeProfileSchema.parse(params);
   const cxn = await getMysql(requestId);
-  const [employee] = await cxn
+  const [employeeRecord] = await cxn
     .select({
       title: employees.title,
       name: employees.name,
@@ -29,10 +30,31 @@ const getUserEmployeeProfile = async ({
     .where(and(eq(employees.uuid, uuid), eq(employees.userId, userId)));
   const responsibilities: { uuid: string }[] = [];
   await cxn.end();
-  if (!employee) {
+  if (!employeeRecord) {
     throw new NotFoundError("Employee not found");
   }
-  return { employee, responsibilities };
+
+  const ec2 = new EC2({});
+  const { instanceId, ...employee } = employeeRecord;
+  const output = await ec2.describeInstances({
+    InstanceIds: [employeeRecord.instanceId],
+  });
+  const instance = output.Reservations?.[0]?.Instances?.[0];
+  if (!instance) {
+    throw new NotFoundError("Employee instance not found");
+  }
+
+  return {
+    ...employee,
+    responsibilities,
+    instance: {
+      id: instanceId,
+      state: instance.State?.Name,
+      ipAddress: instance.PublicIpAddress,
+      dnsName: instance.PublicDnsName,
+      username: "ubuntu",
+    },
+  };
 };
 
 export default getUserEmployeeProfile;

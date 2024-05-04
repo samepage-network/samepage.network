@@ -9,16 +9,22 @@ import remixAppAction from "~/data/remixAppAction.server";
 import remixAppLoader from "~/data/remixAppLoader.server";
 
 const EmployeeProfilePage = () => {
-  const { employee, responsibilities } =
+  const employee =
     useLoaderData<Awaited<ReturnType<typeof getUserEmployeeProfile>>>();
   const fireEmployeeRef = useRef<DialogRef>(null);
   return (
     <div className="flex flex-col h-full">
       <h1 className="text-3xl font-semibold mb-4">{employee.title}</h1>
-      <h3 className="text-md italic mb-16">{employee.instanceId}</h3>
+      <div className="mb-16 border-dashed border">
+        <h3 className="text-md">{employee.instance.id}</h3>
+        <p>{employee.instance.state}</p>
+        <p>{employee.instance.dnsName}</p>
+        <p>{employee.instance.ipAddress}</p>
+        <p>{employee.instance.username}</p>
+      </div>
       <div className="flex-grow">
         <h2 className="text-2xl">Responsibilities</h2>
-        {responsibilities.map((r) => (
+        {employee.responsibilities.map((r) => (
           <div key={r.uuid}>Enter Responsibility Here</div>
         ))}
       </div>
@@ -42,10 +48,10 @@ const EmployeeProfilePage = () => {
 
 const Title = () => {
   const matches = useMatches();
-  const data = matches[3].data as Awaited<
+  const employee = matches[3].data as Awaited<
     ReturnType<typeof getUserEmployeeProfile>
   >;
-  return <span className="normal-case">{data.employee.name}</span>;
+  return <span className="normal-case">{employee.name}</span>;
 };
 
 export const handle = { Title };
@@ -56,15 +62,12 @@ export const loader: LoaderFunction = (args) => {
 
 export const action: ActionFunction = (args) => {
   return remixAppAction(args, {
-    DELETE: ({ userId, params, requestId, ...rest }) => {
-      console.log("params", params);
-      console.log("rest", rest);
-      return fireUserEmployee({
+    DELETE: ({ userId, params, requestId }) =>
+      fireUserEmployee({
         userId,
         employeeId: params.uuid,
         requestId,
-      }).then(() => redirect("/user/employees"));
-    },
+      }).then(() => redirect("/user/employees")),
   });
 };
 
