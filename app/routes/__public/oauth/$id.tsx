@@ -270,29 +270,6 @@ export const loader = async (args: DataFunctionArgs) => {
     );
   }
 
-  if (searchParams.roamjs) {
-    const [, otp, key] = searchParams.state.split("_");
-    const cxn = await getMysql(requestId);
-    const [app] = await cxn
-      .select({ id: apps.id })
-      .from(apps)
-      .where(eq(apps.code, params["id"] || ""));
-    await cxn.insert(oauthClients).values({
-      id: otp,
-      appId: app.id,
-      secret: AES.encrypt(
-        JSON.stringify({ code: searchParams.code }),
-        key
-      ).toString(),
-    });
-    await cxn.end();
-
-    return {
-      success: true,
-      roamjs: true,
-    };
-  }
-
   // SamePage is using the app as the OAuth provider
   return loadData({ userId, requestId, params, searchParams });
 };
