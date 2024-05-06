@@ -18,19 +18,22 @@ import randomString from "~/data/randomString.server";
 import { zOauthResponse } from "package/internal/types";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { apiPost } from "package/internal/apiClient";
-import AES from "crypto-js/aes";
 
 const OauthConnectionPage = (): React.ReactElement => {
   const data = useLoaderData<typeof loadData>();
-
+  console.log("pageload");
   const postMessage = () => {
+    console.log("postMessage");
+
     if (window.opener && !window.opener.closed && "accessToken" in data) {
       window.opener.postMessage(data.accessToken, "*");
     }
   };
 
   useEffect(() => {
+    console.log("useeffect");
     postMessage();
+    console.log(window);
   }, []);
 
   return "error" in data ? (
@@ -192,8 +195,7 @@ const getAnonymousAccessToken = async ({
   searchParams: Record<string, string>;
 }) => {
   const { id = "" } = params;
-  const { code, ...customParams } = searchParams;
-  const { installation_id } = searchParams;
+  const { code, installation_id, ...customParams } = searchParams;
   const cxn = await getMysql(requestId);
 
   const accessTokenByCode = await cxn
