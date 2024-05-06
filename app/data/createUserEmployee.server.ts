@@ -36,8 +36,15 @@ const createUserEmployee = async ({
   const uuid = v4();
   const hiredDate = new Date();
 
+  const keyPair = await ec2.createKeyPair({
+    KeyName: uuid,
+    KeyFormat: "pem",
+    KeyType: "rsa",
+  });
+
   const instance = await ec2.runInstances({
     ImageId: UBUNTU_SERVER_22_04_LTS,
+    KeyName: keyPair.KeyName,
     MaxCount: 1,
     MinCount: 1,
   });
@@ -54,6 +61,7 @@ const createUserEmployee = async ({
     userId,
     hiredDate,
     instanceId,
+    sshPrivateKey: keyPair.KeyMaterial,
   });
 
   await cxn.insert(employeesHistory).values({
