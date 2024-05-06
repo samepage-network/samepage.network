@@ -193,6 +193,7 @@ const getAnonymousAccessToken = async ({
 }) => {
   const { id = "" } = params;
   const { code, ...customParams } = searchParams;
+  const { installation_id } = searchParams;
   const cxn = await getMysql(requestId);
 
   const accessTokenByCode = await cxn
@@ -221,8 +222,8 @@ const getAnonymousAccessToken = async ({
         uuid: sql`UUID()`,
         value: response.body.accessToken,
         code,
-        installationId: searchParams.installation_id,
-        userId: searchParams.installation_id,
+        installationId: installation_id || "",
+        userId: installation_id || "",
       })
       .onDuplicateKeyUpdate({ set: { value: response.body.accessToken } });
     return { accessToken: response.body.accessToken };
