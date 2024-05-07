@@ -38,7 +38,7 @@ const OauthConnectionPage = (): React.ReactElement => {
           }).then((r) => {
             if (r?.accessToken) {
               setMessage("Success! This page will close.");
-              setTimeout(() => window.close(), 10000);
+              setTimeout(() => window.close(), 5000);
             } else {
               attemptAmount++;
               setTimeout(check, 1000);
