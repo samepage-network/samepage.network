@@ -4,6 +4,7 @@ import { employees, employeesHistory } from "data/schema";
 import { z } from "zod";
 import { EC2 } from "@aws-sdk/client-ec2";
 import { InternalServerError } from "~/data/errors.server";
+import AES from "crypto-js/aes";
 
 const ec2 = new EC2({});
 const UBUNTU_SERVER_22_04_LTS = "ami-080e1f13689e07408";
@@ -42,6 +43,10 @@ const createUserEmployee = async ({
     KeyType: "rsa",
   });
 
+  if (!keyPair.KeyMaterial) {
+    throw new InternalServerError("Failed to create key pair");
+  }
+
   const instance = await ec2.runInstances({
     ImageId: UBUNTU_SERVER_22_04_LTS,
     KeyName: keyPair.KeyName,
@@ -54,6 +59,11 @@ const createUserEmployee = async ({
     throw new InternalServerError("Failed to create instance");
   }
 
+  const sshPrivateKey = AES.encrypt(
+    keyPair.KeyMaterial,
+    process.env.ENCRYPTION_KEY
+  ).toString();
+
   await cxn.insert(employees).values({
     uuid,
     name: formData.name,
@@ -61,7 +71,7 @@ const createUserEmployee = async ({
     userId,
     hiredDate,
     instanceId,
-    sshPrivateKey: keyPair.KeyMaterial,
+    sshPrivateKey,
   });
 
   await cxn.insert(employeesHistory).values({
@@ -73,6 +83,7 @@ const createUserEmployee = async ({
     historyUser: userId,
     historyDate: hiredDate,
     instanceId,
+    sshPrivateKey,
   });
 
   await cxn.end();
