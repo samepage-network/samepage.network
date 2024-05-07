@@ -101,6 +101,7 @@ const setupInfrastructure = async (): Promise<void> => {
         "langchain_api_key",
         "openai_api_key",
         "google_books_api_key",
+        "google_oauth_client_secret",
       ];
       const aws_access_token = new TerraformVariable(this, "aws_access_token", {
         type: "string",
@@ -1422,17 +1423,28 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         secretName: "CLOUDFRONT_DISTRIBUTION_ID",
         plaintextValue: distributions[projectName].id,
       });
-      allVariables.map((v) => {
-        const tfVariable = new TerraformVariable(this, v, {
-          type: "string",
-        });
-        const tfSecret = new ActionsSecret(this, `${v}_secret`, {
-          repository: projectName,
-          secretName: v.toUpperCase(),
-          plaintextValue: tfVariable.value,
-        });
-        return [v, { tfVariable, tfSecret }];
+      const tfVariables = Object.fromEntries(
+        allVariables.map((v) => {
+          const tfVariable = new TerraformVariable(this, v, {
+            type: "string",
+          });
+          const tfSecret = new ActionsSecret(this, `${v}_secret`, {
+            repository: projectName,
+            secretName: v.toUpperCase(),
+            plaintextValue: tfVariable.value,
+          });
+          return [v, { tfVariable, tfSecret }];
+        })
+      );
+
+      // BEGIN These secrets for separate app repos until we centralize into a monorepo
+      new ActionsSecret(this, "google_samepage_google_oauth_client_secret", {
+        repository: "google-samepage",
+        secretName: "OAUTH_CLIENT_SECRET",
+        plaintextValue:
+          tfVariables["google_oauth_client_secret"].tfVariable.value,
       });
+      // END
 
       new ActionsSecret(this, "samepage_zone_id", {
         repository: projectName,
