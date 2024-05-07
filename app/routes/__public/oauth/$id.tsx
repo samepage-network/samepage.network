@@ -34,12 +34,11 @@ const OauthConnectionPage = (): React.ReactElement => {
         if (attemptAmount < 10) {
           apiPost({
             path: "access-token",
-            domain: "https://api.samepage.ngrok.io",
             data: { state: data.state },
           }).then((r) => {
             if (r?.accessToken) {
               setMessage("Success! This page will close.");
-              setTimeout(() => window.close(), 1000);
+              setTimeout(() => window.close(), 10000);
             } else {
               attemptAmount++;
               setTimeout(check, 1000);
@@ -124,6 +123,7 @@ const loadData = async ({
 }) => {
   const { id = "" } = params;
   const { code, state, error, ...customParams } = searchParams;
+  console.log("loadData searchParams", searchParams);
   const cxn = await getMysql(requestId);
   const [app] = await cxn
     .select({ name: apps.name, id: apps.id })
