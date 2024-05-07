@@ -102,6 +102,7 @@ const setupInfrastructure = async (): Promise<void> => {
         "openai_api_key",
         "google_books_api_key",
         "google_oauth_client_secret",
+        "encryption_key",
       ];
       const aws_access_token = new TerraformVariable(this, "aws_access_token", {
         type: "string",
