@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { DataFunctionArgs, redirect } from "@remix-run/node";
 import getUserId from "~/data/getUserId.server";
 import { useLoaderData } from "@remix-run/react";
@@ -18,14 +18,40 @@ import randomString from "~/data/randomString.server";
 import { zOauthResponse } from "package/internal/types";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { apiPost } from "package/internal/apiClient";
-import AES from "crypto-js/aes";
 
 const OauthConnectionPage = (): React.ReactElement => {
   const data = useLoaderData<typeof loadData>();
+  const [message, setMessage] = useState<string>("Please Wait");
 
   const postMessage = () => {
     if (window.opener && !window.opener.closed && "accessToken" in data) {
       window.opener.postMessage(data.accessToken, "*");
+    }
+
+    if ("state" in data) {
+      let attemptAmount = 0;
+      const check = () => {
+        if (attemptAmount < 10) {
+          apiPost({
+            path: "access-token",
+            domain: "https://api.samepage.ngrok.io",
+            data: { state: data.state },
+          }).then((r) => {
+            if (r?.accessToken) {
+              setMessage("Success! This page will close.");
+              setTimeout(() => window.close(), 1000);
+            } else {
+              attemptAmount++;
+              setTimeout(check, 1000);
+            }
+          });
+        } else {
+          setMessage(
+            "If using the app instead of the browser, please authorize in app.  Otherise please contact support."
+          );
+        }
+      };
+      setTimeout(check, 1500);
     }
   };
 
@@ -36,7 +62,7 @@ const OauthConnectionPage = (): React.ReactElement => {
   return "error" in data ? (
     <div className="text-red-800">{data.error}</div>
   ) : "accessToken" in data ? (
-    <div>This page will close.</div>
+    <div className="text-center">{message}</div>
   ) : data.success ? (
     <div>
       <h1 className="text-3xl font-bold mb-2">Success!</h1>
@@ -192,7 +218,7 @@ const getAnonymousAccessToken = async ({
   searchParams: Record<string, string>;
 }) => {
   const { id = "" } = params;
-  const { code, ...customParams } = searchParams;
+  const { code, installation_id, state, ...customParams } = searchParams;
   const cxn = await getMysql(requestId);
 
   const accessTokenByCode = await cxn
@@ -201,8 +227,12 @@ const getAnonymousAccessToken = async ({
     .where(eq(accessTokens.code, searchParams.code))
     .execute();
 
-  if (accessTokenByCode.length)
-    return { accessToken: accessTokenByCode[0].accessToken };
+  if (accessTokenByCode.length) {
+    return {
+      accessToken: accessTokenByCode[0].accessToken,
+      state: state || "",
+    };
+  }
 
   const response = await apiPost(`extensions/${id}/oauth`, {
     code,
@@ -221,11 +251,12 @@ const getAnonymousAccessToken = async ({
         uuid: sql`UUID()`,
         value: response.body.accessToken,
         code,
-        installationId: searchParams.installation_id,
-        userId: searchParams.installation_id,
+        installationId: installation_id || "",
+        userId: installation_id || "",
+        state: state || "",
       })
       .onDuplicateKeyUpdate({ set: { value: response.body.accessToken } });
-    return { accessToken: response.body.accessToken };
+    return { accessToken: response.body.accessToken, state: state || "" };
   }
 
   return response;
