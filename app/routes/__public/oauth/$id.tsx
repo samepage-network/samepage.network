@@ -21,19 +21,14 @@ import { apiPost } from "package/internal/apiClient";
 
 const OauthConnectionPage = (): React.ReactElement => {
   const data = useLoaderData<typeof loadData>();
-  console.log("pageload");
   const postMessage = () => {
-    console.log("postMessage");
-
     if (window.opener && !window.opener.closed && "accessToken" in data) {
       window.opener.postMessage(data.accessToken, "*");
     }
   };
 
   useEffect(() => {
-    console.log("useeffect");
     postMessage();
-    console.log(window);
   }, []);
 
   return "error" in data ? (
