@@ -461,6 +461,11 @@ export const employees = mysqlTable("employees", {
   hiredDate: date("created"),
   config: employeeConfigColumn,
   instanceId: varchar("instance_id", { length: 128 }).notNull().default(""),
+  sshPrivateKey: varchar("ssh_private_key", {
+    length: 4096,
+  })
+    .notNull()
+    .default(""),
 });
 
 export const employeesHistory = mysqlTable("employees_history", {
@@ -473,4 +478,9 @@ export const employeesHistory = mysqlTable("employees_history", {
   historyUser: varchar("history_user", { length: 128 }).notNull().default(""),
   historyDate: date("history_date"),
   instanceId: varchar("instance_id", { length: 128 }).notNull().default(""),
+  sshPrivateKey: varchar("ssh_private_key", {
+    length: 4096,
+  })
+    .notNull()
+    .default(""),
 });
