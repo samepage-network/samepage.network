@@ -18,11 +18,9 @@ import randomString from "~/data/randomString.server";
 import { zOauthResponse } from "package/internal/types";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { apiPost } from "package/internal/apiClient";
-import AES from "crypto-js/aes";
 
 const OauthConnectionPage = (): React.ReactElement => {
   const data = useLoaderData<typeof loadData>();
-
   const postMessage = () => {
     if (window.opener && !window.opener.closed && "accessToken" in data) {
       window.opener.postMessage(data.accessToken, "*");
@@ -192,7 +190,7 @@ const getAnonymousAccessToken = async ({
   searchParams: Record<string, string>;
 }) => {
   const { id = "" } = params;
-  const { code, ...customParams } = searchParams;
+  const { code, installation_id, ...customParams } = searchParams;
   const cxn = await getMysql(requestId);
 
   const accessTokenByCode = await cxn
@@ -221,8 +219,8 @@ const getAnonymousAccessToken = async ({
         uuid: sql`UUID()`,
         value: response.body.accessToken,
         code,
-        installationId: searchParams.installation_id,
-        userId: searchParams.installation_id,
+        installationId: installation_id || "",
+        userId: installation_id || "",
       })
       .onDuplicateKeyUpdate({ set: { value: response.body.accessToken } });
     return { accessToken: response.body.accessToken };
