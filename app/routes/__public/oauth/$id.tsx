@@ -31,7 +31,7 @@ const OauthConnectionPage = (): React.ReactElement => {
     if ("state" in data) {
       let attemptAmount = 0;
       const check = () => {
-        if (attemptAmount < 10) {
+        if (attemptAmount < 30) {
           apiPost({
             path: "access-token",
             data: { state: data.state },
