@@ -46,6 +46,7 @@ const getUserEmployeeProfile = async ({
 
   return {
     ...employee,
+    uuid,
     responsibilities,
     instance: {
       id: instanceId,

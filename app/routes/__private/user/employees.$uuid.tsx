@@ -1,5 +1,5 @@
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
-import { useLoaderData, useMatches, Form } from "@remix-run/react";
+import { useLoaderData, useMatches, Form, Link } from "@remix-run/react";
 import Button from "package/components/Button";
 import { useRef } from "react";
 import Dialog, { DialogRef } from "~/components/Dialog";
@@ -16,11 +16,19 @@ const EmployeeProfilePage = () => {
     <div className="flex flex-col h-full">
       <h1 className="text-3xl font-semibold mb-4">{employee.title}</h1>
       <div className="mb-16 border-dashed border">
-        <h3 className="text-md">{employee.instance.id}</h3>
-        <p>{employee.instance.state}</p>
-        <p>{employee.instance.dnsName}</p>
-        <p>{employee.instance.ipAddress}</p>
-        <p>{employee.instance.username}</p>
+        <h3 className="text-md">Employee Device Info</h3>
+        <p className="italic">
+          {employee.instance.id} - {employee.instance.state}
+        </p>
+        <div className="flex justify-between items-start">
+          <code>
+            ssh -i {employee.uuid}.pem {employee.instance.username}@
+            {employee.instance.dnsName}
+          </code>
+          <Link to="key" download>
+            Download Private Key
+          </Link>
+        </div>
       </div>
       <div className="flex-grow">
         <h2 className="text-2xl">Responsibilities</h2>
