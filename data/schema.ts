@@ -311,6 +311,7 @@ export const accessTokens = mysqlTable(
       .notNull()
       .default(""),
     code: varchar("code", { length: 128 }).notNull().default(""),
+    state: varchar("state", { length: 128 }).notNull().default(""),
     createdDate: datetime("created_date")
       .notNull()
       .default(sql`(CURRENT_TIMESTAMP)`),
