@@ -37,8 +37,8 @@ const OauthConnectionPage = (): React.ReactElement => {
             data: { state: data.state },
           }).then((r) => {
             if (r?.accessToken) {
-              setMessage("Success! This page will close.");
-              setTimeout(() => window.close(), 5000);
+              setMessage("Success! You may close this page.");
+              setTimeout(() => window.close(), 4000);
             } else {
               attemptAmount++;
               setTimeout(check, 1000);
@@ -46,7 +46,8 @@ const OauthConnectionPage = (): React.ReactElement => {
           });
         } else {
           setMessage(
-            "If using the app instead of the browser, please authorize in app.  Otherise please contact support."
+            `If you are using the app instead of the browser, please authorize in app.
+            Otherwise please contact support@samepage.network`
           );
         }
       };
