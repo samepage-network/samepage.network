@@ -22,7 +22,7 @@ import { apiPost } from "package/internal/apiClient";
 const OauthConnectionPage = (): React.ReactElement => {
   const data = useLoaderData<typeof loadData>();
   const [message, setMessage] = useState<string>("Please Wait");
-
+  
   const postMessage = () => {
     if (window.opener && !window.opener.closed && "accessToken" in data) {
       window.opener.postMessage(data.accessToken, "*");
@@ -220,6 +220,7 @@ const getAnonymousAccessToken = async ({
 }) => {
   const { id = "" } = params;
   const { code, installation_id, state, ...customParams } = searchParams;
+
   const cxn = await getMysql(requestId);
 
   const accessTokenByCode = await cxn
