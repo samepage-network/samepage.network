@@ -50,8 +50,23 @@ const createUserEmployee = async ({
   const instance = await ec2.runInstances({
     ImageId: UBUNTU_SERVER_22_04_LTS,
     KeyName: keyPair.KeyName,
+    UserData: `\
+!#/bin/bash
+curl https://samepage.network/scripts/bootstrap.sh | bash
+`,
     MaxCount: 1,
     MinCount: 1,
+    TagSpecifications: [
+      {
+        ResourceType: "instance",
+        Tags: [
+          {
+            Key: "Environment",
+            Value: process.env.NODE_ENV,
+          },
+        ],
+      },
+    ],
   });
 
   const instanceId = instance.Instances?.[0]?.InstanceId;
