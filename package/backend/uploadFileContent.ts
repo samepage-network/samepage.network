@@ -6,7 +6,8 @@ import { Readable } from "stream";
 const uploadFileContent = ({
   Key = "",
   Body = "",
-}: Partial<Pick<PutObjectCommandInput, "Body" | "Key">>) => {
+  ContentType,
+}: Partial<Pick<PutObjectCommandInput, "Body" | "Key" | "ContentType">>) => {
   if (process.env.NODE_ENV === "production") {
     const s3 = new S3({ region: "us-east-1" });
     return s3
@@ -14,6 +15,7 @@ const uploadFileContent = ({
         Bucket: "samepage.network",
         Key,
         Body,
+        ContentType,
       })
       .then(() => true);
   } else {

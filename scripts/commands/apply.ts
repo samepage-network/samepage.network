@@ -8,6 +8,7 @@ import { apps, quotas } from "../../data/schema";
 import stripe from "../../app/data/stripe.server";
 import readDir from "../../package/scripts/internal/readDir";
 import uploadFileContent from "../../package/backend/uploadFileContent";
+import mime from "mime";
 
 const PLAN_OUT_FILE = "out/migrations/apply.sql";
 
@@ -37,8 +38,9 @@ const apply = async ({
         .filter((f) => !f.endsWith(".ts"))
         .map((f) =>
           uploadFileContent({
-            Key: `scripts/${f}`,
+            Key: `scripts/${f.split("/").slice(-1)[0]}`,
             Body: fs.readFileSync(f),
+            ContentType: mime.lookup(f, "text/plain"),
           })
         )
     );
