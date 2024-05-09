@@ -811,9 +811,12 @@ export const zOauthResponse = z.object({
   workspace: z.string(),
   suggestExtension: z.boolean().optional(),
   postInstall: z.boolean().optional(),
+  installationId: z.string().optional(),
   label: z.string().optional(),
   redirectUrl: z.string().optional(),
 });
+
+export type OauthResponse = z.infer<typeof zOauthResponse>;
 
 const zConditionBase = z.object({
   source: z.string(),
