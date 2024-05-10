@@ -1,6 +1,7 @@
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import { ActionFunction, redirect } from "@remix-run/node";
 import { Form, useSearchParams } from "@remix-run/react";
+import emailError from "package/backend/emailError.server";
 import Button from "package/components/Button";
 import TextInput from "package/components/TextInput";
 import createUserEmployee from "~/data/createUserEmployee.server";
@@ -39,9 +40,18 @@ export const action: ActionFunction = (args) => {
       })
         .then(({ employeeUuid }) => redirect(`/user/employees/${employeeUuid}`))
         .catch((error) => {
-          console.error("Failed to create employee:", error);
+          const moreInfo = (
+            <>
+              <p>Request ID: {requestId}</p>
+              <p>User ID: {userId}</p>
+              <p>Data: {JSON.stringify(data)}</p>
+            </>
+          );
+          emailError("Failed to create employee", error, moreInfo);
           return redirect(
-            `/user/employees/new?error=Failed to create employee`
+            `/user/employees/new?error=${encodeURIComponent(
+              "Failed to create employee"
+            )}`
           );
         }),
   });
