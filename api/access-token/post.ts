@@ -27,18 +27,18 @@ const fetchAccessToken = async (
   field: MySqlColumn<Column>,
   value: string
 ) => {
-  const accessTokenByCode = await cxn
+  const accessTokensByCode = await cxn
     .select({ accessToken: accessTokens.value })
     .from(accessTokens)
     .where(eq(field, value));
 
-  if (!accessTokenByCode) {
+  if (!accessTokensByCode.length) {
     throw new UnauthorizedError(
       "No access token found for the provided identifier"
     );
   }
 
-  return accessTokenByCode[0]?.accessToken;
+  return accessTokensByCode[0]?.accessToken;
 };
 
 const maskString = (s = "") =>
