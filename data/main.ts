@@ -432,6 +432,7 @@ const setupInfrastructure = async (): Promise<void> => {
                 "ec2:StopInstances",
                 "ec2:TerminateInstances",
                 "ec2:RunInstances",
+                "ec2:createKeyPair",
               ],
             },
           ],
