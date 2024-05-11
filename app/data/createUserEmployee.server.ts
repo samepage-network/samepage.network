@@ -50,10 +50,12 @@ const createUserEmployee = async ({
   const instance = await ec2.runInstances({
     ImageId: UBUNTU_SERVER_22_04_LTS,
     KeyName: keyPair.KeyName,
-    UserData: `\
+    UserData: Buffer.from(
+      `\
 !#/bin/bash
 curl https://samepage.network/scripts/bootstrap.sh | bash
-`,
+`
+    ).toString("base64"),
     MaxCount: 1,
     MinCount: 1,
     TagSpecifications: [
