@@ -29,10 +29,11 @@ const sendEmail = async ({
       Data,
     },
   };
-  // if (process.env.NODE_ENV === "development") {
-  //   const MessageId = mockEmailLocally(Body);
-  //   return MessageId;
-  // }
+  // custom ses client above should already be doing this, but is failing
+  if (process.env.NODE_ENV === "development") {
+    const MessageId = mockEmailLocally(Body);
+    return MessageId;
+  }
   return ses
     .sendEmail({
       Destination: {

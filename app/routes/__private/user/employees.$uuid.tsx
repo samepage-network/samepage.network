@@ -15,9 +15,9 @@ const EmployeeProfilePage = () => {
   return (
     <div className="flex flex-col h-full">
       <h1 className="text-3xl font-semibold mb-4">{employee.title}</h1>
-      <div className="mb-16 border-dashed border">
-        <h3 className="text-md">Employee Device Info</h3>
-        <p className="italic">
+      <div className="mb-16 border-dashed border p-4">
+        <h3 className="text-lg font-bold mb-4">Employee Device Info</h3>
+        <p className="italic mb-2">
           {employee.instance.id} - {employee.instance.state}
         </p>
         <div className="flex justify-between items-start">
@@ -25,7 +25,12 @@ const EmployeeProfilePage = () => {
             ssh -i {employee.uuid}.pem {employee.instance.username}@
             {employee.instance.dnsName}
           </code>
-          <Link to="key" download>
+          <Link
+            to="key"
+            download={`${employee.uuid}.pem`}
+            className="underline text-sky-500"
+            reloadDocument
+          >
             Download Private Key
           </Link>
         </div>
