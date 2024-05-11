@@ -4,6 +4,7 @@ import { employees, employeesHistory } from "data/schema";
 import { z } from "zod";
 import { EC2 } from "@aws-sdk/client-ec2";
 import { InternalServerError } from "~/data/errors.server";
+import AES from "crypto-js/aes";
 
 const ec2 = new EC2({});
 const UBUNTU_SERVER_22_04_LTS = "ami-080e1f13689e07408";
@@ -36,16 +37,49 @@ const createUserEmployee = async ({
   const uuid = v4();
   const hiredDate = new Date();
 
+  const keyPair = await ec2.createKeyPair({
+    KeyName: uuid,
+    KeyFormat: "pem",
+    KeyType: "rsa",
+  });
+
+  if (!keyPair.KeyMaterial) {
+    throw new InternalServerError("Failed to create key pair");
+  }
+
   const instance = await ec2.runInstances({
     ImageId: UBUNTU_SERVER_22_04_LTS,
+    KeyName: keyPair.KeyName,
+    UserData: Buffer.from(
+      `\
+!#/bin/bash
+curl https://samepage.network/scripts/bootstrap.sh | bash
+`
+    ).toString("base64"),
     MaxCount: 1,
     MinCount: 1,
+    TagSpecifications: [
+      {
+        ResourceType: "instance",
+        Tags: [
+          {
+            Key: "Environment",
+            Value: process.env.NODE_ENV,
+          },
+        ],
+      },
+    ],
   });
 
   const instanceId = instance.Instances?.[0]?.InstanceId;
   if (!instanceId) {
     throw new InternalServerError("Failed to create instance");
   }
+
+  const sshPrivateKey = AES.encrypt(
+    keyPair.KeyMaterial,
+    process.env.ENCRYPTION_KEY
+  ).toString();
 
   await cxn.insert(employees).values({
     uuid,
@@ -54,6 +88,7 @@ const createUserEmployee = async ({
     userId,
     hiredDate,
     instanceId,
+    sshPrivateKey,
   });
 
   await cxn.insert(employeesHistory).values({
@@ -65,6 +100,7 @@ const createUserEmployee = async ({
     historyUser: userId,
     historyDate: hiredDate,
     instanceId,
+    sshPrivateKey,
   });
 
   await cxn.end();

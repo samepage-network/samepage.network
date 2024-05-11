@@ -1,5 +1,5 @@
 import { ActionFunction, LoaderFunction, redirect } from "@remix-run/node";
-import { useLoaderData, useMatches, Form } from "@remix-run/react";
+import { useLoaderData, useMatches, Form, Link } from "@remix-run/react";
 import Button from "package/components/Button";
 import { useRef } from "react";
 import Dialog, { DialogRef } from "~/components/Dialog";
@@ -9,16 +9,35 @@ import remixAppAction from "~/data/remixAppAction.server";
 import remixAppLoader from "~/data/remixAppLoader.server";
 
 const EmployeeProfilePage = () => {
-  const { employee, responsibilities } =
+  const employee =
     useLoaderData<Awaited<ReturnType<typeof getUserEmployeeProfile>>>();
   const fireEmployeeRef = useRef<DialogRef>(null);
   return (
     <div className="flex flex-col h-full">
       <h1 className="text-3xl font-semibold mb-4">{employee.title}</h1>
-      <h3 className="text-md italic mb-16">{employee.instanceId}</h3>
+      <div className="mb-16 border-dashed border p-4">
+        <h3 className="text-lg font-bold mb-4">Employee Device Info</h3>
+        <p className="italic mb-2">
+          {employee.instance.id} - {employee.instance.state}
+        </p>
+        <div className="flex justify-between items-start">
+          <code>
+            ssh -i {employee.uuid}.pem {employee.instance.username}@
+            {employee.instance.dnsName}
+          </code>
+          <Link
+            to="key"
+            download={`${employee.uuid}.pem`}
+            className="underline text-sky-500"
+            reloadDocument
+          >
+            Download Private Key
+          </Link>
+        </div>
+      </div>
       <div className="flex-grow">
         <h2 className="text-2xl">Responsibilities</h2>
-        {responsibilities.map((r) => (
+        {employee.responsibilities.map((r) => (
           <div key={r.uuid}>Enter Responsibility Here</div>
         ))}
       </div>
@@ -42,10 +61,10 @@ const EmployeeProfilePage = () => {
 
 const Title = () => {
   const matches = useMatches();
-  const data = matches[3].data as Awaited<
+  const employee = matches[3].data as Awaited<
     ReturnType<typeof getUserEmployeeProfile>
   >;
-  return <span className="normal-case">{data.employee.name}</span>;
+  return <span className="normal-case">{employee.name}</span>;
 };
 
 export const handle = { Title };
@@ -56,15 +75,12 @@ export const loader: LoaderFunction = (args) => {
 
 export const action: ActionFunction = (args) => {
   return remixAppAction(args, {
-    DELETE: ({ userId, params, requestId, ...rest }) => {
-      console.log("params", params);
-      console.log("rest", rest);
-      return fireUserEmployee({
+    DELETE: ({ userId, params, requestId }) =>
+      fireUserEmployee({
         userId,
         employeeId: params.uuid,
         requestId,
-      }).then(() => redirect("/user/employees"));
-    },
+      }).then(() => redirect("/user/employees")),
   });
 };
 

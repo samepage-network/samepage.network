@@ -1,8 +1,7 @@
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
 import { z } from "zod";
-import fs from "fs";
 import { BackendRequest } from "package/internal/types";
-import { v4 } from "uuid";
+import mockEmailLocally from "package/backend/mockEmailLocally.server";
 
 const rootAwsArgs = z.object({
   Action: z.literal("SendEmail"),
@@ -28,12 +27,7 @@ const logic = (args: BackendRequest<typeof rootAwsArgs>) => {
     Message: { Body },
     requestId,
   } = args;
-  const MessageId = v4();
-  fs.writeFileSync(`./public/data/emails/${MessageId}.html`, Body.Html.Data);
-  console.log(
-    "Email stored",
-    `${process.env.ORIGIN}/admin/emails/${MessageId}`
-  );
+  const MessageId = mockEmailLocally(Body);
   return {
     SendEmailResponse: {
       _attributes: { xmlns: "http://ses.amazonaws.com/doc/2010-12-01/" },

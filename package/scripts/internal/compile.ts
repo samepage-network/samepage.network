@@ -21,6 +21,7 @@ declare global {
       API_URL: string;
       AWS_ENDPOINT?: string;
       CLERK_PUBLISHABLE_KEY: string;
+      ENCRYPTION_KEY: string;
       GITHUB_TOKEN: string;
       NODE_ENV: "development" | "production" | "test";
       ORIGIN: string;
