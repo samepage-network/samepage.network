@@ -793,6 +793,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
                 "ec2:StopInstances",
                 "ec2:TerminateInstances",
                 "ec2:RunInstances",
+                "ec2:createKeyPair",
               ],
               resources: ["*"],
             },

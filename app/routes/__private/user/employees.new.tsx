@@ -39,7 +39,7 @@ export const action: ActionFunction = (args) => {
         userId,
       })
         .then(({ employeeUuid }) => redirect(`/user/employees/${employeeUuid}`))
-        .catch((error) => {
+        .catch(async (error) => {
           const moreInfo = (
             <>
               <p>Request ID: {requestId}</p>
@@ -47,7 +47,7 @@ export const action: ActionFunction = (args) => {
               <p>Data: {JSON.stringify(data)}</p>
             </>
           );
-          emailError("Failed to create employee", error, moreInfo);
+          await emailError("Failed to create employee", error, moreInfo);
           return redirect(
             `/user/employees/new?error=${encodeURIComponent(
               "Failed to create employee"
