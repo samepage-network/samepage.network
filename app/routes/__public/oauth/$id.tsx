@@ -219,6 +219,8 @@ const getAnonymousAccessToken = async ({
   const { id = "" } = params;
   const { code, installation_id, state, ...customParams } = searchParams;
   const cxn = await getMysql(requestId);
+  console.log("search params:");
+  console.log(searchParams);
 
   const accessTokenByCode = await cxn
     .select({ accessToken: accessTokens.value })
@@ -243,19 +245,26 @@ const getAnonymousAccessToken = async ({
     }))
     .catch((e) => ({ body: e.message, success: false as const }));
 
+  console.log("response", response);
+
   if (response.success) {
-    await cxn
-      .insert(accessTokens)
-      .values({
-        uuid: sql`UUID()`,
-        value: response.body.accessToken,
-        code,
-        installationId: installation_id || "",
-        userId: installation_id || "",
-        state: state || "",
-      })
-      .onDuplicateKeyUpdate({ set: { value: response.body.accessToken } });
-    return { accessToken: response.body.accessToken, state: state || "" };
+    try {
+      await cxn
+        .insert(accessTokens)
+        .values({
+          uuid: sql`UUID()`,
+          value: response.body.accessToken,
+          code,
+          installationId: installation_id || "",
+          userId: installation_id || "",
+          state: state || "",
+        })
+        .onDuplicateKeyUpdate({ set: { value: response.body.accessToken } });
+      return { accessToken: response.body.accessToken, state: state || "" };
+    } catch (error) {
+      console.error("Failed to insert or update access token:", error);
+      return { error: "Database operation failed." };
+    }
   }
 
   return response;
