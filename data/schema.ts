@@ -485,3 +485,15 @@ export const employeesHistory = mysqlTable("employees_history", {
     .notNull()
     .default(""),
 });
+
+export const employeeInboxMessages = mysqlTable("employee_inbox_messages", {
+  uuid: primaryUuid(),
+  status: mysqlEnum("status", ["unread", "read", "archived"])
+    .notNull()
+    .default("unread"),
+  eventId: varchar("event_id", { length: 128 }).notNull().default(""),
+  appId: int("app_id").notNull().default(0),
+  createdDate: date("created"),
+  from: varchar("from", { length: 128 }).notNull().default(""),
+  context: json<JSONData>("context").notNull().default({}),
+});
