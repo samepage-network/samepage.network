@@ -219,6 +219,8 @@ const getAnonymousAccessToken = async ({
   const { id = "" } = params;
   const { code, installation_id, state, ...customParams } = searchParams;
   const cxn = await getMysql(requestId);
+  console.log("search params:");
+  console.log(searchParams);
 
   const accessTokenByCode = await cxn
     .select({ accessToken: accessTokens.value })
@@ -242,6 +244,8 @@ const getAnonymousAccessToken = async ({
       success: true as const,
     }))
     .catch((e) => ({ body: e.message, success: false as const }));
+
+  console.log("response", response);
 
   if (response.success) {
     await cxn
