@@ -25,6 +25,15 @@ jobs:
     # runs-on: ubuntu-22.04
     # c8 was not picking up coverage on package/components in 20.04 - maybe try in the future with 22.04
     runs-on: macos-latest
+    services:
+      mysql:
+        image: mysql:5.7
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: samepage_network
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        ports:
+          - 3306:3306
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
@@ -38,8 +47,6 @@ jobs:
       - name: setup mysql + playwright
         run: |
           npx playwright install chromium
-          brew install mysql
-          brew services start mysql
           mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'" -uroot
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
           npx ts-node scripts/cli.ts plan --sql
