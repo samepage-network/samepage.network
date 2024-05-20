@@ -39,7 +39,7 @@ jobs:
         run: |
           npx playwright install chromium
           brew install mysql
-          /usr/local/opt/mysql/bin/mysql.server start
+          brew services start mysql
           mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'" -uroot
           mysql -e "CREATE DATABASE samepage_network" -uroot -proot
           npx ts-node scripts/cli.ts plan --sql
