@@ -139,6 +139,7 @@ const loadData = async ({
     code,
     state,
     userId,
+    grant_type: "authorization_code",
     customParams,
   })
     .then((r) => ({
