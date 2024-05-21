@@ -21,7 +21,7 @@ env:
   WEB_SOCKET_URL: ws://localhost:3003
 
 jobs:
-  deploy:
+  test:
     runs-on: ubuntu-22.04
     services:
       mysql:
