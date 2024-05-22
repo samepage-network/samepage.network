@@ -236,6 +236,8 @@ const getAnonymousAccessToken = async ({
 
   const response = await apiPost(`extensions/${id}/oauth`, {
     code,
+    state,
+    grant_type: "authorization_code",
     customParams,
   })
     .then((r) => ({
