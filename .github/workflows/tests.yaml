@@ -43,7 +43,6 @@ jobs:
       - name: setup mysql + playwright
         run: |
           npx playwright install chromium
-          mysql --host 127.0.0.1 --port 3306 -uroot -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'"
           mysql --host 127.0.0.1 --port 3306 -uroot -proot -e "CREATE DATABASE samepage_network"
           npx ts-node scripts/cli.ts plan --sql
           npx ts-node scripts/cli.ts apply --sql --bare
