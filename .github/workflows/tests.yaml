@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-22.04
     services:
       mysql:
-        image: mysql:5.7
+        image: mysql:8.0.34
         env:
           MYSQL_ROOT_PASSWORD: root
           MYSQL_DATABASE: samepage_network
