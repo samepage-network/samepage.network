@@ -12,20 +12,28 @@ const EmployeesNewPage = () => {
   const errorMessage = searchParams.get("error");
 
   return (
-    <Form method={"post"} className={"max-w-lg"}>
+    <Form method={"post"} className={"max-w-lg flex-col"}>
       <TextInput name={"name"} label={"Name"} />
       <TextInput name={"title"} label={"Title"} />
       {/* I want an image input here: <ImageInput name={"avatar"} label={"Avatar"} /> */}
-      <p className="mb-4">
-        I agree to receive notification and response SMS from (833) 659-7438.
-        Msg {"&"} data rates may apply. Reply YOU'RE FIRED to opt-out.
-      </p>
-      {errorMessage && (
-        <p className="text-red-500 mb-4">
-          {errorMessage}. Please contact support@samepage.network.
+      <div className="flex-grow">
+        <h2 className="text-2xl font-bold mb-8">Contract</h2>
+        <p className="mb-4">
+          I agree to pay the employee a monthly salary of $500/month.
         </p>
-      )}
-      <Button>Hire</Button>
+        <p className="mb-4">
+          I agree to receive notification and response SMS from (833) 659-7438.
+          Msg {"&"} data rates may apply. Reply YOU'RE FIRED to opt-out.
+        </p>
+      </div>
+      <div className="flex gap-4">
+        <Button>Hire</Button>
+        {errorMessage && (
+          <p className="text-red-500 mb-4">
+            {errorMessage}. Please contact support@samepage.network.
+          </p>
+        )}
+      </div>
     </Form>
   );
 };

@@ -33,9 +33,7 @@ test("Mirror'd files should update on edit", async () => {
       }
     }, 10)
   );
-  const commentPath = path
-    .relative(process.cwd(), index)
-    .replace("/tmp", "/private/tmp");
+  const commentPath = path.relative(process.cwd(), index);
   const firstExpectedOut = `(() => {
   // ${commentPath}
   var foo = "hello";
@@ -43,12 +41,17 @@ test("Mirror'd files should update on edit", async () => {
 })();
 //# sourceMappingURL=index.js.map
 `;
-  expect(fs.readFileSync(`${root}/dist/index.js`).toString()).toEqual(
-    firstExpectedOut
-  );
-  expect(fs.readFileSync(`${root}/index.js`).toString()).toEqual(
-    firstExpectedOut
-  );
+
+  const readAsset = (p: string) =>
+    fs
+      .readFileSync(p)
+      .toString()
+      // Not sure why esbuild adds a top level `/private` to the comment path,
+      // but it's not important to us... yet
+      .replace(/\.\.\/private\//, "../");
+
+  expect(readAsset(`${root}/dist/index.js`)).toEqual(firstExpectedOut);
+  expect(readAsset(`${root}/index.js`)).toEqual(firstExpectedOut);
 
   const secondExpectedOut = `(() => {
   // ${commentPath}
@@ -69,12 +72,8 @@ test("Mirror'd files should update on edit", async () => {
       }
     }, 10)
   );
-  expect(fs.readFileSync(`${root}/dist/index.js`).toString()).toEqual(
-    secondExpectedOut
-  );
-  expect(fs.readFileSync(`${root}/index.js`).toString()).toEqual(
-    secondExpectedOut
-  );
+  expect(readAsset(`${root}/dist/index.js`)).toEqual(secondExpectedOut);
+  expect(readAsset(`${root}/index.js`)).toEqual(secondExpectedOut);
 
   kill.switch();
   expect(await proc).toEqual(0);

@@ -21,10 +21,17 @@ env:
   WEB_SOCKET_URL: ws://localhost:3003
 
 jobs:
-  deploy:
-    # runs-on: ubuntu-22.04
-    # c8 was not picking up coverage on package/components in 20.04 - maybe try in the future with 22.04
-    runs-on: macos-latest
+  test:
+    runs-on: ubuntu-22.04
+    services:
+      mysql:
+        image: mysql:8.0.34
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: samepage_network
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        ports:
+          - 3306:3306
     steps:
       - uses: actions/checkout@v3
       - uses: actions/cache@v3
@@ -33,27 +40,15 @@ jobs:
           key: ${{ hashFiles('**/package-lock.json') }}
       - name: install
         run: npm install
-          # sudo systemctl start mysql.service
-          # node scripts/debug.js
       - name: setup mysql + playwright
         run: |
           npx playwright install chromium
-          brew install mysql
-          /usr/local/opt/mysql/bin/mysql.server start
-          mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'root'" -uroot
-          mysql -e "CREATE DATABASE samepage_network" -uroot -proot
           npx ts-node scripts/cli.ts plan --sql
           npx ts-node scripts/cli.ts apply --sql --bare
           npx ngrok authtoken $NGROK_AUTH_TOKEN
-      # We separated unit tests and integration tests because c8 was having a hard time consolidating reports - but code cov wasn't!
       - name: Unit Tests
         run: npm t -- --proj unit
       - name: Upload Unit Test Coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-      # These are struggling - invest again if this project ever hits $100K MRR
-      # - name: Integration Tests
-      #   run: npm t -- --proj integration
-      # - name: Upload Integration Test Coverage to Codecov
-      #   uses: codecov/codecov-action@v3

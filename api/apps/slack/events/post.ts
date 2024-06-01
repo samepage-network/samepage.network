@@ -48,7 +48,7 @@ const zArgs = z
       event_time: z.number(),
       authorizations: z
         .object({
-          enterprise_id: z.string(),
+          enterprise_id: z.string().nullable(),
           team_id: z.string(),
           user_id: z.string(),
           is_bot: z.boolean(),
