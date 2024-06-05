@@ -306,6 +306,7 @@ export const accessTokens = mysqlTable(
       .notNull()
       .default(""),
     value: varchar("value", { length: 1024 }).notNull().default(""),
+    refreshToken: varchar("refresh_token", { length: 1024 }),
     userId: varchar("user_id", { length: 128 }).notNull().default(""),
     installationId: varchar("installation_id", { length: 128 })
       .notNull()
