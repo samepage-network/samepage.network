@@ -5,7 +5,7 @@ import {
   tokenNotebookLinks,
   tokens,
 } from "data/schema";
-import { and, eq } from "drizzle-orm/expressions";
+import { and, desc, eq } from "drizzle-orm/expressions";
 import {
   GetAccessTokenResponse,
   zGetAccessTokenPayload,
@@ -48,7 +48,8 @@ export const handler: Handler<unknown, GetAccessTokenResponse> = async (
         eq(accessTokens.notebookUuid, notebookUuid),
         eq(tokenNotebookLinks.tokenUuid, tokenUuid)
       )
-    );
+    )
+    .orderBy(desc(accessTokens.createdDate));
   if (!accessTokenRecord) {
     throw new Error("No access token found");
   }
