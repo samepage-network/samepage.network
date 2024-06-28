@@ -1,10 +1,6 @@
 const unbase64 =
-  typeof window !== "undefined" && typeof window.atob === "function"
+  typeof window !== "undefined"
     ? (s: string) => window.atob(s)
-    : typeof Buffer !== "undefined"
-    ? (s: string) => Buffer.from(s, "base64").toString("binary")
-    : () => {
-        throw new Error("No base64 decoding function available");
-      };
+    : (s: string) => Buffer.from(s, "base64").toString();
 
 export default unbase64;
