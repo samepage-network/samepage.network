@@ -43,7 +43,7 @@ const UserDashboard = ({
 };
 
 const TABS: Tab[] = [
-  { id: "employees", label: "Empoyees", icon: "employees" },
+  // { id: "employees", label: "Empoyees", icon: "employees" },
   { id: "offices", label: "Offices", icon: "offices" },
   { id: "notebooks", label: "Notebooks", icon: "book" },
 ];
