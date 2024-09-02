@@ -22,6 +22,14 @@ import {
 import { sql } from "drizzle-orm/sql";
 import { JSONData } from "package/internal/types";
 import { z } from "zod";
+// import { ArtifactCategoryNames, ArtifactStatuses } from "~/routes/__private/user/artifacts";
+
+// build issue "Error: Cannot find module '~/routes/__private/user/artifacts'""
+// TODO move these
+export const ArtifactStatuses = ["draft", "live"] as const;
+export type ArtifactStatus = typeof ArtifactStatuses[number];
+export const ArtifactCategoryNames = ["Narrative", "Chatbot"] as const;
+export type ArtifactCategoryName = typeof ArtifactCategoryNames[number];
 
 // TODO - CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci (after varchar)
 
@@ -497,4 +505,19 @@ export const employeeInboxMessages = mysqlTable("employee_inbox_messages", {
   createdDate: date("created"),
   from: varchar("from", { length: 128 }).notNull().default(""),
   context: json<JSONData>("context").notNull().default({}),
+});
+
+export const artifacts = mysqlTable("artifacts", {
+  createdDate: date("created"),
+  uuid: primaryUuid(),
+  userId: varchar("user_id", { length: 128 }).notNull().default(""),
+  category: mysqlEnum("category", ArtifactCategoryNames).notNull(),
+  title: varchar("title", { length: 128 }).notNull().default(""),
+  status: mysqlEnum("status", ArtifactStatuses).notNull().default("draft"),
+});
+
+export const artifactsCategories = mysqlTable("artifacts_categories", {
+  uuid: primaryUuid(),
+  name: varchar("name", { length: 128 }).notNull().default(""),
+  description: varchar("description", { length: 128 }).notNull().default(""),
 });

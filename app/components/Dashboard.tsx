@@ -4,8 +4,10 @@ import BookIcon from "@heroicons/react/outline/BookOpenIcon";
 import ChevronRightIcon from "@heroicons/react/outline/ChevronRightIcon";
 import UserGroupIcon from "@heroicons/react/outline/UserGroupIcon";
 import OfficeBuildingIcon from "@heroicons/react/solid/OfficeBuildingIcon";
+import PuzzleIcon from "@heroicons/react/solid/PuzzleIcon";
 
 const ICONS = {
+  artifacts: PuzzleIcon,
   book: BookIcon,
   default: ChevronRightIcon,
   employees: UserGroupIcon,
