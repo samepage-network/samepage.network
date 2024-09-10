@@ -81,12 +81,13 @@ export const action: ActionFunction = (args) => {
     const title = data.title?.[0] || "";
     const content = data.content?.[0] || "";
     const status = data.status?.[0] || "draft";
+    const category = data.category?.[0] || "";
+
     if (!isValidEnumValue(status, artifactStatuses))
       throw new Error("Invalid status");
-    const category = data.category?.[0] || "";
-    console.log("category", category);
     if (!isValidEnumValue(category, artifactCategoryNames))
       throw new Error("Invalid category");
+
     await createArtifact({
       requestId,
       uuid: v4(),

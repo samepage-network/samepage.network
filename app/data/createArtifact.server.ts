@@ -10,14 +10,6 @@ const createArtifact = async ({
   data,
   status,
 }: Artifact & { requestId: string }) => {
-  console.log("createArtifact", {
-    requestId,
-    userId,
-    title,
-    category,
-    data,
-    status,
-  });
   const cxn = await getMysql(requestId);
   const newArtifact = {
     uuid: uuidv4(),

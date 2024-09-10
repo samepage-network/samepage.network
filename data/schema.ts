@@ -23,7 +23,6 @@ import {
 import { sql } from "drizzle-orm/sql";
 import { JSONData } from "package/internal/types";
 import { z } from "zod";
-// import { ArtifactCategoryNames, ArtifactStatuses } from "~/routes/__private/user/artifacts";
 
 // TODO - CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci (after varchar)
 
