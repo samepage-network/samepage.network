@@ -5,8 +5,8 @@ import remixAppLoader from "~/data/remixAppLoader.server";
 import { Link } from "@remix-run/react";
 import Subtitle from "~/components/Subtitle";
 import { Button } from "~/components/ui/button";
-import { Artifact } from "./artifacts";
-import listArtifactsForType from "~/data/listArtifactsForCategory.server";
+import { Artifact } from "data/schema";
+import getAllArtifactsForUser from "~/data/getAllArtifactsForUser.server";
 
 type LoaderData = {
   artifacts: Artifact[];
@@ -18,12 +18,14 @@ export const loader: LoaderFunction = (args) => {
   if (!category) throw new Error("Category is required");
 
   return remixAppLoader(args, async (cbArgs) => {
-    const artifacts = await listArtifactsForType({
+    const artifacts = await getAllArtifactsForUser({
       requestId: cbArgs.requestId,
-      params: cbArgs.params,
       userId: cbArgs.userId,
     });
-    return { artifacts, category };
+    const filteredArtifacts = artifacts.filter(
+      (artifact) => artifact.category === category
+    );
+    return { artifacts: filteredArtifacts, category };
   });
 };
 
@@ -34,12 +36,12 @@ const ArtifactTypePage = () => {
       <div className="w-96 mb-4">
         <Button variant="outline" asChild>
           <Link to={`/user/artifacts/${category}/new`}>
-            Create a new {category} artifact
+            Create a new {category}
           </Link>
         </Button>
       </div>
 
-      <Subtitle>Your {category} artifacts</Subtitle>
+      <Subtitle>Your {category}s</Subtitle>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {artifacts.map((artifact) => (
           <Card
@@ -62,13 +64,16 @@ const ArtifactTypePage = () => {
                     {artifact.status}
                   </span>
                   <span className="text-sm text-gray-400">
-                    {new Date(artifact.createdAt).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+                    {new Date(artifact.createdDate).toLocaleDateString(
+                      "en-US",
+                      {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      }
+                    )}
                   </span>
                 </p>
               </CardContent>

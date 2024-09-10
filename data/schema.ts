@@ -14,6 +14,7 @@ import {
   serial,
   boolean,
   mysqlEnum,
+  InferModel,
 } from "drizzle-orm/mysql-core";
 import {
   MySqlColumnBuilderWithAutoIncrement,
@@ -500,9 +501,10 @@ export const employeeInboxMessages = mysqlTable("employee_inbox_messages", {
   context: json<JSONData>("context").notNull().default({}),
 });
 
+export type Artifact = InferModel<typeof artifacts>;
 export const artifactStatuses = ["draft", "live"] as const;
 export type ArtifactStatus = typeof artifactStatuses[number];
-export const artifactCategoryNames = ["Narrative", "Chatbot"] as const;
+export const artifactCategoryNames = ["narrative", "chatbot"] as const;
 export type ArtifactCategoryName = typeof artifactCategoryNames[number];
 
 export const artifacts = mysqlTable("artifacts", {
@@ -512,4 +514,5 @@ export const artifacts = mysqlTable("artifacts", {
   category: mysqlEnum("category", artifactCategoryNames).notNull(),
   title: varchar("title", { length: 128 }).notNull().default(""),
   status: mysqlEnum("status", artifactStatuses).notNull().default("draft"),
+  data: json("data").notNull().default(JSON.stringify({})),
 });
