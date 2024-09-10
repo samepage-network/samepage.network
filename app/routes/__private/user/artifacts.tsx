@@ -7,30 +7,27 @@ import Subtitle from "~/components/Subtitle";
 import { LoaderFunction } from "@remix-run/node";
 import remixAppLoader from "~/data/remixAppLoader.server";
 import getAllArtifactsForUser from "~/data/getAllArtifactsForUser.server";
-
-type IconKey = keyof typeof ICONS;
-
-const ICONS = {
-  Narrative: DocumentText,
-  Chatbot: ChatBubbleLeftRight,
-};
+import { ArtifactCategoryName } from "data/schema";
 
 export type ArtifactCategory = {
   uuid: string;
-  name: string;
+  name: ArtifactCategoryName;
   description: string;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 };
 
-const ARTIFACT_CATEGORIES: ArtifactCategory[] = [
+export const ARTIFACT_CATEGORIES: ArtifactCategory[] = [
   {
     uuid: "803ccfc9-f46b-492a-a081-c4dee4277089",
-    name: "Narrative",
+    name: "narrative",
     description: "Create a story from your data.",
+    icon: DocumentText,
   },
   {
     uuid: "7b4e85b6-fd13-4733-8c69-bb92d08484b4",
-    name: "Chatbot",
+    name: "chatbot",
     description: "Chat with your knowledge graph.",
+    icon: ChatBubbleLeftRight,
   },
 ];
 
@@ -46,7 +43,7 @@ const ArtifactsPage = () => {
         <Subtitle>Categories</Subtitle>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {ARTIFACT_CATEGORIES.map((category) => {
-            const Icon = ICONS[category.name as IconKey];
+            const Icon = category.icon;
             return (
               <Card
                 key={category.name}
@@ -55,7 +52,7 @@ const ArtifactsPage = () => {
               >
                 <CardHeader className="flex flex-row items-center space-x-4 pb-2 space-y-0">
                   <Icon width={24} height={24} />
-                  <CardTitle>{category.name}</CardTitle>
+                  <CardTitle className="capitalize">{category.name}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm text-gray-500">
@@ -83,7 +80,9 @@ const ArtifactsPage = () => {
               >
                 <div className="flex justify-between items-center">
                   <div>
-                    <span className="font-semibold">{artifact.category}</span>
+                    <span className="font-semibold capitalize">
+                      {artifact.category}
+                    </span>
                     <span className="text-gray-500"> - {artifact.title}</span>
                   </div>
                 </div>
