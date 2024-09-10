@@ -1,12 +1,10 @@
-import { LoaderFunction } from "@remix-run/node";
-import { useNavigate, useLoaderData } from "@remix-run/react";
-import listArtifactCategories from "~/data/listArtifactCategories.server";
-import remixAppLoader from "~/data/remixAppLoader.server";
+import { useNavigate } from "@remix-run/react";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 import DocumentText from "@heroicons/react/solid/DocumentTextIcon";
 import ChatBubbleLeftRight from "@heroicons/react/solid/ChatAlt2Icon";
 import Subtitle from "~/components/Subtitle";
+import { ArtifactCategoryName, ArtifactStatus } from "data/schema";
 
 type IconKey = keyof typeof ICONS;
 
@@ -14,13 +12,6 @@ const ICONS = {
   Narrative: DocumentText,
   Chatbot: ChatBubbleLeftRight,
 };
-
-// TODO - where do these normally live?
-export const ArtifactStatuses = ["draft", "live"] as const;
-export type ArtifactStatus = typeof ArtifactStatuses[number];
-
-export const ArtifactCategoryNames = ["Narrative", "Chatbot"] as const;
-export type ArtifactCategoryName = typeof ArtifactCategoryNames[number];
 
 export type Artifact = {
   uuid: string;
@@ -35,6 +26,19 @@ export type ArtifactCategory = {
   name: string;
   description: string;
 };
+
+const ARTIFACT_CATEGORIES: ArtifactCategory[] = [
+  {
+    uuid: "803ccfc9-f46b-492a-a081-c4dee4277089",
+    name: "Narrative",
+    description: "Create a story from your data.",
+  },
+  {
+    uuid: "7b4e85b6-fd13-4733-8c69-bb92d08484b4",
+    name: "Chatbot",
+    description: "Chat with your knowledge graph.",
+  },
+];
 
 const RECENT_ARTIFACTS_TEMP: Artifact[] = [
   {
@@ -69,14 +73,12 @@ const RECENT_ARTIFACTS_TEMP: Artifact[] = [
 
 const ArtifactsPage = () => {
   const navigate = useNavigate();
-  const { categories } =
-    useLoaderData<Awaited<ReturnType<typeof listArtifactCategories>>>();
   return (
     <div className="flex">
       <div>
         <Subtitle>Categories</Subtitle>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {categories.map((category) => {
+          {ARTIFACT_CATEGORIES.map((category) => {
             const Icon = ICONS[category.name as IconKey];
             return (
               <Card
@@ -145,10 +147,6 @@ const ArtifactsPage = () => {
       </div>
     </div>
   );
-};
-
-export const loader: LoaderFunction = (args) => {
-  return remixAppLoader(args, listArtifactCategories);
 };
 
 export const handle = {

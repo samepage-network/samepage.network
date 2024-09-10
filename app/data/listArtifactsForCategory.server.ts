@@ -4,11 +4,9 @@
 // import getMysql from "./mysql.server";
 // import { and, eq } from "drizzle-orm/expressions";
 // import { NotFoundError } from "./errors.server";
+import { ArtifactCategoryName } from "data/schema";
 import { z } from "zod";
-import {
-  Artifact,
-  ArtifactCategoryName,
-} from "~/routes/__private/user/artifacts";
+import { Artifact } from "~/routes/__private/user/artifacts";
 
 const TEMP_ARTIFACTS: Artifact[] = [
   {
