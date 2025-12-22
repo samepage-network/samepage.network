@@ -59,8 +59,6 @@ import { SesReceiptRuleSet } from "@cdktf/provider-aws/lib/ses-receipt-rule-set"
 import { SesActiveReceiptRuleSet } from "@cdktf/provider-aws/lib/ses-active-receipt-rule-set";
 import { SesReceiptRule } from "@cdktf/provider-aws/lib/ses-receipt-rule";
 // TODO @deprecated
-import { AwsWebsocket } from "@dvargas92495/aws-websocket";
-// TODO @deprecated
 import { AwsClerk } from "@dvargas92495/aws-clerk";
 import dotenv from "dotenv";
 import { Octokit } from "@octokit/rest";
@@ -1302,13 +1300,13 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
         },
       });
 
-      const wsPaths = apiPaths
-        .filter((p) => /^ws/.test(p))
-        .map((p) => p.replace(/^ws\//, ""));
-      new AwsWebsocket(this, "aws-websocket", {
-        name: safeProjectName,
-        paths: wsPaths,
-      });
+      // const wsPaths = apiPaths
+      //   .filter((p) => /^ws/.test(p))
+      //   .map((p) => p.replace(/^ws\//, ""));
+      // new AwsWebsocket(this, "aws-websocket", {
+      //   name: safeProjectName,
+      //   paths: wsPaths,
+      // });
 
       new AwsClerk(this, "aws_clerk", {
         zoneId,

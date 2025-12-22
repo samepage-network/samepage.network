@@ -121,7 +121,6 @@
     "@cdktf/provider-aws": "^11.0.10",
     "@cdktf/provider-github": "^4.0.0",
     "@dvargas92495/aws-clerk": "^0.1.0",
-    "@dvargas92495/aws-websocket": "^1.2.3",
     "@octokit/rest": "^19.0.7",
     "@remix-run/testing": "^2.5.1",
     "@tailwindcss/forms": "0.5.0",
