@@ -1,5 +1,5 @@
 import { apps, notebooks, tokenNotebookLinks, tokens } from "data/schema";
-import { and, eq } from "drizzle-orm/expressions";
+import { and, eq } from "drizzle-orm";
 import { ListUserNotebooks } from "package/internal/types";
 import getMysql from "./mysql.server";
 

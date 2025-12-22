@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import { sql } from "drizzle-orm/sql";
 import { notebooks } from "../../data/schema";
 import { MySql2Database } from "drizzle-orm/mysql2";

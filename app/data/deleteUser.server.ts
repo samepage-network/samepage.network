@@ -1,6 +1,6 @@
 import { notebooks, tokenNotebookLinks, tokens } from "data/schema";
 import getMysql from "~/data/mysql.server";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import deleteNotebook from "./deleteNotebook.server";
 import { users } from "@clerk/clerk-sdk-node";
 import { MySql2Database } from "drizzle-orm/mysql2";

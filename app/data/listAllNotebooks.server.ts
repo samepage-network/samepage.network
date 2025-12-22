@@ -6,7 +6,7 @@ import {
   tokens,
 } from "data/schema";
 import { sql } from "drizzle-orm";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 
 const listAllNotebooks = async (requestId: string) => {
   const cxn = await getMysqlConnection(requestId);

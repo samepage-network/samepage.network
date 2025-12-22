@@ -1,6 +1,6 @@
 import { CloudFormation } from "@aws-sdk/client-cloudformation";
 import getMysql from "./mysql.server";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import { websites } from "data/schema";
 import getHostedZoneByDomain from "./getHostedZoneByDomain.server";
 

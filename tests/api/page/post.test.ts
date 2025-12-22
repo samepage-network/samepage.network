@@ -8,7 +8,7 @@ import { v4 } from "uuid";
 import messageNotebook from "~/data/messageNotebook.server";
 import createNotebook from "~/data/createNotebook.server";
 import getMysql from "~/data/mysql.server";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import deleteNotebook from "~/data/deleteNotebook.server";
 import binaryToBase64 from "../../../package/internal/binaryToBase64";
 import Automerge from "automerge";

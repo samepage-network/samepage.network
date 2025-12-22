@@ -1,5 +1,5 @@
 import { pageNotebookLinks, pageProperties } from "data/schema";
-import { and, eq } from "drizzle-orm/expressions";
+import { and, eq } from "drizzle-orm";
 import { SamePageSchema, zSamePageSchema } from "../../package/internal/types";
 import getMysql from "./mysql.server";
 

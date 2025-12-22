@@ -18,7 +18,7 @@ import {
   onlineClients,
   tokenNotebookLinks,
 } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import debugMod from "package/utils/debugger";
 
 export type WSEvent = Pick<APIGatewayProxyEvent, "body"> & {

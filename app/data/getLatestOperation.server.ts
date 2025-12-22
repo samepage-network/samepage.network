@@ -1,6 +1,6 @@
 import { websiteOperations } from "data/schema";
 import getMysql from "./mysql.server";
-import { and, desc, eq, isNull } from "drizzle-orm/expressions";
+import { and, desc, eq, isNull } from "drizzle-orm";
 
 const getLatestOperation = async ({
   websiteUuid,

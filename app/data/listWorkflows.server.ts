@@ -1,5 +1,5 @@
 import { pageNotebookLinks, pageProperties } from "data/schema";
-import { eq, and } from "drizzle-orm/expressions";
+import { eq, and } from "drizzle-orm";
 import { alias } from "drizzle-orm/mysql-core";
 import { zSamePageSchema } from "package/internal/types";
 import getMysql from "~/data/mysql.server";

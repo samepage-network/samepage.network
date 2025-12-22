@@ -1,18 +1,18 @@
-import { apps, oauthClients } from "data/schema";
-import { and, eq } from "drizzle-orm/expressions";
+import { apps, oauthClients } from "data/schema-postgres";
+import { and, eq } from "drizzle-orm";
 import createAPIGatewayProxyHandler from "samepage/backend/createAPIGatewayProxyHandler";
-import getMysql from "~/data/mysql.server";
+import getPostgres from "~/data/pg.server";
 
 const logic = async ({
   service,
   otp,
-  requestId,
+  requestId: _,
 }: {
   requestId: string;
   service: string;
   otp: string;
 }) => {
-  const cxn = await getMysql(requestId);
+  const cxn = await getPostgres();
   const [oauth] = await cxn
     .select({
       secret: oauthClients.secret,
@@ -20,7 +20,7 @@ const logic = async ({
     .from(oauthClients)
     .innerJoin(apps, eq(apps.id, oauthClients.appId))
     .where(and(eq(oauthClients.id, otp), eq(apps.code, service)));
-  await cxn.end();
+  // await cxn.end();
   if (!oauth) return { code: 204 };
   return { auth: oauth.secret };
 };

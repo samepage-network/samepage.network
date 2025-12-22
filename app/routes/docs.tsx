@@ -12,7 +12,7 @@ import ChevronDownIcon from "@heroicons/react/solid/ChevronDownIcon";
 import parseRemixContext from "~/data/parseRemixContext.server";
 import getMysql from "~/data/mysql.server";
 import { apps } from "data/schema";
-import { ne } from "drizzle-orm/expressions";
+import { ne } from "drizzle-orm";
 
 const DirectoryLink = ({
   level = 0,

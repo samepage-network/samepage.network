@@ -1,5 +1,3 @@
-import { ColumnConfig } from "drizzle-orm/column";
-import { ColumnBuilderConfig } from "drizzle-orm/column-builder";
 import {
   int,
   tinyint,
@@ -10,57 +8,57 @@ import {
   index,
   varchar,
   json,
-  AnyMySqlTable,
+  // AnyMySqlTable,
   serial,
   boolean,
   mysqlEnum,
 } from "drizzle-orm/mysql-core";
-import {
-  MySqlColumnBuilderWithAutoIncrement,
-  MySqlColumnWithAutoIncrement,
-} from "drizzle-orm/mysql-core/columns/common";
+// import {
+//   MySqlColumnBuilderWithAutoIncrement,
+//   MySqlColumnWithAutoIncrement,
+// } from "drizzle-orm/mysql-core/columns/common";
 import { sql } from "drizzle-orm/sql";
-import { JSONData } from "package/internal/types";
-import { z } from "zod";
+// import { JSONData } from "package/internal/types";
+// import { z } from "zod";
 
 // TODO - CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci (after varchar)
 
-class MySqlUnsignedSmallInt<
-  TTableName extends string
-> extends MySqlColumnWithAutoIncrement<
-  ColumnConfig<{
-    tableName: TTableName;
-    data: number;
-    driverParam: number | string;
-  }>
-> {
-  protected override $mySqlColumnBrand!: "MySqlUnsignedSmallInt";
-  getSQLType() {
-    return "smallint unsigned";
-  }
-  mapFromDriverValue(value: number | string) {
-    if (typeof value === "string") {
-      return parseInt(value);
-    }
-    return value;
-  }
-}
+// class MySqlUnsignedSmallInt<
+//   TTableName extends string
+// > extends MySqlColumnWithAutoIncrement<
+//   ColumnConfig<{
+//     tableName: TTableName;
+//     data: number;
+//     driverParam: number | string;
+//   }>
+// > {
+//   protected override $mySqlColumnBrand!: "MySqlUnsignedSmallInt";
+//   getSQLType() {
+//     return "smallint unsigned";
+//   }
+//   mapFromDriverValue(value: number | string) {
+//     if (typeof value === "string") {
+//       return parseInt(value);
+//     }
+//     return value;
+//   }
+// }
 
-class MySqlUnsignedSmallIntBuilder extends MySqlColumnBuilderWithAutoIncrement<
-  ColumnBuilderConfig<{
-    data: number;
-    driverParam: number | string;
-  }>
-> {
-  /** @internal */
-  build<TTableName extends string>(
-    table: AnyMySqlTable<{ name: TTableName }>
-  ): MySqlUnsignedSmallInt<TTableName> {
-    return new MySqlUnsignedSmallInt(table, this.config);
-  }
-}
-const unsignedSmallInt = (name: string) =>
-  new MySqlUnsignedSmallIntBuilder(name);
+// class MySqlUnsignedSmallIntBuilder extends MySqlColumnBuilderWithAutoIncrement<
+//   ColumnBuilderConfig<{
+//     data: number;
+//     driverParam: number | string;
+//   }>
+// > {
+//   /** @internal */
+//   build<TTableName extends string>(
+//     table: AnyMySqlTable<{ name: TTableName }>
+//   ): MySqlUnsignedSmallInt<TTableName> {
+//     return new MySqlUnsignedSmallInt(table, this.config);
+//   }
+// }
+// const unsignedSmallInt = (name: string) =>
+//   new MySqlUnsignedSmallIntBuilder(name);
 
 // default UUID() errors in planet scale...
 // but should be possible: https://stackoverflow.com/questions/46134550/mysql-set-default-id-uuid
@@ -102,7 +100,7 @@ export const tokenNotebookLinks = mysqlTable(
 export const notebooks = mysqlTable("notebooks", {
   uuid: primaryUuid(),
   workspace: varchar("workspace", { length: 128 }).notNull().default(""),
-  app: unsignedSmallInt("app").notNull().default(0),
+  app: int("app").notNull().default(0),
   label: varchar("label", { length: 256 }).notNull().default(""),
 });
 
@@ -269,7 +267,7 @@ export const ongoingMessages = mysqlTable(
 export const quotas = mysqlTable("quotas", {
   uuid: primaryUuid(),
   value: int("value").notNull().default(0),
-  field: unsignedSmallInt("field").notNull().default(0),
+  field: int("field").notNull().default(0),
   stripeId: varchar("stripe_id", { length: 128 }),
 });
 
@@ -420,7 +418,7 @@ export const websiteStatuses = mysqlTable("website_statuses", {
   createdDate: timestamp("created_date", { fsp: 6 })
     .notNull()
     .default(sql`(CURRENT_TIMESTAMP)`),
-  props: json<JSONData>("props").notNull().default({}),
+  props: json("props").notNull().default({}),
 });
 
 export const websiteRedirects = mysqlTable("website_redirects", {
@@ -439,17 +437,17 @@ export const websiteSharing = mysqlTable("website_sharing", {
   createdDate: date("created"),
 });
 
-const employeeConfigSchema = z.object({
-  responsibilities: z
-    .object({
-      uuid: z.string(),
-      description: z.string(),
-    })
-    .array()
-    .default([]),
-});
+// const employeeConfigSchema = z.object({
+//   responsibilities: z
+//     .object({
+//       uuid: z.string(),
+//       description: z.string(),
+//     })
+//     .array()
+//     .default([]),
+// });
 
-const employeeConfigColumn = json<z.infer<typeof employeeConfigSchema>>(
+const employeeConfigColumn = json(
   "config"
 )
   .notNull()
@@ -496,5 +494,5 @@ export const employeeInboxMessages = mysqlTable("employee_inbox_messages", {
   appId: int("app_id").notNull().default(0),
   createdDate: date("created"),
   from: varchar("from", { length: 128 }).notNull().default(""),
-  context: json<JSONData>("context").notNull().default({}),
+  context: json("context").notNull().default({}),
 });

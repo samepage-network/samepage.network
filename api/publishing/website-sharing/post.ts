@@ -3,7 +3,7 @@ import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyH
 import { BadRequestError, UnauthorizedError } from "~/data/errors.server";
 import getMysql from "~/data/mysql.server";
 import { websiteSharing } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import getWebsiteUuidByRoamJSToken from "~/data/getWebsiteUuidByRoamJSToken.data";
 
 type GetArgs = { method: "GET"; authorization: string; requestId: string };

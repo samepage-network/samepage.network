@@ -1,5 +1,5 @@
 import { authorizationCodes, oauthClients, tokens } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
 import type { BackendRequest } from "package/internal/types";
 import { z } from "zod";

@@ -19,7 +19,7 @@ import {
 } from "~/data/errors.server";
 import catchError from "~/data/catchError.server";
 import getMysql from "~/data/mysql.server";
-import { eq, and, ne, gt, inArray, isNull } from "drizzle-orm/expressions";
+import { eq, and, ne, gt, inArray, isNull } from "drizzle-orm";
 import { sql } from "drizzle-orm/sql";
 import { downloadFileContent } from "~/data/downloadFile.server";
 import uploadFile from "~/data/uploadFile.server";

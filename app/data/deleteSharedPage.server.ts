@@ -1,7 +1,7 @@
 import getMysql from "~/data/mysql.server";
 import { S3 } from "@aws-sdk/client-s3";
 import { pageNotebookLinks, pages } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 
 const s3 = new S3({ region: "us-east-1", endpoint: process.env.AWS_ENDPOINT });
 

@@ -7,7 +7,7 @@ import {
   tokenNotebookLinks,
   tokens,
 } from "data/schema";
-import { eq, and, desc } from "drizzle-orm/expressions";
+import { eq, and, desc } from "drizzle-orm";
 
 const getUserNotebookProfile = async ({
   context: { requestId },

@@ -1,7 +1,7 @@
 import { pageNotebookLinks, pages } from "data/schema";
 import { NotFoundError } from "~/data/errors.server";
 import getMysql from "~/data/mysql.server";
-import { eq, and } from "drizzle-orm/expressions";
+import { eq, and } from "drizzle-orm";
 
 type SharedPage = { uuid: string; cid: string; linkUuid: string };
 type SharedPageInput = {

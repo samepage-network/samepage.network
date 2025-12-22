@@ -4,7 +4,7 @@ import type {
   Context,
 } from "aws-lambda";
 import { websiteRedirects } from "data/schema";
-import { and, eq } from "drizzle-orm/expressions";
+import { and, eq } from "drizzle-orm";
 import getMysql from "~/data/mysql.server";
 
 export const handler = async (

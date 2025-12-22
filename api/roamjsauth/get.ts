@@ -1,7 +1,7 @@
 import { apps, oauthClients } from "data/schema";
-import { and, eq } from "drizzle-orm/expressions";
+import { and, eq } from "drizzle-orm";
 import createAPIGatewayProxyHandler from "samepage/backend/createAPIGatewayProxyHandler";
-import getMysql from "~/data/mysql.server";
+import getPostgres from "~/data/pg.server";
 import { z } from "zod";
 import { BackendRequest } from "dist/internal/types";
 
@@ -9,9 +9,9 @@ const bodySchema = z.object({ state: z.string() });
 
 const logic = async ({
   state,
-  requestId,
+  requestId: _,
 }: BackendRequest<typeof bodySchema>) => {
-  const cxn = await getMysql(requestId);
+  const cxn = await getPostgres();
   const [service, otp] = state.split("_");
   const [oauth] = await cxn
     .select({
@@ -20,7 +20,7 @@ const logic = async ({
     .from(oauthClients)
     .innerJoin(apps, eq(apps.id, oauthClients.appId))
     .where(and(eq(oauthClients.id, otp), eq(apps.code, service)));
-  await cxn.end();
+  // await cxn.end();
   return { success: !!oauth };
 };
 

@@ -12,7 +12,7 @@ import {
   oauthClients,
   tokens,
 } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import { sql } from "drizzle-orm/sql";
 import randomString from "~/data/randomString.server";
 import { zOauthResponse } from "package/internal/types";

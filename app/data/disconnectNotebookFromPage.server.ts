@@ -1,6 +1,6 @@
 import { pageNotebookLinks } from "data/schema";
 import getMysqlConnection from "~/data/mysql.server";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 
 const disconnectNotebookFromPage = ({
   uuid,

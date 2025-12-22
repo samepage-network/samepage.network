@@ -5,7 +5,7 @@ import {
 import { users } from "@clerk/clerk-sdk-node";
 import { Handler } from "aws-lambda";
 import { websites } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import emailError from "package/backend/emailError.server";
 import uploadFileContent from "package/backend/uploadFileContent";
 import { Json } from "package/internal/types";

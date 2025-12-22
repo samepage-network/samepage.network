@@ -5,7 +5,7 @@ import {
   tokenNotebookLinks,
   tokens,
 } from "data/schema";
-import { and, desc, eq } from "drizzle-orm/expressions";
+import { and, desc, eq } from "drizzle-orm";
 import {
   GetAccessTokenResponse,
   zGetAccessTokenPayload,

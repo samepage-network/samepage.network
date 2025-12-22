@@ -1,7 +1,7 @@
 import { tokens } from "data/schema";
 import { ConflictError } from "~/data/errors.server";
 import getMysql from "~/data/mysql.server";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import getOrGenerateNotebookUuid from "./getOrGenerateNotebookUuid.server";
 
 const createUserNotebook = async ({

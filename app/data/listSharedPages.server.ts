@@ -1,5 +1,5 @@
 import { pageNotebookLinks, pageProperties } from "data/schema";
-import { eq, and } from "drizzle-orm/expressions";
+import { eq, and } from "drizzle-orm";
 import {
   zSamePageSchema,
   ListSharedPages,

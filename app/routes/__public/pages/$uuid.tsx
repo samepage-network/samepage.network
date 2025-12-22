@@ -13,7 +13,7 @@ import unwrapSchema from "package/utils/unwrapSchema";
 import parseRemixContext from "~/data/parseRemixContext.server";
 import getMysql from "~/data/mysql.server";
 import { pageNotebookLinks } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import { NotFoundResponse, ForbiddenResponse } from "package/utils/responses";
 import { z } from "zod";
 import getTitleState from "~/data/getTitleState.server";

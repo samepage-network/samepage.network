@@ -10,7 +10,7 @@ import {
   tokenNotebookLinks,
   tokens,
 } from "data/schema";
-import { eq, desc, and } from "drizzle-orm/expressions";
+import { eq, desc, and } from "drizzle-orm";
 import { sql } from "drizzle-orm/sql";
 import { zSamePageSchema } from "package/internal/types";
 

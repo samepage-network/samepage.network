@@ -9,7 +9,7 @@ import remixAdminAction from "~/data/remixAdminAction.server";
 import getMysql from "~/data/mysql.server";
 import { notebooks, tokens, tokenNotebookLinks } from "data/schema";
 import { sql } from "drizzle-orm/sql";
-import { eq, isNotNull, and } from "drizzle-orm/expressions";
+import { eq, isNotNull, and } from "drizzle-orm";
 import deleteUser from "~/data/deleteUser.server";
 export { default as ErrorBoundary } from "~/components/DefaultErrorBoundary";
 

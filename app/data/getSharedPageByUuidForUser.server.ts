@@ -6,7 +6,7 @@ import unwrapSchema from "package/utils/unwrapSchema";
 import { NotFoundError } from "~/data/errors.server";
 import { downloadFileContent } from "~/data/downloadFile.server";
 import { notebooks, pageNotebookLinks } from "data/schema";
-import { and, eq } from "drizzle-orm/expressions";
+import { and, eq } from "drizzle-orm";
 
 const DEFAULT_SCHEMA: InitialSchema = {
   content: "",

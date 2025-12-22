@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm/expressions";
+import { and, eq } from "drizzle-orm";
 import getMysql from "../../app/data/mysql.server";
 import fs from "fs";
 import { execSync } from "child_process";
