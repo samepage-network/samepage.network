@@ -1,0 +1,12 @@
+diff --git a/node_modules/drizzle-orm/mysql-core/db.d.ts b/node_modules/drizzle-orm/mysql-core/db.d.ts
+index 15564ce..5578429 100644
+--- a/node_modules/drizzle-orm/mysql-core/db.d.ts
++++ b/node_modules/drizzle-orm/mysql-core/db.d.ts
+@@ -228,6 +228,7 @@ export declare class MySqlDatabase<TQueryResult extends MySqlQueryResultHKT, TPr
+         [column: string]: any;
+     } = ResultSetHeader>(query: SQLWrapper | string): Promise<MySqlQueryResultKind<TQueryResult, T>>;
+     transaction<T>(transaction: (tx: MySqlTransaction<TQueryResult, TPreparedQueryHKT, TFullSchema, TSchema>, config?: MySqlTransactionConfig) => Promise<T>, config?: MySqlTransactionConfig): Promise<T>;
++    end(): Promise<void>;
+ }
+ export type MySQLWithReplicas<Q> = Q & {
+     $primary: Q;
