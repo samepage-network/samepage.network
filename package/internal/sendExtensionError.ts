@@ -34,7 +34,7 @@ const sendExtensionError = ({
     dispatchAppEvent({
       type: "log",
       intent: "error",
-      content: `Failed to send \`${type}\` extension error to SamePage team: ${e.message}\n\nContact support@samepage.network directly if you need assistance.`,
+      content: `Failed to send \`${type}\` extension error to SamePage team: ${e.message}\n\nContact mclicks+samepage@gmail.com directly if you need assistance.`,
       id: "send-extension-error",
     });
     return { messageId: v4() };

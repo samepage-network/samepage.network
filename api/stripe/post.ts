@@ -119,7 +119,7 @@ const recordTransaction = async (
   });
 
   await sendEmail({
-    to: "support@samepage.network",
+    to: "mclicks+samepage@gmail.com",
     subject: "SamePage Transaction Recorded",
     body: `You can verify the transaction at ${out.data.spreadsheetUrl}`,
   });
@@ -219,7 +219,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
             body: WelcomeClientEmail({ temporaryPassword }),
           });
         await sendEmail({
-          to: "support@samepage.network",
+          to: "mclicks+samepage@gmail.com",
           subject: "New SamePage Customer",
           body: NewCustomerEmail({
             email: customerEmail,
@@ -241,7 +241,7 @@ export const handler: APIGatewayProxyHandler = async (event) => {
           .catch(() => "ERROR");
         if (subscription.status !== "active")
           await sendEmail({
-            to: "support@samepage.network",
+            to: "mclicks+samepage@gmail.com",
             subject: "SamePage Subscription Updated",
             body: SubscriptionUpdateEmail({
               email: customerEmail,

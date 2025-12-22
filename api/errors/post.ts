@@ -46,7 +46,7 @@ const logic = async (body: Record<string, unknown>) => {
   const result = zBody.safeParse(body);
   if (!result.success) {
     const messageId = await sendEmail({
-      to: "support@samepage.network",
+      to: "mclicks+samepage@gmail.com",
       subject: `Failed to parse error request body`,
       body: EmailLayout({
         children: `Failed to parse request. Errors:\n${parseZodError(
@@ -54,7 +54,7 @@ const logic = async (body: Record<string, unknown>) => {
         )}\nInput:${JSON.stringify(body, null, 4)}`,
       }),
       // Can remove this when we migrate sendEmail from `vargas` to `samepage`
-      from: "support@samepage.network",
+      from: "mclicks+samepage@gmail.com",
     });
     return { success: false, messageId };
   }
@@ -107,7 +107,7 @@ const logic = async (body: Record<string, unknown>) => {
         return { success: true, messageId: uuid };
       }
       const messageId = await sendEmail({
-        to: "support@samepage.network",
+        to: "mclicks+samepage@gmail.com",
         subject: `SamePage Extension Error: ${type}`,
         body: ExtensionErrorEmail({
           ...notebook,
@@ -125,7 +125,7 @@ const logic = async (body: Record<string, unknown>) => {
     case "web-app-error": {
       const { path, stack, data } = args;
       const messageId = await sendEmail({
-        to: "support@samepage.network",
+        to: "mclicks+samepage@gmail.com",
         subject: `SamePage webapp path failed: ${path}`,
         body: WebAppErrorEmail({ stack, path, data }),
       });
