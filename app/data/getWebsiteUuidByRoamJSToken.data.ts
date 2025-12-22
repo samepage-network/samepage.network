@@ -1,5 +1,5 @@
 import { websiteSharing } from "data/schema";
-import { and, eq } from "drizzle-orm/expressions";
+import { and, eq } from "drizzle-orm";
 import authenticateRoamJSToken from "./authenticateRoamJSToken.server";
 import getMysql from "./mysql.server";
 

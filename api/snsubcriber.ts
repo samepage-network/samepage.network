@@ -5,7 +5,7 @@ import { v4 } from "uuid";
 import { Json } from "package/internal/types";
 import getMysql from "~/data/mysql.server";
 import { websiteStatuses, websites } from "data/schema";
-import { desc, eq } from "drizzle-orm/expressions";
+import { desc, eq } from "drizzle-orm";
 import { CloudFormation } from "@aws-sdk/client-cloudformation";
 import { CloudFront } from "@aws-sdk/client-cloudfront";
 import { SES } from "@aws-sdk/client-ses";

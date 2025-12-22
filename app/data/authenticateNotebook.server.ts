@@ -1,7 +1,7 @@
 import { apps, notebooks, tokenNotebookLinks, tokens } from "data/schema";
 import { NotFoundError, UnauthorizedError } from "~/data/errors.server";
 import getMysql from "~/data/mysql.server";
-import { eq, and } from "drizzle-orm/expressions";
+import { eq, and } from "drizzle-orm";
 import { AuthenticateNotebook } from "samepage/internal/types";
 
 const authenticateNotebook: AuthenticateNotebook = async (args) => {

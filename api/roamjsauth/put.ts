@@ -1,12 +1,12 @@
-import { apps, oauthClients } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { apps, oauthClients } from "data/schema-postgres";
+import { eq } from "drizzle-orm";
 import createAPIGatewayProxyHandler from "samepage/backend/createAPIGatewayProxyHandler";
-import getMysql from "~/data/mysql.server";
+import getPostgres from "~/data/pg.server";
 
 const logic = async ({
   service,
   otp,
-  requestId,
+  requestId: _,
   auth,
 }: {
   requestId: string;
@@ -14,7 +14,7 @@ const logic = async ({
   otp: string;
   auth: string;
 }) => {
-  const cxn = await getMysql(requestId);
+  const cxn = await getPostgres();
   const appId = await cxn
     .select({ id: apps.id })
     .from(apps)
@@ -27,8 +27,8 @@ const logic = async ({
       appId,
       id: otp,
     })
-    .onDuplicateKeyUpdate({ set: { secret: auth } });
-  await cxn.end();
+    .onConflictDoUpdate({ target: oauthClients.id, set: { secret: auth } });
+  // await cxn.end();
   return { success: true };
 };
 

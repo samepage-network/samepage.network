@@ -1,6 +1,6 @@
 import getMysqlConnection from "~/data/mysql.server";
 import { sql } from "drizzle-orm/sql";
-import { eq, gt } from "drizzle-orm/expressions";
+import { eq, gt } from "drizzle-orm";
 import { notebooks, pageNotebookLinks, pages } from "data/schema";
 
 const MS_IN_DAY = 1000 * 60 * 60 * 24;

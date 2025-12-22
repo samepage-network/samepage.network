@@ -1,7 +1,7 @@
 import getMysql from "~/data/mysql.server";
 import { v4 } from "uuid";
 import { apps, notebooks, tokenNotebookLinks } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import { sql } from "drizzle-orm";
 import { ConflictError } from "./errors.server";
 import getQuota from "./getQuota.server";

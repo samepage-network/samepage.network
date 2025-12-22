@@ -2,7 +2,7 @@ import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyH
 import sendEmail from "package/backend/sendEmail.server";
 import { z } from "zod";
 import getMysql from "~/data/mysql.server";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import ExtensionErrorEmail from "~/components/ExtensionErrorEmail";
 import { v4, validate } from "uuid";
 import uploadFile from "~/data/uploadFile.server";

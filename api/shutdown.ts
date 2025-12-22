@@ -1,7 +1,7 @@
 import { CloudFormation } from "@aws-sdk/client-cloudformation";
 import { S3 } from "@aws-sdk/client-s3";
 import { websites } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import clearRecords from "~/data/clearRoute53Records.server";
 import getMysql from "~/data/mysql.server";
 import startWebsiteOperation from "~/data/startWebsiteOperation.server";

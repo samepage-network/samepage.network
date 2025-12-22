@@ -9,7 +9,7 @@ import {
   tokenNotebookLinks,
   tokens,
 } from "data/schema";
-import { and, eq } from "drizzle-orm/expressions";
+import { and, eq } from "drizzle-orm";
 import acceptSharePageOperation from "package/internal/acceptSharePageOperation";
 import { apiPost } from "package/internal/apiClient";
 import setupRegistry from "package/internal/registry";

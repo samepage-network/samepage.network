@@ -1,6 +1,6 @@
 import { websiteOperations } from "data/schema";
 import getMysql from "./mysql.server";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 
 const completeWebsiteOperation = async ({
   operationUuid,

@@ -1,7 +1,7 @@
 import { users } from "@clerk/clerk-sdk-node";
 import type { Handler } from "aws-lambda";
 import { apps, notebooks, tokenNotebookLinks, tokens } from "data/schema";
-import { and, eq } from "drizzle-orm/expressions";
+import { and, eq } from "drizzle-orm";
 import {
   GetNotebookCredentialsResponse,
   zGetNotebookCredentialsPayload,

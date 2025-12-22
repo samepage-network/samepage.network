@@ -7,7 +7,7 @@ import {
   websiteSharing,
   websites,
 } from "data/schema";
-import { and, eq } from "drizzle-orm/expressions";
+import { and, eq } from "drizzle-orm";
 import createPublicAPIGatewayProxyHandler from "package/backend/createPublicAPIGatewayProxyHandler";
 import { BackendRequest } from "package/internal/types";
 import { v4 } from "uuid";

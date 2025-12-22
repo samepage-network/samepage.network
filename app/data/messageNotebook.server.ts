@@ -14,7 +14,7 @@ import {
   tokenNotebookLinks,
   tokens,
 } from "data/schema";
-import { eq, desc, or } from "drizzle-orm/expressions";
+import { eq, desc, or } from "drizzle-orm";
 import { Lambda } from "@aws-sdk/client-lambda";
 import debug from "package/utils/debugger";
 import getPrimaryUserEmail from "./getPrimaryUserEmail.server";

@@ -1,6 +1,6 @@
 import getMysql from "~/data/mysql.server";
 import { apps, notebooks, tokenNotebookLinks, tokens } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import { users } from "@clerk/clerk-sdk-node";
 import getStripePlan from "./getStripePlan.server";
 

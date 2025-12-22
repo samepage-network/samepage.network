@@ -5,7 +5,7 @@ import downloadSharedPage from "./downloadSharedPage.server";
 import { NotFoundError } from "~/data/errors.server";
 import unwrapSchema from "package/utils/unwrapSchema";
 import { apps, notebooks, pageNotebookLinks } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import getActorInfo from "./getActorInfo.server";
 
 const DEFAULT_SCHEMA: InitialSchema = {

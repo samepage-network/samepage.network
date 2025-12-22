@@ -6,7 +6,7 @@ import {
   tokens,
   apps,
 } from "data/schema";
-import { eq, and } from "drizzle-orm/expressions";
+import { eq, and } from "drizzle-orm";
 import getMysql from "./mysql.server";
 
 const getWebsiteByNotebookProperties = async ({

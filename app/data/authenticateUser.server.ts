@@ -1,5 +1,5 @@
 import { apps, tokenNotebookLinks, notebooks } from "data/schema";
-import { eq, and } from "drizzle-orm/expressions";
+import { eq, and } from "drizzle-orm";
 import { AuthenticateUser } from "package/internal/types";
 import getMysql from "./mysql.server";
 import verifyUser from "./verifyUser.server";

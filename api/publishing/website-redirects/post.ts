@@ -4,7 +4,7 @@ import { BackendRequest } from "package/internal/types";
 import getWebsiteUuidByRoamJSToken from "~/data/getWebsiteUuidByRoamJSToken.data";
 import getMysql from "~/data/mysql.server";
 import { websiteRedirects } from "data/schema";
-import { and, eq } from "drizzle-orm/expressions";
+import { and, eq } from "drizzle-orm";
 import { v4 } from "uuid";
 import { BadRequestError } from "~/data/errors.server";
 

@@ -1,7 +1,7 @@
 import getMysql from "~/data/mysql.server";
 import { NotFoundError } from "~/data/errors.server";
 import { apps, notebooks } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 
 const getNotebookByUuid = ({
   uuid,

@@ -1,5 +1,5 @@
 import { apps, notebooks, tokenNotebookLinks, tokens } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import { ActorInfo } from "package/internal/types";
 import getMysql from "./mysql.server";
 

@@ -2,7 +2,7 @@ import AES from "crypto-js/aes";
 import encutf8 from "crypto-js/enc-utf8";
 import getMysql from "./mysql.server";
 import { employees } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import { ForbiddenError, NotFoundError } from "./errors.server";
 
 const retrieveUserEmployeePrivateKey = async ({

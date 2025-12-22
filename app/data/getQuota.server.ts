@@ -2,7 +2,7 @@ import QUOTAS from "./quotas.server";
 import getMysql from "~/data/mysql.server";
 import { users } from "@clerk/clerk-sdk-node";
 import { quotas, tokens } from "data/schema";
-import { eq, and, isNull } from "drizzle-orm/expressions";
+import { eq, and, isNull } from "drizzle-orm";
 import { getPrimaryEmailFromUser } from "./getPrimaryUserEmail.server";
 import stripe from "./stripe.server";
 

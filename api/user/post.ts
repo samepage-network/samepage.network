@@ -10,7 +10,7 @@ import { v4 } from "uuid";
 import randomString from "~/data/randomString.server";
 import { tokens } from "data/schema";
 import { sql } from "drizzle-orm/sql";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import stripe from "~/data/stripe.server";
 
 const wh = new Webhook(process.env.SVIX_SECRET);

@@ -1,6 +1,6 @@
 import { users } from "@clerk/clerk-sdk-node";
 import { tokens } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import {
   NotFoundError,
   UnauthorizedError,

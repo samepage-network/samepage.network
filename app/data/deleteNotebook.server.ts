@@ -7,7 +7,7 @@ import {
   tokenNotebookLinks,
 } from "data/schema";
 import getMysql from "~/data/mysql.server";
-import { eq, or } from "drizzle-orm/expressions";
+import { eq, or } from "drizzle-orm";
 import { MySql2Database } from "drizzle-orm/mysql2";
 import endClient from "./endClient.server";
 

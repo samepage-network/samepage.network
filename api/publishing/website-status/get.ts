@@ -7,7 +7,7 @@ import createPublicAPIGatewayProxyHandler from "package/backend/createPublicAPIG
 import { BackendRequest } from "package/internal/types";
 import getMysql from "~/data/mysql.server";
 import { z } from "zod";
-import { and, desc, eq } from "drizzle-orm/expressions";
+import { and, desc, eq } from "drizzle-orm";
 import authenticateRoamJSToken from "~/data/authenticateRoamJSToken.server";
 import getWebsiteByNotebookProperties from "~/data/getWebsiteByNotebookProperties.server";
 

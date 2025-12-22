@@ -5,7 +5,7 @@ import {
   websiteNotebookLinks,
   websites,
 } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import getMysql from "./mysql.server";
 
 const deleteWebsite = async ({

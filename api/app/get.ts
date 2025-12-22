@@ -1,5 +1,5 @@
 import { apps } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import createAPIGatewayProxyHandler from "package/backend/createAPIGatewayProxyHandler";
 import { NotFoundError } from "~/data/errors.server";
 import getMysql from "~/data/mysql.server";

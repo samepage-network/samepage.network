@@ -5,7 +5,7 @@ import {
   NotFoundError,
 } from "./errors.server";
 import getMysql from "./mysql.server";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import { EC2 } from "@aws-sdk/client-ec2";
 
 const fireUserEmployee = async ({

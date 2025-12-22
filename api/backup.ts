@@ -2,7 +2,7 @@ import { Web3Storage, File } from "web3.storage";
 import uploadFile from "~/data/uploadFile.server";
 import { downloadFileBuffer } from "~/data/downloadFile.server";
 import getMysql from "~/data/mysql.server";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import type { Context } from "aws-lambda";
 import { v4 } from "uuid";
 import Automerge from "automerge";

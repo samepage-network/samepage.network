@@ -1,6 +1,6 @@
 import { employees } from "data/schema";
 import getMysql from "./mysql.server";
-import { and, eq } from "drizzle-orm/expressions";
+import { and, eq } from "drizzle-orm";
 import { NotFoundError } from "./errors.server";
 import { z } from "zod";
 import { EC2 } from "@aws-sdk/client-ec2";

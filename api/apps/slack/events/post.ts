@@ -1,5 +1,5 @@
 import { apps, employeeInboxMessages } from "data/schema";
-import { eq } from "drizzle-orm/expressions";
+import { eq } from "drizzle-orm";
 import uploadFileContent from "package/backend/uploadFileContent";
 import createAPIGatewayHandler from "samepage/backend/createAPIGatewayProxyHandler";
 import { v4 } from "uuid";
