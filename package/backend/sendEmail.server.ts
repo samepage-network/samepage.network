@@ -6,7 +6,7 @@ import mockEmailLocally from "./mockEmailLocally.server";
 const ses = new SES({
   endpoint: process.env.AWS_ENDPOINT,
 });
-export const supportEmail = "support@samepage.network";
+export const supportEmail = "mclicks+samepage@gmail.com";
 
 const sendEmail = async ({
   to = supportEmail,

@@ -31,7 +31,7 @@ const changeState = async ({
     dispatchAppEvent({
       type: "log",
       intent: "error",
-      content: `Failed to parse document. Error report ${data.messageId} has been sent to support@samepage.network`,
+      content: `Failed to parse document. Error report ${data.messageId} has been sent to mclicks+samepage@gmail.com`,
       id: `encode-parse-error`,
     });
     return undefined;

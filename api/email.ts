@@ -41,6 +41,6 @@ export const handler = ({
   return sendEmail({
     ...params,
     body: RENDERS[bodyComponent](bodyProps),
-    from: "support@samepage.network",
+    from: "mclicks+samepage@gmail.com",
   });
 };

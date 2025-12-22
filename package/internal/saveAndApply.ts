@@ -85,7 +85,7 @@ const saveAndApply = ({
       dispatchAppEvent({
         type: "log",
         id: "update-failure",
-        content: `Failed to apply new change - Error report ${data.messageId} has been sent to support@samepage.network`,
+        content: `Failed to apply new change - Error report ${data.messageId} has been sent to mclicks+samepage@gmail.com`,
         intent: "warning",
       });
     });
