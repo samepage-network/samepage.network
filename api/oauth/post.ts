@@ -5,8 +5,8 @@ import type { BackendRequest } from "package/internal/types";
 import { z } from "zod";
 import { ConflictError, UnauthorizedError } from "~/data/errors.server";
 import getOrGenerateNotebookUuid from "~/data/getOrGenerateNotebookUuid.server";
-import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
 import getMysql from "~/data/mysql.server";
+import getPrimaryUserEmail from "~/data/getPrimaryUserEmail.server";
 
 const bodySchema = z.object({
   grant_type: z.literal("authorization_code"),
