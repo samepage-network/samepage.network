@@ -58,8 +58,6 @@ import { SesEmailIdentity } from "@cdktf/provider-aws/lib/ses-email-identity";
 import { SesReceiptRuleSet } from "@cdktf/provider-aws/lib/ses-receipt-rule-set";
 import { SesActiveReceiptRuleSet } from "@cdktf/provider-aws/lib/ses-active-receipt-rule-set";
 import { SesReceiptRule } from "@cdktf/provider-aws/lib/ses-receipt-rule";
-// TODO @deprecated
-import { AwsClerk } from "@dvargas92495/aws-clerk";
 import dotenv from "dotenv";
 import { Octokit } from "@octokit/rest";
 import readDir from "../package/scripts/internal/readDir";
@@ -72,7 +70,7 @@ const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
 const projectName = "samepage.network";
 const safeProjectName = "samepage-network";
-const clerkDnsId = "l7zkq208u6ys";
+// const clerkDnsId = "l7zkq208u6ys";
 
 const setupInfrastructure = async (): Promise<void> => {
   class MyStack extends TerraformStack {
@@ -1308,10 +1306,10 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
       //   paths: wsPaths,
       // });
 
-      new AwsClerk(this, "aws_clerk", {
-        zoneId,
-        clerkId: clerkDnsId,
-      });
+      // new AwsClerk(this, "aws_clerk", {
+      //   zoneId,
+      //   clerkId: clerkDnsId,
+      // });
 
       new ActionsSecret(this, "tf_aws_access_key", {
         repository: projectName,
