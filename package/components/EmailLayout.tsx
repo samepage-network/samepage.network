@@ -56,7 +56,7 @@ const EmailLayout = ({ children }: React.PropsWithChildren) => (
         style={{ width: "50%", textAlign: "right", display: "inline-block" }}
       >
         <a
-          href={`mailto:mclicks+samepage@gmail.com`}
+          href={`mailto:support@samepage.network`}
           style={{ color: "#4d9bd7", textDecoration: "none" }}
         >
           Contact Support

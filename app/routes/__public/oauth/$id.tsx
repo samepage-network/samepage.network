@@ -45,7 +45,7 @@ const OauthConnectionPage = (): React.ReactElement => {
         } else {
           setMessage(
             `If you are using the app instead of the browser, please authorize in app.
-            Otherwise please contact mclicks+samepage@gmail.com`
+            Otherwise please contact support@samepage.network`
           );
         }
       };

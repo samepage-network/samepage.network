@@ -421,7 +421,7 @@ const setupSharePageWithNotebook = ({
         dispatchAppEvent({
           type: "log",
           intent: "error",
-          content: `Failed to encode document. Error report ${data.messageId} has been sent to mclicks+samepage@gmail.com`,
+          content: `Failed to encode document. Error report ${data.messageId} has been sent to support@samepage.network`,
           id: `encode-error`,
         });
       });

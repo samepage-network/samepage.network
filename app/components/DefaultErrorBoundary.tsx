@@ -96,14 +96,14 @@ const DefaultErrorBoundary: V2_ErrorBoundaryComponent =
           </a>{" "}
           to{" "}
           <a
-            href={`mailto:mclicks+samepage@gmail.com`}
+            href={`mailto:support@samepage.network`}
             target={"_blank"}
             rel={"noreferrer"}
             className={
               "text-sky-800 underline hover:no-underline active:text-sky-900"
             }
           >
-            mclicks+samepage@gmail.com
+            support@samepage.network
           </a>
         </p>
       </main>

@@ -40,7 +40,7 @@ const HomeDashboardTab = ({ url }: { url: string }): React.ReactElement => {
           <TextInput
             name={"email"}
             label={"Email"}
-            placeholder="mclicks+samepage@gmail.com"
+            placeholder="support@samepage.network"
           />
           <BaseInput
             type={"password"}
