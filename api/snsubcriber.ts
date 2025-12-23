@@ -158,7 +158,7 @@ const logic = async ({
                 Data: `Your RoamJS site is almost ready!`,
               },
             },
-            Source: "mclicks+samepage@gmail.com",
+            Source: "support@samepage.network",
           });
         } else {
           await ses.sendEmail({
@@ -177,7 +177,7 @@ const logic = async ({
                 Data: `Your RoamJS site is now live!`,
               },
             },
-            Source: "mclicks+samepage@gmail.com",
+            Source: "support@samepage.network",
           });
         }
       }
@@ -215,7 +215,7 @@ const logic = async ({
               Body: {
                 Text: {
                   Charset: "UTF-8",
-                  Data: `Your SamePage website is no longer live. There are no sites connected to your notebook.\n\nIf you believe you received this email in error, please reach out to mclicks+samepage@gmail.com.`,
+                  Data: `Your SamePage website is no longer live. There are no sites connected to your notebook.\n\nIf you believe you received this email in error, please reach out to support@samepage.network.`,
                 },
               },
               Subject: {
@@ -223,7 +223,7 @@ const logic = async ({
                 Data: `Your SamePage website has successfully shutdown.`,
               },
             },
-            Source: "mclicks+samepage@gmail.com",
+            Source: "support@samepage.network",
           });
       } else {
         console.error("Could not find Shutdown Callback Status");
@@ -283,7 +283,7 @@ const logic = async ({
                 Data: `Your RoamJS static site is awaiting validation.`,
               },
             },
-            Source: "mclicks+samepage@gmail.com",
+            Source: "support@samepage.network",
           });
         }
       } else if (domainParts > 2) {
@@ -313,7 +313,7 @@ const logic = async ({
                 Data: `Your RoamJS static site is awaiting validation.`,
               },
             },
-            Source: "mclicks+samepage@gmail.com",
+            Source: "support@samepage.network",
           });
         }
       }
@@ -335,7 +335,7 @@ const logic = async ({
     if (environment === "production") {
       await ses.sendEmail({
         Destination: {
-          ToAddresses: ["mclicks+samepage@gmail.com"],
+          ToAddresses: ["support@samepage.network"],
         },
         Message: {
           Body: {
@@ -349,7 +349,7 @@ const logic = async ({
             Data: `User's Static Site failed to deploy`,
           },
         },
-        Source: "mclicks+samepage@gmail.com",
+        Source: "support@samepage.network",
       });
     }
   } else if (ResourceStatus === "DELETE_FAILED") {

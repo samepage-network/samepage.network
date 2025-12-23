@@ -22,7 +22,7 @@ const EmployeesNewPage = () => {
       </p>
       {errorMessage && (
         <p className="text-red-500 mb-4">
-          {errorMessage}. Please contact mclicks+samepage@gmail.com.
+          {errorMessage}. Please contact support@samepage.network.
         </p>
       )}
       <Button>Hire</Button>
