@@ -10,3 +10,43 @@ index 15564ce..5578429 100644
  }
  export type MySQLWithReplicas<Q> = Q & {
      $primary: Q;
+diff --git a/node_modules/drizzle-orm/mysql-core/db.js b/node_modules/drizzle-orm/mysql-core/db.js
+index cdb0cd1..35e3c6f 100644
+--- a/node_modules/drizzle-orm/mysql-core/db.js
++++ b/node_modules/drizzle-orm/mysql-core/db.js
+@@ -227,6 +227,9 @@ class MySqlDatabase {
+   execute(query) {
+     return this.session.execute(typeof query === "string" ? sql.raw(query) : query.getSQL());
+   }
++  async end() {
++    return await this.session.end();
++  }
+   transaction(transaction, config) {
+     return this.session.transaction(transaction, config);
+   }
+diff --git a/node_modules/drizzle-orm/pg-core/db.d.ts b/node_modules/drizzle-orm/pg-core/db.d.ts
+index 202f79f..016af70 100644
+--- a/node_modules/drizzle-orm/pg-core/db.d.ts
++++ b/node_modules/drizzle-orm/pg-core/db.d.ts
+@@ -279,6 +279,7 @@ export declare class PgDatabase<TQueryResult extends PgQueryResultHKT, TFullSche
+     protected authToken?: NeonAuthToken;
+     execute<TRow extends Record<string, unknown> = Record<string, unknown>>(query: SQLWrapper | string): PgRaw<PgQueryResultKind<TQueryResult, TRow>>;
+     transaction<T>(transaction: (tx: PgTransaction<TQueryResult, TFullSchema, TSchema>) => Promise<T>, config?: PgTransactionConfig): Promise<T>;
++    end(): Promise;
+ }
+ export type PgWithReplicas<Q> = Q & {
+     $primary: Q;
+diff --git a/node_modules/drizzle-orm/pg-core/db.js b/node_modules/drizzle-orm/pg-core/db.js
+index a0f5337..850c508 100644
+--- a/node_modules/drizzle-orm/pg-core/db.js
++++ b/node_modules/drizzle-orm/pg-core/db.js
+@@ -269,6 +269,9 @@ class PgDatabase {
+   refreshMaterializedView(view) {
+     return new PgRefreshMaterializedView(view, this.session, this.dialect);
+   }
++  async end() {
++    return await this.session.end();
++  }
+   authToken;
+   execute(query) {
+     const sequel = typeof query === "string" ? sql.raw(query) : query.getSQL();

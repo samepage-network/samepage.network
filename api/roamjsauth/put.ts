@@ -28,7 +28,7 @@ const logic = async ({
       id: otp,
     })
     .onConflictDoUpdate({ target: oauthClients.id, set: { secret: auth } });
-  // await cxn.end();
+  await cxn.end();
   return { success: true };
 };
 

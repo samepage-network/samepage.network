@@ -1128,7 +1128,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
               role: (lambdaRoleMapping[lambdaPath] ?? lambdaRole).arn,
               handler: `${functionNames[lambdaPath]}.handler`,
               filename: dummyFile.outputPath,
-              runtime: "nodejs18.x",
+              runtime: "roamjs" in functionNames[lambdaPath] ? "nodejs20.x" :  "nodejs18.x",
               publish: false,
               timeout: lambdaTimeouts[lambdaPath] ?? 60,
               memorySize: 5120,
