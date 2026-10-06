@@ -2,6 +2,9 @@ import "../../utils/mockAwsSesSendEmail";
 import { test, expect } from "@playwright/test";
 import { handler, RequestBody } from "../../../api/errors/post";
 import { v4 } from "uuid";
+import mysql from "mysql2/promise";
+import axios from "axios";
+import { S3, PutObjectCommandInput } from "@aws-sdk/client-s3";
 
 const mockLambdaContext = ({ requestId = v4(), path = "errors" }) => ({
   awsRequestId: requestId,
@@ -129,4 +132,96 @@ Input:{
     ReplyToAddresses: undefined,
     Source: "support@samepage.network",
   });
+});
+
+test("RoamJS load errors are stored and emailed when MySQL is unavailable", async () => {
+  const marker = "synthetic-roamjs-error-test";
+  const originalNodeEnv = process.env.NODE_ENV;
+  const originalConnection = mysql.createConnection;
+  const originalGet = axios.get;
+  const originalUpload = S3.prototype.putObject;
+  let connectionAttempts = 0;
+  const uploads: PutObjectCommandInput[] = [];
+  mysql.createConnection = async () => {
+    connectionAttempts++;
+    throw new Error("Synthetic database unavailable");
+  };
+  axios.get = (() =>
+    Promise.resolve({
+      data: { tag_name: "1.0.0", assets: [{ name: "extension.js" }] },
+    })) as typeof axios.get;
+  S3.prototype.putObject = async (args: PutObjectCommandInput) => {
+    uploads.push(args);
+    return { $metadata: {} };
+  };
+  process.env.NODE_ENV = "production";
+
+  try {
+    const data = {
+      extensionId: "pinned-blocks",
+      settings: { synthetic: true },
+    };
+    const response = await mockLambda({
+      method: "extension-error",
+      type: "RoamJS Extension Failed to Load",
+      notebookUuid: JSON.stringify({
+        owner: "RoamJS",
+        app: "pinned-blocks",
+        workspace: marker,
+      }),
+      data,
+      message: marker,
+      stack: `Error: ${marker}`,
+      version: "1.0.0",
+    });
+
+    expect(response.success).toBe(true);
+    expect(connectionAttempts).toBe(0);
+    expect(uploads).toHaveLength(1);
+    expect(uploads[0]).toMatchObject({
+      Bucket: "samepage.network",
+      Key: expect.stringMatching(/^data\/errors\/.+\.json$/),
+      Body: JSON.stringify(data),
+    });
+    expect(global.emails[response.messageId]).toMatchObject({
+      Destination: { ToAddresses: ["support@samepage.network"] },
+      Message: {
+        Subject: {
+          Data: "SamePage Extension Error: RoamJS Extension Failed to Load",
+        },
+        Body: { Html: { Data: expect.stringContaining(marker) } },
+      },
+    });
+  } finally {
+    process.env.NODE_ENV = originalNodeEnv;
+    mysql.createConnection = originalConnection;
+    axios.get = originalGet;
+    S3.prototype.putObject = originalUpload;
+  }
+});
+
+test("SamePage notebook UUIDs still require a database lookup", async () => {
+  const originalConnection = mysql.createConnection;
+  let connectionAttempts = 0;
+  mysql.createConnection = async () => {
+    connectionAttempts++;
+    throw new Error("Synthetic database unavailable");
+  };
+
+  try {
+    await expect(
+      mockLambda({
+        method: "extension-error",
+        type: "synthetic-test",
+        notebookUuid: v4(),
+        data: {},
+        message: "synthetic-test",
+        stack: "synthetic-test",
+        version: "1.0.0",
+      })
+    ).rejects.toContain("Synthetic database unavailable");
+    expect(connectionAttempts).toBe(1);
+  } finally {
+    mysql.createConnection = originalConnection;
+  }
 });

@@ -42,6 +42,24 @@ const parseNotebookUuid = (s: string) => {
   }
 };
 
+const resolveNotebook = async (
+  notebookUuid: string
+): Promise<ReturnType<typeof parseNotebookUuid>> => {
+  if (!validate(notebookUuid)) return parseNotebookUuid(notebookUuid);
+
+  const cxn = await getMysql();
+  try {
+    const [notebook] = await cxn
+      .select({ app: apps.code, workspace: notebooks.workspace })
+      .from(notebooks)
+      .innerJoin(apps, eq(apps.id, notebooks.app))
+      .where(eq(notebooks.uuid, notebookUuid));
+    return { ...notebook, owner: "samepage-network" };
+  } finally {
+    await cxn.$client.end();
+  }
+};
+
 const logic = async (body: Record<string, unknown>) => {
   const result = zBody.safeParse(body);
   if (!result.success) {
@@ -62,16 +80,7 @@ const logic = async (body: Record<string, unknown>) => {
   switch (args.method) {
     case "extension-error": {
       const { notebookUuid, data, stack, version, type } = args;
-      const cxn = await getMysql();
-      const notebook = validate(notebookUuid)
-        ? await cxn
-            .select({ app: apps.code, workspace: notebooks.workspace })
-            .from(notebooks)
-            .innerJoin(apps, eq(apps.id, notebooks.app))
-            .where(eq(notebooks.uuid, notebookUuid))
-            .then((r) => ({ ...r[0], owner: "samepage-network" }))
-        : parseNotebookUuid(notebookUuid);
-      await cxn.end();
+      const notebook = await resolveNotebook(notebookUuid);
       const repo =
         notebook.owner === "samepage-network"
           ? `samepage-network/${notebook.app}-samepage`

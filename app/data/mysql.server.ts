@@ -1,10 +1,16 @@
 import mysql from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
+import type { MySql2Database } from "drizzle-orm/mysql2";
 import { v4 } from "uuid";
 
 const connectionMap: Record<string, mysql.Connection> = {};
 
-const createConnection = (id = v4()) => {
+type MysqlDatabase = MySql2Database & {
+  $client: mysql.Connection;
+  end: () => Promise<void>;
+};
+
+const createConnection = (id = v4()): Promise<mysql.Connection> => {
   return mysql
     .createConnection(process.env.DATABASE_URL || "")
     .then((con) => (connectionMap[id] = con))
@@ -31,15 +37,15 @@ const createConnection = (id = v4()) => {
 const getMysql = async (
   _cxn?: mysql.Connection | string,
   opts: { logger?: boolean } = {}
-) => {
+): Promise<MysqlDatabase> => {
   const cxn =
     typeof _cxn === "undefined"
       ? await createConnection()
       : typeof _cxn === "string"
       ? connectionMap[_cxn] || (await createConnection(_cxn))
       : _cxn;
-  return drizzle(cxn, {
-    logger: opts.logger,
+  return Object.assign(drizzle(cxn, { logger: opts.logger }), {
+    end: (): Promise<void> => cxn.end(),
   });
 };
 
