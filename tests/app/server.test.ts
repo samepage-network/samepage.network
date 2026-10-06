@@ -6,7 +6,7 @@ import type {
 import { v4 } from "uuid";
 import differenceInMilliseconds from "date-fns/differenceInMilliseconds";
 import dotenv from "dotenv";
-import { execSync } from "child_process";
+import build from "../../scripts/commands/build";
 import { test, expect } from "@playwright/test";
 import { handler } from "~/server";
 dotenv.config();
@@ -68,13 +68,10 @@ const mockContext: Context = {
 };
 const nsToMs = (n: bigint) => Number(n) / 1000000;
 
-test.beforeAll(() => {
-  const tw = execSync("tailwindcss -o ./app/tailwind.css");
-  const proc = execSync("npx ts-node scripts/cli.ts build --readable");
-  if (process.env.DEBUG) {
-    console.log(`Output from tw: ${tw.toString()}`);
-    console.log(`Output from build: ${proc.toString()}`);
-  }
+test.beforeAll(async () => {
+  test.setTimeout(120000);
+  process.env.NODE_ENV = "production";
+  await build({ readable: true });
 });
 
 test("GET `/` route", async () => {
@@ -94,3 +91,68 @@ test("GET `/` route", async () => {
     expect(nsToMs(endTime - startTime)).toBeLessThan(10000);
   });
 });
+
+for (const uri of [
+  "/about",
+  "/blog/old-post",
+  "/docs/developer",
+  "/pricing",
+  "/login",
+  "/user",
+  "/admin",
+  "/oauth/google",
+  "/embeds/query",
+  "/pages/view/old-page",
+  "/extensions/roam.zip",
+  "/images/old-logo.svg",
+  "/fonts/Inter.woff",
+  "/videos/old.mp4",
+  "/does/not/exist",
+  "/about/",
+]) {
+  test(`redirects retired URL ${uri}`, async () => {
+    const response = await handler(
+      createCloudfrontRequest({ uri, querystring: "utm_source=old-link" }),
+      mockContext,
+      () => {}
+    );
+    if (!response || !("status" in response))
+      throw new Error("Expected redirect response");
+    expect(response.status).toBe("301");
+    expect(response.headers?.location?.[0]?.value).toBe("/");
+  });
+}
+
+test("redirects HEAD and POST requests without retaining the POST method", async () => {
+  for (const method of ["HEAD", "POST"]) {
+    const response = await handler(
+      createCloudfrontRequest({ uri: "/contact", method }),
+      mockContext,
+      () => {}
+    );
+    if (!response || !("status" in response))
+      throw new Error("Expected redirect response");
+    expect(response.status).toBe(method === "HEAD" ? "301" : "303");
+    expect(response.headers?.location?.[0]?.value).toBe("/");
+  }
+});
+
+for (const uri of [
+  "/build/entry-client.js",
+  "/landing/manrope.ttf",
+  "/landing/OFL.txt",
+]) {
+  test(`allows homepage asset ${uri} to reach the origin`, async () => {
+    let forwarded: unknown;
+    handler(
+      createCloudfrontRequest({ uri }),
+      mockContext,
+      (_error, response) => {
+        forwarded = response;
+      }
+    );
+    expect(forwarded).toEqual(
+      createCloudfrontRequest({ uri }).Records[0].cf.request
+    );
+  });
+}
