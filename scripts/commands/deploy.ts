@@ -203,17 +203,17 @@ const deploy = ({
     })
   )
     .then(() => (impatient ? Promise.resolve() : deployRemixServer(domain)))
-    .then(() =>
-      impatient
-        ? Promise.resolve()
-        : cloudfront.createInvalidation({
-            DistributionId: process.env.CLOUDFRONT_DISTRIBUTION_ID || "",
-            InvalidationBatch: {
-              CallerReference: `homepage-${Date.now()}`,
-              Paths: { Quantity: 1, Items: ["/*"] },
-            },
-          })
-    )
+    .then(async () => {
+      if (!impatient) {
+        await cloudfront.createInvalidation({
+          DistributionId: process.env.CLOUDFRONT_DISTRIBUTION_ID || "",
+          InvalidationBatch: {
+            CallerReference: `homepage-${Date.now()}`,
+            Paths: { Quantity: 1, Items: ["/*"] },
+          },
+        });
+      }
+    })
     .then(() => 0)
     .catch((e) => {
       console.error(`deploy failed:`);
