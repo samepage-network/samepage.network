@@ -396,7 +396,7 @@ const setupInfrastructure = async (): Promise<void> => {
         publish: false,
         filename: "origin-request.zip",
         timeout: 20,
-        memorySize: 5120,
+        memorySize: 2048,
       });
 
       const edgeLambdaPolicyDoc = new DataAwsIamPolicyDocument(
