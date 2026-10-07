@@ -5,7 +5,8 @@ on:
     branches: main
     paths:
       - "app/**"
-      - "docs/**"
+      - "public/**"
+      - "scripts/commands/deploy.ts"
       - ".github/workflows/app.yaml"
 
 env:

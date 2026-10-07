@@ -56,7 +56,9 @@ const waitForCloudfront = (trial = 0): Promise<string> => {
       if (status === "Deployed") {
         return "Done, Cloudfront is Enabled!";
       } else if (trial === 60) {
-        return "Ran out of time waiting for cloudfront...";
+        throw new Error(
+          "Timed out waiting for CloudFront deployment; cache invalidation was not run."
+        );
       } else {
         console.log(
           `Distribution had status ${status} on trial ${trial}. Trying again...`
@@ -201,6 +203,17 @@ const deploy = ({
     })
   )
     .then(() => (impatient ? Promise.resolve() : deployRemixServer(domain)))
+    .then(() =>
+      impatient
+        ? Promise.resolve()
+        : cloudfront.createInvalidation({
+            DistributionId: process.env.CLOUDFRONT_DISTRIBUTION_ID || "",
+            InvalidationBatch: {
+              CallerReference: `homepage-${Date.now()}`,
+              Paths: { Quantity: 1, Items: ["/*"] },
+            },
+          })
+    )
     .then(() => 0)
     .catch((e) => {
       console.error(`deploy failed:`);

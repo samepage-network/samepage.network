@@ -1,0 +1,49 @@
+@font-face {
+  font-family: Manrope;
+  src: url("/landing/manrope.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #01030c;
+}
+.lattice-flight {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.wordmark {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+.wordmark h1 {
+  margin: 0;
+  padding: 0 8px 14px;
+  font-family: Manrope, Arial, sans-serif;
+  font-size: clamp(48px, 7.4vw, 116px);
+  font-weight: 400;
+  letter-spacing: -0.065em;
+  line-height: 1;
+  color: #5da6ed;
+  text-shadow: 0 2px 24px #00004488;
+  opacity: 0.88;
+}
+@media (max-width: 600px) {
+  .wordmark h1 {
+    font-size: 15vw;
+  }
+}

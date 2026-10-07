@@ -2,7 +2,10 @@ import { Header3 } from "./H3";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { Button } from "../ui/button";
-import { Topics } from "~/routes/__private/user/offices.$uuid";
+type Topics = {
+  fieldsOfStudy: string[];
+  researchSpecializations: string[];
+};
 
 const systemMessage = `Role and Goal:
 To identifies and suggests the most important authors given a specific topic.
